@@ -46,29 +46,45 @@ public class UpdateUiController {
         });
     }
 
-    public void showUpdateNotification(UpdateInfo updateInfo, Runnable onShown) {
+    public void showUpdateNotification(UpdateInfo updateInfo, Runnable onIgnoreVersion) {
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        AutoUpdateNotification.show(mainFrame, updateInfo, this::showUpdateDialog, onShown);
+        AutoUpdateNotification.show(
+                mainFrame,
+                updateInfo,
+                selectedUpdate -> showUpdateDialog(selectedUpdate, onIgnoreVersion)
+        );
     }
 
     /**
      * 显示更新对话框（带更新日志）- 使用现代化对话框
      */
     public void showUpdateDialog(UpdateInfo updateInfo) {
+        showUpdateDialog(updateInfo, () -> {
+        });
+    }
+
+    public void showUpdateDialog(UpdateInfo updateInfo, Runnable onIgnoreVersion) {
         SwingUtilities.invokeLater(() -> {
             MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
 
             // 使用现代化更新对话框
             int choice = ModernUpdateDialog.showUpdateDialog(mainFrame, updateInfo);
 
-            // 处理用户选择: 0=手动下载, 1=自动更新, 2=稍后提醒, -1=关闭对话框
+            // 处理用户选择: 0=手动下载, 1=自动更新, 2=稍后提醒, 3=忽略此版本, -1=关闭对话框
             switch (choice) {
                 case 0 -> openManualDownloadPage();
                 case 1 -> showUpdateTypeSelectionAndStart(updateInfo);
+                case 3 -> runIgnoreVersion(onIgnoreVersion);
                 case 2, -1 -> { /* 用户稍后提醒或关闭对话框 */ }
                 default -> log.debug("Unknown dialog choice: {}", choice);
             }
         });
+    }
+
+    private void runIgnoreVersion(Runnable onIgnoreVersion) {
+        if (onIgnoreVersion != null) {
+            onIgnoreVersion.run();
+        }
     }
 
     /**
@@ -89,13 +105,8 @@ public class UpdateUiController {
      * 用户点击「前往 GitHub」后再弹 NoAssetDialog
      */
     public void showNoAssetNotification(UpdateInfo updateInfo) {
-        showNoAssetNotification(updateInfo, () -> {
-        });
-    }
-
-    public void showNoAssetNotification(UpdateInfo updateInfo, Runnable onShown) {
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        AutoUpdateNotification.showNoAsset(mainFrame, updateInfo, this::showNoAssetDialog, onShown);
+        AutoUpdateNotification.showNoAsset(mainFrame, updateInfo, this::showNoAssetDialog);
     }
 
     /**

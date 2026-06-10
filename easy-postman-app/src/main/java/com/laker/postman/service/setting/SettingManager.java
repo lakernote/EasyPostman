@@ -4,7 +4,6 @@ import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.certificate.TrustedCertificateEntry;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.model.NotificationPosition;
-import com.laker.postman.platform.update.model.UpdateCheckState;
 import com.laker.postman.platform.update.model.UpdateCheckFrequency;
 import com.laker.postman.platform.update.model.UpdatePolicy;
 import com.laker.postman.platform.update.model.UpdateTarget;
@@ -587,23 +586,19 @@ public class SettingManager {
         put(AppSettingKeys.LAST_UPDATE_CHECK_TIME, timestamp);
     }
 
-    public static UpdateCheckState getAppUpdateCheckState() {
-        return UpdateCheckState.of(
-                UpdateTarget.APP,
-                getLastUpdateCheckTime(),
-                get(AppSettingKeys.APP_UPDATE_NOTIFIED_MARKERS)
-        );
+    public static Set<String> getAppUpdateIgnoredMarkers() {
+        return get(AppSettingKeys.APP_UPDATE_IGNORED_MARKERS);
     }
 
-    public static void rememberAppUpdateNotifiedMarker(String marker) {
+    public static void rememberAppUpdateIgnoredMarker(String marker) {
         if (marker == null || marker.isBlank()) {
             return;
         }
         updateAndSaveProperties(settings -> {
-            Set<String> markers = AppSettingKeys.APP_UPDATE_NOTIFIED_MARKERS.read(settings);
+            Set<String> markers = AppSettingKeys.APP_UPDATE_IGNORED_MARKERS.read(settings);
             Set<String> updatedMarkers = new LinkedHashSet<>(markers);
             updatedMarkers.add(marker.trim());
-            AppSettingKeys.APP_UPDATE_NOTIFIED_MARKERS.write(settings, updatedMarkers);
+            AppSettingKeys.APP_UPDATE_IGNORED_MARKERS.write(settings, updatedMarkers);
         });
     }
 

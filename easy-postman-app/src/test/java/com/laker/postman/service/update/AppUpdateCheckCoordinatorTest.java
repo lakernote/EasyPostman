@@ -37,54 +37,22 @@ public class AppUpdateCheckCoordinatorTest {
     }
 
     @Test
-    public void backgroundNotificationShouldSkipAlreadyNotifiedMarker() {
+    public void backgroundNotificationShouldSkipIgnoredMarker() throws Exception {
+        MemoryUpdateStateStore store = new MemoryUpdateStateStore();
+        UpdateCenter updateCenter = new UpdateCenter(store);
+        RecordingUpdateUiController uiController = new RecordingUpdateUiController();
+        AppUpdateCheckCoordinator coordinator = new AppUpdateCheckCoordinator(uiController, updateCenter);
         UpdateInfo updateInfo = UpdateInfo.updateAvailable("1.0.0", "v1.2.0", null);
-        UpdateCheckState state = UpdateCheckState.of(
-                UpdateTarget.APP,
-                123L,
-                Set.of("app@v1.2.0@UPDATE_AVAILABLE")
-        );
+        store.rememberIgnoredMarker(UpdateTarget.APP, "app@v1.2.0@UPDATE_AVAILABLE");
 
-        assertFalse(AppUpdateCheckCoordinator.shouldNotify(updateInfo, state, false));
+        coordinator.handleUpdateCheckResult(updateInfo, false);
+        flushEdt();
+
+        assertEquals(uiController.notificationRequests, 0);
     }
 
     @Test
-    public void manualNotificationShouldIgnoreAlreadyNotifiedMarker() {
-        UpdateInfo updateInfo = UpdateInfo.updateAvailable("1.0.0", "v1.2.0", null);
-        UpdateCheckState state = UpdateCheckState.of(
-                UpdateTarget.APP,
-                123L,
-                Set.of("app@v1.2.0@UPDATE_AVAILABLE")
-        );
-
-        assertTrue(AppUpdateCheckCoordinator.shouldNotify(updateInfo, state, true));
-    }
-
-    @Test
-    public void nonUpdateStatusShouldNotCreateNotificationMarker() {
-        assertEquals(AppUpdateCheckCoordinator.notificationMarker(UpdateInfo.noUpdateAvailable("ok")), "");
-        assertEquals(AppUpdateCheckCoordinator.notificationMarker(UpdateInfo.checkFailed("bad")), "");
-    }
-
-    @Test
-    public void nonUpdateStatusShouldStillPassNotificationGate() {
-        UpdateCheckState state = UpdateCheckState.of(
-                UpdateTarget.APP,
-                123L,
-                Set.of("app@v1.2.0@UPDATE_AVAILABLE")
-        );
-
-        assertTrue(AppUpdateCheckCoordinator.shouldNotify(UpdateInfo.noUpdateAvailable("ok"), state, true));
-        assertTrue(AppUpdateCheckCoordinator.shouldNotify(UpdateInfo.checkFailed("bad"), state, true));
-    }
-
-    @Test
-    public void nullUpdateInfoShouldNotNotify() {
-        assertFalse(AppUpdateCheckCoordinator.shouldNotify(null, UpdateCheckState.of(UpdateTarget.APP, 0L, Set.of()), false));
-    }
-
-    @Test
-    public void backgroundNotificationShouldRememberMarkerOnlyAfterNotificationIsShown() throws Exception {
+    public void backgroundNotificationShouldShowWhenMarkerIsNotIgnored() throws Exception {
         MemoryUpdateStateStore store = new MemoryUpdateStateStore();
         UpdateCenter updateCenter = new UpdateCenter(store);
         RecordingUpdateUiController uiController = new RecordingUpdateUiController();
@@ -95,30 +63,53 @@ public class AppUpdateCheckCoordinatorTest {
         flushEdt();
 
         assertEquals(uiController.notificationRequests, 1);
-        assertFalse(updateCenter.state(UpdateTarget.APP).wasNotified("app@v1.2.0@UPDATE_AVAILABLE"));
-
-        uiController.runNotificationShownCallback();
-
-        assertTrue(updateCenter.state(UpdateTarget.APP).wasNotified("app@v1.2.0@UPDATE_AVAILABLE"));
     }
 
     @Test
-    public void backgroundNoAssetNotificationShouldRememberMarkerOnlyAfterNotificationIsShown() throws Exception {
+    public void manualNotificationShouldIgnoreIgnoredMarker() throws Exception {
         MemoryUpdateStateStore store = new MemoryUpdateStateStore();
         UpdateCenter updateCenter = new UpdateCenter(store);
         RecordingUpdateUiController uiController = new RecordingUpdateUiController();
         AppUpdateCheckCoordinator coordinator = new AppUpdateCheckCoordinator(uiController, updateCenter);
-        UpdateInfo updateInfo = UpdateInfo.updateAvailableNoAsset("1.0.0", "v1.2.0", null);
+        UpdateInfo updateInfo = UpdateInfo.updateAvailable("1.0.0", "v1.2.0", null);
+        store.rememberIgnoredMarker(UpdateTarget.APP, "app@v1.2.0@UPDATE_AVAILABLE");
 
-        coordinator.handleUpdateCheckResult(updateInfo, false);
+        coordinator.handleUpdateCheckResult(updateInfo, true);
         flushEdt();
 
-        assertEquals(uiController.noAssetNotificationRequests, 1);
-        assertFalse(updateCenter.state(UpdateTarget.APP).wasNotified("app@v1.2.0@UPDATE_AVAILABLE_NO_ASSET"));
+        assertEquals(uiController.updateDialogRequests, 1);
+    }
 
-        uiController.runNoAssetNotificationShownCallback();
+    @Test
+    public void updateDialogIgnoreActionShouldRememberIgnoredMarker() throws Exception {
+        MemoryUpdateStateStore store = new MemoryUpdateStateStore();
+        UpdateCenter updateCenter = new UpdateCenter(store);
+        RecordingUpdateUiController uiController = new RecordingUpdateUiController();
+        AppUpdateCheckCoordinator coordinator = new AppUpdateCheckCoordinator(uiController, updateCenter);
+        UpdateInfo updateInfo = UpdateInfo.updateAvailable("1.0.0", "v1.2.0", null);
 
-        assertTrue(updateCenter.state(UpdateTarget.APP).wasNotified("app@v1.2.0@UPDATE_AVAILABLE_NO_ASSET"));
+        coordinator.handleUpdateCheckResult(updateInfo, true);
+        flushEdt();
+        uiController.runUpdateDialogIgnoreCallback();
+
+        assertTrue(updateCenter.ignoredMarkers(UpdateTarget.APP).contains("app@v1.2.0@UPDATE_AVAILABLE"));
+    }
+
+    @Test
+    public void nonUpdateStatusShouldNotCreateNotificationMarker() {
+        assertEquals(AppUpdateCheckCoordinator.notificationMarker(UpdateInfo.noUpdateAvailable("ok")), "");
+        assertEquals(AppUpdateCheckCoordinator.notificationMarker(UpdateInfo.checkFailed("bad")), "");
+    }
+
+    @Test
+    public void nonUpdateStatusShouldStillPassNotificationGate() {
+        assertTrue(AppUpdateCheckCoordinator.shouldNotify(UpdateInfo.noUpdateAvailable("ok"), Set.of(), true));
+        assertTrue(AppUpdateCheckCoordinator.shouldNotify(UpdateInfo.checkFailed("bad"), Set.of(), true));
+    }
+
+    @Test
+    public void nullUpdateInfoShouldNotNotify() {
+        assertFalse(AppUpdateCheckCoordinator.shouldNotify(null, Set.of(), false));
     }
 
     private static void flushEdt() throws Exception {
@@ -129,30 +120,28 @@ public class AppUpdateCheckCoordinatorTest {
     private static final class RecordingUpdateUiController extends UpdateUiController {
         private int notificationRequests;
         private int noAssetNotificationRequests;
-        private Runnable notificationShownCallback;
-        private Runnable noAssetNotificationShownCallback;
+        private int updateDialogRequests;
+        private Runnable updateDialogIgnoreCallback;
 
         @Override
-        public void showUpdateNotification(UpdateInfo updateInfo, Runnable onShown) {
+        public void showUpdateNotification(UpdateInfo updateInfo, Runnable onIgnoreVersion) {
             notificationRequests++;
-            notificationShownCallback = onShown;
         }
 
         @Override
-        public void showNoAssetNotification(UpdateInfo updateInfo, Runnable onShown) {
+        public void showNoAssetNotification(UpdateInfo updateInfo) {
             noAssetNotificationRequests++;
-            noAssetNotificationShownCallback = onShown;
         }
 
-        private void runNotificationShownCallback() {
-            if (notificationShownCallback != null) {
-                notificationShownCallback.run();
-            }
+        @Override
+        public void showUpdateDialog(UpdateInfo updateInfo, Runnable onIgnoreVersion) {
+            updateDialogRequests++;
+            updateDialogIgnoreCallback = onIgnoreVersion;
         }
 
-        private void runNoAssetNotificationShownCallback() {
-            if (noAssetNotificationShownCallback != null) {
-                noAssetNotificationShownCallback.run();
+        private void runUpdateDialogIgnoreCallback() {
+            if (updateDialogIgnoreCallback != null) {
+                updateDialogIgnoreCallback.run();
             }
         }
     }
@@ -160,6 +149,7 @@ public class AppUpdateCheckCoordinatorTest {
     private static final class MemoryUpdateStateStore implements UpdateStateStore {
         private final Map<UpdateTarget, UpdatePolicy> policies = new EnumMap<>(UpdateTarget.class);
         private final Map<UpdateTarget, UpdateCheckState> states = new EnumMap<>(UpdateTarget.class);
+        private final Map<UpdateTarget, Set<String>> ignoredMarkers = new EnumMap<>(UpdateTarget.class);
 
         @Override
         public UpdatePolicy policy(UpdateTarget target) {
@@ -186,6 +176,21 @@ public class AppUpdateCheckCoordinatorTest {
             Set<String> markers = new LinkedHashSet<>(current.notifiedMarkers());
             markers.add(marker.trim());
             states.put(target, UpdateCheckState.of(target, current.lastCheckTimeMillis(), markers));
+        }
+
+        @Override
+        public Set<String> ignoredMarkers(UpdateTarget target) {
+            return ignoredMarkers.getOrDefault(target, Set.of());
+        }
+
+        @Override
+        public void rememberIgnoredMarker(UpdateTarget target, String marker) {
+            if (marker == null || marker.isBlank()) {
+                return;
+            }
+            Set<String> markers = new LinkedHashSet<>(ignoredMarkers(target));
+            markers.add(marker.trim());
+            ignoredMarkers.put(target, markers);
         }
     }
 }

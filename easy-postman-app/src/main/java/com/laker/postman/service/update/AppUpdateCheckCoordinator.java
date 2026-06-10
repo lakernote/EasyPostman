@@ -3,7 +3,6 @@ package com.laker.postman.service.update;
 import com.laker.postman.ioc.Component;
 import com.laker.postman.platform.update.UpdateCenter;
 import com.laker.postman.platform.update.VersionChecker;
-import com.laker.postman.platform.update.model.UpdateCheckState;
 import com.laker.postman.platform.update.model.UpdateInfo;
 import com.laker.postman.platform.update.model.UpdatePolicy;
 import com.laker.postman.platform.update.model.UpdateTarget;
@@ -17,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -146,8 +146,8 @@ public class AppUpdateCheckCoordinator {
         }
         SwingUtilities.invokeLater(() -> {
             String marker = notificationMarker(updateInfo);
-            if (!marker.isEmpty() && !updateCenter.shouldNotify(UpdateTarget.APP, marker, isManual)) {
-                log.info("Skipping app update notification because marker was already notified: {}", marker);
+            if (!shouldNotify(updateInfo, updateCenter.ignoredMarkers(UpdateTarget.APP), isManual)) {
+                log.info("Skipping app update notification because marker was ignored: {}", marker);
                 return;
             }
             switch (updateInfo.getStatus()) {
@@ -157,11 +157,10 @@ public class AppUpdateCheckCoordinator {
 
                     if (isManual) {
                         // 手动检查直接显示对话框
-                        rememberNotifiedMarker(updateInfo);
-                        uiController.showUpdateDialog(updateInfo);
+                        uiController.showUpdateDialog(updateInfo, () -> rememberIgnoredMarker(updateInfo));
                     } else {
                         // 后台检查显示通知
-                        uiController.showUpdateNotification(updateInfo, () -> rememberNotifiedMarker(updateInfo));
+                        uiController.showUpdateNotification(updateInfo, () -> rememberIgnoredMarker(updateInfo));
                     }
                 }
                 case UPDATE_AVAILABLE_NO_ASSET -> {
@@ -169,11 +168,10 @@ public class AppUpdateCheckCoordinator {
                             updateInfo.getCurrentVersion(), updateInfo.getLatestVersion());
                     if (isManual) {
                         // 手动检查：直接显示 NoAsset 对话框
-                        rememberNotifiedMarker(updateInfo);
                         uiController.showNoAssetDialog(updateInfo);
                     } else {
                         // 后台检查：先显示右下角 toast，点击后再弹对话框
-                        uiController.showNoAssetNotification(updateInfo, () -> rememberNotifiedMarker(updateInfo));
+                        uiController.showNoAssetNotification(updateInfo);
                     }
                 }
                 case NO_UPDATE -> {
@@ -194,12 +192,15 @@ public class AppUpdateCheckCoordinator {
         });
     }
 
-    static boolean shouldNotify(UpdateInfo updateInfo, UpdateCheckState state, boolean isManual) {
+    static boolean shouldNotify(UpdateInfo updateInfo, Set<String> ignoredMarkers, boolean isManual) {
         if (updateInfo == null) {
             return false;
         }
         String marker = notificationMarker(updateInfo);
-        return marker.isEmpty() || UpdateCenter.shouldNotify(marker, state, isManual);
+        return marker.isEmpty()
+                || isManual
+                || ignoredMarkers == null
+                || !ignoredMarkers.contains(marker.trim());
     }
 
     static String notificationMarker(UpdateInfo updateInfo) {
@@ -212,8 +213,8 @@ public class AppUpdateCheckCoordinator {
         return UpdateTarget.APP.getId() + "@" + updateInfo.getLatestVersion().trim() + "@" + updateInfo.getStatus();
     }
 
-    private void rememberNotifiedMarker(UpdateInfo updateInfo) {
-        updateCenter.rememberNotifiedMarker(UpdateTarget.APP, notificationMarker(updateInfo));
+    private void rememberIgnoredMarker(UpdateInfo updateInfo) {
+        updateCenter.rememberIgnoredMarker(UpdateTarget.APP, notificationMarker(updateInfo));
     }
 
     /**

@@ -167,12 +167,16 @@ public class ModernUpdateDialog extends JDialog {
         JButton laterButton = createSecondaryButton(I18nUtil.getMessage(MessageKeys.UPDATE_LATER));
         laterButton.addActionListener(e -> { userChoice = 2; dispose(); });
 
+        JButton ignoreButton = createSecondaryButton(I18nUtil.getMessage(MessageKeys.UPDATE_IGNORE_VERSION));
+        ignoreButton.addActionListener(e -> { userChoice = 3; dispose(); });
+
         JButton manualButton = createSecondaryButton(I18nUtil.getMessage(MessageKeys.UPDATE_MANUAL_DOWNLOAD));
         manualButton.addActionListener(e -> { userChoice = 0; dispose(); });
 
         JButton autoButton = createPrimaryButton(I18nUtil.getMessage(MessageKeys.UPDATE_NOW));
         autoButton.addActionListener(e -> { userChoice = 1; dispose(); });
 
+        buttonsPanel.add(ignoreButton);
         buttonsPanel.add(laterButton);
         buttonsPanel.add(manualButton);
         buttonsPanel.add(autoButton);

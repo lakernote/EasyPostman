@@ -49,6 +49,18 @@ public final class UpdateCenter {
         stateStore.rememberNotifiedMarker(normalizeTarget(target), marker.trim());
     }
 
+    public Set<String> ignoredMarkers(UpdateTarget target) {
+        Set<String> markers = stateStore.ignoredMarkers(normalizeTarget(target));
+        return markers == null ? Set.of() : Set.copyOf(markers);
+    }
+
+    public void rememberIgnoredMarker(UpdateTarget target, String marker) {
+        if (marker == null || marker.isBlank()) {
+            return;
+        }
+        stateStore.rememberIgnoredMarker(normalizeTarget(target), marker.trim());
+    }
+
     public boolean shouldNotify(UpdateTarget target, String marker, boolean isManual) {
         return shouldNotify(marker, state(target), isManual);
     }

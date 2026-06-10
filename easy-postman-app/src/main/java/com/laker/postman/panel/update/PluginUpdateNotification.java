@@ -51,7 +51,8 @@ public class PluginUpdateNotification {
         dialog.setFocusableWindowState(false);
         dialog.setType(Window.Type.UTILITY);
         dialog.setOpacity(0f);
-        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
+        ToolWindowSurfaceStyle.skipDialogWindowChrome(dialog);
+        dialog.setBackground(new Color(0, 0, 0, 0));
 
         JPanel contentPanel = createNotificationPanel(updates, onAction);
         dialog.setContentPane(contentPanel);
@@ -241,9 +242,9 @@ public class PluginUpdateNotification {
         root.add(contentPanel, BorderLayout.CENTER);
 
         JButton closeButton = createCloseButton();
-        JPanel topRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel topRight = new JPanel(new BorderLayout());
         topRight.setOpaque(false);
-        topRight.add(closeButton);
+        topRight.add(closeButton, BorderLayout.NORTH);
         root.add(topRight, BorderLayout.EAST);
 
         return root;

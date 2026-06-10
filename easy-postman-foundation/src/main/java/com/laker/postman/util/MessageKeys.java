@@ -51,6 +51,7 @@ public final class MessageKeys {
     public static final String UPDATE_NOW = "update.now";
     public static final String UPDATE_VIEW_DETAILS = "update.view_details";
     public static final String UPDATE_MANUAL_DOWNLOAD = "update.manual_download";
+    public static final String UPDATE_IGNORE_VERSION = "update.ignore_version";
     public static final String UPDATE_DOWNLOADING = "update.downloading";
     public static final String UPDATE_CONNECTING = "update.connecting";
     public static final String UPDATE_CANCEL_DOWNLOAD = "update.cancel_download";
@@ -1116,6 +1117,11 @@ public final class MessageKeys {
     public static final String REQUEST_SETTINGS_FOLLOW_REDIRECTS_DESC = "request.settings.follow_redirects.desc";
     public static final String REQUEST_SETTINGS_USE_COOKIE_JAR_LABEL = "request.settings.use_cookie_jar.label";
     public static final String REQUEST_SETTINGS_USE_COOKIE_JAR_DESC = "request.settings.use_cookie_jar.desc";
+    public static final String REQUEST_SETTINGS_PROXY_POLICY_LABEL = "request.settings.proxy_policy.label";
+    public static final String REQUEST_SETTINGS_PROXY_POLICY_DESC = "request.settings.proxy_policy.desc";
+    public static final String REQUEST_SETTINGS_PROXY_POLICY_DEFAULT = "request.settings.proxy_policy.default";
+    public static final String REQUEST_SETTINGS_PROXY_POLICY_USE_PROXY = "request.settings.proxy_policy.use_proxy";
+    public static final String REQUEST_SETTINGS_PROXY_POLICY_NO_PROXY = "request.settings.proxy_policy.no_proxy";
     public static final String REQUEST_SETTINGS_HTTP_VERSION_LABEL = "request.settings.http_version.label";
     public static final String REQUEST_SETTINGS_HTTP_VERSION_DESC = "request.settings.http_version.desc";
     public static final String REQUEST_SETTINGS_HTTP_VERSION_AUTO = "request.settings.http_version.auto";

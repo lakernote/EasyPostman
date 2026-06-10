@@ -2,7 +2,6 @@ package com.laker.postman.service.setting;
 
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.platform.update.model.UpdateCheckFrequency;
-import com.laker.postman.platform.update.model.UpdateCheckState;
 import com.laker.postman.platform.update.model.UpdatePolicy;
 import com.laker.postman.platform.update.model.UpdateTarget;
 import org.testng.annotations.Test;
@@ -87,29 +86,7 @@ public class SettingManagerUpdatePolicyTest {
     }
 
     @Test
-    public void appUpdateStateShouldIncludeLastCheckTimeAndNotifiedMarkers() throws Exception {
-        Properties props = getSettingsProperties();
-        Properties backup = new Properties();
-        backup.putAll(props);
-
-        try {
-            props.clear();
-            props.setProperty("last_update_check_time", "12345");
-            props.setProperty("app_update_notified_markers", "app@v1.2.0@UPDATE_AVAILABLE");
-
-            UpdateCheckState state = SettingManager.getAppUpdateCheckState();
-
-            assertEquals(state.target(), UpdateTarget.APP);
-            assertEquals(state.lastCheckTimeMillis(), 12345L);
-            assertTrue(state.wasNotified("app@v1.2.0@UPDATE_AVAILABLE"));
-        } finally {
-            props.clear();
-            props.putAll(backup);
-        }
-    }
-
-    @Test
-    public void appUpdateNotifiedMarkersShouldIgnoreBlankMarkersAndKeepExistingOnes() throws Exception {
+    public void appUpdateIgnoredMarkersShouldIgnoreBlankMarkersAndKeepExistingOnes() throws Exception {
         Path configPath = Path.of(ConfigPathConstants.EASY_POSTMAN_SETTINGS);
         boolean configExisted = Files.exists(configPath);
         String originalConfig = configExisted ? Files.readString(configPath) : null;
@@ -119,13 +96,14 @@ public class SettingManagerUpdatePolicyTest {
 
         try {
             props.clear();
-            props.setProperty("app_update_notified_markers", "app@v1.2.0@UPDATE_AVAILABLE");
+            props.setProperty("app_update_ignored_markers", "app@v1.2.0@UPDATE_AVAILABLE");
 
-            SettingManager.rememberAppUpdateNotifiedMarker(" ");
-            SettingManager.rememberAppUpdateNotifiedMarker("app@v1.3.0@UPDATE_AVAILABLE_NO_ASSET");
+            SettingManager.rememberAppUpdateIgnoredMarker(" ");
+            SettingManager.rememberAppUpdateIgnoredMarker("app@v1.3.0@UPDATE_AVAILABLE_NO_ASSET");
 
+            assertTrue(SettingManager.getAppUpdateIgnoredMarkers().contains("app@v1.2.0@UPDATE_AVAILABLE"));
             assertEquals(
-                    props.getProperty("app_update_notified_markers"),
+                    props.getProperty("app_update_ignored_markers"),
                     "app@v1.2.0@UPDATE_AVAILABLE,app@v1.3.0@UPDATE_AVAILABLE_NO_ASSET"
             );
         } finally {

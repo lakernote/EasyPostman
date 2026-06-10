@@ -32,7 +32,7 @@ public class AutoUpdateNotification {
     /** 通知变体 */
     public enum Variant { NORMAL, NO_ASSET }
 
-    private static final int NOTIFICATION_WIDTH = 400;
+    private static final int NOTIFICATION_WIDTH = 380;
     private static final int MARGIN = 20;
     private static final int FADE_DURATION = 300;
     private static final int DISPLAY_DURATION = 6000;
@@ -58,7 +58,8 @@ public class AutoUpdateNotification {
         dialog.setFocusableWindowState(false);
         dialog.setType(Window.Type.UTILITY);
         dialog.setOpacity(0f);
-        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
+        ToolWindowSurfaceStyle.skipDialogWindowChrome(dialog);
+        dialog.setBackground(new Color(0, 0, 0, 0));
 
         JPanel contentPanel = createNotificationPanel(updateInfo, onAction, variant);
         dialog.setContentPane(contentPanel);
@@ -73,32 +74,16 @@ public class AutoUpdateNotification {
 
     /** 普通更新通知（蓝色） */
     public static void show(JFrame parent, UpdateInfo updateInfo, Consumer<UpdateInfo> onViewDetails) {
-        show(parent, updateInfo, onViewDetails, () -> {
-        });
-    }
-
-    public static void show(JFrame parent,
-                            UpdateInfo updateInfo,
-                            Consumer<UpdateInfo> onViewDetails,
-                            Runnable onShown) {
-        showInternal(parent, updateInfo, onViewDetails, Variant.NORMAL, onShown);
+        showInternal(parent, updateInfo, onViewDetails, Variant.NORMAL);
     }
 
     /** 有新版本但无安装包通知（橙色） */
     public static void showNoAsset(JFrame parent, UpdateInfo updateInfo, Consumer<UpdateInfo> onAction) {
-        showNoAsset(parent, updateInfo, onAction, () -> {
-        });
-    }
-
-    public static void showNoAsset(JFrame parent,
-                                   UpdateInfo updateInfo,
-                                   Consumer<UpdateInfo> onAction,
-                                   Runnable onShown) {
-        showInternal(parent, updateInfo, onAction, Variant.NO_ASSET, onShown);
+        showInternal(parent, updateInfo, onAction, Variant.NO_ASSET);
     }
 
     private static void showInternal(JFrame parent, UpdateInfo updateInfo,
-                                     Consumer<UpdateInfo> onAction, Variant variant, Runnable onShown) {
+                                     Consumer<UpdateInfo> onAction, Variant variant) {
         SwingUtilities.invokeLater(() -> {
             if (parent == null || !parent.isVisible()) {
                 log.info("Parent window is not visible, skip showing update notification");
@@ -109,14 +94,7 @@ public class AutoUpdateNotification {
                 return;
             }
             new AutoUpdateNotification(parent, updateInfo, onAction, variant).display();
-            runOnShown(onShown);
         });
-    }
-
-    private static void runOnShown(Runnable onShown) {
-        if (onShown != null) {
-            onShown.run();
-        }
     }
 
     private void display() {
@@ -226,7 +204,7 @@ public class AutoUpdateNotification {
             }
         };
         root.setOpaque(false);
-        root.setBorder(BorderFactory.createEmptyBorder(14, 14 + INDICATOR_WIDTH, 14, 14));
+        root.setBorder(BorderFactory.createEmptyBorder(12, 12 + INDICATOR_WIDTH, 12, 12));
 
         root.addMouseListener(new MouseAdapter() {
             @Override public void mouseEntered(MouseEvent e) {
@@ -247,7 +225,7 @@ public class AutoUpdateNotification {
         String iconPath = isNoAsset ? "icons/warning.svg" : "icons/info.svg";
         JLabel iconLabel = new JLabel(IconUtil.createThemed(iconPath, 32, 32));
         iconLabel.setVerticalAlignment(SwingConstants.TOP);
-        iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 10));
+        iconLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 12));
         root.add(iconLabel, BorderLayout.WEST);
 
         // 中心内容
@@ -277,7 +255,7 @@ public class AutoUpdateNotification {
                     ? "安装包尚未上传，请前往 GitHub 手动下载"
                     : "Installer not yet available, please download from GitHub")
                 : extractDescription(updateInfo);
-        JLabel descLabel = new JLabel("<html><body style='width:220px'>" + description + "</body></html>");
+        JLabel descLabel = new JLabel("<html><body style='width:250px'>" + description + "</body></html>");
         descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         descLabel.setForeground(ModernColors.getTextHint());
         descLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -300,9 +278,9 @@ public class AutoUpdateNotification {
 
         // 右上角关闭按钮
         JButton closeButton = createCloseButton();
-        JPanel topRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        JPanel topRight = new JPanel(new BorderLayout());
         topRight.setOpaque(false);
-        topRight.add(closeButton);
+        topRight.add(closeButton, BorderLayout.NORTH);
         root.add(topRight, BorderLayout.EAST);
 
         return root;

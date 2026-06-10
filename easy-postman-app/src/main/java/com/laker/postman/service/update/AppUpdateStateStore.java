@@ -29,7 +29,7 @@ public final class AppUpdateStateStore implements UpdateStateStore {
     @Override
     public UpdateCheckState state(UpdateTarget target) {
         return switch (normalizeTarget(target)) {
-            case APP -> SettingManager.getAppUpdateCheckState();
+            case APP -> UpdateCheckState.of(UpdateTarget.APP, SettingManager.getLastUpdateCheckTime(), Set.of());
             case PLUGIN -> UpdateCheckState.of(
                     UpdateTarget.PLUGIN,
                     getPluginLastCheckTime(),
@@ -55,8 +55,31 @@ public final class AppUpdateStateStore implements UpdateStateStore {
             return;
         }
         switch (normalizeTarget(target)) {
-            case APP -> SettingManager.rememberAppUpdateNotifiedMarker(marker);
+            case APP -> {
+                // App update notifications are controlled by explicit ignored markers and check frequency.
+            }
             case PLUGIN -> rememberPluginNotifiedMarker(marker);
+        }
+    }
+
+    @Override
+    public Set<String> ignoredMarkers(UpdateTarget target) {
+        return switch (normalizeTarget(target)) {
+            case APP -> SettingManager.getAppUpdateIgnoredMarkers();
+            case PLUGIN -> Set.of();
+        };
+    }
+
+    @Override
+    public void rememberIgnoredMarker(UpdateTarget target, String marker) {
+        if (marker == null || marker.isBlank()) {
+            return;
+        }
+        switch (normalizeTarget(target)) {
+            case APP -> SettingManager.rememberAppUpdateIgnoredMarker(marker);
+            case PLUGIN -> {
+                // Plugin update notifications keep their existing one-time marker behavior.
+            }
         }
     }
 

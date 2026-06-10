@@ -167,6 +167,12 @@ public final class ToolWindowSurfaceStyle {
         }
     }
 
+    public static void skipDialogWindowChrome(Window window) {
+        if (window instanceof RootPaneContainer rootPaneContainer) {
+            rootPaneContainer.getRootPane().putClientProperty(DIALOG_WINDOW_CHROME_APPLIED, Boolean.TRUE);
+        }
+    }
+
     private static void applyDialogWindowChromeIfNeeded(Component component) {
         if (component == null) {
             return;

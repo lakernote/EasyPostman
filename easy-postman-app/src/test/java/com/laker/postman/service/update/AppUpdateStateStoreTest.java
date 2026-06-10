@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class AppUpdateStateStoreTest {
@@ -49,11 +50,13 @@ public class AppUpdateStateStoreTest {
 
             store.recordCheck(UpdateTarget.APP, 12_345L);
             store.rememberNotifiedMarker(UpdateTarget.APP, "app@1.2.0@UPDATE_AVAILABLE");
+            store.rememberIgnoredMarker(UpdateTarget.APP, "app@1.3.0@UPDATE_AVAILABLE");
 
             UpdateCheckState state = store.state(UpdateTarget.APP);
             assertEquals(state.target(), UpdateTarget.APP);
             assertEquals(state.lastCheckTimeMillis(), 12_345L);
-            assertTrue(state.wasNotified("app@1.2.0@UPDATE_AVAILABLE"));
+            assertFalse(state.wasNotified("app@1.2.0@UPDATE_AVAILABLE"));
+            assertTrue(store.ignoredMarkers(UpdateTarget.APP).contains("app@1.3.0@UPDATE_AVAILABLE"));
         } finally {
             props.clear();
             props.putAll(backup);

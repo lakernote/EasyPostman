@@ -254,8 +254,8 @@ class AppSettingKeys {
             0L,
             value -> Math.max(0L, value)
     );
-    static final SettingKey<Set<String>> APP_UPDATE_NOTIFIED_MARKERS = SettingKey.of(
-            "app_update_notified_markers",
+    static final SettingKey<Set<String>> APP_UPDATE_IGNORED_MARKERS = SettingKey.of(
+            "app_update_ignored_markers",
             Set.of(),
             AppSettingKeys::parseTrimmedSet,
             AppSettingKeys::formatCollection

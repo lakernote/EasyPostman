@@ -1,6 +1,6 @@
 ---
 name: swing-flatlaf-miglayout-principles
-description: Use when modifying EasyPostman Swing forms that use FlatLaf and MigLayout, especially when layout refactors introduce clipped focus rings, truncated text, clipped status badges, dense spacing, border conflicts, or inconsistent form structure.
+description: Use when modifying EasyPostman Swing forms, tool-window panels, or FlatLaf/MigLayout layouts, especially when refactors introduce clipped focus rings, truncated text, clipped status badges, dense spacing, border conflicts, rounded-card corner leaks, or inconsistent form structure.
 ---
 
 # Swing FlatLaf MigLayout Principles
@@ -13,6 +13,7 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 - Focus/highlight borders are clipped or hidden
 - A list item, sidebar row, badge, tab, or localized label is truncated or spills out of its container
 - A refactor added borders, cards, sections, or sub-panels and spacing became unstable
+- A rounded tool-window card or panel corner looks square because an opaque child paints over the chrome
 - A dense toolbar/form row in MigLayout starts to look cramped or visually inconsistent
 - A Swing form in EasyPostman needs to be reorganized without regressing FlatLaf behavior
 
@@ -70,6 +71,15 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 - If a status must be semantically long, add a short list-specific i18n key for the badge and keep the full text in the details panel or tooltip.
 - Do not fix repeated clipping by reducing font sizes. Use `FontsUtil` only to preserve hierarchy after the layout constraints are correct.
 - Recheck both installed and marketplace renderers when they share the same list pattern; otherwise the bug usually comes back in the sibling view.
+
+## Rounded tool-window card chrome
+
+- `RoundedToolWindowPanel` owns the rounded card shape; child panels should not be treated as the outer card chrome.
+- A rounded parent alone is not enough if a direct child is opaque and touches the card edge. Components such as `JSplitPane`, `JScrollPane`, `JTable`, and large content panels can repaint independently and fill a rectangular area unless repaint is routed through the rounded parent or the child is kept away from the edge.
+- For top-level tool windows, prefer `ToolWindowChrome` / `AppToolWindowChrome` wrappers (`wrapToolWindow`, `wrapInsetToolWindow`, `createHorizontalCardSplitPane`, `createVerticalCardSplitPane`) instead of manually applying `applyCard` to the root panel.
+- If content is meant to sit inside a rounded card, add an inset wrapper (`createInsetContent`, `wrapInsetToolWindow`, or the side-specific wrapper) when controls or opaque scroll/split/table surfaces would otherwise touch the rounded corners.
+- Inside an already rounded card, avoid stacking more opaque `applyCard` panels at the outer edge just to get the same background. Use transparent section panels or inner split panes where the parent card should remain visually continuous.
+- If a rounded corner becomes square only after interaction, resize, scrolling, or split-pane dragging, suspect descendant repaint bypassing the parent clip before changing colors or arc values. The fix belongs in the rounded chrome or wrapper hierarchy, not in per-panel paint hacks.
 
 ## Repo-specific guidance
 

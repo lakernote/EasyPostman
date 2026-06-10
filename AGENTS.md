@@ -239,7 +239,7 @@ Platform update code must not import app `SettingManager`; use `UpdateSettingsPr
 
 ### Available skills
 
-- swing-flatlaf-miglayout-principles: Use when modifying EasyPostman Swing forms that use FlatLaf and MigLayout, especially when layout refactors introduce clipped focus rings, dense spacing, border conflicts, or inconsistent form structure. (file: .codex/skills/swing-flatlaf-miglayout-principles/SKILL.md)
+- swing-flatlaf-miglayout-principles: Use when modifying EasyPostman Swing forms, tool-window panels, or FlatLaf/MigLayout layouts, especially when refactors introduce clipped focus rings, dense spacing, border conflicts, rounded-card corner leaks, or inconsistent form structure. (file: .codex/skills/swing-flatlaf-miglayout-principles/SKILL.md)
 - swing-intellij-dialog-style: Use when modifying EasyPostman Swing dialogs, popups, wizards, or modal flows to better match IntelliJ IDEA or FlatLaf settings-style visual hierarchy, especially when read-only panels, editable inputs, steps, scroll panes, footers, or action choices are visually unclear. (file: .codex/skills/swing-intellij-dialog-style/SKILL.md)
 - fontsutil-font-usage: Use when modifying EasyPostman Swing UI fonts, especially when dialogs, labels, tables, tabs, or renderers look too large or too small, or when a change must follow the user's configured UI font size. Prefer FontsUtil.getDefaultFontWithOffset(...). (file: .codex/skills/fontsutil-font-usage/SKILL.md)
 - swing-ui-test-headless-guard: Use when adding or updating EasyPostman Swing/TestNG UI tests that may run in headless CI. Reuse `AbstractSwingUiTest` instead of duplicating headless or no-display skip logic. (file: .codex/skills/swing-ui-test-headless-guard/SKILL.md)

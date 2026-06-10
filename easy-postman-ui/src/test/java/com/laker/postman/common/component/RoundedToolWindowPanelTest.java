@@ -77,6 +77,13 @@ public class RoundedToolWindowPanelTest {
     }
 
     @Test
+    public void shouldOwnDescendantRepaintsSoRoundedClipIsPreserved() {
+        RoundedToolWindowPanel panel = new RoundedToolWindowPanel(new JLabel("content"));
+
+        assertTrue(panel.isPaintingOrigin());
+    }
+
+    @Test
     public void shouldClearOuterBoundsWithMainBackgroundBeforePaintingRoundedCard() {
         Color background = new Color(238, 242, 247);
         UIManager.put(ThemeColors.BACKGROUND, background);

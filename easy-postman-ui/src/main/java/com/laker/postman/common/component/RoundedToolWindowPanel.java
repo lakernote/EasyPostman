@@ -45,6 +45,12 @@ public class RoundedToolWindowPanel extends JPanel {
     }
 
     @Override
+    protected boolean isPaintingOrigin() {
+        // Descendant repaint requests must go through this panel so the rounded clip is preserved.
+        return true;
+    }
+
+    @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         Graphics2D g2 = (Graphics2D) g.create();

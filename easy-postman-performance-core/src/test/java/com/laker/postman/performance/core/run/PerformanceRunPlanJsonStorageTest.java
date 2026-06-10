@@ -82,6 +82,7 @@ public class PerformanceRunPlanJsonStorageTest {
 
         PerformanceRequestSnapshot loadedRequest = loadedGroup.getChildren().get(1).getRequestSnapshot();
         assertEquals(loadedRequest.getFormData().get(0).getValue(), "assets/files/avatar.png");
+        assertEquals(loadedRequest.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_USE_PROXY);
     }
 
     @Test
@@ -120,6 +121,7 @@ public class PerformanceRunPlanJsonStorageTest {
                 .name("Upload")
                 .url("https://example.test/upload")
                 .method("POST")
+                .proxyPolicy(PerformanceRequestSnapshot.PROXY_POLICY_USE_PROXY)
                 .formData(List.of(new PerformanceRequestFormDataPart(
                         true,
                         "avatar",

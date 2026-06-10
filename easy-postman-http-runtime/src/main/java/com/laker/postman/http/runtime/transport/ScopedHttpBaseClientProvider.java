@@ -4,6 +4,7 @@ import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.http.runtime.ssl.SSLConfigurationUtil;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import okhttp3.ConnectionPool;
 import okhttp3.CookieJar;
 import okhttp3.Dispatcher;
@@ -54,12 +55,14 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
         boolean followRedirects = request.followRedirects;
         SSLConfigurationUtil.SSLVerificationMode sslMode = HttpClientResolver.DEFAULT.resolveSslVerificationMode(request);
         HttpClientRuntimeConfig config = resolveConfig();
+        HttpRequestProxyPolicy proxyPolicy = HttpRequestProxyPolicy.normalize(request.proxyPolicy);
         ClientKey key = new ClientKey(
                 baseUri,
                 followRedirects,
                 sslMode,
                 config,
-                OkHttpClientManager.runtimeSettingsCacheKey(baseUri)
+                OkHttpClientManager.runtimeSettingsCacheKey(baseUri, proxyPolicy),
+                proxyPolicy
         );
         if (customCookieJar != null) {
             return baseClients.computeIfAbsent(key, this::createCustomCookieClient);
@@ -92,7 +95,8 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
                 key.followRedirects,
                 key.sslMode,
                 key.config,
-                customCookieJar
+                customCookieJar,
+                key.proxyPolicy
         );
     }
 
@@ -109,7 +113,8 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
                 key.followRedirects,
                 key.sslMode,
                 key.config,
-                CookieJar.NO_COOKIES
+                CookieJar.NO_COOKIES,
+                key.proxyPolicy
         );
     }
 
@@ -144,7 +149,8 @@ public final class ScopedHttpBaseClientProvider implements HttpBaseClientProvide
                              boolean followRedirects,
                              SSLConfigurationUtil.SSLVerificationMode sslMode,
                              HttpClientRuntimeConfig config,
-                             String runtimeSettingsCacheKey) {
+                             String runtimeSettingsCacheKey,
+                             HttpRequestProxyPolicy proxyPolicy) {
     }
 
     private record ScopedClientKey(ClientKey clientKey, String cookieScope) {

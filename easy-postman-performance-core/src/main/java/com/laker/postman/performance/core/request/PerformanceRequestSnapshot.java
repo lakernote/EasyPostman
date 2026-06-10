@@ -13,6 +13,9 @@ public class PerformanceRequestSnapshot {
     public static final String HTTP_VERSION_AUTO = "AUTO";
     public static final String HTTP_VERSION_HTTP_1_1 = "HTTP_1_1";
     public static final String HTTP_VERSION_HTTP_2 = "HTTP_2";
+    public static final String PROXY_POLICY_DEFAULT = "DEFAULT";
+    public static final String PROXY_POLICY_USE_PROXY = "USE_PROXY";
+    public static final String PROXY_POLICY_NO_PROXY = "NO_PROXY";
 
     String id;
     String name;
@@ -32,6 +35,7 @@ public class PerformanceRequestSnapshot {
     String authToken;
     Boolean followRedirects;
     Boolean cookieJarEnabled;
+    String proxyPolicy;
     String httpVersion;
     Integer requestTimeoutMs;
     String prescript;
@@ -57,6 +61,7 @@ public class PerformanceRequestSnapshot {
                                       String authToken,
                                       Boolean followRedirects,
                                       Boolean cookieJarEnabled,
+                                      String proxyPolicy,
                                       String httpVersion,
                                       Integer requestTimeoutMs,
                                       String prescript,
@@ -80,6 +85,7 @@ public class PerformanceRequestSnapshot {
         this.authToken = blankToEmpty(authToken);
         this.followRedirects = followRedirects;
         this.cookieJarEnabled = cookieJarEnabled;
+        this.proxyPolicy = normalizeProxyPolicy(proxyPolicy);
         this.httpVersion = normalizeHttpVersion(httpVersion);
         this.requestTimeoutMs = requestTimeoutMs;
         this.prescript = blankToEmpty(prescript);
@@ -144,6 +150,17 @@ public class PerformanceRequestSnapshot {
             return normalized;
         }
         return HTTP_VERSION_AUTO;
+    }
+
+    public static String normalizeProxyPolicy(String proxyPolicy) {
+        if (proxyPolicy == null || proxyPolicy.trim().isEmpty()) {
+            return PROXY_POLICY_DEFAULT;
+        }
+        String normalized = proxyPolicy.trim();
+        if (PROXY_POLICY_USE_PROXY.equals(normalized) || PROXY_POLICY_NO_PROXY.equals(normalized)) {
+            return normalized;
+        }
+        return PROXY_POLICY_DEFAULT;
     }
 
     private static String blankToDefault(String value, String defaultValue) {

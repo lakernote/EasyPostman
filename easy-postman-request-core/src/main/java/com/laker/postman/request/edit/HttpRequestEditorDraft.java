@@ -4,6 +4,7 @@ import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
 import lombok.Builder;
@@ -37,6 +38,8 @@ public class HttpRequestEditorDraft {
     String authToken;
     Boolean followRedirects;
     Boolean cookieJarEnabled;
+    @Builder.Default
+    HttpRequestProxyPolicy proxyPolicy = HttpRequestProxyPolicy.DEFAULT;
     String httpVersion;
     Integer requestTimeoutMs;
     String prescript;

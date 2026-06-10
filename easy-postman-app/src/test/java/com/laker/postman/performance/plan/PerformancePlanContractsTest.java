@@ -3,6 +3,7 @@ package com.laker.postman.performance.plan;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 
 
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
@@ -88,6 +89,7 @@ public class PerformancePlanContractsTest {
     public void requestSamplerShouldExposeHeadlessRequestSnapshotCopy() {
         HttpRequestItem item = requestItem("snapshot request", RequestItemProtocolEnum.WEBSOCKET);
         item.setUrl("wss://example.test/ws");
+        item.setProxyPolicy(HttpRequestProxyPolicy.NO_PROXY);
         item.setHeadersList(new java.util.ArrayList<>(List.of(new HttpHeader(true, "X-Test", "before"))));
 
         PerformanceRequestSampler sampler = new PerformanceRequestSampler(
@@ -104,6 +106,7 @@ public class PerformancePlanContractsTest {
         assertEquals(snapshot.getName(), "snapshot request");
         assertEquals(snapshot.getUrl(), "wss://example.test/ws");
         assertEquals(snapshot.getProtocol(), PerformanceProtocol.WEBSOCKET);
+        assertEquals(snapshot.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_NO_PROXY);
         assertEquals(snapshot.getHeaders().get(0).getValue(), "before");
         assertTrue(snapshot.executesChildrenInSamplerOrder());
     }
@@ -124,6 +127,7 @@ public class PerformancePlanContractsTest {
                 .url("https://example.test/sse")
                 .method("GET")
                 .protocol(PerformanceProtocol.SSE)
+                .proxyPolicy(PerformanceRequestSnapshot.PROXY_POLICY_USE_PROXY)
                 .headers(List.of(new PerformanceRequestKeyValue(true, "Accept", "text/event-stream")))
                 .build();
 
@@ -141,6 +145,7 @@ public class PerformancePlanContractsTest {
         assertEquals(adaptedItem.getId(), "snapshot-only-id");
         assertEquals(adaptedItem.getUrl(), "https://example.test/sse");
         assertEquals(adaptedItem.getProtocol(), RequestItemProtocolEnum.SSE);
+        assertEquals(adaptedItem.resolveProxyPolicy(), HttpRequestProxyPolicy.USE_PROXY);
         assertEquals(adaptedItem.getHeadersList().get(0).getValue(), "text/event-stream");
         assertFalse(sampler.executesChildrenInSamplerOrder());
     }

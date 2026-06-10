@@ -103,6 +103,7 @@ final class RequestEditorBinder {
                 .authToken(view.authTabPanel.getToken())
                 .followRedirects(settings.getFollowRedirects())
                 .cookieJarEnabled(settings.getCookieJarEnabled())
+                .proxyPolicy(settings.getProxyPolicy())
                 .httpVersion(settings.getHttpVersion())
                 .requestTimeoutMs(settings.getRequestTimeoutMs())
                 .prescript(view.scriptPanel.getPrescript())
@@ -115,6 +116,7 @@ final class RequestEditorBinder {
         return HttpRequestSettingsDraft.builder()
                 .followRedirects(draft.getFollowRedirects())
                 .cookieJarEnabled(draft.getCookieJarEnabled())
+                .proxyPolicy(draft.getProxyPolicy())
                 .httpVersion(draft.getHttpVersion())
                 .requestTimeoutMs(draft.getRequestTimeoutMs())
                 .build();

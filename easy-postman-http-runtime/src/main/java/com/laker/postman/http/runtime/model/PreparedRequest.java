@@ -5,6 +5,7 @@ import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.TransportAuth;
 import com.laker.postman.http.runtime.interaction.DownloadProgressSinkFactory;
 import com.laker.postman.http.runtime.interaction.ResponseSizeLimitWarningSink;
@@ -34,6 +35,7 @@ public class PreparedRequest {
     public boolean isMultipart;
     public boolean followRedirects = true; // 默认自动重定向
     public boolean cookieJarEnabled = true; // 默认启用 Cookie Jar
+    public HttpRequestProxyPolicy proxyPolicy = HttpRequestProxyPolicy.DEFAULT; // 默认跟随全局代理设置
     public boolean sslVerificationEnabled = false; // 默认禁用 SSL 校验
     public String httpVersion = HttpRequestItem.HTTP_VERSION_AUTO; // HTTP 协议偏好
     public int requestTimeoutMs = 0; // 0 表示不超时
@@ -79,6 +81,7 @@ public class PreparedRequest {
         copy.isMultipart = this.isMultipart;
         copy.followRedirects = this.followRedirects;
         copy.cookieJarEnabled = this.cookieJarEnabled;
+        copy.proxyPolicy = this.proxyPolicy;
         copy.sslVerificationEnabled = this.sslVerificationEnabled;
         copy.httpVersion = this.httpVersion;
         copy.requestTimeoutMs = this.requestTimeoutMs;

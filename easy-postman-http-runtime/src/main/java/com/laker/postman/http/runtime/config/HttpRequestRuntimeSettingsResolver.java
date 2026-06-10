@@ -2,6 +2,7 @@ package com.laker.postman.http.runtime.config;
 
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import lombok.experimental.UtilityClass;
 
 /**
@@ -18,6 +19,10 @@ public class HttpRequestRuntimeSettingsResolver {
 
     public static boolean resolveCookieJarEnabled(HttpRequestItem item) {
         return item == null || item.getCookieJarEnabled() == null || item.getCookieJarEnabled();
+    }
+
+    public static HttpRequestProxyPolicy resolveProxyPolicy(HttpRequestItem item) {
+        return item != null ? item.resolveProxyPolicy() : HttpRequestProxyPolicy.DEFAULT;
     }
 
     public static boolean resolveSslVerificationEnabled(HttpRequestItem item) {
@@ -37,13 +42,14 @@ public class HttpRequestRuntimeSettingsResolver {
     }
 
     public static boolean isProxySslVerificationForcedDisabled(String url) {
-        if (!isProxySslVerificationForcedDisabled()) {
+        return isProxySslVerificationForcedDisabled(url, HttpRequestProxyPolicy.DEFAULT);
+    }
+
+    public static boolean isProxySslVerificationForcedDisabled(String url, HttpRequestProxyPolicy proxyPolicy) {
+        if (!settings().isProxySslVerificationDisabled()) {
             return false;
         }
-        if (!settings().isSystemProxyMode()) {
-            return true;
-        }
-        return OkHttpClientManager.isProxyActiveForUrl(url);
+        return OkHttpClientManager.isProxyActiveForUrl(url, proxyPolicy);
     }
 
     public static String resolveHttpVersion(HttpRequestItem item) {

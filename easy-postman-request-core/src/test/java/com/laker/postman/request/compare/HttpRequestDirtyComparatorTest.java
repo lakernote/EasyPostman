@@ -3,6 +3,7 @@ package com.laker.postman.request.compare;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.defaults.HttpRequestDefaults;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.RequestBodyTypes;
 import org.testng.annotations.Test;
 
@@ -115,7 +116,18 @@ public class HttpRequestDirtyComparatorTest {
 
         HttpRequestItem current = baseRequest();
         current.setFollowRedirects(Boolean.TRUE);
+        current.setProxyPolicy(HttpRequestProxyPolicy.NO_PROXY);
         current.setRequestTimeoutMs(5000);
+
+        assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
+    }
+
+    @Test
+    public void shouldTreatExplicitProxyPolicyAsModified() {
+        HttpRequestItem original = baseRequest();
+
+        HttpRequestItem current = baseRequest();
+        current.setProxyPolicy(HttpRequestProxyPolicy.NO_PROXY);
 
         assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
     }

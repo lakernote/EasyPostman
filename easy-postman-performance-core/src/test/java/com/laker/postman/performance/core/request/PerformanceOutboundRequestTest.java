@@ -42,6 +42,7 @@ public class PerformanceOutboundRequestTest {
                 .requestTimeoutMs(1500)
                 .followRedirects(false)
                 .cookieJarEnabled(true)
+                .proxyPolicy(PerformanceRequestSnapshot.PROXY_POLICY_USE_PROXY)
                 .httpVersion(PerformanceRequestSnapshot.HTTP_VERSION_HTTP_2)
                 .build();
 
@@ -65,6 +66,7 @@ public class PerformanceOutboundRequestTest {
         assertEquals(request.getRequestTimeoutMs(), Integer.valueOf(1500));
         assertEquals(request.getFollowRedirects(), Boolean.FALSE);
         assertEquals(request.getCookieJarEnabled(), Boolean.TRUE);
+        assertEquals(request.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_USE_PROXY);
         assertEquals(request.getHttpVersion(), PerformanceRequestSnapshot.HTTP_VERSION_HTTP_2);
     }
 }

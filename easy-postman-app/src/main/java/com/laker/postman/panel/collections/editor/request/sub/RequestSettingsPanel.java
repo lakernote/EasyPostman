@@ -5,6 +5,7 @@ import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SwitchButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.request.edit.HttpRequestSettingsDraft;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.HttpRequestVersions;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
@@ -34,6 +35,7 @@ public class RequestSettingsPanel extends JScrollPane {
 
     private final EasyComboBox<BooleanSettingOption> followRedirectsComboBox;
     private final SwitchButton useCookieJarSwitch;
+    private final EasyComboBox<ProxyPolicyOption> proxyPolicyComboBox;
     private final EasyComboBox<HttpVersionOption> httpVersionComboBox;
     private final JTextField requestTimeoutField;
     private final JLabel requestTimeoutHintLabel;
@@ -56,11 +58,13 @@ public class RequestSettingsPanel extends JScrollPane {
 
         followRedirectsComboBox = createBooleanSettingComboBox();
         useCookieJarSwitch = new SwitchButton();
+        proxyPolicyComboBox = new EasyComboBox<>(createProxyPolicyOptions(), EasyComboBox.WidthMode.FIXED_MAX);
         httpVersionComboBox = new EasyComboBox<>(createHttpVersionOptions(), EasyComboBox.WidthMode.FIXED_MAX);
         requestTimeoutField = new JTextField();
         requestTimeoutHintLabel = createHintLabel();
 
         ((AbstractDocument) requestTimeoutField.getDocument()).setDocumentFilter(new DigitsOnlyDocumentFilter());
+        proxyPolicyComboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         httpVersionComboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         requestTimeoutField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         requestTimeoutField.setColumns(10);
@@ -74,6 +78,11 @@ public class RequestSettingsPanel extends JScrollPane {
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_USE_COOKIE_JAR_LABEL),
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_USE_COOKIE_JAR_DESC),
                 useCookieJarSwitch
+        ), "growx, wrap");
+        content.add(createSelectRow(
+                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_PROXY_POLICY_LABEL),
+                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_PROXY_POLICY_DESC),
+                proxyPolicyComboBox
         ), "growx, wrap");
         content.add(createSelectRow(
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_HTTP_VERSION_LABEL),
@@ -92,6 +101,7 @@ public class RequestSettingsPanel extends JScrollPane {
         ));
         Boolean cookieJarEnabled = settings != null ? settings.getCookieJarEnabled() : null;
         useCookieJarSwitch.setSelected(cookieJarEnabled == null || cookieJarEnabled);
+        proxyPolicyComboBox.setSelectedItem(findProxyPolicyOption(settings != null ? settings.getProxyPolicy() : null));
         httpVersionComboBox.setSelectedItem(findHttpVersionOption(settings != null ? settings.getHttpVersion() : null));
         Integer requestTimeout = settings != null ? settings.getRequestTimeoutMs() : null;
         requestTimeoutField.setText(requestTimeout != null ? String.valueOf(requestTimeout) : "");
@@ -101,6 +111,7 @@ public class RequestSettingsPanel extends JScrollPane {
         return HttpRequestSettingsDraft.builder()
                 .followRedirects(getSelectedBooleanValue(followRedirectsComboBox))
                 .cookieJarEnabled(getStoredCookieJarValue())
+                .proxyPolicy(getSelectedProxyPolicy())
                 .httpVersion(getStoredHttpVersionValue())
                 .requestTimeoutMs(getStoredRequestTimeoutValue())
                 .build();
@@ -117,6 +128,7 @@ public class RequestSettingsPanel extends JScrollPane {
     public void setEditable(boolean editable) {
         followRedirectsComboBox.setEnabled(editable);
         useCookieJarSwitch.setEnabled(editable);
+        proxyPolicyComboBox.setEnabled(editable);
         httpVersionComboBox.setEnabled(editable);
         requestTimeoutField.setEditable(editable);
         requestTimeoutField.setEnabled(editable);
@@ -128,6 +140,7 @@ public class RequestSettingsPanel extends JScrollPane {
         }
         followRedirectsComboBox.addActionListener(e -> listener.run());
         useCookieJarSwitch.addActionListener(e -> listener.run());
+        proxyPolicyComboBox.addActionListener(e -> listener.run());
         httpVersionComboBox.addActionListener(e -> listener.run());
         requestTimeoutField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
@@ -298,6 +311,23 @@ public class RequestSettingsPanel extends JScrollPane {
         return options.toArray(new HttpVersionOption[0]);
     }
 
+    private ProxyPolicyOption[] createProxyPolicyOptions() {
+        return new ProxyPolicyOption[]{
+                new ProxyPolicyOption(
+                        HttpRequestProxyPolicy.DEFAULT,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_PROXY_POLICY_DEFAULT)
+                ),
+                new ProxyPolicyOption(
+                        HttpRequestProxyPolicy.USE_PROXY,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_PROXY_POLICY_USE_PROXY)
+                ),
+                new ProxyPolicyOption(
+                        HttpRequestProxyPolicy.NO_PROXY,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_PROXY_POLICY_NO_PROXY)
+                )
+        };
+    }
+
     private BooleanSettingOption findBooleanOption(EasyComboBox<BooleanSettingOption> comboBox, Boolean value) {
         ComboBoxModel<BooleanSettingOption> model = comboBox.getModel();
         for (int i = 0; i < model.getSize(); i++) {
@@ -323,6 +353,18 @@ public class RequestSettingsPanel extends JScrollPane {
         return model.getElementAt(0);
     }
 
+    private ProxyPolicyOption findProxyPolicyOption(HttpRequestProxyPolicy value) {
+        HttpRequestProxyPolicy normalizedValue = HttpRequestProxyPolicy.normalize(value);
+        ComboBoxModel<ProxyPolicyOption> model = proxyPolicyComboBox.getModel();
+        for (int i = 0; i < model.getSize(); i++) {
+            ProxyPolicyOption option = model.getElementAt(i);
+            if (option.value.equals(normalizedValue)) {
+                return option;
+            }
+        }
+        return model.getElementAt(0);
+    }
+
     private Boolean getSelectedBooleanValue(EasyComboBox<BooleanSettingOption> comboBox) {
         BooleanSettingOption option = (BooleanSettingOption) comboBox.getSelectedItem();
         return option != null ? option.value : null;
@@ -331,6 +373,11 @@ public class RequestSettingsPanel extends JScrollPane {
     private String getSelectedHttpVersion() {
         HttpVersionOption option = (HttpVersionOption) httpVersionComboBox.getSelectedItem();
         return option != null ? option.value : HttpRequestVersions.AUTO;
+    }
+
+    private HttpRequestProxyPolicy getSelectedProxyPolicy() {
+        ProxyPolicyOption option = (ProxyPolicyOption) proxyPolicyComboBox.getSelectedItem();
+        return option != null ? option.value : HttpRequestProxyPolicy.DEFAULT;
     }
 
     private Integer parseRequestTimeoutOrNull() {
@@ -385,6 +432,21 @@ public class RequestSettingsPanel extends JScrollPane {
         private final String label;
 
         private HttpVersionOption(String value, String label) {
+            this.value = value;
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
+    private static final class ProxyPolicyOption {
+        private final HttpRequestProxyPolicy value;
+        private final String label;
+
+        private ProxyPolicyOption(HttpRequestProxyPolicy value, String label) {
             this.value = value;
             this.label = label;
         }

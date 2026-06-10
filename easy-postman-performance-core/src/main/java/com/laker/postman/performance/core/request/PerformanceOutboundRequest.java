@@ -23,6 +23,7 @@ public class PerformanceOutboundRequest {
     PerformanceAuthConfig authConfig;
     Boolean followRedirects;
     Boolean cookieJarEnabled;
+    String proxyPolicy;
     String httpVersion;
     Integer requestTimeoutMs;
 
@@ -40,6 +41,7 @@ public class PerformanceOutboundRequest {
                                       PerformanceAuthConfig authConfig,
                                       Boolean followRedirects,
                                       Boolean cookieJarEnabled,
+                                      String proxyPolicy,
                                       String httpVersion,
                                       Integer requestTimeoutMs) {
         this.id = blankToEmpty(id);
@@ -56,6 +58,7 @@ public class PerformanceOutboundRequest {
         this.authConfig = authConfig == null ? PerformanceAuthConfig.inherit() : authConfig;
         this.followRedirects = followRedirects;
         this.cookieJarEnabled = cookieJarEnabled;
+        this.proxyPolicy = PerformanceRequestSnapshot.normalizeProxyPolicy(proxyPolicy);
         this.httpVersion = normalizeHttpVersion(httpVersion);
         this.requestTimeoutMs = requestTimeoutMs;
     }
@@ -82,6 +85,7 @@ public class PerformanceOutboundRequest {
                 ))
                 .followRedirects(source.getFollowRedirects())
                 .cookieJarEnabled(source.getCookieJarEnabled())
+                .proxyPolicy(source.getProxyPolicy())
                 .httpVersion(source.getHttpVersion())
                 .requestTimeoutMs(source.getRequestTimeoutMs())
                 .build();

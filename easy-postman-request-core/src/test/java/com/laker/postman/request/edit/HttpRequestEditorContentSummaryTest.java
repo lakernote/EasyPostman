@@ -5,6 +5,7 @@ import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.HttpRequestVersions;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
@@ -41,6 +42,7 @@ public class HttpRequestEditorContentSummaryTest {
         HttpRequestEditorDraft draft = HttpRequestEditorDraft.builder()
                 .authType(AuthType.INHERIT.getConstant())
                 .cookieJarEnabled(Boolean.TRUE)
+                .proxyPolicy(HttpRequestProxyPolicy.DEFAULT)
                 .httpVersion(HttpRequestVersions.AUTO)
                 .build();
 
@@ -48,6 +50,17 @@ public class HttpRequestEditorContentSummaryTest {
 
         assertFalse(summary.isHasAuth());
         assertFalse(summary.isHasSettings());
+    }
+
+    @Test
+    public void shouldDetectExplicitProxyPolicyAsSettingsContent() {
+        HttpRequestEditorDraft draft = HttpRequestEditorDraft.builder()
+                .proxyPolicy(HttpRequestProxyPolicy.NO_PROXY)
+                .build();
+
+        HttpRequestEditorContentSummary summary = HttpRequestEditorContentSummary.from(draft);
+
+        assertTrue(summary.isHasSettings());
     }
 
     @Test

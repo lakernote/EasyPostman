@@ -3,6 +3,7 @@ package com.laker.postman.panel.collections.editor.request.sub;
 import com.laker.postman.request.edit.HttpRequestEditorContentSummary;
 import com.laker.postman.request.edit.HttpRequestEditorDraft;
 import com.laker.postman.request.edit.HttpRequestSettingsDraft;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.Test;
 
@@ -10,6 +11,7 @@ import javax.swing.*;
 import java.lang.reflect.Field;
 import java.util.Objects;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -41,13 +43,17 @@ public class RequestSettingsPanelTest {
             SettingManager.setFollowRedirects(true);
 
             RequestSettingsPanel panel = new RequestSettingsPanel();
-            panel.populate(HttpRequestSettingsDraft.builder().followRedirects(null).build());
+            panel.populate(HttpRequestSettingsDraft.builder()
+                    .followRedirects(null)
+                    .proxyPolicy(HttpRequestProxyPolicy.DEFAULT)
+                    .build());
 
             SettingManager.setFollowRedirects(false);
 
             HttpRequestSettingsDraft saved = panel.collectSettings();
 
             assertNull(saved.getFollowRedirects());
+            assertEquals(saved.getProxyPolicy(), HttpRequestProxyPolicy.DEFAULT);
             assertFalse(hasSettingsContent(saved));
         } finally {
             SettingManager.setFollowRedirects(oldFollowRedirects);
@@ -131,6 +137,21 @@ public class RequestSettingsPanelTest {
         }
     }
 
+    @Test
+    public void shouldAllowRequestProxyPolicyOverride() throws Exception {
+        RequestSettingsPanel panel = new RequestSettingsPanel();
+        panel.populate(HttpRequestSettingsDraft.builder()
+                .proxyPolicy(HttpRequestProxyPolicy.DEFAULT)
+                .build());
+
+        selectProxyPolicy(panel, HttpRequestProxyPolicy.NO_PROXY);
+
+        HttpRequestSettingsDraft saved = panel.collectSettings();
+
+        assertEquals(saved.getProxyPolicy(), HttpRequestProxyPolicy.NO_PROXY);
+        assertTrue(hasSettingsContent(saved));
+    }
+
     private static void setRequestTimeoutText(RequestSettingsPanel panel, String value) throws Exception {
         Field field = RequestSettingsPanel.class.getDeclaredField("requestTimeoutField");
         field.setAccessible(true);
@@ -156,10 +177,29 @@ public class RequestSettingsPanelTest {
         throw new IllegalArgumentException("No combo option found for value: " + value);
     }
 
+    private static void selectProxyPolicy(RequestSettingsPanel panel, HttpRequestProxyPolicy value) throws Exception {
+        Field field = RequestSettingsPanel.class.getDeclaredField("proxyPolicyComboBox");
+        field.setAccessible(true);
+        JComboBox<?> comboBox = (JComboBox<?>) field.get(panel);
+        ComboBoxModel<?> model = comboBox.getModel();
+        for (int i = 0; i < model.getSize(); i++) {
+            Object option = model.getElementAt(i);
+            Field valueField = option.getClass().getDeclaredField("value");
+            valueField.setAccessible(true);
+            Object optionValue = valueField.get(option);
+            if (Objects.equals(optionValue, value)) {
+                comboBox.setSelectedIndex(i);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("No proxy policy option found for value: " + value);
+    }
+
     private static boolean hasSettingsContent(HttpRequestSettingsDraft settings) {
         return HttpRequestEditorContentSummary.from(HttpRequestEditorDraft.builder()
                 .followRedirects(settings.getFollowRedirects())
                 .cookieJarEnabled(settings.getCookieJarEnabled())
+                .proxyPolicy(settings.getProxyPolicy())
                 .httpVersion(settings.getHttpVersion())
                 .requestTimeoutMs(settings.getRequestTimeoutMs())
                 .build()).isHasSettings();

@@ -22,6 +22,7 @@ public class PerformanceRequestSnapshotTest {
         assertEquals(snapshot.getMethod(), "GET");
         assertEquals(snapshot.getProtocol(), PerformanceProtocol.HTTP);
         assertEquals(snapshot.getHttpVersion(), PerformanceRequestSnapshot.HTTP_VERSION_AUTO);
+        assertEquals(snapshot.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_DEFAULT);
         assertEquals(snapshot.getAuthType(), PerformanceAuthType.INHERIT);
         assertTrue(snapshot.getHeaders().isEmpty());
         assertTrue(snapshot.getExecutionScope().getGroupVariables().isEmpty());
@@ -67,12 +68,14 @@ public class PerformanceRequestSnapshotTest {
         PerformanceRequestSnapshot snapshot = PerformanceRequestSnapshot.builder()
                 .method(" ")
                 .protocol(null)
+                .proxyPolicy("invalid")
                 .headers(headers)
                 .formData(List.of(new PerformanceRequestFormDataPart(true, "file", "file", "/tmp/a.txt")))
                 .build();
 
         assertEquals(snapshot.getMethod(), "GET");
         assertEquals(snapshot.getProtocol(), PerformanceProtocol.HTTP);
+        assertEquals(snapshot.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_DEFAULT);
         assertTrue(snapshot.getHeaders().isEmpty());
         assertEquals(snapshot.getFormData().get(0).getType(), PerformanceRequestFormDataPart.TYPE_FILE);
     }

@@ -7,6 +7,7 @@ import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 
 
 import com.laker.postman.performance.core.model.PerformanceProtocol;
@@ -47,6 +48,7 @@ public class PerformanceRequestSnapshotMapper {
                 .authToken(item.getAuthToken())
                 .followRedirects(item.getFollowRedirects())
                 .cookieJarEnabled(item.getCookieJarEnabled())
+                .proxyPolicy(item.resolveProxyPolicy().name())
                 .httpVersion(item.resolveHttpVersion())
                 .requestTimeoutMs(item.getRequestTimeoutMs())
                 .prescript(item.getPrescript())
@@ -90,6 +92,7 @@ public class PerformanceRequestSnapshotMapper {
         item.setAuthToken(snapshot.getAuthToken());
         item.setFollowRedirects(snapshot.getFollowRedirects());
         item.setCookieJarEnabled(snapshot.getCookieJarEnabled());
+        item.setProxyPolicy(HttpRequestProxyPolicy.normalize(snapshot.getProxyPolicy()));
         item.setHttpVersion(snapshot.getHttpVersion());
         item.setRequestTimeoutMs(snapshot.getRequestTimeoutMs());
         item.setPrescript(snapshot.getPrescript());

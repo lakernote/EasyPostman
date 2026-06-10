@@ -60,6 +60,7 @@ public class PerformanceCorePlanJsonStorageTest {
         assertEquals(snapshot.getUrl(), "wss://example.test/ws");
         assertEquals(snapshot.getHeaders().get(0), new PerformanceRequestKeyValue(true, "X-Test", "yes"));
         assertEquals(snapshot.getFormData().get(0), new PerformanceRequestFormDataPart(true, "upload", "File", "/tmp/a.txt"));
+        assertEquals(snapshot.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_NO_PROXY);
         assertEquals(snapshot.getExecutionScope().getGroupVariable("tenant"), "core");
 
         TimerData timerData = loadedRequest.getChildren().get(0).getTimerData();
@@ -99,6 +100,7 @@ public class PerformanceCorePlanJsonStorageTest {
                 .authToken("token")
                 .followRedirects(false)
                 .cookieJarEnabled(true)
+                .proxyPolicy(PerformanceRequestSnapshot.PROXY_POLICY_NO_PROXY)
                 .httpVersion(PerformanceRequestSnapshot.HTTP_VERSION_HTTP_2)
                 .requestTimeoutMs(1500)
                 .prescript("pm.variables.set('a', 'b')")

@@ -93,6 +93,7 @@ final class RequestTabStateController {
                 .authType(view.authTabPanel.getAuthType())
                 .followRedirects(settings.getFollowRedirects())
                 .cookieJarEnabled(settings.getCookieJarEnabled())
+                .proxyPolicy(settings.getProxyPolicy())
                 .httpVersion(settings.getHttpVersion())
                 .requestTimeoutMs(settings.getRequestTimeoutMs())
                 .prescript(view.scriptPanel.getPrescript())

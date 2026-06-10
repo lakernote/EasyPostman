@@ -36,9 +36,10 @@ public final class HttpClientResolver {
                 ? OkHttpClientManager.createClientForSslMode(
                         baseUri,
                         request.followRedirects,
-                        resolveSslVerificationMode(request)
+                        resolveSslVerificationMode(request),
+                        request.proxyPolicy
                 )
-                : OkHttpClientManager.getClient(baseUri, request.followRedirects);
+                : OkHttpClientManager.getClient(baseUri, request.followRedirects, request.proxyPolicy);
     }
 
     boolean shouldIsolateConnectionPool(PreparedRequest preparedRequest) {
@@ -68,7 +69,7 @@ public final class HttpClientResolver {
         }
 
         boolean proxySslDisabled = HttpRequestRuntimeSettingsResolver
-                .isProxySslVerificationForcedDisabled(preparedRequest.url);
+                .isProxySslVerificationForcedDisabled(preparedRequest.url, preparedRequest.proxyPolicy);
         return (!preparedRequest.sslVerificationEnabled || proxySslDisabled)
                 ? SSLConfigurationUtil.SSLVerificationMode.LENIENT
                 : SSLConfigurationUtil.SSLVerificationMode.STRICT;

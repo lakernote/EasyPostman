@@ -2,6 +2,7 @@ package com.laker.postman.request.edit;
 
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
@@ -37,6 +38,7 @@ public class HttpRequestEditorDraftMapper {
                 .authToken(item.getAuthToken())
                 .followRedirects(item.getFollowRedirects())
                 .cookieJarEnabled(item.getCookieJarEnabled())
+                .proxyPolicy(item.resolveProxyPolicy())
                 .httpVersion(item.getHttpVersion())
                 .requestTimeoutMs(item.getRequestTimeoutMs())
                 .prescript(item.getPrescript())
@@ -87,6 +89,7 @@ public class HttpRequestEditorDraftMapper {
         item.setAuthToken(string(draft.getAuthToken()));
         item.setFollowRedirects(draft.getFollowRedirects());
         item.setCookieJarEnabled(draft.getCookieJarEnabled());
+        item.setProxyPolicy(draft.getProxyPolicy());
         if (draft.getHttpVersion() != null) {
             item.setHttpVersion(draft.getHttpVersion());
         }

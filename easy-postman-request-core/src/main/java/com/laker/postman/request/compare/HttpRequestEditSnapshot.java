@@ -7,6 +7,7 @@ import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 
@@ -34,6 +35,7 @@ record HttpRequestEditSnapshot(
         String authToken,
         Boolean followRedirects,
         Boolean cookieJarEnabled,
+        HttpRequestProxyPolicy proxyPolicy,
         String httpVersion,
         Integer requestTimeoutMs,
         String prescript,
@@ -59,6 +61,7 @@ record HttpRequestEditSnapshot(
                 string(item.getAuthToken()),
                 item.getFollowRedirects(),
                 normalizeCookieJarEnabled(item.getCookieJarEnabled()),
+                item.resolveProxyPolicy(),
                 normalizeHttpVersion(item.getHttpVersion()),
                 item.getRequestTimeoutMs(),
                 string(item.getPrescript()),

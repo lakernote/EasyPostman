@@ -5,6 +5,7 @@ import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.HttpRequestVersions;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
@@ -95,6 +96,7 @@ public class HttpRequestEditorContentSummary {
     private static boolean hasSettings(HttpRequestEditorDraft draft) {
         return draft.getFollowRedirects() != null
                 || Boolean.FALSE.equals(draft.getCookieJarEnabled())
+                || HttpRequestProxyPolicy.DEFAULT != HttpRequestProxyPolicy.normalize(draft.getProxyPolicy())
                 || !HttpRequestVersions.AUTO.equals(normalizeHttpVersion(draft.getHttpVersion()))
                 || draft.getRequestTimeoutMs() != null;
     }

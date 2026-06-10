@@ -36,6 +36,7 @@ public class PreparedRequestMapper {
         req.isMultipart = checkIsMultipart(effectiveItem.getFormDataList());
         req.followRedirects = HttpRequestRuntimeSettingsResolver.resolveFollowRedirects(effectiveItem);
         req.cookieJarEnabled = HttpRequestRuntimeSettingsResolver.resolveCookieJarEnabled(effectiveItem);
+        req.proxyPolicy = HttpRequestRuntimeSettingsResolver.resolveProxyPolicy(effectiveItem);
         req.sslVerificationEnabled = HttpRequestRuntimeSettingsResolver.resolveSslVerificationEnabled(effectiveItem);
         req.httpVersion = HttpRequestRuntimeSettingsResolver.resolveHttpVersion(effectiveItem);
         req.requestTimeoutMs = HttpRequestRuntimeSettingsResolver.resolveRequestTimeoutMs(effectiveItem);

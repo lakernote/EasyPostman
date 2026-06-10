@@ -6,6 +6,7 @@ import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.TransportAuth;
 import com.laker.postman.service.setting.SettingManager;
 import org.testng.annotations.BeforeClass;
@@ -275,6 +276,7 @@ public class PreparedRequestFactoryTest {
             item.setUrl("https://api.example.com/data");
             item.setFollowRedirects(Boolean.FALSE);
             item.setCookieJarEnabled(Boolean.FALSE);
+            item.setProxyPolicy(HttpRequestProxyPolicy.NO_PROXY);
             item.setHttpVersion(HttpRequestItem.HTTP_VERSION_HTTP_1_1);
             item.setRequestTimeoutMs(4321);
 
@@ -282,6 +284,7 @@ public class PreparedRequestFactoryTest {
 
             assertFalse(req.followRedirects);
             assertFalse(req.cookieJarEnabled);
+            assertEquals(req.proxyPolicy, HttpRequestProxyPolicy.NO_PROXY);
             assertFalse(req.sslVerificationEnabled);
             assertEquals(req.httpVersion, HttpRequestItem.HTTP_VERSION_HTTP_1_1);
             assertEquals(req.requestTimeoutMs, 4321);
@@ -311,6 +314,7 @@ public class PreparedRequestFactoryTest {
 
             assertFalse(req.followRedirects);
             assertTrue(req.cookieJarEnabled);
+            assertEquals(req.proxyPolicy, HttpRequestProxyPolicy.DEFAULT);
             assertFalse(req.sslVerificationEnabled);
             assertEquals(req.httpVersion, HttpRequestItem.HTTP_VERSION_AUTO);
             assertEquals(req.requestTimeoutMs, 6789);

@@ -156,6 +156,7 @@ public class PerformanceCorePlanJsonStorage {
         json.put("authToken", snapshot.getAuthToken());
         json.put("followRedirects", snapshot.getFollowRedirects());
         json.put("cookieJarEnabled", snapshot.getCookieJarEnabled());
+        json.put("proxyPolicy", snapshot.getProxyPolicy());
         json.put("httpVersion", snapshot.getHttpVersion());
         json.put("requestTimeoutMs", snapshot.getRequestTimeoutMs());
         json.put("prescript", snapshot.getPrescript());
@@ -423,6 +424,7 @@ public class PerformanceCorePlanJsonStorage {
                 .authToken(stringValue(requestJson, "authToken", null))
                 .followRedirects(booleanObjectValue(requestJson, "followRedirects"))
                 .cookieJarEnabled(booleanObjectValue(requestJson, "cookieJarEnabled"))
+                .proxyPolicy(stringValue(requestJson, "proxyPolicy", null))
                 .httpVersion(stringValue(requestJson, "httpVersion", null))
                 .requestTimeoutMs(integerObjectValue(requestJson, "requestTimeoutMs"))
                 .prescript(stringValue(requestJson, "prescript", null))

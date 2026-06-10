@@ -4,6 +4,7 @@ import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
@@ -37,6 +38,7 @@ public class HttpRequestEditorDraftMapperTest {
                 .authToken("token")
                 .followRedirects(Boolean.FALSE)
                 .cookieJarEnabled(Boolean.FALSE)
+                .proxyPolicy(HttpRequestProxyPolicy.NO_PROXY)
                 .httpVersion(HttpRequestItem.HTTP_VERSION_HTTP_2)
                 .requestTimeoutMs(3000)
                 .prescript("pre")
@@ -60,6 +62,8 @@ public class HttpRequestEditorDraftMapperTest {
         assertEquals(item.getAuthToken(), "token");
         assertEquals(item.getFollowRedirects(), Boolean.FALSE);
         assertEquals(item.getCookieJarEnabled(), Boolean.FALSE);
+        HttpRequestProxyPolicy storedPolicy = item.getProxyPolicy();
+        assertEquals(item.getProxyPolicy(), HttpRequestProxyPolicy.NO_PROXY);
         assertEquals(item.getHttpVersion(), HttpRequestItem.HTTP_VERSION_HTTP_2);
         assertEquals(item.getRequestTimeoutMs(), Integer.valueOf(3000));
         assertEquals(item.getPrescript(), "pre");
@@ -106,12 +110,14 @@ public class HttpRequestEditorDraftMapperTest {
         item.setName("Submit Form");
         item.setUrl("https://api.example.com/search?q=easy&page=1");
         item.setMethod("POST");
+        item.setProxyPolicy(HttpRequestProxyPolicy.USE_PROXY);
         item.setBody("name=easy");
         item.setHeadersList(List.of(new HttpHeader(true, "Content-Type", "application/x-www-form-urlencoded")));
 
         HttpRequestEditorDraft draft = HttpRequestEditorDraftMapper.fromRequestItem(item);
 
         assertEquals(draft.getId(), "request-2");
+        assertEquals(draft.getProxyPolicy(), HttpRequestProxyPolicy.USE_PROXY);
         assertEquals(draft.getParams().size(), 2);
         assertEquals(draft.getBodyType(), RequestBodyTypes.BODY_TYPE_FORM_URLENCODED);
         assertTrue(item.getParamsList().isEmpty(), "Opening a request must not materialize URL params into the source item");

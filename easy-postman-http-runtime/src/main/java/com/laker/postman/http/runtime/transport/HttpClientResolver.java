@@ -107,7 +107,7 @@ public final class HttpClientResolver {
             builder.connectTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                     .readTimeout(timeoutMs, TimeUnit.MILLISECONDS)
                     .writeTimeout(timeoutMs, TimeUnit.MILLISECONDS)
-                    .callTimeout(timeoutMs * 3L, TimeUnit.MILLISECONDS);
+                    .callTimeout(timeoutMs, TimeUnit.MILLISECONDS);
         }
         return builder.build();
     }

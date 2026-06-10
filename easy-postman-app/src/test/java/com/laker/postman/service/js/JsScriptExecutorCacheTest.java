@@ -2,6 +2,7 @@ package com.laker.postman.service.js;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.service.js.api.PostmanApiContext;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.VariablesService;
@@ -11,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 
 import static org.testng.Assert.assertEquals;
@@ -133,6 +135,38 @@ public class JsScriptExecutorCacheTest {
         }
     }
 
+    @Test(description = "ordinary collection scripts should not size the shared pool from performance settings")
+    public void sharedContextPoolShouldUseOrdinaryScriptPoolSize() throws Exception {
+        JsContextPool previousPool = getStaticField("contextPool", JsContextPool.class);
+        int previousPoolSize = getStaticIntField("contextPoolSize");
+        int previousTimeoutMs = getStaticIntField("contextAcquireTimeoutMs");
+        Properties props = settingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+
+        setStaticField("contextPool", null);
+        setStaticField("contextPoolSize", 0);
+        setStaticField("contextAcquireTimeoutMs", 0);
+        try {
+            props.setProperty("performance_js_context_pool_size", "560");
+            props.setProperty("performance_js_context_acquire_timeout_ms", "1000");
+
+            JsScriptExecutor.reconfigureContextPoolFromSettings();
+
+            assertEquals(getStaticIntField("contextPoolSize"), JsScriptExecutor.DEFAULT_SHARED_CONTEXT_POOL_SIZE);
+        } finally {
+            JsContextPool createdPool = getStaticField("contextPool", JsContextPool.class);
+            if (createdPool != null && createdPool != previousPool) {
+                createdPool.shutdown();
+            }
+            setStaticField("contextPool", previousPool);
+            setStaticField("contextPoolSize", previousPoolSize);
+            setStaticField("contextAcquireTimeoutMs", previousTimeoutMs);
+            props.clear();
+            props.putAll(backup);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static Map<Object, Object> sourceCache() throws Exception {
         Field cacheField = JsScriptExecutor.class.getDeclaredField("SCRIPT_SOURCE_CACHE");
@@ -156,5 +190,11 @@ public class JsScriptExecutorCacheTest {
         Field field = JsScriptExecutor.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return field;
+    }
+
+    private static Properties settingsProperties() throws Exception {
+        Field field = SettingManager.class.getDeclaredField("props");
+        field.setAccessible(true);
+        return (Properties) field.get(null);
     }
 }

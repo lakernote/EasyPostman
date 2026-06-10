@@ -186,6 +186,8 @@ public class HttpHtmlRenderer {
         if (resp == null) return htmlDoc(noData("无响应信息"));
         StringBuilder sb = new StringBuilder();
 
+        appendNetworkErrorAlert(sb, resp.httpEventInfo);
+
         int code = resp.code;
         String statusBadge = "<span style='color:" + statusColor(code) + ";font-weight:bold;padding:1px 6px;"
                 + "border:1px solid " + statusColor(code) + ";border-radius:3px;'>" + code + "</span>";
@@ -205,6 +207,12 @@ public class HttpHtmlRenderer {
         sb.append(codeBlock(truncate(resp.body)));
 
         return htmlDoc(sb.toString());
+    }
+
+    private static void appendNetworkErrorAlert(StringBuilder sb, HttpEventInfo eventInfo) {
+        if (eventInfo != null && isNotEmpty(eventInfo.getErrorMessage())) {
+            sb.append(alertBox(colorWarning(), "⚠ Network Error", eventInfo.getErrorMessage()));
+        }
     }
 
     public static String renderResponseWithError(ResultNodeInfo info) {

@@ -1,6 +1,5 @@
 package com.laker.postman.service.js;
 
-import com.laker.postman.service.setting.SettingManager;
 import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -24,8 +23,13 @@ import java.util.Map;
 public class JsScriptExecutor {
 
     /**
-     * Context 池 - 默认大小为 CPU 核心数的 4 倍，最少 16 个。
+     * 普通 collection/function 脚本共享池。压测使用 PooledScriptExecutor 的运行级独立池。
      */
+    static final int DEFAULT_SHARED_CONTEXT_POOL_SIZE = Math.max(
+            4,
+            Math.min(16, Runtime.getRuntime().availableProcessors())
+    );
+    private static final int DEFAULT_SHARED_CONTEXT_ACQUIRE_TIMEOUT_MS = 1_000;
     private static volatile JsContextPool contextPool;
     private static volatile int contextPoolSize;
     private static volatile int contextAcquireTimeoutMs; // 获取 Context 超时时间
@@ -97,8 +101,8 @@ public class JsScriptExecutor {
     }
 
     public static void reconfigureContextPoolFromSettings() {
-        int resolvedPoolSize = SettingManager.getPerformanceJsContextPoolSize();
-        int resolvedAcquireTimeoutMs = SettingManager.getPerformanceJsContextAcquireTimeoutMs();
+        int resolvedPoolSize = DEFAULT_SHARED_CONTEXT_POOL_SIZE;
+        int resolvedAcquireTimeoutMs = DEFAULT_SHARED_CONTEXT_ACQUIRE_TIMEOUT_MS;
 
         synchronized (CONTEXT_POOL_LOCK) {
             contextAcquireTimeoutMs = resolvedAcquireTimeoutMs;
@@ -106,13 +110,13 @@ public class JsScriptExecutor {
                 JsContextPool oldPool = contextPool;
                 contextPool = new JsContextPool(resolvedPoolSize);
                 contextPoolSize = resolvedPoolSize;
-                log.info("Initialized JS Context Pool with size: {}, acquire timeout: {}ms",
+                log.info("Initialized shared JS Context Pool with size: {}, acquire timeout: {}ms",
                         resolvedPoolSize, resolvedAcquireTimeoutMs);
                 if (oldPool != null) {
                     oldPool.retire();
                 }
             } else {
-                log.info("Updated JS Context Pool acquire timeout: {}ms", resolvedAcquireTimeoutMs);
+                log.info("Updated shared JS Context Pool acquire timeout: {}ms", resolvedAcquireTimeoutMs);
             }
         }
     }

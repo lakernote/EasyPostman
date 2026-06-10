@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import java.io.InterruptedIOException;
 import java.util.List;
+import java.util.Locale;
 
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
@@ -39,7 +40,7 @@ final class HttpRequestExecutor {
             HttpResponse resp;
             final boolean expectedSse = HttpRequestProtocol.isSse(req);
             final StringBuilder sseBodyBuilder = new StringBuilder();
-            final long sseQueueStartMs = System.currentTimeMillis();
+            final long requestStartMs = System.currentTimeMillis();
 
             @Override
             protected Void doInBackground() {
@@ -89,7 +90,7 @@ final class HttpRequestExecutor {
 
                         @Override
                         public void onClosed(HttpResponse response) {
-                            requestStreamUiAppender.finalizeSseResponse(response, sseBodyBuilder, sseQueueStartMs);
+                            requestStreamUiAppender.finalizeSseResponse(response, sseBodyBuilder, requestStartMs);
                             SwingUtilities.invokeLater(() -> {
                                 if (executionState.isDisposed()) {
                                     return;
@@ -105,7 +106,7 @@ final class HttpRequestExecutor {
 
                         @Override
                         public void onFailure(String errorMsg, HttpResponse response) {
-                            requestStreamUiAppender.finalizeSseResponse(response, sseBodyBuilder, sseQueueStartMs);
+                            requestStreamUiAppender.finalizeSseResponse(response, sseBodyBuilder, requestStartMs);
                             SwingUtilities.invokeLater(() -> {
                                 if (executionState.isDisposed()) {
                                     return;
@@ -124,6 +125,14 @@ final class HttpRequestExecutor {
                     log.info("User canceled download for request: {} {}", req.method, req.url);
                 } catch (InterruptedIOException ex) {
                     log.warn("Request interrupted: {} {} - {}", req.method, req.url, ex.getMessage());
+                    if (!isCancelled()) {
+                        resp = HttpRequestFailureResponseFactory.fromException(req, ex, requestStartMs, System.currentTimeMillis());
+                        String userMessage = toInterruptedRequestUserMessage(ex, resp);
+                        ConsolePanel.appendLog("[Error] " + userMessage, ConsolePanel.LogType.ERROR);
+                        if (!executionState.isDisposed()) {
+                            NotificationUtil.showError(userMessage);
+                        }
+                    }
                 } catch (Exception ex) {
                     log.error("Error executing HTTP request: {} {} - {}", req.method, req.url, ex.getMessage(), ex);
                     String userFriendlyMessage = NetworkErrorMessageResolver.toUserFriendlyMessage(ex);
@@ -133,6 +142,19 @@ final class HttpRequestExecutor {
                     }
                 }
                 return null;
+            }
+
+            private String toInterruptedRequestUserMessage(InterruptedIOException ex, HttpResponse response) {
+                String rawMessage = ex.getMessage();
+                if (rawMessage != null && rawMessage.toLowerCase(Locale.ROOT).contains("timeout")) {
+                    return I18nUtil.getMessage(MessageKeys.ERROR_NETWORK_TIMEOUT);
+                }
+                if (response != null && response.httpEventInfo != null
+                        && response.httpEventInfo.getErrorMessage() != null
+                        && !response.httpEventInfo.getErrorMessage().isBlank()) {
+                    return response.httpEventInfo.getErrorMessage();
+                }
+                return NetworkErrorMessageResolver.toUserFriendlyMessage(ex);
             }
 
             @Override

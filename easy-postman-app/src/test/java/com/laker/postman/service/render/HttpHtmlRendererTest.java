@@ -240,4 +240,20 @@ public class HttpHtmlRendererTest {
         assertTrue(html.contains("127.0.0.1:51000"));
         assertTrue(html.contains("127.0.0.1:8080"));
     }
+
+    @Test
+    public void shouldRenderNetworkErrorMessageInResponseDetails() {
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setErrorMessage("timeout");
+
+        HttpResponse response = new HttpResponse();
+        response.code = 0;
+        response.body = "";
+        response.httpEventInfo = eventInfo;
+
+        String html = HttpHtmlRenderer.renderResponse(response);
+
+        assertTrue(html.contains("Network Error"));
+        assertTrue(html.contains("timeout"));
+    }
 }

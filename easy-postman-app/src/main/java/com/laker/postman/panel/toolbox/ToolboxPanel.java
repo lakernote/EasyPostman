@@ -179,13 +179,13 @@ public class ToolboxPanel extends UiSingletonPanel {
         ToolWindowSurfaceStyle.applyCard(contentArea);
         contentArea.setMinimumSize(new Dimension(200, 0));
 
-        // 可拖动分割线，使用背景 gutter 而不是显式线条。
-        JSplitPane split = ToolWindowChrome.createHorizontalCardSplitPane(
+        // 可拖动分割线，保持在同一个大圆角工具窗口内。
+        JSplitPane split = ToolWindowChrome.createHorizontalInnerSplitPane(
                 leftPanel,
                 contentArea,
                 ToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
-        add(split, BorderLayout.CENTER);
+        add(ToolWindowChrome.wrapToolWindow(split), BorderLayout.CENTER);
 
         applyFilter(); // 初始渲染并选中第一个
     }

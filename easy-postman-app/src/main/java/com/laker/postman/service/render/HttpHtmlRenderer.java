@@ -49,8 +49,7 @@ public class HttpHtmlRenderer {
     private static String colorWarning() { return toHex(ModernColors.getWarning()); }
     private static String colorInfo() { return toHex(ModernColors.getInfo()); }
     private static String colorGray() { return toHex(ModernColors.getTextHint()); }
-    private static String bgColor() { return toHex(ModernColors.getBackgroundColor()); }
-    private static String bgColorAlt() { return toHex(ModernColors.getHoverBackgroundColor()); }
+    private static String surfaceColor() { return toHex(ModernColors.getCardBackgroundColor()); }
     private static String textColor() { return toHex(ModernColors.getTextPrimary()); }
     private static String borderColor() { return toHex(ModernColors.getBorderLightColor()); }
     private static String codeBgColor() { return toHex(ModernColors.getHoverBackgroundColor()); }
@@ -72,16 +71,18 @@ public class HttpHtmlRenderer {
                 + "font-family:monospace;"
                 + "font-size:" + fs() + ";"
                 + "color:" + textColor() + ";"
-                + "margin:6px;"
+                + "background:" + surfaceColor() + ";"
+                + "margin:8px 12px;"
                 + "'>" + bodyContent + "</body></html>";
     }
 
     // ==================== 通用 HTML 片段 ====================
 
-    /** key: value 行，支持斑马纹 */
+    /** key: value 行。详情页使用单一白色内容面，避免灰色条块切碎视线。 */
     private static String kvRow(String keyColor, String key, String value, boolean alt) {
-        return "<div style='padding:3px 8px;background:" + (alt ? bgColorAlt() : bgColor())
-                + ";border-radius:3px;margin-bottom:2px;word-break:break-all;'>"
+        return "<div style='padding:4px 4px 5px 4px;"
+                + "border-bottom:1px solid " + borderColor() + ";"
+                + "word-break:break-all;'>"
                 + "<span style='color:" + keyColor + ";font-weight:bold;'>" + key + "</span>"
                 + "<span style='color:" + colorGray() + ";'> : </span>"
                 + "<span>" + value + "</span>"
@@ -103,7 +104,7 @@ public class HttpHtmlRenderer {
     /** 警告/错误提示框 */
     private static String alertBox(String color, String title, String message) {
         return "<div style='border-left:3px solid " + color + ";padding:8px 12px;"
-                + "margin-bottom:10px;background:" + bgColor() + ";border-radius:0 4px 4px 0;'>"
+                + "margin-bottom:10px;background:" + codeBgColor() + ";border-radius:0 4px 4px 0;'>"
                 + "<div style='color:" + color + ";font-weight:bold;margin-bottom:4px;'>" + escapeHtml(title) + "</div>"
                 + "<div style='white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(message) + "</div>"
                 + "</div>";
@@ -319,8 +320,7 @@ public class HttpHtmlRenderer {
         String msg = isNotEmpty(r.message)
                 ? "<span style='color:" + colorError() + ";white-space:pre-wrap;word-break:break-all;'>" + escapeHtml(r.message) + "</span>"
                 : "";
-        String bg = alt ? bgColorAlt() : bgColor();
-        return "<tr style='background:" + bg + ";border-bottom:1px solid " + borderColor() + ";'>"
+        return "<tr style='border-bottom:1px solid " + borderColor() + ";'>"
                 + "<td style='padding:5px 10px;'>" + escapeHtml(r.name) + "</td>"
                 + "<td style='padding:5px 10px;text-align:center;'>" + icon + "</td>"
                 + "<td style='padding:5px 10px;'>" + msg + "</td>"
@@ -355,6 +355,7 @@ public class HttpHtmlRenderer {
     private static String timelineRequestColor() { return colorPrimary(); }
     private static String timelineTtfbColor() { return colorSuccess(); }
     private static String timelineDownloadColor() { return colorInfo(); }
+    private static String timelineTrackColor() { return codeBgColor(); }
 
     private static String buildTimingHtml(HttpResponse response) {
         HttpEventInfo info = response.httpEventInfo;
@@ -413,11 +414,12 @@ public class HttpHtmlRenderer {
             int pct = (int) Math.min(100, Math.round(barVal * 100.0 / total));
             int emptyPct = 100 - pct;
             String barColor = color != null ? color : colorPrimary();
-            // 用 table 宽度百分比：JTextPane 对 table width=% 支持良好
+            // 用 table 宽度百分比：JTextPane 对 table width=% 支持良好。
+            // 空轨道使用 hover background，亮色下是轻灰蓝，暗色下是比 surface 稍亮的灰。
             bar = "<table style='border-collapse:collapse;width:100%;' cellpadding='0' cellspacing='0'><tr>"
                     + "<td width='" + pct + "%' style='background:" + barColor
                     + ";height:8px;border-radius:2px 0 0 2px;'></td>"
-                    + (emptyPct > 0 ? "<td width='" + emptyPct + "%' style='background:" + borderColor() + ";height:8px;'></td>" : "")
+                    + (emptyPct > 0 ? "<td width='" + emptyPct + "%' style='background:" + timelineTrackColor() + ";height:8px;'></td>" : "")
                     + "</tr></table>"
                     + "<span style='color:" + colorGray() + ";font-size:" + fsSmall() + ";'>" + pct + "%</span>";
         }
@@ -478,7 +480,7 @@ public class HttpHtmlRenderer {
     }
 
     private static void eventRow(StringBuilder sb, String label, String value, boolean alt) {
-        sb.append("<tr style='background:").append(alt ? bgColorAlt() : bgColor()).append(";'>")
+        sb.append("<tr style='border-bottom:1px solid ").append(borderColor()).append(";'>")
                 .append("<td style='width:35%;color:").append(colorGray()).append(";padding:3px 8px;'>").append(label).append("</td>")
                 .append("<td style='width:65%;padding:3px 8px;word-break:break-all;'>").append(value).append("</td>")
                 .append("</tr>");
@@ -488,7 +490,7 @@ public class HttpHtmlRenderer {
     private static void appendEventTimingRowIfSet(StringBuilder sb, String label, long millis, String color, boolean alt) {
         if (millis <= 0) return;
         String style = color != null ? "color:" + color + ";" : "";
-        sb.append("<tr style='background:").append(alt ? bgColorAlt() : bgColor()).append(";border-bottom:1px solid ").append(borderColor()).append(";'>")
+        sb.append("<tr style='border-bottom:1px solid ").append(borderColor()).append(";'>")
                 .append("<td style='padding:3px 8px;").append(style).append("width:40%;'>").append(label).append("</td>")
                 .append("<td style='padding:3px 8px;width:60%;'>").append(formatMillis(millis)).append("</td>")
                 .append("</tr>");

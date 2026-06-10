@@ -179,7 +179,7 @@ public class CryptoPanel extends JPanel {
         ToolWindowSurfaceStyle.applyScrollPaneCard(outputScrollPane);
         outputPanel.add(outputScrollPane, BorderLayout.CENTER);
 
-        JSplitPane splitPane = ToolWindowChrome.createVerticalCardSplitPane(inputPanel, outputPanel, 250);
+        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 250);
         splitPane.setResizeWeight(0.5);
 
         return splitPane;

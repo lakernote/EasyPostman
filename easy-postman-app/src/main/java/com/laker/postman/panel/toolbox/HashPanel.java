@@ -193,7 +193,7 @@ public class HashPanel extends JPanel {
         ToolWindowSurfaceStyle.applyScrollPaneCard(outputScroll);
         outputPanel.add(outputScroll, BorderLayout.CENTER);
 
-        JSplitPane splitPane = ToolWindowChrome.createVerticalCardSplitPane(inputPanel, outputPanel, 250);
+        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 250);
         splitPane.setResizeWeight(0.5);
 
         return splitPane;

@@ -83,7 +83,7 @@ public class EncoderPanel extends JPanel {
         ToolWindowSurfaceStyle.applyScrollPaneCard(outputScrollPane);
         outputPanel.add(outputScrollPane, BorderLayout.CENTER);
 
-        JSplitPane splitPane = ToolWindowChrome.createVerticalCardSplitPane(inputPanel, outputPanel, 200);
+        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 200);
 
         add(splitPane, BorderLayout.CENTER);
 

@@ -305,7 +305,8 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JPanel createSidebarTabsRow() {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        ToolWindowSurfaceStyle.applyCard(row);
+        row.setOpaque(false);
+        row.setBackground(ModernColors.getBackgroundColor());
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 270));
 
@@ -332,7 +333,8 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JPanel createSidebarTabsEditor() {
         JPanel editor = new JPanel();
         editor.setLayout(new BoxLayout(editor, BoxLayout.Y_AXIS));
-        ToolWindowSurfaceStyle.applyCard(editor);
+        editor.setOpaque(false);
+        editor.setBackground(ModernColors.getBackgroundColor());
         editor.setAlignmentX(Component.LEFT_ALIGNMENT);
         editor.setMaximumSize(new Dimension(340, 260));
 
@@ -350,7 +352,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         sidebarTabList.setTransferHandler(new SidebarTabListTransferHandler());
         sidebarTabList.setFixedCellHeight(38);
         sidebarTabList.setVisibleRowCount(Math.min(sidebarTabListModel.size(), 7));
-        sidebarTabList.setSelectionBackground(ModernColors.getSelectionBackgroundColor());
+        sidebarTabList.setSelectionBackground(ModernColors.getTabSelectedBackgroundColor());
         sidebarTabList.setSelectionForeground(getTextPrimaryColor());
         sidebarTabList.addMouseListener(new MouseAdapter() {
             @Override
@@ -381,8 +383,9 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
 
         JScrollPane scrollPane = new JScrollPane(sidebarTabList);
         scrollPane.setAlignmentX(Component.LEFT_ALIGNMENT);
-        ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, sidebarTabList);
-        scrollPane.setBorder(new EmptyBorder(4, 4, 4, 4));
+        ToolWindowSurfaceStyle.applyDialogListScrollPane(scrollPane, sidebarTabList);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
         scrollPane.setPreferredSize(new Dimension(320, 160));
         scrollPane.setMaximumSize(new Dimension(320, 160));
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
@@ -853,8 +856,8 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             dragHintLabel.setForeground(getTextSecondaryColor());
 
             Color background = isSelected
-                    ? ModernColors.getSelectionBackgroundColor()
-                    : ModernColors.getCardBackgroundColor();
+                    ? ModernColors.getTabSelectedBackgroundColor()
+                    : ModernColors.getBackgroundColor();
             setBackground(background);
             return this;
         }

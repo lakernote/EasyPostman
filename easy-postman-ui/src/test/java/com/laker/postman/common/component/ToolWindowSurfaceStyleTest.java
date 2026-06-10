@@ -1,5 +1,6 @@
 package com.laker.postman.common.component;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.constants.ThemeColors;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -10,6 +11,7 @@ import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JRootPane;
 import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTabbedPane;
@@ -18,7 +20,10 @@ import javax.swing.JTree;
 import javax.swing.LookAndFeel;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
+import javax.swing.plaf.basic.BasicSplitPaneDivider;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -38,7 +43,11 @@ public class ToolWindowSurfaceStyleTest {
                 ThemeColors.SURFACE,
                 ThemeColors.INPUT_BACKGROUND,
                 ThemeColors.BACKGROUND,
+                ThemeColors.WINDOW_CHROME_BACKGROUND,
                 ThemeColors.TAB_BACKGROUND,
+                ThemeColors.TAB_SELECTED_BACKGROUND,
+                ThemeColors.TAB_SEPARATOR,
+                ThemeColors.SELECTION_BACKGROUND,
                 "Table.background",
                 "Table.gridColor",
                 "Table.selectionBackground",
@@ -137,6 +146,99 @@ public class ToolWindowSurfaceStyleTest {
         assertEquals(panel.getInsets().left, 2);
         assertEquals(panel.getInsets().bottom, 3);
         assertEquals(panel.getInsets().right, 4);
+    }
+
+    @Test
+    public void shouldApplyDialogSurfaceToDialogRoot() {
+        Color chrome = new Color(236, 237, 240);
+        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        JPanel panel = new JPanel();
+
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+
+        assertTrue(panel.isOpaque());
+        assertEquals(panel.getBackground(), chrome);
+    }
+
+    @Test
+    public void shouldApplyDialogFooterBackgroundAndSeparatorPadding() {
+        Color chrome = new Color(236, 237, 240);
+        Color separator = new Color(233, 234, 238);
+        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        UIManager.put(ThemeColors.TAB_SEPARATOR, separator);
+        JPanel panel = new JPanel();
+
+        ToolWindowSurfaceStyle.applyDialogFooter(panel);
+
+        assertTrue(panel.isOpaque());
+        assertEquals(panel.getBackground(), chrome);
+        assertTrue(panel.getBorder() instanceof CompoundBorder);
+        assertEquals(panel.getInsets().top, 11);
+        assertEquals(panel.getInsets().left, 16);
+        assertEquals(panel.getInsets().bottom, 10);
+        assertEquals(panel.getInsets().right, 16);
+    }
+
+    @Test
+    public void shouldApplyDialogBackgroundToScrollPaneAndViewport() {
+        Color chrome = new Color(236, 237, 240);
+        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        JScrollPane scrollPane = new JScrollPane(new JPanel());
+
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
+
+        assertEquals(scrollPane.getBackground(), chrome);
+        assertEquals(scrollPane.getViewport().getBackground(), chrome);
+        assertTrue(scrollPane.getBorder() instanceof EmptyBorder);
+        assertTrue(scrollPane.getViewportBorder() instanceof EmptyBorder);
+    }
+
+    @Test
+    public void shouldApplyDialogBackgroundToDialogList() {
+        Color chrome = new Color(236, 237, 240);
+        Color selected = new Color(226, 235, 254);
+        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        UIManager.put(ThemeColors.TAB_SELECTED_BACKGROUND, selected);
+        JList<String> list = new JList<>(new String[]{"one"});
+        JScrollPane scrollPane = new JScrollPane(list);
+
+        ToolWindowSurfaceStyle.applyDialogListScrollPane(scrollPane, list);
+
+        assertEquals(scrollPane.getBackground(), chrome);
+        assertEquals(scrollPane.getViewport().getBackground(), chrome);
+        assertEquals(list.getBackground(), chrome);
+        assertEquals(list.getSelectionBackground(), selected);
+    }
+
+    @Test
+    public void shouldApplyDialogBackgroundToDialogSplitPane() {
+        Color chrome = new Color(236, 237, 240);
+        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JPanel(), new JPanel());
+
+        ToolWindowSurfaceStyle.applyDialogSplitPane(splitPane);
+
+        assertEquals(splitPane.getBackground(), chrome);
+        assertTrue(splitPane.getBorder() instanceof EmptyBorder);
+        BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
+        assertEquals(divider.getBackground(), chrome);
+        assertTrue(divider.getBorder() instanceof EmptyBorder);
+    }
+
+    @Test
+    public void shouldApplyDialogWindowChromeToRootPaneAndTitleBar() {
+        Color chrome = new Color(236, 237, 240);
+        Color foreground = new Color(12, 13, 14);
+        UIManager.put(ThemeColors.WINDOW_CHROME_BACKGROUND, chrome);
+        UIManager.put("Menu.foreground", foreground);
+        JRootPane rootPane = new JRootPane();
+
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(rootPane);
+
+        assertTrue(rootPane.isOpaque());
+        assertEquals(rootPane.getBackground(), chrome);
+        assertEquals(rootPane.getClientProperty(FlatClientProperties.TITLE_BAR_BACKGROUND), chrome);
+        assertEquals(rootPane.getClientProperty(FlatClientProperties.TITLE_BAR_FOREGROUND), foreground);
     }
 
     @Test

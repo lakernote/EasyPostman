@@ -29,7 +29,7 @@ public class HttpHtmlRendererTest {
                 ThemeColors.PRIMARY,
                 ThemeColors.TEXT_PRIMARY,
                 ThemeColors.TEXT_HINT,
-                ThemeColors.BACKGROUND,
+                ThemeColors.SURFACE,
                 ThemeColors.HOVER_BACKGROUND,
                 ThemeColors.BORDER_LIGHT,
                 ThemeColors.ERROR
@@ -87,7 +87,7 @@ public class HttpHtmlRendererTest {
         UIManager.put(ThemeColors.PRIMARY, new Color(1, 2, 3));
         UIManager.put(ThemeColors.TEXT_PRIMARY, new Color(4, 5, 6));
         UIManager.put(ThemeColors.TEXT_HINT, new Color(7, 8, 9));
-        UIManager.put(ThemeColors.BACKGROUND, new Color(10, 11, 12));
+        UIManager.put(ThemeColors.SURFACE, new Color(10, 11, 12));
         UIManager.put(ThemeColors.HOVER_BACKGROUND, new Color(13, 14, 15));
         UIManager.put(ThemeColors.BORDER_LIGHT, new Color(16, 17, 18));
         UIManager.put(ThemeColors.ERROR, new Color(19, 20, 21));
@@ -105,6 +105,49 @@ public class HttpHtmlRendererTest {
         assertTrue(html.contains("background:#0a0b0c"));
         assertTrue(html.contains("background:#0d0e0f"));
         assertTrue(html.contains("border:1px solid #131415"));
+    }
+
+    @Test
+    public void shouldRenderKeyValueRowsWithoutFullWidthBackgroundBands() {
+        PreparedRequest request = new PreparedRequest();
+        request.url = "https://example.test/api";
+        request.method = "POST";
+        request.headersList = List.of(new HttpHeader(true, "Accept", "*/*"));
+
+        String html = HttpHtmlRenderer.renderRequest(request);
+
+        assertTrue(html.contains("border-bottom:1px solid"));
+        assertFalse(html.contains("padding:3px 8px;background:"));
+    }
+
+    @Test
+    public void shouldRenderTimelineWithThemeAwareSurfaceAndTrackColors() {
+        UIManager.put(ThemeColors.SURFACE, new Color(10, 11, 12));
+        UIManager.put(ThemeColors.HOVER_BACKGROUND, new Color(13, 14, 15));
+        UIManager.put(ThemeColors.BORDER_LIGHT, new Color(16, 17, 18));
+
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setQueueStart(990L);
+        eventInfo.setCallStart(1_000L);
+        eventInfo.setConnectStart(1_010L);
+        eventInfo.setConnectEnd(1_030L);
+        eventInfo.setRequestHeadersStart(1_030L);
+        eventInfo.setRequestHeadersEnd(1_040L);
+        eventInfo.setResponseHeadersStart(1_080L);
+        eventInfo.setResponseBodyStart(1_085L);
+        eventInfo.setResponseBodyEnd(1_100L);
+        eventInfo.setCallEnd(1_100L);
+
+        HttpResponse response = new HttpResponse();
+        response.httpEventInfo = eventInfo;
+
+        String html = HttpHtmlRenderer.renderTimingInfo(response);
+
+        assertTrue(html.contains("Timeline"));
+        assertTrue(html.contains("background:#0a0b0c"));
+        assertTrue(html.contains("background:#0d0e0f"));
+        assertTrue(html.contains("border-bottom:1px solid #101112"));
+        assertFalse(html.contains("background:#101112;height:8px"));
     }
 
     @Test

@@ -17,8 +17,7 @@ public class ToolWindowStyleConventionsTest {
             "easy-postman-app/src/main/java/com/laker/postman/panel/collections/editor/request/RequestViewFactory.java"
     );
     private static final List<String> ALLOWED_RAW_TOOL_WINDOW_SPLITS = List.of(
-            "easy-postman-app/src/main/java/com/laker/postman/common/component/dialog/SnippetDialog.java",
-            "easy-postman-app/src/main/java/com/laker/postman/panel/sidebar/SidebarConsoleArea.java"
+            "easy-postman-app/src/main/java/com/laker/postman/common/component/dialog/SnippetDialog.java"
     );
     private static final List<String> THEME_CONSTANTS = List.of(
             "ModernColors.PRIMARY",
@@ -144,8 +143,13 @@ public class ToolWindowStyleConventionsTest {
             "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java"
     );
     private static final List<String> TOOL_WINDOW_DIALOG_SHELLS = List.of(
+            "easy-postman-app/src/main/java/com/laker/postman/common/component/dialog/SnippetDialog.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/sidebar/cookie/CookieManagerDialog.java",
-            "easy-postman-app/src/main/java/com/laker/postman/panel/sidebar/global/GlobalVariablesDialog.java"
+            "easy-postman-app/src/main/java/com/laker/postman/panel/sidebar/global/GlobalVariablesDialog.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/topmenu/setting/ModernSettingsDialog.java"
+    );
+    private static final List<String> MAC_TITLE_BAR_AWARE_DIALOGS = List.of(
+            "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/GitOperationDialog.java"
     );
     private static final List<String> SETTINGS_TABLE_SURFACES = List.of(
             "easy-postman-app/src/main/java/com/laker/postman/panel/topmenu/setting/ClientCertificateSettingsPanelModern.java",
@@ -361,7 +365,9 @@ public class ToolWindowStyleConventionsTest {
                     String source = readUnchecked(ROOT.resolve(path));
                     return !source.contains("ToolWindowChrome.createHorizontalCardSplitPane")
                             && !source.contains("ToolWindowChrome.createVerticalCardSplitPane")
-                            && !source.contains("ToolWindowChrome.wrapToolWindow");
+                            && !source.contains("ToolWindowChrome.wrapToolWindow")
+                            && !source.contains("ToolWindowChrome.wrapInsetToolWindow")
+                            && !source.contains("ToolWindowChrome.wrapLeftInsetToolWindow");
                 })
                 .toList();
 
@@ -389,13 +395,32 @@ public class ToolWindowStyleConventionsTest {
     }
 
     @Test
-    public void toolWindowDialogsShouldUseSharedRoundedShells() {
+    public void toolWindowDialogsShouldUseSharedDialogSurfaces() {
         List<String> violations = TOOL_WINDOW_DIALOG_SHELLS.stream()
-                .filter(path -> !readUnchecked(ROOT.resolve(path)).contains("ToolWindowChrome.wrapDialogToolWindow"))
+                .filter(path -> {
+                    String source = readUnchecked(ROOT.resolve(path));
+                    return !source.contains("ToolWindowChrome.wrapDialogToolWindow")
+                            && !source.contains("ToolWindowChrome.wrapDialogInsetToolWindow")
+                            && !source.contains("ToolWindowSurfaceStyle.applyDialogSurface");
+                })
                 .toList();
 
         assertTrue(violations.isEmpty(),
-                "Use ToolWindowChrome.wrapDialogToolWindow for tool-window dialogs: " + violations);
+                "Use shared dialog surface styling for tool-window dialogs: " + violations);
+    }
+
+    @Test
+    public void macTitleBarAwareDialogsShouldUseSharedChromeInset() {
+        List<String> violations = MAC_TITLE_BAR_AWARE_DIALOGS.stream()
+                .filter(path -> {
+                    String source = readUnchecked(ROOT.resolve(path));
+                    return !source.contains("ToolWindowSurfaceStyle.applyDialogWindowChrome(this)")
+                            || source.contains("getRootPane().setBorder");
+                })
+                .toList();
+
+        assertTrue(violations.isEmpty(),
+                "Use shared dialog chrome and do not reset rootPane border/titlebar inset: " + violations);
     }
 
     @Test

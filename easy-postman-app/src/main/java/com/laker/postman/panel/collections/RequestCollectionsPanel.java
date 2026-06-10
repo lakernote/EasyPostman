@@ -40,7 +40,7 @@ public class RequestCollectionsPanel extends UiSingletonPanel {
     }
 
     static JComponent createCollectionToolWindow(Component collectionTreePanel) {
-        return ToolWindowChrome.wrapLeftToolWindow(collectionTreePanel);
+        return ToolWindowChrome.wrapLeftInsetToolWindow(collectionTreePanel);
     }
 
     static JComponent createRequestEditorToolWindow(Component requestEditorPanel) {

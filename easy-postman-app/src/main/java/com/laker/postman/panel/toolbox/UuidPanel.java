@@ -75,7 +75,7 @@ public class UuidPanel extends JPanel {
         ToolWindowSurfaceStyle.applyCard(this);
 
         // 主分割面板
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
                 createGeneratorPanel(),
                 createParsePanel(),
                 720

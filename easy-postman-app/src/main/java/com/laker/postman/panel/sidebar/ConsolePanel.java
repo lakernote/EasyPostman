@@ -44,6 +44,9 @@ public class ConsolePanel extends UiSingletonPanel {
     private final transient List<LogEntry> allLogs = new ArrayList<>();
     private static final int MAX_LOG_ENTRIES = 10000; // 最多保存10000条日志，防止内存溢出
     private static final int MAX_DISPLAY_LINES = 5000; // 最多显示5000行，超过则删除旧行，优化显示性能
+    private static final int FILTER_WIDTH = 90;
+    private static final int SEARCH_WIDTH = 260;
+    private static final int TOOLBAR_CONTROL_HEIGHT = ToolWindowActionToolbar.ACTION_SIZE;
 
     // 日志类型
     public enum LogType {
@@ -326,12 +329,12 @@ public class ConsolePanel extends UiSingletonPanel {
         ToolWindowSurfaceStyle.applyCard(topPanel);
 
         logLevelFilter = new JComboBox<>(new String[]{"All", "INFO", "ERROR", "WARN", "DEBUG"});
-        logLevelFilter.setPreferredSize(new Dimension(90, 28));
+        lockToolbarControlSize(logLevelFilter, FILTER_WIDTH);
         logLevelFilter.setFocusable(false);
         logLevelFilter.setToolTipText("Filter logs by level");
 
         searchField = new SearchTextField();
-        searchField.setPreferredSize(new Dimension(200, 28));
+        lockToolbarControlSize(searchField, SEARCH_WIDTH);
 
         prevBtn = new PreviousButton();
         prevBtn.setToolTipText("Previous match (Shift+Enter)");
@@ -364,11 +367,18 @@ public class ConsolePanel extends UiSingletonPanel {
         closeBtn.setToolTipText("Hide console");
         JPanel rightPanel = ToolWindowActionToolbar.inlineRight(autoScrollBtn, clearBtn, closeBtn);
 
-        topPanel.add(centerPanel, BorderLayout.CENTER);
+        topPanel.add(centerPanel, BorderLayout.WEST);
         topPanel.add(rightPanel, BorderLayout.EAST);
 
         add(topPanel, BorderLayout.NORTH);
         add(logScroll, BorderLayout.CENTER);
+    }
+
+    private static void lockToolbarControlSize(JComponent component, int width) {
+        Dimension size = new Dimension(width, TOOLBAR_CONTROL_HEIGHT);
+        component.setMinimumSize(size);
+        component.setPreferredSize(size);
+        component.setMaximumSize(size);
     }
 
 

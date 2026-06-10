@@ -167,11 +167,11 @@ public abstract class ModernSettingsPanel extends JPanel {
 
     private void initUI() {
         setLayout(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applyBackground(this);
+        ToolWindowSurfaceStyle.applyDialogSurface(this);
 
         // 创建主容器
         JPanel mainContainer = new JPanel(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applyBackground(mainContainer);
+        ToolWindowSurfaceStyle.applyDialogSurface(mainContainer);
 
         // 未保存更改警告面板
         warningPanel = createWarningPanel();
@@ -180,8 +180,8 @@ public abstract class ModernSettingsPanel extends JPanel {
         // 主内容区域
         JPanel contentPanel = new ViewportWidthTrackingPanel();
         contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-        ToolWindowSurfaceStyle.applyBackground(contentPanel);
-        contentPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
+        contentPanel.setBorder(new EmptyBorder(20, 24, 16, 24));
 
         // 子类实现具体内容
         buildContent(contentPanel);
@@ -192,8 +192,7 @@ public abstract class ModernSettingsPanel extends JPanel {
         contentScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         contentScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         contentScrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        ToolWindowSurfaceStyle.applyBackground(contentScrollPane);
-        ToolWindowSurfaceStyle.applyBackground(contentScrollPane.getViewport());
+        ToolWindowSurfaceStyle.applyDialogScrollPane(contentScrollPane);
         customizeScrollBar(contentScrollPane);
 
         // 组装主容器
@@ -276,8 +275,8 @@ public abstract class ModernSettingsPanel extends JPanel {
      * 创建现代化的按钮栏
      */
     private JPanel createModernButtonBar() {
-        JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 12));
-        ToolWindowSurfaceStyle.applySectionHeader(buttonBar, 0, 16, 0, 16);
+        JPanel buttonBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 10));
+        ToolWindowSurfaceStyle.applyDialogFooter(buttonBar);
 
         cancelBtn = createModernButton(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_CANCEL),
@@ -348,7 +347,7 @@ public abstract class ModernSettingsPanel extends JPanel {
                 this.thumbDarkShadowColor = getScrollbarThumbColor();
                 this.thumbHighlightColor = getScrollbarThumbColor();
                 this.thumbLightShadowColor = getScrollbarThumbColor();
-                this.trackColor = getScrollbarTrackColor();
+                this.trackColor = getBackgroundColor();
             }
 
             @Override
@@ -382,7 +381,7 @@ public abstract class ModernSettingsPanel extends JPanel {
             @Override
             protected void paintTrack(Graphics g, JComponent c, Rectangle trackBounds) {
                 Graphics2D g2 = (Graphics2D) g.create();
-                g2.setColor(getScrollbarTrackColor());
+                g2.setColor(getBackgroundColor());
                 g2.fillRect(trackBounds.x, trackBounds.y, trackBounds.width, trackBounds.height);
                 g2.dispose();
             }

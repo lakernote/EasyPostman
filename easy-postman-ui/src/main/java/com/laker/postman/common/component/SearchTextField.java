@@ -17,12 +17,19 @@ import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
  * 通用搜索输入框组件，带搜索图标、占位符、清除按钮、大小写敏感和整词匹配选项。
  * 使用 FlatLaf 官方的图标样式。
  */
 public class SearchTextField extends FlatTextField {
+    private static final String USER_ACTIVATED_FOCUS_INSTALLED =
+            SearchTextField.class.getName() + ".userActivatedFocusInstalled";
+
     private final UndoManager undoManager = new UndoManager();
     /**
      * -- GETTER --
@@ -129,6 +136,32 @@ public class SearchTextField extends FlatTextField {
      */
     public void setNoResult(boolean noResult) {
         putClientProperty(FlatClientProperties.OUTLINE, noResult ? FlatClientProperties.OUTLINE_ERROR : null);
+    }
+
+    /**
+     * Prevents the search field from taking initial window focus until the user explicitly clicks it.
+     */
+    public void installUserActivatedFocus() {
+        if (Boolean.TRUE.equals(getClientProperty(USER_ACTIVATED_FOCUS_INSTALLED))) {
+            return;
+        }
+        putClientProperty(USER_ACTIVATED_FOCUS_INSTALLED, true);
+        setFocusable(false);
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                setFocusable(true);
+                SwingUtilities.invokeLater(SearchTextField.this::requestFocusInWindow);
+            }
+        });
+        addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (getText().isEmpty()) {
+                    setFocusable(false);
+                }
+            }
+        });
     }
 
 }

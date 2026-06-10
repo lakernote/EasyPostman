@@ -23,13 +23,15 @@ public class SettingsCheckBoxRow extends JPanel {
 
     public SettingsCheckBoxRow(JCheckBox checkBox, String tooltip) {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-        setBackground(ModernColors.getCardBackgroundColor());
+        setOpaque(false);
+        setBackground(ModernColors.getBackgroundColor());
         setAlignmentX(Component.LEFT_ALIGNMENT);
         setMaximumSize(new Dimension(Integer.MAX_VALUE, DEFAULT_ROW_HEIGHT));
 
         checkBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         checkBox.setForeground(ModernColors.getTextPrimary());
-        checkBox.setBackground(ModernColors.getCardBackgroundColor());
+        checkBox.setBackground(ModernColors.getBackgroundColor());
+        checkBox.setOpaque(false);
         checkBox.setFocusPainted(false);
         if (tooltip != null && !tooltip.isEmpty()) {
             checkBox.setToolTipText(tooltip);

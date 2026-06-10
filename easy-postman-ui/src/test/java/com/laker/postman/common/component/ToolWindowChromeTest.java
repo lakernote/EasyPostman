@@ -29,6 +29,8 @@ public class ToolWindowChromeTest {
     public void rememberThemeTokens() {
         previousTokens = new HashMap<>();
         previousTokens.put(ThemeColors.BACKGROUND, UIManager.get(ThemeColors.BACKGROUND));
+        previousTokens.put(ThemeColors.SURFACE, UIManager.get(ThemeColors.SURFACE));
+        previousTokens.put(ThemeColors.BORDER_LIGHT, UIManager.get(ThemeColors.BORDER_LIGHT));
     }
 
     @AfterMethod
@@ -71,6 +73,25 @@ public class ToolWindowChromeTest {
     }
 
     @Test
+    public void shouldWrapLeftInsetToolWindowWithSideGapAndCardContentPadding() {
+        JLabel content = new JLabel("content");
+
+        JComponent wrapper = ToolWindowChrome.wrapLeftInsetToolWindow(content);
+
+        assertTrue(wrapper.getBorder() instanceof EmptyBorder);
+        assertEquals(wrapper.getInsets().left, 6);
+        assertEquals(wrapper.getInsets().right, 1);
+        RoundedToolWindowPanel roundedPanel = (RoundedToolWindowPanel) wrapper.getComponent(0);
+        assertTrue(roundedPanel.getComponent(0) instanceof JComponent);
+        JComponent insetPanel = (JComponent) roundedPanel.getComponent(0);
+        assertEquals(insetPanel.getInsets().top, 8);
+        assertEquals(insetPanel.getInsets().left, 10);
+        assertEquals(insetPanel.getInsets().bottom, 8);
+        assertEquals(insetPanel.getInsets().right, 10);
+        assertSame(insetPanel.getComponent(0), content);
+    }
+
+    @Test
     public void shouldCreateBorderlessHorizontalSplitPane() {
         JSplitPane splitPane = ToolWindowChrome.createHorizontalSplitPane(
                 new JLabel("left"),
@@ -81,6 +102,26 @@ public class ToolWindowChromeTest {
         assertEquals(splitPane.getDividerLocation(), ToolWindowChrome.DEFAULT_SIDE_WIDTH);
         assertEquals(splitPane.getDividerSize(), ToolWindowChrome.DIVIDER_SIZE);
         assertTrue(splitPane.getBorder() instanceof EmptyBorder);
+        BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
+        assertTrue(divider.getBorder() instanceof EmptyBorder);
+    }
+
+    @Test
+    public void shouldCreateHorizontalInnerSplitPaneWithDirectChildren() {
+        JLabel left = new JLabel("left");
+        JLabel right = new JLabel("right");
+
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
+                left,
+                right,
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
+
+        assertEquals(splitPane.getDividerLocation(), ToolWindowChrome.DEFAULT_SIDE_WIDTH);
+        assertEquals(splitPane.getDividerSize(), ToolWindowChrome.INNER_DIVIDER_SIZE);
+        assertTrue(splitPane.getBorder() instanceof EmptyBorder);
+        assertSame(splitPane.getLeftComponent(), left);
+        assertSame(splitPane.getRightComponent(), right);
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
         assertTrue(divider.getBorder() instanceof EmptyBorder);
     }
@@ -106,7 +147,8 @@ public class ToolWindowChromeTest {
         assertEquals(rightWrapper.getInsets().right, 6);
         RoundedToolWindowPanel leftCard = (RoundedToolWindowPanel) leftWrapper.getComponent(0);
         RoundedToolWindowPanel rightCard = (RoundedToolWindowPanel) rightWrapper.getComponent(0);
-        assertSame(leftCard.getComponent(0), left);
+        JComponent leftInset = (JComponent) leftCard.getComponent(0);
+        assertSame(leftInset.getComponent(0), left);
         assertSame(rightCard.getComponent(0), right);
     }
 
@@ -167,6 +209,22 @@ public class ToolWindowChromeTest {
     }
 
     @Test
+    public void shouldWrapDialogInsetContentWithBackgroundRoundedToolWindowAndPadding() {
+        JLabel content = new JLabel("dialog");
+
+        JComponent dialogShell = ToolWindowChrome.wrapDialogInsetToolWindow(content);
+
+        JComponent toolWindowWrapper = (JComponent) dialogShell.getComponent(0);
+        RoundedToolWindowPanel roundedPanel = (RoundedToolWindowPanel) toolWindowWrapper.getComponent(0);
+        JComponent insetPanel = (JComponent) roundedPanel.getComponent(0);
+        assertEquals(insetPanel.getInsets().top, 8);
+        assertEquals(insetPanel.getInsets().left, 10);
+        assertEquals(insetPanel.getInsets().bottom, 8);
+        assertEquals(insetPanel.getInsets().right, 10);
+        assertSame(insetPanel.getComponent(0), content);
+    }
+
+    @Test
     public void splitDividerShouldNotPaintItsOwnLine() {
         JSplitPane splitPane = ToolWindowChrome.createHorizontalSplitPane(
                 new JLabel("left"),
@@ -186,6 +244,31 @@ public class ToolWindowChromeTest {
                 assertEquals(new Color(image.getRGB(x, y), true).getAlpha(), 0);
             }
         }
+    }
+
+    @Test
+    public void innerSplitDividerShouldPaintSingleSeparatorLine() {
+        Color surface = new Color(255, 255, 255);
+        Color separator = new Color(211, 218, 230);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.BORDER_LIGHT, separator);
+
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
+                new JLabel("left"),
+                new JLabel("right"),
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
+        BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
+        divider.setSize(ToolWindowChrome.INNER_DIVIDER_SIZE, 40);
+
+        BufferedImage image = new BufferedImage(ToolWindowChrome.INNER_DIVIDER_SIZE, 40, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        divider.paint(graphics);
+        graphics.dispose();
+
+        assertEquals(new Color(image.getRGB(0, 20), true), surface);
+        assertEquals(new Color(image.getRGB(1, 20), true), separator);
+        assertEquals(new Color(image.getRGB(2, 20), true), surface);
     }
 
     @Test

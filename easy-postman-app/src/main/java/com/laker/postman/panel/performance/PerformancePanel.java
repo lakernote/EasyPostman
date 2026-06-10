@@ -321,7 +321,7 @@ public class PerformancePanel extends UiSingletonPanel {
         installPlanToolbarListeners();
         syncPlanSelectorItems();
 
-        JSplitPane verticalSplit = ToolWindowChrome.createVerticalCardSplitPane(
+        JSplitPane verticalSplit = ToolWindowChrome.createVerticalInnerSplitPane(
                 propertyPanel,
                 resultSection.resultPanel(),
                 260
@@ -338,13 +338,13 @@ public class PerformancePanel extends UiSingletonPanel {
 
         treeSection.scrollPane().setMinimumSize(new Dimension(220, 150));
         rightContentPanel.setMinimumSize(new Dimension(400, 300));
-        JSplitPane mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
                 treeSection.scrollPane(),
                 rightContentPanel,
                 ToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         mainSplit.setResizeWeight(0.18);
-        add(mainSplit, BorderLayout.CENTER);
+        add(ToolWindowChrome.wrapToolWindow(mainSplit), BorderLayout.CENTER);
 
         List<PerformanceResultListener> resultListeners = List.of(
                 new PerformanceStatsCollectorListener(statsCollector),

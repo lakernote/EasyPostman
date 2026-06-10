@@ -230,7 +230,8 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
     private JPanel createPreviewFieldRow(String labelText, String tooltip, JComponent inputComponent) {
         JPanel row = new JPanel();
         row.setLayout(new BoxLayout(row, BoxLayout.X_AXIS));
-        row.setBackground(getCardBackgroundColor());
+        row.setOpaque(false);
+        row.setBackground(getBackgroundColor());
         row.setAlignmentX(Component.LEFT_ALIGNMENT);
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 

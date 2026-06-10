@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.plugin;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginDescriptor;
@@ -21,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
@@ -36,7 +36,7 @@ public class PluginManagerDialog extends JDialog {
 
     private static final String VIEW_INSTALLED = "installed";
     private static final String VIEW_MARKET = "market";
-    private static final int SIDEBAR_WIDTH = 320;
+    private static final int SIDEBAR_WIDTH = 280;
     private static final Dimension DIALOG_SIZE = new Dimension(980, 680);
 
     private final DefaultListModel<PluginFileInfo> installedListModel = new DefaultListModel<>();
@@ -133,11 +133,11 @@ public class PluginManagerDialog extends JDialog {
         setLocationRelativeTo(getOwner());
 
         JPanel content = new JPanel(new MigLayout(
-                "fill, insets 16, gap 14, novisualpadding",
+                "fill, insets 14, gap 12, novisualpadding",
                 "[grow,fill]",
                 "[][grow,fill][]"
         ));
-        ToolWindowSurfaceStyle.applyBackground(content);
+        ToolWindowSurfaceStyle.applyDialogSurface(content);
         setContentPane(content);
 
         content.add(createHeaderPanel(), "growx, wrap");
@@ -193,11 +193,12 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createHeaderPanel() {
-        JPanel panel = createCardPanel(new MigLayout(
-                "fillx, insets 16, gap 14, novisualpadding",
+        JPanel panel = createSurfacePanel(new MigLayout(
+                "fillx, insets 12 14 12 14, gap 14, novisualpadding",
                 "[grow,fill][pref!]",
                 "[]"
         ));
+        ToolWindowSurfaceStyle.applySectionHeader(panel);
 
         panel.add(createHeaderMainPanel(), "growx, pushx, wmin 0");
         panel.add(createHeaderActionPanel(), "alignx right, aligny top, shrink 0");
@@ -254,28 +255,22 @@ public class PluginManagerDialog extends JDialog {
         return panel;
     }
 
-    private JPanel createInstalledPanel() {
+    private JComponent createInstalledPanel() {
         return createViewGridPanel(createInstalledListPanel(), createDetailScrollPane(createInstalledDetailsPanel()));
     }
 
-    private JPanel createViewGridPanel(JComponent left, JComponent right) {
-        left.setMinimumSize(new Dimension(SIDEBAR_WIDTH, 200));
+    private JComponent createViewGridPanel(JComponent left, JComponent right) {
+        left.setMinimumSize(new Dimension(240, 200));
         right.setMinimumSize(new Dimension(420, 200));
 
-        JPanel panel = new JPanel(new MigLayout(
-                "fill, insets 0, gap 14, novisualpadding",
-                "[" + SIDEBAR_WIDTH + "!,fill][grow,fill]",
-                "[grow,fill]"
-        ));
-        panel.setOpaque(false);
-        panel.add(left, "growy");
-        panel.add(right, "grow, push");
-        return panel;
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(left, right, SIDEBAR_WIDTH);
+        splitPane.setResizeWeight(0.30);
+        return ToolWindowChrome.wrapToolWindow(splitPane, new Insets(0, 0, 0, 0));
     }
 
     private JPanel createInstalledListPanel() {
-        JPanel panel = createCardPanel(new MigLayout(
-                "fill, insets 14, gap 10, novisualpadding",
+        JPanel panel = createSurfacePanel(new MigLayout(
+                "fill, insets 12 12 12 10, gap 10, novisualpadding",
                 "[grow,fill]",
                 "[][grow,fill]"
         ));
@@ -288,8 +283,8 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createInstalledDetailsPanel() {
-        JPanel panel = createCardPanel(new MigLayout(
-                "fillx, insets 18, gap 12, novisualpadding",
+        JPanel panel = createSurfacePanel(new MigLayout(
+                "fillx, insets 14 16 14 16, gap 12, novisualpadding",
                 "[grow,fill]",
                 "[][][][][][]"
         ));
@@ -321,15 +316,13 @@ public class PluginManagerDialog extends JDialog {
         return panel;
     }
 
-    private JPanel createMarketPanel() {
+    private JComponent createMarketPanel() {
         return createViewGridPanel(createMarketListPanel(), createDetailScrollPane(createMarketDetailsPanel()));
     }
 
     private JScrollPane createDetailScrollPane(JComponent component) {
         JScrollPane scrollPane = new JScrollPane(wrapDetailViewport(component));
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.setOpaque(false);
-        scrollPane.getViewport().setOpaque(false);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         return scrollPane;
@@ -343,8 +336,8 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createMarketListPanel() {
-        JPanel panel = createCardPanel(new MigLayout(
-                "fill, insets 14, gap 10, novisualpadding",
+        JPanel panel = createSurfacePanel(new MigLayout(
+                "fill, insets 12 12 12 10, gap 10, novisualpadding",
                 "[grow,fill]",
                 "[][][grow,fill]"
         ));
@@ -390,8 +383,8 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private JPanel createMarketDetailsPanel() {
-        JPanel panel = createCardPanel(new MigLayout(
-                "fillx, insets 18, gap 12, novisualpadding",
+        JPanel panel = createSurfacePanel(new MigLayout(
+                "fillx, insets 14 16 14 16, gap 12, novisualpadding",
                 "[grow,fill]",
                 "[][][][][]"
         ));
@@ -1158,7 +1151,7 @@ public class PluginManagerDialog extends JDialog {
 
     private JScrollPane createListScrollPane(JList<?> list) {
         JScrollPane scrollPane = new JScrollPane(list);
-        ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, list);
+        ToolWindowSurfaceStyle.applyDialogListScrollPane(scrollPane, list);
         configureListAppearance(list);
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
@@ -1166,17 +1159,17 @@ public class PluginManagerDialog extends JDialog {
         return scrollPane;
     }
 
-    private JPanel createCardPanel(LayoutManager layout) {
+    private JPanel createSurfacePanel(LayoutManager layout) {
         JPanel panel = new JPanel(layout);
-        ToolWindowSurfaceStyle.applyCard(panel);
-        panel.setBorder(createCardBorder());
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder());
         return panel;
     }
 
     private JPanel createSoftCard(LayoutManager layout) {
         JPanel panel = new JPanel(layout);
         panel.setOpaque(true);
-        panel.setBackground(ModernColors.getHoverBackgroundColor());
+        panel.setBackground(ModernColors.getTableHeaderBackgroundColor());
         panel.setBorder(new EmptyBorder(0, 0, 0, 0));
         return panel;
     }
@@ -1184,13 +1177,9 @@ public class PluginManagerDialog extends JDialog {
     private JPanel createSegmentedTogglePanel(LayoutManager layout) {
         JPanel panel = new JPanel(layout);
         panel.setOpaque(true);
-        panel.setBackground(ModernColors.getHoverBackgroundColor());
+        panel.setBackground(ModernColors.getTableHeaderBackgroundColor());
         panel.setBorder(new EmptyBorder(0, 0, 0, 0));
         return panel;
-    }
-
-    private Border createCardBorder() {
-        return new EmptyBorder(0, 0, 0, 0);
     }
 
     private static JLabel createHeaderSummaryLabel() {

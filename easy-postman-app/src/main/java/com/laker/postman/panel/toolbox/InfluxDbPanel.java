@@ -254,7 +254,7 @@ public class InfluxDbPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         ToolWindowSurfaceStyle.applyCard(this);
         add(buildConnectionPanel(), BorderLayout.NORTH);
-        JSplitPane mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
                 buildLeftPanel(),
                 buildMainPanel(),
                 240
@@ -1264,7 +1264,7 @@ public class InfluxDbPanel extends JPanel {
         resultPanel.add(respHeader, BorderLayout.NORTH);
         resultPanel.add(resultTabs, BorderLayout.CENTER);
 
-        JSplitPane editorSplit = ToolWindowChrome.createVerticalCardSplitPane(
+        JSplitPane editorSplit = ToolWindowChrome.createVerticalInnerSplitPane(
                 queryPanel,
                 resultPanel,
                 180

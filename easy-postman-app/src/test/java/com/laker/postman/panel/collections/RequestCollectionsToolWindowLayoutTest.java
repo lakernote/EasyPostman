@@ -34,7 +34,14 @@ public class RequestCollectionsToolWindowLayoutTest {
         assertEquals(wrapper.getInsets().right, 1);
         assertTrue(wrapper.getComponent(0) instanceof RoundedToolWindowPanel);
         RoundedToolWindowPanel roundedPanel = (RoundedToolWindowPanel) wrapper.getComponent(0);
-        assertSame(roundedPanel.getComponent(0), content);
+        assertTrue(roundedPanel.getComponent(0) instanceof JComponent);
+        JComponent insetPanel = (JComponent) roundedPanel.getComponent(0);
+        assertTrue(insetPanel.getBorder() instanceof EmptyBorder);
+        assertEquals(insetPanel.getInsets().top, 8);
+        assertEquals(insetPanel.getInsets().left, 10);
+        assertEquals(insetPanel.getInsets().bottom, 8);
+        assertEquals(insetPanel.getInsets().right, 10);
+        assertSame(insetPanel.getComponent(0), content);
     }
 
     @Test

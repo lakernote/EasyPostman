@@ -26,7 +26,8 @@ public class SettingsFieldRow extends JPanel {
 
     public SettingsFieldRow(String labelText, String tooltip, JComponent inputComponent) {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-        setBackground(ModernColors.getCardBackgroundColor());
+        setOpaque(false);
+        setBackground(ModernColors.getBackgroundColor());
         setAlignmentX(Component.LEFT_ALIGNMENT);
         setMaximumSize(new Dimension(Integer.MAX_VALUE, DEFAULT_ROW_HEIGHT));
 

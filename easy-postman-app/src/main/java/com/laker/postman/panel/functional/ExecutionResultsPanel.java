@@ -62,7 +62,7 @@ public class ExecutionResultsPanel extends JPanel {
         // 创建分割面板
         createResultsTree();
         createDetailPanel();
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
                 createTreePanel(),
                 detailPanel,
                 ToolWindowChrome.DEFAULT_SIDE_WIDTH
@@ -90,13 +90,14 @@ public class ExecutionResultsPanel extends JPanel {
     private JPanel createTreePanel() {
         JPanel treePanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(treePanel);
-        treePanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        treePanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
         // 添加标题栏（包含标题和工具按钮）
         JPanel headerPanel = createTreeHeaderPanel();
         treePanel.add(headerPanel, BorderLayout.NORTH);
 
         JScrollPane treeScrollPane = new JScrollPane(resultsTree);
+        treeScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         treeScrollPane.getVerticalScrollBar().setUnitIncrement(16);
         ToolWindowSurfaceStyle.applyTreeScrollPaneCard(treeScrollPane, resultsTree);
         treePanel.add(treeScrollPane, BorderLayout.CENTER);
@@ -152,7 +153,7 @@ public class ExecutionResultsPanel extends JPanel {
     private void createDetailPanel() {
         detailPanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(detailPanel);
-        detailPanel.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 0));
+        detailPanel.setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 0));
 
         // 创建详情选项卡
         detailTabs = new JTabbedPane();

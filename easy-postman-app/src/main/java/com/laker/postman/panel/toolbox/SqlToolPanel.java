@@ -152,7 +152,7 @@ public class SqlToolPanel extends JPanel {
     }
 
     private JPanel createCenterPanel() {
-        JSplitPane splitPane = ToolWindowChrome.createVerticalCardSplitPane(
+        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(
                 createEditorPanel(true),
                 createEditorPanel(false),
                 300

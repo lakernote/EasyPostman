@@ -1,14 +1,18 @@
 package com.laker.postman.common.component;
 
+import com.formdev.flatlaf.FlatClientProperties;
+import com.formdev.flatlaf.util.SystemInfo;
 import com.laker.postman.common.constants.ModernColors;
 
 import javax.swing.AbstractButton;
 import javax.swing.JComponent;
 import javax.swing.BorderFactory;
 import javax.swing.JComboBox;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JRootPane;
 import javax.swing.JScrollBar;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
@@ -17,6 +21,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTree;
 import javax.swing.JPopupMenu;
+import javax.swing.RootPaneContainer;
 import javax.swing.SwingConstants;
 import javax.swing.UIManager;
 import javax.swing.JViewport;
@@ -26,10 +31,15 @@ import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableCellRenderer;
+import java.awt.AWTEvent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Toolkit;
+import java.awt.Window;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.ref.WeakReference;
 import java.util.function.Consumer;
@@ -39,8 +49,36 @@ import java.util.function.Consumer;
  */
 public final class ToolWindowSurfaceStyle {
     private static final String THEME_REFRESH_LISTENER = "EasyPostman.toolWindowSurfaceStyle.themeRefreshListener";
+    private static final String DIALOG_WINDOW_CHROME_APPLIED =
+            "EasyPostman.toolWindowSurfaceStyle.dialogWindowChromeApplied";
+    private static boolean globalDialogWindowChromeInstalled;
 
     private ToolWindowSurfaceStyle() {
+    }
+
+    public static synchronized void installGlobalDialogWindowChrome() {
+        if (globalDialogWindowChromeInstalled) {
+            return;
+        }
+        globalDialogWindowChromeInstalled = true;
+
+        Toolkit.getDefaultToolkit().addAWTEventListener(event -> {
+            if (event instanceof HierarchyEvent hierarchyEvent) {
+                long flags = hierarchyEvent.getChangeFlags();
+                if ((flags & (HierarchyEvent.DISPLAYABILITY_CHANGED
+                        | HierarchyEvent.PARENT_CHANGED
+                        | HierarchyEvent.SHOWING_CHANGED)) != 0) {
+                    applyDialogWindowChromeIfNeeded(hierarchyEvent.getComponent());
+                }
+            } else if (event instanceof WindowEvent windowEvent
+                    && windowEvent.getID() == WindowEvent.WINDOW_OPENED) {
+                applyDialogWindowChromeIfNeeded(windowEvent.getWindow());
+            }
+        }, AWTEvent.HIERARCHY_EVENT_MASK | AWTEvent.WINDOW_EVENT_MASK);
+
+        for (Window window : Window.getWindows()) {
+            applyDialogWindowChromeIfNeeded(window);
+        }
     }
 
     public static void applyCard(JComponent component) {
@@ -58,6 +96,121 @@ public final class ToolWindowSurfaceStyle {
         setCard(component, true);
         component.setBorder(BorderFactory.createEmptyBorder(top, left, bottom, right));
         installThemeRefresh(component, ToolWindowSurfaceStyle::setOpaqueCard);
+    }
+
+    public static void applyDialogFooter(JComponent component) {
+        setDialogFooter(component);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogFooter);
+    }
+
+    public static void applyDialogSurface(JComponent component) {
+        setDialogSurface(component);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogSurface);
+    }
+
+    public static void applyDialogWindowChrome(Window window) {
+        if (window == null) {
+            return;
+        }
+
+        Color chrome = ModernColors.getWindowChromeBackgroundColor();
+        window.setBackground(chrome);
+        if (window instanceof RootPaneContainer rootPaneContainer) {
+            rootPaneContainer.getRootPane().putClientProperty(DIALOG_WINDOW_CHROME_APPLIED, Boolean.TRUE);
+            applyDialogWindowChrome(rootPaneContainer.getRootPane());
+            applyDialogWindowChrome((JComponent) rootPaneContainer.getLayeredPane());
+            applyDialogWindowChrome(rootPaneContainer.getContentPane());
+            if (rootPaneContainer.getGlassPane() instanceof JComponent glassPane) {
+                glassPane.setOpaque(false);
+                glassPane.setBackground(chrome);
+            }
+        }
+        if (window.isDisplayable()) {
+            window.validate();
+            window.repaint();
+        }
+    }
+
+    private static void applyDialogWindowChromeIfNeeded(Component component) {
+        if (component == null) {
+            return;
+        }
+        Window window = component instanceof Window sourceWindow
+                ? sourceWindow
+                : SwingUtilities.getWindowAncestor(component);
+        if (window instanceof JDialog dialog) {
+            if (Boolean.TRUE.equals(dialog.getRootPane().getClientProperty(DIALOG_WINDOW_CHROME_APPLIED))) {
+                return;
+            }
+            applyDialogWindowChrome(dialog);
+        }
+    }
+
+    public static void applyDialogWindowChrome(JRootPane rootPane) {
+        if (rootPane == null) {
+            return;
+        }
+        setWindowChromeBackground(rootPane, true);
+        rootPane.putClientProperty(
+                FlatClientProperties.TITLE_BAR_BACKGROUND,
+                ModernColors.getWindowChromeBackgroundColor()
+        );
+        rootPane.putClientProperty(FlatClientProperties.TITLE_BAR_FOREGROUND, UIManager.getColor("Menu.foreground"));
+        applyMacDialogWindowChrome(rootPane);
+        installThemeRefresh(rootPane, component -> applyDialogWindowChrome((JRootPane) component));
+        rootPane.revalidate();
+        rootPane.repaint();
+    }
+
+    private static void applyDialogWindowChrome(Container container) {
+        if (container instanceof JComponent component) {
+            applyDialogWindowChrome(component);
+        }
+    }
+
+    private static void applyDialogWindowChrome(JComponent component) {
+        if (component == null) {
+            return;
+        }
+        setWindowChromeBackground(component, true);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setOpaqueWindowChromeBackground);
+    }
+
+    private static void applyMacDialogWindowChrome(JRootPane rootPane) {
+        if (!SystemInfo.isMacFullWindowContentSupported) {
+            return;
+        }
+        rootPane.putClientProperty("apple.awt.fullWindowContent", true);
+        rootPane.putClientProperty("apple.awt.transparentTitleBar", true);
+        rootPane.putClientProperty(
+                "apple.awt.windowAppearance",
+                ModernColors.isDarkTheme() ? "NSAppearanceNameVibrantDark" : "NSAppearanceNameVibrantLight"
+        );
+        rootPane.setBorder(BorderFactory.createEmptyBorder(getMacDialogTitleBarInset(), 0, 0, 0));
+    }
+
+    private static int getMacDialogTitleBarInset() {
+        int titlePaneHeight = UIManager.getInt("TitlePane.height");
+        return titlePaneHeight > 0 ? titlePaneHeight : 28;
+    }
+
+    public static void applyDialogScrollPane(JScrollPane scrollPane) {
+        applyDialogSurface(scrollPane);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setViewportBorder(BorderFactory.createEmptyBorder());
+        applyViewportWindowChrome(scrollPane.getViewport());
+        applyScrollBarWindowChrome(scrollPane.getVerticalScrollBar());
+        applyScrollBarWindowChrome(scrollPane.getHorizontalScrollBar());
+    }
+
+    public static void applyDialogListScrollPane(JScrollPane scrollPane, JList<?> list) {
+        applyDialogScrollPane(scrollPane);
+        applyDialogList(list);
+    }
+
+    public static void applyDialogSplitPane(JSplitPane splitPane) {
+        setDialogSplitPane(splitPane);
+        installThemeRefresh(splitPane, component -> setDialogSplitPane((JSplitPane) component));
     }
 
     public static void applyBackground(JComponent component) {
@@ -119,6 +272,11 @@ public final class ToolWindowSurfaceStyle {
     public static void applyListCard(JList<?> list) {
         setListCard(list);
         installThemeRefresh(list, component -> setListCard((JList<?>) component));
+    }
+
+    public static void applyDialogList(JList<?> list) {
+        setDialogList(list);
+        installThemeRefresh(list, component -> setDialogList((JList<?>) component));
     }
 
     public static void applyTreeCard(JTree tree) {
@@ -187,6 +345,22 @@ public final class ToolWindowSurfaceStyle {
         installThemeRefresh(scrollBar, ToolWindowSurfaceStyle::setOpaqueCard);
     }
 
+    private static void applyViewportWindowChrome(JViewport viewport) {
+        if (viewport == null) {
+            return;
+        }
+        setWindowChromeBackground(viewport, true);
+        installThemeRefresh(viewport, ToolWindowSurfaceStyle::setOpaqueWindowChromeBackground);
+    }
+
+    private static void applyScrollBarWindowChrome(JScrollBar scrollBar) {
+        if (scrollBar == null) {
+            return;
+        }
+        setWindowChromeBackground(scrollBar, true);
+        installThemeRefresh(scrollBar, ToolWindowSurfaceStyle::setOpaqueWindowChromeBackground);
+    }
+
     private static void applyPanelCardPreservingOpacity(JPanel panel) {
         boolean opaque = panel.isOpaque();
         setCard(panel, opaque);
@@ -215,6 +389,42 @@ public final class ToolWindowSurfaceStyle {
         setBackground(component, true);
     }
 
+    private static void setOpaqueWindowChromeBackground(JComponent component) {
+        setWindowChromeBackground(component, true);
+    }
+
+    private static void setDialogFooter(JComponent component) {
+        setWindowChromeBackground(component, true);
+        component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getTabSeparatorColor()),
+                BorderFactory.createEmptyBorder(10, 16, 10, 16)
+        ));
+    }
+
+    private static void setDialogSurface(JComponent component) {
+        setWindowChromeBackground(component, true);
+    }
+
+    private static void setDialogList(JList<?> list) {
+        setWindowChromeBackground(list, true);
+        list.setForeground(ModernColors.getTextPrimary());
+        list.setSelectionBackground(ModernColors.getTabSelectedBackgroundColor());
+        list.setSelectionForeground(ModernColors.getTextPrimary());
+    }
+
+    private static void setDialogSplitPane(JSplitPane splitPane) {
+        setWindowChromeBackground(splitPane, true);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        BasicSplitPaneUI ui = splitPane.getUI() instanceof BasicSplitPaneUI basicUi ? basicUi : null;
+        if (ui != null) {
+            BasicSplitPaneDivider divider = ui.getDivider();
+            if (divider != null) {
+                divider.setBorder(BorderFactory.createEmptyBorder());
+                divider.setBackground(ModernColors.getWindowChromeBackgroundColor());
+            }
+        }
+    }
+
     private static void setTabbedPaneCard(JTabbedPane tabbedPane) {
         tabbedPane.setOpaque(true);
         tabbedPane.setBackground(ModernColors.getTabBackgroundColor());
@@ -228,6 +438,11 @@ public final class ToolWindowSurfaceStyle {
     private static void setBackground(JComponent component, boolean opaque) {
         component.setOpaque(opaque);
         component.setBackground(ModernColors.getBackgroundColor());
+    }
+
+    private static void setWindowChromeBackground(JComponent component, boolean opaque) {
+        component.setOpaque(opaque);
+        component.setBackground(ModernColors.getWindowChromeBackgroundColor());
     }
 
     private static void setTableCard(JTable table) {

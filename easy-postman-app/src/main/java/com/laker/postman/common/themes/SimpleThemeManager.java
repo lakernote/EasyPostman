@@ -3,6 +3,7 @@ package com.laker.postman.common.themes;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.util.SystemInfo;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.*;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -107,6 +108,7 @@ public class SimpleThemeManager {
 
                 // Look and Feel 切换会重建 UIDefaults，先恢复用户字体再刷新窗口。
                 FontManager.installSavedFontDefaults();
+                ToolWindowSurfaceStyle.installGlobalDialogWindowChrome();
 
                 UserPreferencesStore.put(THEME_SETTING_KEY, theme.id());
 

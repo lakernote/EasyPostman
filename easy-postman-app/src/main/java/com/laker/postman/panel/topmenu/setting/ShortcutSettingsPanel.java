@@ -31,11 +31,11 @@ public class ShortcutSettingsPanel extends JPanel {
     public ShortcutSettingsPanel() {
         setLayout(new BorderLayout(10, 10));
         setBorder(new EmptyBorder(20, 20, 20, 20));
-        ToolWindowSurfaceStyle.applyCard(this);
+        ToolWindowSurfaceStyle.applyDialogSurface(this);
 
         // 标题面板
         JPanel titlePanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyCard(titlePanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(titlePanel);
         titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SHORTCUT_SETTINGS_TITLE));
@@ -83,7 +83,7 @@ public class ShortcutSettingsPanel extends JPanel {
 
         // 底部按钮面板
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        ToolWindowSurfaceStyle.applyCard(buttonPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(buttonPanel);
 
         JButton editButton = new JButton(I18nUtil.getMessage(MessageKeys.SHORTCUT_EDIT));
         editButton.addActionListener(e -> editShortcut());
@@ -272,13 +272,14 @@ public class ShortcutSettingsPanel extends JPanel {
             super(owner, I18nUtil.getMessage(MessageKeys.SHORTCUT_EDIT_TITLE), ModalityType.APPLICATION_MODAL);
             this.item = item;
 
+            ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
             setLayout(new BorderLayout(10, 10));
             ((JPanel) getContentPane()).setBorder(new EmptyBorder(20, 20, 20, 20));
-            ToolWindowSurfaceStyle.applyCard((JPanel) getContentPane());
+            ToolWindowSurfaceStyle.applyDialogSurface((JPanel) getContentPane());
 
             // 中心面板
             JPanel centerPanel = new JPanel(new GridLayout(3, 2, 10, 10));
-            ToolWindowSurfaceStyle.applyCard(centerPanel);
+            ToolWindowSurfaceStyle.applyDialogSurface(centerPanel);
 
             centerPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.SHORTCUT_ACTION) + ":"));
             centerPanel.add(new JLabel(item.getActionName()));
@@ -314,7 +315,7 @@ public class ShortcutSettingsPanel extends JPanel {
 
             // 按钮面板
             JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-            ToolWindowSurfaceStyle.applyCard(buttonPanel);
+            ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
 
             JButton okButton = new JButton(I18nUtil.getMessage(MessageKeys.SETTINGS_DIALOG_SAVE));
             okButton.addActionListener(e -> confirm());

@@ -154,6 +154,8 @@ public class EasyLafThemePropertiesTest {
     private void assertThemeBrandColors(Color primary, Color selectionBackground) {
         assertEquals(UIManager.getColor(ThemeColors.PRIMARY), primary);
         assertEquals(UIManager.getColor("Component.accentColor"), primary);
+        assertEquals(UIManager.getColor("Component.focusColor"), primary);
+        assertEquals(UIManager.getColor("Component.focusedBorderColor"), primary);
         assertEquals(UIManager.getColor(ThemeColors.SELECTION_BACKGROUND), selectionBackground);
     }
 

@@ -105,7 +105,8 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
     private JPanel createActionBar() {
         JPanel actionBar = new JPanel();
         actionBar.setLayout(new BoxLayout(actionBar, BoxLayout.X_AXIS));
-        ToolWindowSurfaceStyle.applyCard(actionBar);
+        actionBar.setOpaque(false);
+        actionBar.setBackground(getBackgroundColor());
         actionBar.setAlignmentX(Component.LEFT_ALIGNMENT);
         actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
@@ -431,7 +432,9 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
         }
 
         private void initUI(Window owner) {
+            ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
             setLayout(new BorderLayout(10, 10));
+            ToolWindowSurfaceStyle.applyDialogSurface((JPanel) getContentPane());
             ((JPanel) getContentPane()).setBorder(new EmptyBorder(18, 18, 18, 18));
 
             JPanel formPanel = new JPanel(new GridBagLayout());

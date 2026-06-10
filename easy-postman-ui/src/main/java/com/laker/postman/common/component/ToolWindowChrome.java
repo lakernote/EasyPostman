@@ -12,14 +12,16 @@ import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Insets;
 
 /**
- * Shared IDEA-like chrome for large tool-window panes.
+ * 大块工具窗口的统一外壳，负责 IDEA 风格的外层背景、圆角卡片和 split 间距。
  */
 public final class ToolWindowChrome {
     public static final int DEFAULT_SIDE_WIDTH = 310;
     public static final int DIVIDER_SIZE = 4;
+    public static final int INNER_DIVIDER_SIZE = 3;
     static final String CHROME_BACKGROUND_PROPERTY = "EasyPostman.toolWindowChrome.background";
     static final String CHROME_ROUNDED_PROPERTY = "EasyPostman.toolWindowChrome.rounded";
     static final String CHROME_SPLIT_PROPERTY = "EasyPostman.toolWindowChrome.split";
@@ -34,6 +36,10 @@ public final class ToolWindowChrome {
     public static JComponent wrapLeftToolWindow(Component content) {
         return wrapToolWindow(content, new Insets(OUTER_VERTICAL_GAP, OUTER_HORIZONTAL_GAP,
                 OUTER_VERTICAL_GAP, INNER_GAP));
+    }
+
+    public static JComponent wrapLeftInsetToolWindow(Component content) {
+        return wrapLeftToolWindow(createInsetContent(content));
     }
 
     public static JComponent wrapRightToolWindow(Component content) {
@@ -76,6 +82,10 @@ public final class ToolWindowChrome {
         return wrapper;
     }
 
+    public static JComponent wrapDialogInsetToolWindow(Component content) {
+        return wrapDialogToolWindow(createInsetContent(content));
+    }
+
     public static JComponent wrapToolWindow(Component content, Insets outerGap) {
         JPanel wrapper = new BackgroundPanel();
         wrapper.setBorder(new EmptyBorder(outerGap));
@@ -91,10 +101,18 @@ public final class ToolWindowChrome {
         return createSplitPane(JSplitPane.VERTICAL_SPLIT, top, bottom, dividerLocation);
     }
 
+    public static JSplitPane createHorizontalInnerSplitPane(Component left, Component right, int dividerLocation) {
+        return createInnerSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right, dividerLocation);
+    }
+
+    public static JSplitPane createVerticalInnerSplitPane(Component top, Component bottom, int dividerLocation) {
+        return createInnerSplitPane(JSplitPane.VERTICAL_SPLIT, top, bottom, dividerLocation);
+    }
+
     public static JSplitPane createHorizontalCardSplitPane(Component leftContent, Component rightContent,
                                                           int dividerLocation) {
         return createHorizontalSplitPane(
-                wrapLeftToolWindow(leftContent),
+                wrapLeftInsetToolWindow(leftContent),
                 wrapRightToolWindow(rightContent),
                 dividerLocation
         );
@@ -123,6 +141,21 @@ public final class ToolWindowChrome {
         splitPane.setContinuousLayout(true);
         splitPane.setDividerLocation(dividerLocation);
         splitPane.setDividerSize(DIVIDER_SIZE);
+        splitPane.setBorder(BorderFactory.createEmptyBorder());
+        BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
+        if (divider != null) {
+            divider.setBorder(BorderFactory.createEmptyBorder());
+        }
+        return splitPane;
+    }
+
+    private static JSplitPane createInnerSplitPane(int orientation, Component first, Component second,
+                                                  int dividerLocation) {
+        // 内部 split 只用于一个圆角卡片内的二级分区：不再套新的圆角卡片，只画中间分割线。
+        JSplitPane splitPane = new ToolWindowInnerSplitPane(orientation, first, second);
+        splitPane.setContinuousLayout(true);
+        splitPane.setDividerLocation(dividerLocation);
+        splitPane.setDividerSize(INNER_DIVIDER_SIZE);
         splitPane.setBorder(BorderFactory.createEmptyBorder());
         BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
         if (divider != null) {
@@ -188,6 +221,25 @@ public final class ToolWindowChrome {
         }
     }
 
+    private static final class ToolWindowInnerSplitPane extends JSplitPane {
+        private ToolWindowInnerSplitPane(int orientation, Component first, Component second) {
+            super(orientation, first, second);
+            putClientProperty(CHROME_SPLIT_PROPERTY, Boolean.TRUE);
+            setOpaque(true);
+            refreshBackground();
+        }
+
+        @Override
+        public void updateUI() {
+            setUI(new InnerDividerSplitPaneUi());
+            refreshBackground();
+        }
+
+        private void refreshBackground() {
+            setBackground(ModernColors.getCardBackgroundColor());
+        }
+    }
+
     private static final class BorderlessSplitPaneUi extends BasicSplitPaneUI {
         @Override
         public BasicSplitPaneDivider createDefaultDivider() {
@@ -199,7 +251,39 @@ public final class ToolWindowChrome {
 
                 @Override
                 public void paint(Graphics g) {
-                    // Parent split pane paints the background gap. Divider only captures drag events.
+                    // 外层 split 的间隔由背景色表达，divider 本身只负责拖拽命中区域。
+                }
+            };
+        }
+    }
+
+    private static final class InnerDividerSplitPaneUi extends BasicSplitPaneUI {
+        @Override
+        public BasicSplitPaneDivider createDefaultDivider() {
+            return new BasicSplitPaneDivider(this) {
+                {
+                    setBorder(BorderFactory.createEmptyBorder());
+                    setBackground(ModernColors.getCardBackgroundColor());
+                }
+
+                @Override
+                public void paint(Graphics g) {
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    try {
+                        // 内部分割线要贴合卡片背景，避免把一个大圆角面板切成多个独立卡片。
+                        g2.setColor(ModernColors.getCardBackgroundColor());
+                        g2.fillRect(0, 0, getWidth(), getHeight());
+                        g2.setColor(ModernColors.getBorderLightColor());
+                        if (splitPane != null && splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT) {
+                            int x = Math.max(0, getWidth() / 2);
+                            g2.drawLine(x, 0, x, getHeight());
+                        } else {
+                            int y = Math.max(0, getHeight() / 2);
+                            g2.drawLine(0, y, getWidth(), y);
+                        }
+                    } finally {
+                        g2.dispose();
+                    }
                 }
             };
         }

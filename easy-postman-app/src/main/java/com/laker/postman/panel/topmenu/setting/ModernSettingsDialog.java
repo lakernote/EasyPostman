@@ -24,11 +24,9 @@ public class ModernSettingsDialog extends JDialog {
     // UI 常量
     private static final int MIN_WIDTH = 600;
     private static final int MIN_HEIGHT = 300;
-    private static final int PREFERRED_WIDTH = 800;
-    private static final int PREFERRED_HEIGHT = 650;
-    private static final int CORNER_RADIUS = 6;
-    private static final int TAB_MARGIN = 2;
-    private static final int TAB_PADDING = 4;
+    private static final int PREFERRED_WIDTH = 960;
+    private static final int PREFERRED_HEIGHT = 700;
+    private static final int SIDE_TAB_WIDTH = 176;
 
     private final JTabbedPane tabbedPane;
     private final SettingsContributionRegistry contributionRegistry;
@@ -44,7 +42,7 @@ public class ModernSettingsDialog extends JDialog {
      * 获取主题适配的悬停背景色
      */
     private Color getHoverBackgroundColor() {
-        return ModernColors.getHoverBackgroundColor();
+        return ModernColors.getTabHoverBackgroundColor();
     }
 
 
@@ -69,6 +67,7 @@ public class ModernSettingsDialog extends JDialog {
     }
 
     private void configureDialog() {
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         setResizable(false);
         setMinimumSize(new Dimension(MIN_WIDTH, MIN_HEIGHT));
@@ -108,7 +107,7 @@ public class ModernSettingsDialog extends JDialog {
 
     private void setupMainPanel() {
         JPanel mainPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyBackground(mainPanel);
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
         mainPanel.add(tabbedPane, BorderLayout.CENTER);
         setContentPane(mainPanel);
     }
@@ -127,7 +126,8 @@ public class ModernSettingsDialog extends JDialog {
      */
     private JTabbedPane createModernTabbedPane() {
         JTabbedPane pane = new JTabbedPane(SwingConstants.LEFT);
-        ToolWindowSurfaceStyle.applyTabbedPaneCard(pane);
+        ToolWindowSurfaceStyle.applyDialogSurface(pane);
+        pane.setBorder(BorderFactory.createEmptyBorder());
         pane.setForeground(getTextColor());
         pane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         pane.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
@@ -143,10 +143,34 @@ public class ModernSettingsDialog extends JDialog {
         @Override
         protected void installDefaults() {
             super.installDefaults();
-            tabAreaInsets = new Insets(5, 5, 5, 0);
+            tabAreaInsets = new Insets(12, 0, 12, 0);
             contentBorderInsets = new Insets(0, 0, 0, 0);
-            tabInsets = new Insets(8, 12, 8, 12);
+            tabInsets = new Insets(8, 16, 8, 16);
             selectedTabPadInsets = new Insets(0, 0, 0, 0);
+        }
+
+        @Override
+        protected void paintTabArea(Graphics g, int tabPlacement, int selectedIndex) {
+            int tabAreaWidth = calculateTabAreaWidth(tabPlacement, runCount, maxTabWidth);
+            g.setColor(ModernColors.getWindowChromeBackgroundColor());
+            g.fillRect(0, 0, tabAreaWidth, tabPane.getHeight());
+            super.paintTabArea(g, tabPlacement, selectedIndex);
+            // 左侧导航的竖线属于整个 tabArea，而不是某个 tab，避免选中项重绘时出现断线。
+            paintTabAreaDivider(g, tabAreaWidth);
+        }
+
+        private void paintTabAreaDivider(Graphics g, int tabAreaWidth) {
+            if (tabAreaWidth <= 0) {
+                return;
+            }
+            g.setColor(ModernColors.getBorderLightColor());
+            int x = tabAreaWidth - 1;
+            g.drawLine(x, 0, x, tabPane.getHeight());
+        }
+
+        @Override
+        protected int calculateTabWidth(int tabPlacement, int tabIndex, FontMetrics metrics) {
+            return Math.max(SIDE_TAB_WIDTH, super.calculateTabWidth(tabPlacement, tabIndex, metrics));
         }
 
         @Override
@@ -154,16 +178,13 @@ public class ModernSettingsDialog extends JDialog {
                                           int x, int y, int w, int h, boolean isSelected) {
             Graphics2D g2 = (Graphics2D) g.create();
             try {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
                 if (isSelected) {
-                    g2.setColor(ModernColors.getPrimary());
-                    g2.fillRoundRect(x + TAB_MARGIN, y + TAB_MARGIN,
-                            w - TAB_PADDING, h - TAB_PADDING, CORNER_RADIUS, CORNER_RADIUS);
+                    g2.setColor(ModernColors.getTabSelectedBackgroundColor());
+                    // 选中背景少画 1px，给右侧固定分割线留出位置。
+                    g2.fillRect(x, y, Math.max(0, w - 1), h);
                 } else if (getRolloverTab() == tabIndex) {
                     g2.setColor(getHoverBackgroundColor());
-                    g2.fillRoundRect(x + TAB_MARGIN, y + TAB_MARGIN,
-                            w - TAB_PADDING, h - TAB_PADDING, CORNER_RADIUS, CORNER_RADIUS);
+                    g2.fillRect(x, y, Math.max(0, w - 1), h);
                 }
             } finally {
                 g2.dispose();
@@ -191,7 +212,7 @@ public class ModernSettingsDialog extends JDialog {
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                         RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 
-                g2.setColor(isSelected ? ModernColors.getTextInverse() : getTextColor());
+                g2.setColor(getTextColor());
                 g2.setFont(isSelected ? font.deriveFont(Font.BOLD) : font);
                 g2.drawString(title, textRect.x, textRect.y + metrics.getAscent());
             } finally {
@@ -201,7 +222,7 @@ public class ModernSettingsDialog extends JDialog {
 
         @Override
         protected void paintContentBorder(Graphics g, int tabPlacement, int selectedIndex) {
-            // 不绘制内容区边框
+            // 左侧导航分割线由 tabArea 固定绘制，避免选中项重绘时出现断线。
         }
     }
 

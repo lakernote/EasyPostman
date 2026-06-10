@@ -254,7 +254,7 @@ public class ElasticsearchPanel extends JPanel {
         add(buildConnectionPanel(), BorderLayout.NORTH);
 
         // 主内容区：左侧（索引+历史）+ 右侧 DSL
-        JSplitPane mainSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
                 buildLeftPanel(),
                 buildDslPanel(),
                 240
@@ -1137,7 +1137,7 @@ public class ElasticsearchPanel extends JPanel {
         resultPanel.add(respHeader, BorderLayout.NORTH);
         resultPanel.add(resultTabs, BorderLayout.CENTER);
 
-        JSplitPane editorSplit = ToolWindowChrome.createVerticalCardSplitPane(
+        JSplitPane editorSplit = ToolWindowChrome.createVerticalInnerSplitPane(
                 editorPanel,
                 resultPanel,
                 260

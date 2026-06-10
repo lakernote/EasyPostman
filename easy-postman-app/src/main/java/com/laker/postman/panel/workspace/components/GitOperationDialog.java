@@ -140,9 +140,7 @@ public class GitOperationDialog extends JDialog {
         setSize(750, 600);
         setLocationRelativeTo(getParent());
         setLayout(new BorderLayout());
-
-        // 设置现代化外观
-        getRootPane().setBorder(new EmptyBorder(0, 0, 0, 0));
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
     }
 
     /**
@@ -179,19 +177,18 @@ public class GitOperationDialog extends JDialog {
      */
     private JPanel createHeaderPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBackground(GitOperationPresentation.getColor(operation));
-        panel.setBorder(new EmptyBorder(5, 20, 5, 20));
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+        panel.setBorder(new EmptyBorder(12, 20, 10, 20));
 
         // 左侧：操作图标和名称
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         leftPanel.setOpaque(false);
 
-        // Header uses operation color (colorful), so white icons are appropriate
         FlatSVGIcon icon = IconUtil.createColored(
                 GitOperationPresentation.getIconName(operation),
                 32,
                 32,
-                ModernColors.getTextInverse()
+                GitOperationPresentation.getColor(operation)
         );
         JLabel operationIcon = new JLabel(icon);
         operationIcon.setBorder(new EmptyBorder(0, 0, 0, 15));
@@ -201,13 +198,11 @@ public class GitOperationDialog extends JDialog {
 
         JLabel titleLabel = new JLabel(operation.getDisplayName());
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +4));
-        // Inverse text on colored operation background.
-        titleLabel.setForeground(ModernColors.getTextInverse());
+        titleLabel.setForeground(ModernColors.getTextPrimary());
 
         JLabel subtitleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_WORKSPACE, workspace.getName()));
         subtitleLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        // Inverse text on colored operation background.
-        subtitleLabel.setForeground(ModernColors.getTextInverse());
+        subtitleLabel.setForeground(ModernColors.getTextSecondary());
 
         textPanel.add(titleLabel);
         textPanel.add(subtitleLabel);
@@ -234,15 +229,13 @@ public class GitOperationDialog extends JDialog {
         JLabel currentBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_CURRENT_BRANCH,
                 workspace.getCurrentBranch() != null ? workspace.getCurrentBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_UNKNOWN)));
         currentBranchLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        // Inverse text on colored operation background.
-        currentBranchLabel.setForeground(ModernColors.getTextInverse());
+        currentBranchLabel.setForeground(ModernColors.getTextSecondary());
         currentBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         JLabel remoteBranchLabel = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_REMOTE_BRANCH,
                 workspace.getRemoteBranch() != null ? workspace.getRemoteBranch() : I18nUtil.getMessage(MessageKeys.GIT_DIALOG_NOT_SET)));
         remoteBranchLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        // Inverse text on colored operation background.
-        remoteBranchLabel.setForeground(ModernColors.getTextInverse());
+        remoteBranchLabel.setForeground(ModernColors.getTextSecondary());
         remoteBranchLabel.setHorizontalAlignment(SwingConstants.RIGHT);
 
         panel.add(currentBranchLabel);

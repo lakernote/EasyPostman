@@ -126,7 +126,8 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     private JPanel createDescriptionSection() {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setOpaque(false);
+        panel.setBackground(getBackgroundColor());
         panel.setAlignmentX(Component.LEFT_ALIGNMENT);
         panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
@@ -168,7 +169,8 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
     private JPanel createActionBar() {
         JPanel actionBar = new JPanel();
         actionBar.setLayout(new BoxLayout(actionBar, BoxLayout.X_AXIS));
-        ToolWindowSurfaceStyle.applyCard(actionBar);
+        actionBar.setOpaque(false);
+        actionBar.setBackground(getBackgroundColor());
         actionBar.setAlignmentX(Component.LEFT_ALIGNMENT);
         actionBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
@@ -471,7 +473,9 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         }
 
         private void initUI() {
+            ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
             setLayout(new BorderLayout(10, 10));
+            ToolWindowSurfaceStyle.applyDialogSurface((JPanel) getContentPane());
             ((JPanel) getContentPane()).setBorder(new EmptyBorder(20, 20, 20, 20));
 
             // 表单面板

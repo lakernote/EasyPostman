@@ -231,7 +231,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
         clearDetailPanes();
 
-        JSplitPane split = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane split = ToolWindowChrome.createHorizontalInnerSplitPane(
                 listScroll,
                 historyDetailPanel,
                 HISTORY_SIDEBAR_WIDTH

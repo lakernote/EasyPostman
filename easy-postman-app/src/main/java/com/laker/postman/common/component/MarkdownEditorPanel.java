@@ -10,7 +10,6 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.undo.UndoManager;
@@ -159,7 +158,7 @@ public class MarkdownEditorPanel extends JPanel {
         editorPanelRef = createEditorPanel();
         previewPanelRef = createPreviewPanel();
 
-        splitPane = ToolWindowChrome.createHorizontalCardSplitPane(editorPanelRef, previewPanelRef, 0);
+        splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(editorPanelRef, previewPanelRef, 0);
         splitPane.setResizeWeight(0.5);
 
         toolbarPanel = createEnhancedToolbar();
@@ -403,7 +402,7 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private JPanel createEditorPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setOpaque(false);
 
         // 创建 RSyntaxTextArea 用于 Markdown 编辑
         editorArea = new RSyntaxTextArea();
@@ -454,13 +453,13 @@ public class MarkdownEditorPanel extends JPanel {
      */
     private JPanel createPreviewPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setOpaque(false);
 
         previewPane = new JTextPane();
         previewPane.setContentType("text/html");
         previewPane.setEditable(false);
-        previewPane.setBorder(new EmptyBorder(3, 3, 3, 3));
-        previewPane.setBackground(ModernColors.getCardBackgroundColor());
+        previewPane.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        ToolWindowSurfaceStyle.applyTextComponentCard(previewPane);
         JScrollPane scrollPane = new JScrollPane(previewPane);
         ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
 
@@ -851,7 +850,7 @@ public class MarkdownEditorPanel extends JPanel {
             case MODE_SPLIT:
                 splitPane.setLeftComponent(editorPanelRef);
                 splitPane.setRightComponent(previewPanelRef);
-                splitPane.setDividerSize(5);
+                splitPane.setDividerSize(ToolWindowChrome.INNER_DIVIDER_SIZE);
                 SwingUtilities.invokeLater(() -> splitPane.setDividerLocation(0.5));
                 break;
             case MODE_EDIT_ONLY:

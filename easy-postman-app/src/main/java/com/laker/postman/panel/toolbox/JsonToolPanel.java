@@ -117,7 +117,7 @@ public class JsonToolPanel extends JPanel {
         searchableOutputArea.setLineNumbersEnabled(true);
         outputPanel.add(searchableOutputArea, BorderLayout.CENTER);
 
-        JSplitPane splitPane = ToolWindowChrome.createVerticalCardSplitPane(inputPanel, outputPanel, 300);
+        JSplitPane splitPane = ToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 300);
         splitPane.setResizeWeight(0.5); // 平均分配空间
 
         add(splitPane, BorderLayout.CENTER);

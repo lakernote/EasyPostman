@@ -21,6 +21,7 @@ public class MarkdownToolPanel extends JPanel {
     private void initUI() {
         setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(this);
+        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         // 创建 Markdown 编辑器
         markdownEditor = new MarkdownEditorPanel();

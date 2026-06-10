@@ -14,6 +14,8 @@ import java.util.Map;
 
 import static com.laker.postman.test.ThemeTokenTestSupport.remember;
 import static com.laker.postman.test.ThemeTokenTestSupport.restore;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 public class MarkdownEditorPanelThemeTest extends AbstractSwingUiTest {
@@ -52,11 +54,33 @@ public class MarkdownEditorPanelThemeTest extends AbstractSwingUiTest {
         assertTrue(styles[1].contains("color:#0b0c0d"));
     }
 
+    @Test
+    public void editorAndPreviewShouldUseInnerSplitWithoutNestedToolWindowCards() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            MarkdownEditorPanel panel = new MarkdownEditorPanel();
+            JSplitPane splitPane = (JSplitPane) readField(panel, "splitPane");
+
+            assertEquals(splitPane.getDividerSize(), ToolWindowChrome.INNER_DIVIDER_SIZE);
+            assertSame(splitPane.getLeftComponent(), readField(panel, "editorPanelRef"));
+            assertSame(splitPane.getRightComponent(), readField(panel, "previewPanelRef"));
+        });
+    }
+
     private static String invokeString(MarkdownEditorPanel panel, String methodName) {
         try {
             Method method = MarkdownEditorPanel.class.getDeclaredMethod(methodName);
             method.setAccessible(true);
             return (String) method.invoke(panel);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError(e);
+        }
+    }
+
+    private static Object readField(MarkdownEditorPanel panel, String fieldName) {
+        try {
+            java.lang.reflect.Field field = MarkdownEditorPanel.class.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(panel);
         } catch (ReflectiveOperationException e) {
             throw new AssertionError(e);
         }

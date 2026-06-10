@@ -181,7 +181,7 @@ public class CronPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTableScrollPaneCard(tableScrollPane, nextExecutionTable);
         tablePanel.add(tableScrollPane, BorderLayout.CENTER);
 
-        JSplitPane split = ToolWindowChrome.createVerticalCardSplitPane(descPanel, tablePanel, 180);
+        JSplitPane split = ToolWindowChrome.createVerticalInnerSplitPane(descPanel, tablePanel, 180);
         split.setResizeWeight(0.4);   // 40% description, 60% table
         panel.add(split, BorderLayout.CENTER);
 

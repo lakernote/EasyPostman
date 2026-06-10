@@ -3,6 +3,7 @@ package com.laker.postman.util;
 import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.IRefreshable;
 import com.laker.postman.common.component.SyntaxEditorScrollPane;
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.frame.MainFrame;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,8 @@ public class UIRefreshManager {
 
                     if (window instanceof MainFrame mainFrame) {
                         mainFrame.refreshWindowChrome();
+                    } else if (window instanceof JDialog dialog) {
+                        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
                     }
 
                     // 重新验证布局

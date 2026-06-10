@@ -74,7 +74,7 @@ public class DiffPanel extends JPanel {
         ToolWindowSurfaceStyle.applyScrollPaneCard(modifiedScrollPane);
         modifiedPanel.add(modifiedScrollPane, BorderLayout.CENTER);
 
-        JSplitPane topSplitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane topSplitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
                 originalPanel,
                 modifiedPanel,
                 360
@@ -96,7 +96,7 @@ public class DiffPanel extends JPanel {
         ToolWindowSurfaceStyle.applyScrollPaneCard(resultScrollPane);
         resultPanel.add(resultScrollPane, BorderLayout.CENTER);
 
-        JSplitPane mainSplitPane = ToolWindowChrome.createVerticalCardSplitPane(
+        JSplitPane mainSplitPane = ToolWindowChrome.createVerticalInnerSplitPane(
                 topSplitPane,
                 resultPanel,
                 250

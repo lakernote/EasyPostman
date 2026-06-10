@@ -26,12 +26,12 @@ public class SettingsHintLabelTest {
     public void mixedChineseEnglishHintShouldWrapInsteadOfUsingHtmlLabelRenderer() {
         SettingsHintLabel label = new SettingsHintLabel(
                 "客户端证书能力已拆分为可选插件。安装官方 Client Certificate 插件后，即可继续配置 mTLS 证书并自动应用到请求。",
-                560
+                360
         );
 
         Dimension preferredSize = label.getPreferredSize();
 
-        assertTrue(preferredSize.width <= 564,
+        assertTrue(preferredSize.width <= 364,
                 "Mixed Chinese/English hint preferred width should stay within configured width");
         assertTrue(preferredSize.height > label.getFontMetrics(label.getFont()).getHeight(),
                 "Mixed Chinese/English hint should wrap to multiple lines");

@@ -1,5 +1,6 @@
 package com.laker.postman.panel.sidebar;
 
+import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.constants.ThemeColors;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -7,6 +8,7 @@ import org.testng.annotations.Test;
 
 import javax.swing.*;
 import java.awt.*;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,5 +47,24 @@ public class ConsolePanelThemeTest {
 
         assertEquals(ConsoleTheme.searchHighlightBackground(), highlight);
         assertEquals(ConsoleTheme.searchCurrentHighlightBackground(), currentHighlight);
+    }
+
+    @Test
+    public void toolbarControlsShouldKeepCompactWidthWhenToolbarExpands() throws Exception {
+        JComboBox<String> comboBox = new JComboBox<>(new String[]{"All"});
+        int width = 90;
+
+        Method method = ConsolePanel.class.getDeclaredMethod(
+                "lockToolbarControlSize",
+                JComponent.class,
+                int.class
+        );
+        method.setAccessible(true);
+        method.invoke(null, comboBox, width);
+
+        Dimension expected = new Dimension(width, ToolWindowActionToolbar.ACTION_SIZE);
+        assertEquals(comboBox.getMinimumSize(), expected);
+        assertEquals(comboBox.getPreferredSize(), expected);
+        assertEquals(comboBox.getMaximumSize(), expected);
     }
 }

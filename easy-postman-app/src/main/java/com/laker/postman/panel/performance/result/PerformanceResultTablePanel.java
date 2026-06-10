@@ -155,7 +155,7 @@ public class PerformanceResultTablePanel extends JPanel {
         detailTabs = new JTabbedPane();
         ToolWindowSurfaceStyle.applyTabbedPaneCard(detailTabs);
 
-        JSplitPane split = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane split = ToolWindowChrome.createHorizontalInnerSplitPane(
                 leftPanel,
                 detailTabs,
                 620

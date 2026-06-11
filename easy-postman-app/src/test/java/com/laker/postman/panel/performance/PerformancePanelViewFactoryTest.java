@@ -16,8 +16,10 @@ import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JTree;
 import javax.swing.JTextField;
+import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,8 +42,8 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         PerformancePanelViewFactory.TreeSection treeSection = viewFactory.createTreeSection(new DefaultTreeModel(root));
 
         JTree tree = treeSection.tree();
-        assertEquals(tree.getBackground(), ModernColors.getCardBackgroundColor());
-        assertEquals(tree.getForeground(), ModernColors.getTextPrimary());
+        assertEquals(tree.getBackground(), uiColor("Tree.background", ModernColors.getCardBackgroundColor()));
+        assertEquals(tree.getForeground(), uiColor("Tree.foreground", ModernColors.getTextPrimary()));
     }
 
     @Test
@@ -175,6 +177,8 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         assertFalse(toolbarSection.limitLabel().isVisible());
         assertNotNull(toolbarSection.progressLabel().getIcon());
         assertNull(toolbarSection.limitLabel().getIcon());
+        assertFalse(toolbarSection.workerEndpointsField().isEditable());
+        assertEquals(toolbarSection.workerEndpointsField().getForeground(), ModernColors.getTextDisabled());
         MemoryLabel memoryLabel = findFirst(toolbarSection.topPanel(), MemoryLabel.class);
         assertNotNull(memoryLabel);
         assertTrue(memoryLabel.getText().contains("/"));
@@ -192,6 +196,8 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         assertEquals(usageHelpCount.get(), 1);
         toolbarSection.remoteModeCheckBox().doClick();
         assertEquals(remoteToggleCount.get(), 1);
+        assertTrue(toolbarSection.workerEndpointsField().isEditable());
+        assertEquals(toolbarSection.workerEndpointsField().getForeground(), ModernColors.getTextPrimary());
     }
 
     private static int countCheckBoxes(Component component) {
@@ -202,6 +208,11 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
             }
         }
         return count;
+    }
+
+    private static Color uiColor(String key, Color fallback) {
+        Color color = UIManager.getColor(key);
+        return color == null ? fallback : color;
     }
 
     private static int countTextFields(Component component) {

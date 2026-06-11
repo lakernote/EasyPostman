@@ -212,12 +212,12 @@ final class PerformancePanelViewFactory {
                                         Consumer<Boolean> remoteExecutionEnabledAction,
                                         Consumer<String> workerEndpointsAction) {
         JPanel topPanel = new JPanel(new MigLayout(
-                "insets 4 8 4 8, fillx, novisualpadding, gap 0",
-                "[]4[1!]8[]4[1!]8[]push[]",
+                "insets 6 10 6 10, fillx, novisualpadding, gap 0",
+                "[]8[1!]10[]10[1!]10[280:380:520,fill]push[]",
                 "[]"
         ));
         ToolWindowSurfaceStyle.applyCard(topPanel);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
 
         StartButton runBtn = new StartButton();
         StopButton stopBtn = new StopButton();
@@ -237,13 +237,13 @@ final class PerformancePanelViewFactory {
         topPanel.add(btnPanel);
         topPanel.add(createToolbarSeparator());
 
-        JPanel planPanel = createToolbarGroupPanel("[]4[150!,fill]4[]2[]2[]2[]");
+        JPanel planPanel = createToolbarGroupPanel("[]4[140:160:180,fill]4[]2[]2[]2[]");
         JLabel planLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_LABEL));
         planLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         planLabel.setForeground(ModernColors.getTextSecondary());
         JComboBox<String> planSelector = new JComboBox<>();
         planSelector.setFocusable(false);
-        planSelector.setPreferredSize(new Dimension(150, TOOLBAR_CONTROL_HEIGHT));
+        planSelector.setPreferredSize(new Dimension(160, TOOLBAR_CONTROL_HEIGHT));
 
         PlusButton addPlanButton = new PlusButton(IconUtil.SIZE_SMALL);
         addPlanButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_ADD_TOOLTIP));
@@ -262,12 +262,12 @@ final class PerformancePanelViewFactory {
         topPanel.add(planPanel);
         topPanel.add(createToolbarSeparator());
 
-        JPanel remotePanel = createToolbarGroupPanel("[]6[260:360:460,fill]6[64!]");
+        JPanel remotePanel = createToolbarGroupPanel("[]6[160:260:360,fill]6[]");
         JCheckBox remoteModeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE));
         remoteModeCheckBox.setSelected(remoteExecutionEnabled);
         remoteModeCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE_TOOLTIP));
         JTextField workerEndpointsField = new JTextField(workerEndpoints == null ? "" : workerEndpoints);
-        workerEndpointsField.setPreferredSize(new Dimension(340, TOOLBAR_CONTROL_HEIGHT));
+        workerEndpointsField.setPreferredSize(new Dimension(260, TOOLBAR_CONTROL_HEIGHT));
         workerEndpointsField.putClientProperty(
                 FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_PLACEHOLDER)
@@ -373,6 +373,12 @@ final class PerformancePanelViewFactory {
                                           JLabel workerStatusLabel) {
         boolean remoteEnabled = remoteModeCheckBox.isSelected();
         workerEndpointsField.setEditable(remoteEnabled);
+        workerEndpointsField.setForeground(remoteEnabled
+                ? ModernColors.getTextPrimary()
+                : ModernColors.getTextDisabled());
+        workerEndpointsField.setBackground(remoteEnabled
+                ? ModernColors.getInputBackgroundColor()
+                : ModernColors.getCardBackgroundColor());
         workerEndpointsField.putClientProperty(FlatClientProperties.OUTLINE, null);
         if (!remoteEnabled) {
             workerStatusLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_STATUS_LOCAL));
@@ -490,9 +496,6 @@ final class PerformancePanelViewFactory {
         switcher.add(reportButton);
         switcher.add(resultTableButton);
 
-        JPanel leftPanel = ToolWindowActionToolbar.inlineLeft(switcher);
-        toolbar.add(leftPanel, BorderLayout.WEST);
-
         JCheckBox efficientCheckBox = createCompactDetailsCheckBox(
                 parentComponent,
                 efficientMode,
@@ -529,7 +532,7 @@ final class PerformancePanelViewFactory {
         contextCards.add(createTableContextPanel(efficientCheckBox), RESULT_CONTEXT_TABLE);
         contextCards.add(createReportContextPanel(reportRefreshModeBox), RESULT_CONTEXT_REPORT);
         contextCards.add(createTrendContextPanel(trendCheckBox), RESULT_CONTEXT_TREND);
-        toolbar.add(contextCards, BorderLayout.EAST);
+        toolbar.add(createResultToolbarLeftPanel(switcher, contextCards), BorderLayout.WEST);
 
         resultTableButton.addActionListener(e -> selectResultTab(resultTabbedPane, RESULT_TAB_TABLE, reportRefreshAction));
         reportButton.addActionListener(e -> selectResultTab(resultTabbedPane, RESULT_TAB_REPORT, reportRefreshAction));
@@ -596,6 +599,18 @@ final class PerformancePanelViewFactory {
 
     private JPanel createTrendContextPanel(JCheckBox trendCheckBox) {
         return ToolWindowActionToolbar.inlineRight(trendCheckBox);
+    }
+
+    private JPanel createResultToolbarLeftPanel(JPanel switcher, JPanel contextCards) {
+        JPanel panel = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding, gap 0",
+                "[]10[]",
+                "[]"
+        ));
+        panel.setOpaque(false);
+        panel.add(switcher);
+        panel.add(contextCards);
+        return panel;
     }
 
     private void selectResultTab(JTabbedPane resultTabbedPane, int index, Runnable reportRefreshAction) {

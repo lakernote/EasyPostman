@@ -2,11 +2,14 @@ package com.laker.postman.panel.performance.threadgroup;
 
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
+import com.laker.postman.common.component.button.SegmentedToggleButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import java.awt.*;
@@ -27,7 +30,8 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JPanel fixedPanel;
     private final EasyJSpinner fixedNumThreadsSpinner;
     private final EasyJSpinner fixedLoopsSpinner;
-    private final JCheckBox useTimeCheckBox;
+    private final JToggleButton useLoopCountButton;
+    private final JToggleButton useTimeCheckBox;
     private final EasyJSpinner durationSpinner;
 
     // 递增模式面板组件
@@ -60,19 +64,18 @@ public class ThreadGroupPropertyPanel extends JPanel {
     public ThreadGroupPropertyPanel() {
         setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
 
-        // 顶部模式选择区域
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 2));
-        topPanel.setOpaque(false);
-        topPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_MODE_LABEL)));
         modeComboBox = new JComboBox<>(ThreadGroupData.ThreadMode.values());
         modeComboBox.setRenderer(new ThreadModeRenderer());
-        modeComboBox.setPreferredSize(new Dimension(150, 28));
-        topPanel.add(modeComboBox);
+        modeComboBox.setPreferredSize(new Dimension(220, 28));
 
         // 中间部分：左侧配置面板，右侧预览图
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 0));
+        JPanel mainPanel = new JPanel(new MigLayout(
+                "insets 0, fill, novisualpadding, gap 0",
+                "[360:410:460,fill]16[420::,grow,fill]",
+                "[grow,fill]"
+        ));
         mainPanel.setOpaque(false);
 
         // 中间卡片布局，用于切换不同模式的配置面板
@@ -80,8 +83,8 @@ public class ThreadGroupPropertyPanel extends JPanel {
         cardPanel = new JPanel(cardLayout);
         cardPanel.setOpaque(false);
         // 动态调整配置面板大小以适应不同语言的标签长度
-        int configPanelWidth = I18nUtil.isChinese() ? 380 : 480;  // 英文需要更多空间
-        cardPanel.setPreferredSize(new Dimension(configPanelWidth, 150));
+        int configPanelWidth = I18nUtil.isChinese() ? 360 : 430;  // 英文需要更多空间
+        cardPanel.setPreferredSize(new Dimension(configPanelWidth, 128));
 
         // 初始化所有控件和面板
         // 1. 固定模式面板
@@ -92,7 +95,17 @@ public class ThreadGroupPropertyPanel extends JPanel {
         fixedNumThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         fixedLoopsSpinner = EasyJSpinner.intSpinner(1, 1, null, 1);
         fixedLoopsSpinner.setPreferredSize(new Dimension(80, 28));
-        useTimeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_USE_TIME));
+        useLoopCountButton = new SegmentedToggleButton(
+                trimFieldLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_LOOPS)),
+                true
+        );
+        useTimeCheckBox = new SegmentedToggleButton(
+                I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_USE_TIME),
+                false
+        );
+        ButtonGroup executionModeGroup = new ButtonGroup();
+        executionModeGroup.add(useLoopCountButton);
+        executionModeGroup.add(useTimeCheckBox);
         durationSpinner = EasyJSpinner.intSpinner(60, 1, null, 10);
         durationSpinner.setPreferredSize(new Dimension(80, 28));
 
@@ -165,39 +178,38 @@ public class ThreadGroupPropertyPanel extends JPanel {
             }
         });
 
-        // 初始设置
-        durationSpinner.setEnabled(false); // 默认按循环次数执行
-
-        // 按时间执行时禁用循环次数，按循环次数执行时禁用持续时间
-        useTimeCheckBox.addActionListener(e -> {
-            boolean useTime = useTimeCheckBox.isSelected();
-            fixedLoopsSpinner.setEnabled(!useTime);
-            durationSpinner.setEnabled(useTime);
-        });
+        useLoopCountButton.addActionListener(e -> updateFixedExecutionModeState());
+        useTimeCheckBox.addActionListener(e -> updateFixedExecutionModeState());
+        updateFixedExecutionModeState();
 
         // 预览图表区域
         previewPanel = new ThreadLoadPreviewPanel();
         // 在英文环境下适当调整预览面板的最小尺寸
-        int previewPanelWidth = I18nUtil.isChinese() ? 500 : 450;  // 英文环境给配置面板更多空间
+        int previewPanelWidth = I18nUtil.isChinese() ? 560 : 500;  // 英文环境给配置面板更多空间
         previewPanel.setPreferredSize(new Dimension(previewPanelWidth, 180));
-        previewPanel.setMinimumSize(new Dimension(400, 180));  // 设置最小尺寸防止过度压缩
+        previewPanel.setMinimumSize(new Dimension(360, 170));  // 设置最小尺寸防止过度压缩
         previewPanel.setOpaque(false);
-        previewPanel.setBorder(BorderFactory.createEmptyBorder(18, 8, 8, 8));
+        previewPanel.setBorder(BorderFactory.createEmptyBorder(14, 4, 6, 4));
 
         // 左侧配置区包装在一个面板中，以便控制布局
-        JPanel configPanel = new JPanel(new BorderLayout());
+        JPanel configPanel = new JPanel(new MigLayout(
+                "insets 2 0 0 0, fillx, novisualpadding, gap 0",
+                "[]8[220:260:320,fill]",
+                "[]10[]"
+        ));
         configPanel.setOpaque(false);
-        configPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 5));
-        configPanel.add(cardPanel, BorderLayout.NORTH);
+        configPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 4));
+        configPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_MODE_LABEL)), "aligny center");
+        configPanel.add(modeComboBox, "growx, wrap");
+        configPanel.add(cardPanel, "span 2, growx");
         // 动态调整配置面板宽度以匹配卡片面板
         configPanel.setPreferredSize(new Dimension(configPanelWidth, 180));
 
         // 添加到主面板
-        mainPanel.add(configPanel, BorderLayout.WEST);
-        mainPanel.add(previewPanel, BorderLayout.CENTER);
+        mainPanel.add(configPanel, "growy, top");
+        mainPanel.add(previewPanel, "grow, pushx");
 
         // 整体布局
-        add(topPanel, BorderLayout.NORTH);
         add(mainPanel, BorderLayout.CENTER);
 
         // 为所有输入组件添加变化监听，刷新预览图
@@ -228,7 +240,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_MODE), SwingConstants.RIGHT), gbc);
 
         gbc.gridx = 3;
-        fixedPanel.add(useTimeCheckBox, gbc);
+        fixedPanel.add(createExecutionModePanel(), gbc);
 
         // 第二行
         gbc.gridx = 0;
@@ -376,12 +388,10 @@ public class ThreadGroupPropertyPanel extends JPanel {
     }
 
     private void addPreviewUpdateListeners() {
-        // 模式选择变化监听
-        modeComboBox.addActionListener(e -> updatePreview());
-
         // 固定模式参数变化监听
         fixedNumThreadsSpinner.addChangeListener(e -> updatePreview());
         fixedLoopsSpinner.addChangeListener(e -> updatePreview());
+        useLoopCountButton.addActionListener(e -> updatePreview());
         useTimeCheckBox.addActionListener(e -> updatePreview());
         durationSpinner.addChangeListener(e -> updatePreview());
 
@@ -481,11 +491,11 @@ public class ThreadGroupPropertyPanel extends JPanel {
         fixedNumThreadsSpinner.setValue(data.numThreads);
         fixedLoopsSpinner.setValue(data.loops);
         useTimeCheckBox.setSelected(data.useTime);
+        useLoopCountButton.setSelected(!data.useTime);
         durationSpinner.setValue(data.duration);
 
         // 更新UI状态
-        fixedLoopsSpinner.setEnabled(!data.useTime);
-        durationSpinner.setEnabled(data.useTime);
+        updateFixedExecutionModeState();
 
         // 设置递增模式参数
         rampUpStartThreadsSpinner.setValue(data.rampUpStartThreads);
@@ -584,6 +594,27 @@ public class ThreadGroupPropertyPanel extends JPanel {
             }
             return component;
         }
+    }
+
+    private JPanel createExecutionModePanel() {
+        JPanel modePanel = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
+        modePanel.setOpaque(false);
+        modePanel.add(useLoopCountButton);
+        modePanel.add(useTimeCheckBox);
+        return modePanel;
+    }
+
+    private void updateFixedExecutionModeState() {
+        boolean useTime = useTimeCheckBox.isSelected();
+        fixedLoopsSpinner.setEnabled(!useTime);
+        durationSpinner.setEnabled(useTime);
+    }
+
+    private static String trimFieldLabel(String text) {
+        if (text == null) {
+            return "";
+        }
+        return text.replaceAll("[:：]\\s*$", "");
     }
 
     // 预览数据模型

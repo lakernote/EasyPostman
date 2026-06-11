@@ -5,7 +5,6 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.model.PerformanceTreeNode;
-import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -174,7 +173,6 @@ final class PerformanceRequestSyncSupport {
                     syncRequestStructureAction.accept(treeNode, requestNodeData);
                     requestNodeData.name = latestRequestItem.getName();
                     treeModel.nodeChanged(treeNode);
-                    PreparedRequestFactory.invalidateCacheForRequest(requestId);
                     updatedCount++;
                 }
             }

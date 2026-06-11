@@ -44,9 +44,7 @@ public class RequestEditSubPanel extends JPanel {
                     this::ensureEditorInitialized,
                     this::promotePreviewTabToPermanent,
                     () -> view.requestSettingsPanel.validateSettings(),
-                    this::getCurrentRequest,
-                    this::getOriginalRequestItem,
-                    this::isModified
+                    this::getCurrentRequest
             );
     private RequestEditorBinder requestEditorBinder;
     private RequestEditorDefaultTabSelector requestEditorDefaultTabSelector;

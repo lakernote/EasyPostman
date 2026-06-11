@@ -1,7 +1,6 @@
 package com.laker.postman.panel.collections.tree.adapter;
 
 import com.laker.postman.collection.model.RequestGroup;
-import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.service.collections.CollectionTreeNodes;
@@ -48,10 +47,9 @@ public final class SwingCollectionRequestSaveCoordinator {
             return Optional.empty();
         }
 
-        HttpRequestItem updatedItem = mutation.get().updatedItem();
-        PreparedRequestFactory.invalidateCacheForRequest(updatedItem.getId());
+        SwingCollectionRequestMutation.Result result = mutation.get();
         persist();
-        return Optional.of(new RequestSaveResult(null, mutation.get().requestNode(), updatedItem));
+        return Optional.of(new RequestSaveResult(null, result.requestNode(), result.updatedItem()));
     }
 
     public Optional<SavedResponseSaveResult> appendSavedResponse(HttpRequestItem requestItem,

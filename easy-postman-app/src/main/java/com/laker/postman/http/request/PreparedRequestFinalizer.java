@@ -66,10 +66,12 @@ public class PreparedRequestFinalizer {
         }
     }
 
-    public void finalizeForSend(PreparedRequest request,
-                                HttpRequestItem item,
-                                boolean useCache) {
-        finalizeForSend(request, PreparedRequestFactory.resolveDeferredAuthorization(item, useCache));
+    public void finalizeForSend(PreparedRequest request) {
+        finalizeForSend(request, (PreparedRequestMapper.DeferredAuthorization) null);
+    }
+
+    public void finalizeForSend(PreparedRequest request, HttpRequestItem item) {
+        finalizeForSend(request, PreparedRequestFactory.resolveDeferredAuthorization(item));
     }
 
     private void applyDeferredAuthorization(PreparedRequest request,

@@ -16,29 +16,16 @@ public class PreparedRequestFactory {
 
     private static final InheritanceService inheritanceService = new InheritanceService();
 
-    public static void invalidateCache() {
-        inheritanceService.invalidateCache();
-    }
-
-    public static void invalidateCacheForRequest(String requestId) {
-        inheritanceService.invalidateCache(requestId);
-    }
-
     public static PreparedRequest build(HttpRequestItem item) {
-        return build(item, true);
-    }
-
-    public static PreparedRequest build(HttpRequestItem item, boolean useCache) {
-        return buildEffectiveItem(resolveEffectiveItem(item, useCache));
+        return buildEffectiveItem(resolveEffectiveItem(item));
     }
 
     public static PreparedRequest buildWithoutInheritance(HttpRequestItem item) {
         return buildEffectiveItem(item);
     }
 
-    public static PreparedRequestMapper.DeferredAuthorization resolveDeferredAuthorization(HttpRequestItem item,
-                                                                                           boolean useCache) {
-        return resolveDeferredAuthorizationForEffectiveItem(resolveEffectiveItem(item, useCache));
+    public static PreparedRequestMapper.DeferredAuthorization resolveDeferredAuthorization(HttpRequestItem item) {
+        return resolveDeferredAuthorizationForEffectiveItem(resolveEffectiveItem(item));
     }
 
     public static PreparedRequestMapper.DeferredAuthorization resolveDeferredAuthorizationWithoutInheritance(HttpRequestItem item) {
@@ -53,7 +40,7 @@ public class PreparedRequestFactory {
         return PreparedRequestMapper.resolveDeferredAuthorization(effectiveItem, VariableResolver::resolve);
     }
 
-    private static HttpRequestItem resolveEffectiveItem(HttpRequestItem item, boolean useCache) {
-        return inheritanceService.applyInheritance(item, useCache);
+    private static HttpRequestItem resolveEffectiveItem(HttpRequestItem item) {
+        return inheritanceService.applyInheritance(item);
     }
 }

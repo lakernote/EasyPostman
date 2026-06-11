@@ -6,7 +6,6 @@ import com.laker.postman.panel.sidebar.ConsoleScriptOutputAdapter;
 import com.laker.postman.request.model.HttpRequestItem;
 import lombok.RequiredArgsConstructor;
 
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
@@ -21,40 +20,37 @@ final class RequestEditorSendPreparationController {
     private final Runnable previewTabPromoter;
     private final Supplier<String> settingsValidator;
     private final Supplier<HttpRequestItem> currentRequestSupplier;
-    private final Supplier<HttpRequestItem> originalRequestSupplier;
-    private final BooleanSupplier modifiedSupplier;
 
     static RequestEditorSendPreparationController createDefault(Runnable editorInitializer,
                                                                 Runnable previewTabPromoter,
                                                                 Supplier<String> settingsValidator,
-                                                                Supplier<HttpRequestItem> currentRequestSupplier,
-                                                                Supplier<HttpRequestItem> originalRequestSupplier,
-                                                                BooleanSupplier modifiedSupplier) {
+                                                                Supplier<HttpRequestItem> currentRequestSupplier) {
         return new RequestEditorSendPreparationController(
                 new RequestPreparationService(ConsoleScriptOutputAdapter.outputCallback()),
                 editorInitializer,
                 previewTabPromoter,
                 settingsValidator,
-                currentRequestSupplier,
-                originalRequestSupplier,
-                modifiedSupplier
+                currentRequestSupplier
         );
     }
 
     RequestPreparationResult prepareForSending() {
         editorInitializer.run();
         previewTabPromoter.run();
-        String settingsValidationError = validateRequestSettings();
+        String settingsValidationError = validateCurrentSettings();
         if (settingsValidationError != null) {
             return RequestPreparationResult.error(settingsValidationError);
         }
         HttpRequestItem item = currentRequestSupplier.get();
-        boolean useCache = originalRequestSupplier.get() != null && !modifiedSupplier.getAsBoolean();
-        return requestPreparationService.prepare(item, useCache);
+        return requestPreparationService.prepare(item);
     }
 
     String validateRequestSettings() {
         editorInitializer.run();
+        return validateCurrentSettings();
+    }
+
+    private String validateCurrentSettings() {
         return settingsValidator.get();
     }
 }

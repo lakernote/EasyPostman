@@ -552,7 +552,7 @@ public class ScriptExecutionPipelineTest {
                 .preScript("")
                 .postScript("")
                 .sharedExecutionContext(sharedContext)
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem, true))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem))
                 .build();
 
         assertTrue(authPipeline.executePreScript().isSuccess(), "Auth pre-request script should execute successfully");
@@ -580,7 +580,7 @@ public class ScriptExecutionPipelineTest {
                         pm.variables.set('password', 'same-request-secret');
                         """)
                 .postScript("")
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem, true))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem))
                 .build();
 
         assertTrue(authPipeline.executePreScript().isSuccess(), "Auth pre-request script should execute successfully");
@@ -610,7 +610,7 @@ public class ScriptExecutionPipelineTest {
                         pm.variables.set('token', 'runtime-token');
                         """)
                 .postScript("")
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem, true))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem))
                 .build();
 
         assertTrue(authPipeline.executePreScript().isSuccess(), "Auth pre-request script should execute successfully");
@@ -640,7 +640,7 @@ public class ScriptExecutionPipelineTest {
                         pm.variables.set('authHeaderExistsBeforeScript', String(pm.request.headers.has('Authorization')));
                         """)
                 .postScript("")
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem, true))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem))
                 .build();
 
         assertTrue(authPipeline.executePreScript().isSuccess(), "Auth pre-request script should execute successfully");
@@ -673,7 +673,7 @@ public class ScriptExecutionPipelineTest {
                         """)
                 .postScript("")
                 .sharedExecutionContext(sharedContext)
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem, true))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem))
                 .build();
 
         assertTrue(authPipeline.executePreScript().isSuccess(), "Auth pre-request script should execute successfully");
@@ -709,7 +709,7 @@ public class ScriptExecutionPipelineTest {
                         });
                         """)
                 .postScript("")
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem, true))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem))
                 .build();
 
         assertTrue(authPipeline.executePreScript().isSuccess(), "Auth pre-request script should execute successfully");
@@ -739,7 +739,7 @@ public class ScriptExecutionPipelineTest {
                         pm.environment.unset('token');
                         """)
                 .postScript("")
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem, true))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(authItem))
                 .build();
 
         assertTrue(authPipeline.executePreScript().isSuccess(), "Auth pre-request script should execute successfully");
@@ -762,7 +762,7 @@ public class ScriptExecutionPipelineTest {
         authItem.setAuthPassword("{{password}}");
 
         PreparedRequest request = PreparedRequestFactory.build(authItem);
-        PreparedRequestFinalizer.finalizeForSend(request, authItem, true);
+        PreparedRequestFinalizer.finalizeForSend(request, authItem);
 
         assertEquals(findAuthorizationHeader(request),
                 "Basic " + Base64.getEncoder().encodeToString("runner:curl-secret".getBytes()));
@@ -778,7 +778,7 @@ public class ScriptExecutionPipelineTest {
         authItem.setAuthToken("{{missingToken}}");
 
         PreparedRequest request = PreparedRequestFactory.build(authItem);
-        PreparedRequestFinalizer.finalizeForSend(request, authItem, true);
+        PreparedRequestFinalizer.finalizeForSend(request, authItem);
 
         assertEquals(findAuthorizationHeader(request), null);
     }

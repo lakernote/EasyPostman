@@ -45,30 +45,26 @@ import java.util.function.Supplier;
 public class ScriptExecutionPipeline {
     public static ScriptExecutionPipeline forRequestExecution(HttpRequestItem item,
                                                               PreparedRequest request,
-                                                              ExecutionVariableContext sharedExecutionContext,
-                                                              boolean useCache) {
-        return forRequestExecution(item, request, sharedExecutionContext, useCache, null);
+                                                              ExecutionVariableContext sharedExecutionContext) {
+        return forRequestExecution(item, request, sharedExecutionContext, null);
     }
 
     public static ScriptExecutionPipeline forRequestExecution(HttpRequestItem item,
                                                               PreparedRequest request,
                                                               ExecutionVariableContext sharedExecutionContext,
-                                                              boolean useCache,
                                                               JsScriptExecutor.OutputCallback outputCallback) {
-        return forRequestExecution(item, request, sharedExecutionContext, useCache, outputCallback, null);
+        return forRequestExecution(item, request, sharedExecutionContext, outputCallback, null);
     }
 
     public static ScriptExecutionPipeline forRequestExecution(HttpRequestItem item,
                                                               PreparedRequest request,
                                                               ExecutionVariableContext sharedExecutionContext,
-                                                              boolean useCache,
                                                               JsScriptExecutor.OutputCallback outputCallback,
                                                               Supplier<Environment> environmentSupplier) {
         return forRequestExecution(
                 item,
                 request,
                 sharedExecutionContext,
-                useCache,
                 outputCallback,
                 environmentSupplier,
                 RequestExecutionContext.captureCurrentScope()
@@ -78,7 +74,6 @@ public class ScriptExecutionPipeline {
     public static ScriptExecutionPipeline forRequestExecution(HttpRequestItem item,
                                                               PreparedRequest request,
                                                               ExecutionVariableContext sharedExecutionContext,
-                                                              boolean useCache,
                                                               JsScriptExecutor.OutputCallback outputCallback,
                                                               Supplier<Environment> environmentSupplier,
                                                               RequestExecutionScope requestExecutionScope) {
@@ -90,7 +85,7 @@ public class ScriptExecutionPipeline {
                 .requestExecutionScope(requestExecutionScope != null
                         ? requestExecutionScope
                         : RequestExecutionContext.captureCurrentScope())
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(item, useCache))
+                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(item))
                 .outputCallback(outputCallback)
                 .environmentSupplier(environmentSupplier)
                 .build();

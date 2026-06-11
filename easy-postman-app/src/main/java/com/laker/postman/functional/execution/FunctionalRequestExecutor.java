@@ -50,8 +50,7 @@ public final class FunctionalRequestExecutor {
         ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.forRequestExecution(
                 item,
                 request,
-                iterationContext,
-                true
+                iterationContext
         );
 
         ScriptExecutionResult preResult = pipeline.executePreScript();

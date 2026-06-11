@@ -29,7 +29,6 @@ import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeDocumentMapper;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.har.HarParser;
-import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.service.ideahttp.IntelliJHttpParser;
 import com.laker.postman.collection.importer.postman.PostmanCollectionParser;
 import com.laker.postman.service.swagger.SwaggerParser;
@@ -294,9 +293,6 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
                     easyPostmanGroup.add(groupNode);
                 }
                 leftPanel.getTreeModel().reload();
-
-                // 缓存失效（导入Collection）
-                PreparedRequestFactory.invalidateCache();
 
                 leftPanel.getCollectionTreePersistence().saveCurrentTree();
                 leftPanel.getRequestTree().expandPath(new TreePath(easyPostmanGroup.getPath()));

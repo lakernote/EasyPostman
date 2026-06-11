@@ -29,7 +29,6 @@ import com.laker.postman.service.collections.RequestSaveEventPublisher;
 import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreePersistence;
 import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeQueries;
 import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeDocumentMapper;
-import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.util.SystemUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -228,8 +227,6 @@ public class CollectionTreePanel extends UiSingletonPanel {
 
     private void saveCurrentTree() {
         collectionTreePersistence.saveCurrentTree();
-        // 保存后使预计算缓存失效（可能有修改）
-        PreparedRequestFactory.invalidateCache();
     }
 
 

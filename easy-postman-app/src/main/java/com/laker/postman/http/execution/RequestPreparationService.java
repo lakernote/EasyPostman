@@ -2,8 +2,6 @@ package com.laker.postman.http.execution;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpRequestItem;
-
-
 import com.laker.postman.http.request.HttpRequestValidationResult;
 import com.laker.postman.http.request.HttpRequestValidator;
 import com.laker.postman.http.request.PreparedRequestFactory;
@@ -13,18 +11,16 @@ import com.laker.postman.service.js.ScriptExecutionResult;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
+@RequiredArgsConstructor
 public final class RequestPreparationService {
 
     private final JsScriptExecutor.OutputCallback scriptOutputCallback;
 
-    public RequestPreparationService(JsScriptExecutor.OutputCallback scriptOutputCallback) {
-        this.scriptOutputCallback = scriptOutputCallback;
-    }
-
-    public RequestPreparationResult prepare(HttpRequestItem item, boolean useCache) {
+    public RequestPreparationResult prepare(HttpRequestItem item) {
         try {
             HttpRequestValidationResult protocolValidation = validateProtocol(item);
             if (!protocolValidation.isValid()) {
@@ -32,8 +28,8 @@ public final class RequestPreparationService {
             }
 
             // 这里把“面板态”转换成真正可发送的 PreparedRequest，后续 helper 都只消费这个对象。
-            PreparedRequest request = PreparedRequestFactory.build(item, useCache);
-            ScriptExecutionPipeline pipeline = createScriptPipeline(item, request, useCache);
+            PreparedRequest request = PreparedRequestFactory.build(item);
+            ScriptExecutionPipeline pipeline = createScriptPipeline(item, request);
 
             String preScriptError = executePreScript(pipeline);
             if (preScriptError != null) {
@@ -68,12 +64,11 @@ public final class RequestPreparationService {
         return HttpRequestValidationResult.ok();
     }
 
-    private ScriptExecutionPipeline createScriptPipeline(HttpRequestItem item, PreparedRequest request, boolean useCache) {
+    private ScriptExecutionPipeline createScriptPipeline(HttpRequestItem item, PreparedRequest request) {
         return ScriptExecutionPipeline.forRequestExecution(
                 item,
                 request,
                 new ExecutionVariableContext(),
-                useCache,
                 scriptOutputCallback
         );
     }

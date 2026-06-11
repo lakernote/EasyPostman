@@ -24,16 +24,21 @@ public class InheritanceServiceTest {
     }
 
     @Test
-    public void shouldCacheOnlyGroupChainAndApplyLatestRequestDraft() {
-        RequestGroup group = new RequestGroup("Parent");
-        group.setHeaders(List.of(new HttpHeader(true, "X-Parent", "1")));
-        group.setVariables(List.of(new Variable(true, "parentToken", "abc")));
+    public void shouldResolveGroupChainFreshEachTimeAndApplyLatestRequestDraft() {
+        RequestGroup firstGroup = new RequestGroup("First Parent");
+        firstGroup.setHeaders(List.of(new HttpHeader(true, "X-Parent", "1")));
+        firstGroup.setVariables(List.of(new Variable(true, "parentToken", "abc")));
+
+        RequestGroup latestGroup = new RequestGroup("Latest Parent");
+        latestGroup.setHeaders(List.of(new HttpHeader(true, "X-Latest", "2")));
+        latestGroup.setVariables(List.of(new Variable(true, "latestToken", "xyz")));
 
         AtomicInteger lookupCount = new AtomicInteger();
         CollectionRequestRepository repository = new CollectionRequestRepository() {
             @Override
             public Optional<CollectionRequestContext> findRequestContextById(String requestId) {
-                lookupCount.incrementAndGet();
+                int currentLookup = lookupCount.incrementAndGet();
+                RequestGroup group = currentLookup == 1 ? firstGroup : latestGroup;
                 return Optional.of(new CollectionRequestContext(null, List.of(group)));
             }
 
@@ -43,19 +48,19 @@ public class InheritanceServiceTest {
             }
         };
 
-        InheritanceService service = new InheritanceService(repository, new InheritanceCache());
+        InheritanceService service = new InheritanceService(repository);
 
         HttpRequestItem firstDraft = request("https://api.example.com/first");
-        HttpRequestItem firstMerged = service.applyInheritance(firstDraft, true);
+        HttpRequestItem firstMerged = service.applyInheritance(firstDraft);
 
         HttpRequestItem latestDraft = request("https://api.example.com/latest");
-        HttpRequestItem latestMerged = service.applyInheritance(latestDraft, true);
+        HttpRequestItem latestMerged = service.applyInheritance(latestDraft);
 
-        assertEquals(lookupCount.get(), 1);
+        assertEquals(lookupCount.get(), 2);
         assertEquals(firstMerged.getUrl(), "https://api.example.com/first");
         assertEquals(latestMerged.getUrl(), "https://api.example.com/latest");
-        assertEquals(latestMerged.getHeadersList().get(0).getKey(), "X-Parent");
-        assertEquals(RequestExecutionContext.getCurrentScope().getGroupVariable("parentToken"), "abc");
+        assertEquals(latestMerged.getHeadersList().get(0).getKey(), "X-Latest");
+        assertEquals(RequestExecutionContext.getCurrentScope().getGroupVariable("latestToken"), "xyz");
     }
 
     private static HttpRequestItem request(String url) {

@@ -42,7 +42,7 @@ public final class ScriptSendRequestExecutor {
 
         PreparedRequest preparedRequest = buildPreparedRequest(requestOptions);
         validate(preparedRequest);
-        PreparedRequestFinalizer.finalizeForSend(preparedRequest, null);
+        PreparedRequestFinalizer.finalizeForSend(preparedRequest);
 
         HttpResponse httpResponse = httpTransport.execute(preparedRequest, HttpExchangeOptions.defaults());
         ResponseAssertion responseWrapper = new ResponseAssertion(httpResponse);

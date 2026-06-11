@@ -165,7 +165,7 @@ public class PreparedRequestFactoryTest {
         item.setHeadersList(headers);
 
         PreparedRequest req = PreparedRequestFactory.build(item);
-        PreparedRequestFinalizer.finalizeForSend(req, item, true);
+        PreparedRequestFinalizer.finalizeForSend(req, item);
 
         assertNull(req.transportAuth, "Explicit Authorization should suppress Digest transport auth");
         assertEquals(findHeaderValue(req.headersList, "Authorization"), "Custom Auth Value");

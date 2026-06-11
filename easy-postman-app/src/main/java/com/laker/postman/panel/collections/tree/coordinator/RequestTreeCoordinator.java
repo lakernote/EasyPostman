@@ -121,9 +121,6 @@ public class RequestTreeCoordinator {
         leftPanel.getTreeModel().reload(parentNode);
         requestTree.expandPath(new TreePath(parentNode.getPath()));
 
-        // 缓存失效（新增分组可能影响子请求的继承）
-        PreparedRequestFactory.invalidateCache();
-
         leftPanel.getCollectionTreePersistence().saveCurrentTree();
     }
 
@@ -219,9 +216,6 @@ public class RequestTreeCoordinator {
     private void updateGroupName(DefaultMutableTreeNode node, RequestGroup group, String newName) {
         group.setName(newName);
         leftPanel.getTreeModel().nodeChanged(node);
-
-        // 缓存失效（分组名称改变会影响脚本注释）
-        PreparedRequestFactory.invalidateCache();
 
         leftPanel.getCollectionTreePersistence().saveCurrentTree();
     }
@@ -430,9 +424,6 @@ public class RequestTreeCoordinator {
             tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 2);
         }
 
-        // 缓存失效（删除节点可能影响树结构）
-        PreparedRequestFactory.invalidateCache();
-
         leftPanel.getCollectionTreePersistence().saveCurrentTree();
     }
 
@@ -626,7 +617,7 @@ public class RequestTreeCoordinator {
         if (item == null) return;
         try {
             PreparedRequest req = PreparedRequestFactory.build(item);
-            PreparedRequestFinalizer.finalizeForSend(req, item, true);
+            PreparedRequestFinalizer.finalizeForSend(req, item);
             String curl = CurlParser.toCurl(req);
 
             Toolkit.getDefaultToolkit().getSystemClipboard()
@@ -666,9 +657,6 @@ public class RequestTreeCoordinator {
             parent.insert(copyNode, idx);
             leftPanel.getTreeModel().reload(parent);
             requestTree.expandPath(new TreePath(parent.getPath()));
-
-            // 缓存失效（复制分组可能影响树结构）
-            PreparedRequestFactory.invalidateCache();
 
             leftPanel.getCollectionTreePersistence().saveCurrentTree();
         }
@@ -761,9 +749,6 @@ public class RequestTreeCoordinator {
         if (parent != null) {
             parent.remove(collectionNode);
             leftPanel.getTreeModel().reload();
-
-            // 缓存失效（移动集合会改变树结构）
-            PreparedRequestFactory.invalidateCache();
 
             leftPanel.getCollectionTreePersistence().saveCurrentTree();
         }

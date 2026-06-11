@@ -12,6 +12,9 @@ import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Json 工具类
  */
@@ -146,7 +149,11 @@ public class JsonUtil {
      * @return json
      */
     public static String toJsonPrettyStr(String json) {
-        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(json));
+        JsonNode rootNode = mapper.readTree(json);
+        if (containsJsonComment(json)) {
+            return formatJsonWithComments(json);
+        }
+        return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
     }
 
     /**
@@ -222,6 +229,367 @@ public class JsonUtil {
      */
     public static <T> T convertValue(Object fromValue, Class<T> toValueType) {
         return mapper.convertValue(fromValue, toValueType);
+    }
+
+    private static boolean containsJsonComment(String json) {
+        if (json == null || json.length() < 2) {
+            return false;
+        }
+
+        boolean inString = false;
+        boolean escaping = false;
+        for (int i = 0; i < json.length(); i++) {
+            char current = json.charAt(i);
+            if (inString) {
+                if (escaping) {
+                    escaping = false;
+                } else if (current == '\\') {
+                    escaping = true;
+                } else if (current == '"') {
+                    inString = false;
+                }
+                continue;
+            }
+
+            if (current == '"') {
+                inString = true;
+                continue;
+            }
+            if (current == '/' && i + 1 < json.length()) {
+                char next = json.charAt(i + 1);
+                if (next == '/' || next == '*') {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static String formatJsonWithComments(String json) {
+        List<JsonFormatToken> tokens = tokenizeJsonWithComments(json);
+        StringBuilder formatted = new StringBuilder(json.length());
+        int indentLevel = 0;
+        boolean atLineStart = true;
+
+        for (int i = 0; i < tokens.size(); i++) {
+            JsonFormatToken token = tokens.get(i);
+            JsonFormatToken previous = i > 0 ? tokens.get(i - 1) : null;
+            JsonFormatToken next = i + 1 < tokens.size() ? tokens.get(i + 1) : null;
+            switch (token.type()) {
+                case OPEN_OBJECT, OPEN_ARRAY -> {
+                    atLineStart = appendIndentIfNeeded(formatted, indentLevel, atLineStart);
+                    formatted.append(token.text());
+                    atLineStart = false;
+                    indentLevel++;
+                    if (isMatchingClose(token, next)) {
+                        continue;
+                    }
+                    if (isLineCommentOnSameLine(token, next)) {
+                        formatted.append(' ');
+                    } else {
+                        atLineStart = appendNewLine(formatted);
+                    }
+                }
+                case CLOSE_OBJECT, CLOSE_ARRAY -> {
+                    indentLevel = Math.max(0, indentLevel - 1);
+                    if (!isMatchingClose(previous, token) && !atLineStart) {
+                        atLineStart = appendNewLine(formatted);
+                    }
+                    atLineStart = appendIndentIfNeeded(formatted, indentLevel, atLineStart);
+                    formatted.append(token.text());
+                    atLineStart = false;
+                }
+                case COLON -> {
+                    formatted.append(": ");
+                    atLineStart = false;
+                }
+                case COMMA -> {
+                    atLineStart = appendIndentIfNeeded(formatted, indentLevel, atLineStart);
+                    formatted.append(',');
+                    atLineStart = false;
+                    if (isLineCommentOnSameLine(token, next)) {
+                        formatted.append(' ');
+                    } else {
+                        atLineStart = appendNewLine(formatted);
+                    }
+                }
+                case LINE_COMMENT -> {
+                    atLineStart = appendIndentIfNeeded(formatted, indentLevel, atLineStart);
+                    appendSpaceIfNeeded(formatted);
+                    formatted.append(token.text().trim());
+                    atLineStart = appendNewLine(formatted);
+                }
+                case BLOCK_COMMENT -> atLineStart = appendBlockComment(formatted, token.text(), indentLevel, atLineStart);
+                case VALUE -> {
+                    atLineStart = appendIndentIfNeeded(formatted, indentLevel, atLineStart);
+                    formatted.append(token.text());
+                    atLineStart = false;
+                }
+            }
+        }
+
+        trimTrailingNewLines(formatted);
+        return formatted.toString();
+    }
+
+    private static boolean isMatchingClose(JsonFormatToken token, JsonFormatToken next) {
+        return next != null
+                && ((token.type() == JsonFormatTokenType.OPEN_OBJECT && next.type() == JsonFormatTokenType.CLOSE_OBJECT)
+                || (token.type() == JsonFormatTokenType.OPEN_ARRAY && next.type() == JsonFormatTokenType.CLOSE_ARRAY));
+    }
+
+    private static boolean isLineCommentOnSameLine(JsonFormatToken token, JsonFormatToken next) {
+        return next != null
+                && next.type() == JsonFormatTokenType.LINE_COMMENT
+                && token.endLine() == next.startLine();
+    }
+
+    private static boolean appendIndentIfNeeded(StringBuilder formatted, int indentLevel, boolean atLineStart) {
+        if (!atLineStart) {
+            return false;
+        }
+        formatted.append(DEFAULT_INDENTER.getIndent().repeat(Math.max(0, indentLevel)));
+        return false;
+    }
+
+    private static boolean appendNewLine(StringBuilder formatted) {
+        trimTrailingSpaces(formatted);
+        if (formatted.length() == 0 || formatted.charAt(formatted.length() - 1) != '\n') {
+            formatted.append('\n');
+        }
+        return true;
+    }
+
+    private static void appendSpaceIfNeeded(StringBuilder formatted) {
+        if (formatted.length() == 0) {
+            return;
+        }
+        char last = formatted.charAt(formatted.length() - 1);
+        if (!Character.isWhitespace(last)) {
+            formatted.append(' ');
+        }
+    }
+
+    private static boolean appendBlockComment(StringBuilder formatted, String comment, int indentLevel, boolean atLineStart) {
+        boolean standalone = atLineStart;
+        if (comment.indexOf('\n') >= 0 || comment.indexOf('\r') >= 0) {
+            if (!atLineStart) {
+                atLineStart = appendNewLine(formatted);
+            }
+            String normalized = comment.replace("\r\n", "\n").replace('\r', '\n');
+            String[] lines = normalized.split("\n", -1);
+            for (String line : lines) {
+                if (line.isEmpty()) {
+                    continue;
+                }
+                appendIndentIfNeeded(formatted, indentLevel, true);
+                formatted.append(line.stripLeading());
+                atLineStart = appendNewLine(formatted);
+            }
+            return atLineStart;
+        }
+
+        atLineStart = appendIndentIfNeeded(formatted, indentLevel, atLineStart);
+        appendSpaceIfNeeded(formatted);
+        formatted.append(comment.trim());
+        if (standalone) {
+            return appendNewLine(formatted);
+        }
+        return false;
+    }
+
+    private static void trimTrailingSpaces(StringBuilder formatted) {
+        while (formatted.length() > 0) {
+            char last = formatted.charAt(formatted.length() - 1);
+            if (last != ' ' && last != '\t') {
+                return;
+            }
+            formatted.deleteCharAt(formatted.length() - 1);
+        }
+    }
+
+    private static void trimTrailingNewLines(StringBuilder formatted) {
+        while (formatted.length() > 0) {
+            char last = formatted.charAt(formatted.length() - 1);
+            if (last != '\n' && last != '\r') {
+                return;
+            }
+            formatted.deleteCharAt(formatted.length() - 1);
+        }
+    }
+
+    private static List<JsonFormatToken> tokenizeJsonWithComments(String json) {
+        List<JsonFormatToken> tokens = new ArrayList<>();
+        int line = 1;
+        int index = 0;
+        while (index < json.length()) {
+            char current = json.charAt(index);
+            if (Character.isWhitespace(current)) {
+                if (current == '\r') {
+                    if (index + 1 < json.length() && json.charAt(index + 1) == '\n') {
+                        index++;
+                    }
+                    line++;
+                } else if (current == '\n') {
+                    line++;
+                }
+                index++;
+                continue;
+            }
+
+            int startLine = line;
+            switch (current) {
+                case '{' -> {
+                    tokens.add(new JsonFormatToken(JsonFormatTokenType.OPEN_OBJECT, "{", startLine, startLine));
+                    index++;
+                }
+                case '}' -> {
+                    tokens.add(new JsonFormatToken(JsonFormatTokenType.CLOSE_OBJECT, "}", startLine, startLine));
+                    index++;
+                }
+                case '[' -> {
+                    tokens.add(new JsonFormatToken(JsonFormatTokenType.OPEN_ARRAY, "[", startLine, startLine));
+                    index++;
+                }
+                case ']' -> {
+                    tokens.add(new JsonFormatToken(JsonFormatTokenType.CLOSE_ARRAY, "]", startLine, startLine));
+                    index++;
+                }
+                case ':' -> {
+                    tokens.add(new JsonFormatToken(JsonFormatTokenType.COLON, ":", startLine, startLine));
+                    index++;
+                }
+                case ',' -> {
+                    tokens.add(new JsonFormatToken(JsonFormatTokenType.COMMA, ",", startLine, startLine));
+                    index++;
+                }
+                case '"' -> {
+                    TokenReadResult result = readJsonString(json, index, line);
+                    tokens.add(new JsonFormatToken(JsonFormatTokenType.VALUE, result.text(), startLine, result.endLine()));
+                    index = result.nextIndex();
+                    line = result.endLine();
+                }
+                case '/' -> {
+                    if (index + 1 < json.length() && json.charAt(index + 1) == '/') {
+                        TokenReadResult result = readLineComment(json, index, line);
+                        tokens.add(new JsonFormatToken(JsonFormatTokenType.LINE_COMMENT, result.text(), startLine, result.endLine()));
+                        index = result.nextIndex();
+                    } else if (index + 1 < json.length() && json.charAt(index + 1) == '*') {
+                        TokenReadResult result = readBlockComment(json, index, line);
+                        tokens.add(new JsonFormatToken(JsonFormatTokenType.BLOCK_COMMENT, result.text(), startLine, result.endLine()));
+                        index = result.nextIndex();
+                        line = result.endLine();
+                    } else {
+                        TokenReadResult result = readJsonLiteral(json, index, line);
+                        tokens.add(new JsonFormatToken(JsonFormatTokenType.VALUE, result.text(), startLine, result.endLine()));
+                        index = result.nextIndex();
+                    }
+                }
+                default -> {
+                    TokenReadResult result = readJsonLiteral(json, index, line);
+                    tokens.add(new JsonFormatToken(JsonFormatTokenType.VALUE, result.text(), startLine, result.endLine()));
+                    index = result.nextIndex();
+                }
+            }
+        }
+        return tokens;
+    }
+
+    private static TokenReadResult readJsonString(String json, int startIndex, int startLine) {
+        boolean escaping = false;
+        int line = startLine;
+        int index = startIndex + 1;
+        while (index < json.length()) {
+            char current = json.charAt(index);
+            if (current == '\r') {
+                if (index + 1 < json.length() && json.charAt(index + 1) == '\n') {
+                    index++;
+                }
+                line++;
+            } else if (current == '\n') {
+                line++;
+            }
+
+            if (escaping) {
+                escaping = false;
+            } else if (current == '\\') {
+                escaping = true;
+            } else if (current == '"') {
+                index++;
+                break;
+            }
+            index++;
+        }
+        return new TokenReadResult(json.substring(startIndex, index), index, line);
+    }
+
+    private static TokenReadResult readLineComment(String json, int startIndex, int startLine) {
+        int index = startIndex + 2;
+        while (index < json.length() && json.charAt(index) != '\n' && json.charAt(index) != '\r') {
+            index++;
+        }
+        return new TokenReadResult(json.substring(startIndex, index), index, startLine);
+    }
+
+    private static TokenReadResult readBlockComment(String json, int startIndex, int startLine) {
+        int line = startLine;
+        int index = startIndex + 2;
+        while (index < json.length()) {
+            char current = json.charAt(index);
+            if (current == '\r') {
+                if (index + 1 < json.length() && json.charAt(index + 1) == '\n') {
+                    index++;
+                }
+                line++;
+            } else if (current == '\n') {
+                line++;
+            }
+            if (current == '*' && index + 1 < json.length() && json.charAt(index + 1) == '/') {
+                index += 2;
+                break;
+            }
+            index++;
+        }
+        return new TokenReadResult(json.substring(startIndex, index), index, line);
+    }
+
+    private static TokenReadResult readJsonLiteral(String json, int startIndex, int startLine) {
+        int index = startIndex;
+        while (index < json.length()) {
+            char current = json.charAt(index);
+            if (Character.isWhitespace(current)
+                    || current == '{'
+                    || current == '}'
+                    || current == '['
+                    || current == ']'
+                    || current == ':'
+                    || current == ','
+                    || current == '"'
+                    || (current == '/' && index + 1 < json.length()
+                    && (json.charAt(index + 1) == '/' || json.charAt(index + 1) == '*'))) {
+                break;
+            }
+            index++;
+        }
+        return new TokenReadResult(json.substring(startIndex, index), index, startLine);
+    }
+
+    private enum JsonFormatTokenType {
+        OPEN_OBJECT,
+        CLOSE_OBJECT,
+        OPEN_ARRAY,
+        CLOSE_ARRAY,
+        COLON,
+        COMMA,
+        LINE_COMMENT,
+        BLOCK_COMMENT,
+        VALUE
+    }
+
+    private record JsonFormatToken(JsonFormatTokenType type, String text, int startLine, int endLine) {
+    }
+
+    private record TokenReadResult(String text, int nextIndex, int endLine) {
     }
 
 }

@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class PerformanceRunUiController {
 
     public static final String ETA_STATUS_ICON = "icons/time.svg";
-    public static final String REQUEST_STATUS_ICON = "icons/hash.svg";
+    public static final String REQUEST_STATUS_ICON = "icons/execution-count.svg";
     private static final String RUN_STATUS_ICON_PROPERTY = "easyPostman.runStatusIconPath";
 
     private final StartButton runButton;

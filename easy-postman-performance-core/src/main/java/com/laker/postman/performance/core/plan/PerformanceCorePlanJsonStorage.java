@@ -180,6 +180,7 @@ public class PerformanceCorePlanJsonStorage {
             json.put("enabled", value.isEnabled());
             json.put("key", value.getKey());
             json.put("value", value.getValue());
+            putIfNotBlank(json, "description", value.getDescription());
             array.add(json);
         }
         return array;
@@ -199,6 +200,7 @@ public class PerformanceCorePlanJsonStorage {
             json.put("key", value.getKey());
             json.put("type", value.getType());
             json.put("value", value.getValue());
+            putIfNotBlank(json, "description", value.getDescription());
             array.add(json);
         }
         return array;
@@ -444,7 +446,8 @@ public class PerformanceCorePlanJsonStorage {
                 values.add(new PerformanceRequestKeyValue(
                         booleanValue(json, "enabled", true),
                         stringValue(json, "key", ""),
-                        stringValue(json, "value", "")
+                        stringValue(json, "value", ""),
+                        stringValue(json, "description", "")
                 ));
             }
         }
@@ -463,7 +466,8 @@ public class PerformanceCorePlanJsonStorage {
                         booleanValue(json, "enabled", true),
                         stringValue(json, "key", ""),
                         stringValue(json, "type", PerformanceRequestFormDataPart.TYPE_TEXT),
-                        stringValue(json, "value", "")
+                        stringValue(json, "value", ""),
+                        stringValue(json, "description", "")
                 ));
             }
         }

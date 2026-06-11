@@ -7,6 +7,8 @@ import com.laker.postman.common.component.table.AbstractTablePanel;
 import com.laker.postman.common.component.table.EasyPostmanTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasySmartValueCellEditor;
 import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -23,10 +25,11 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
     private static final int COL_ENABLED = 0;
     private static final int COL_KEY = 1;
     private static final int COL_VALUE = 2;
-    private static final int COL_DELETE = 3;
+    private static final int COL_DESCRIPTION = 3;
+    private static final int COL_DELETE = 4;
 
     public ParamsTablePanel() {
-        super(new String[]{"", "Key", "Value", ""});
+        super(new String[]{"", "Key", "Value", I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION), ""});
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
@@ -56,20 +59,26 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
 
     @Override
     protected int getLastEditableColumnIndex() {
+        return COL_DESCRIPTION;
+    }
+
+    @Override
+    protected int getEnterTargetColumnIndex() {
         return COL_VALUE;
     }
 
     @Override
     protected boolean isCellEditableForNavigation(int row, int column) {
-        // Enable和Delete列不可编辑，Key和Value列可编辑
-        return column == COL_KEY || column == COL_VALUE;
+        // Enable 和 Delete 列不可编辑，其余输入列可编辑。
+        return column == COL_KEY || column == COL_VALUE || column == COL_DESCRIPTION;
     }
 
     @Override
     protected boolean hasContentInRow(int row) {
         String key = getStringValue(row, COL_KEY);
         String value = getStringValue(row, COL_VALUE);
-        return !key.isEmpty() || !value.isEmpty();
+        String description = getStringValue(row, COL_DESCRIPTION);
+        return !key.isEmpty() || !value.isEmpty() || !description.isEmpty();
     }
 
     // ========== 初始化方法 ==========
@@ -90,8 +99,10 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
         // Set editors for Key and Value columns
         setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
         setColumnEditor(COL_VALUE, new EasySmartValueCellEditor());
+        setColumnEditor(COL_DESCRIPTION, new EasySmartValueCellEditor());
         setColumnRenderer(COL_KEY, new EasyTextFieldCellRenderer());
         setColumnRenderer(COL_VALUE, new EasyTextFieldCellRenderer());
+        setColumnRenderer(COL_DESCRIPTION, new EasyTextFieldCellRenderer());
 
         // Set custom renderer for delete column
         setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
@@ -110,10 +121,11 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
             boolean enabled = getBooleanValue(i, COL_ENABLED);
             String key = getStringValue(i, COL_KEY);
             String value = getStringValue(i, COL_VALUE);
+            String description = getStringValue(i, COL_DESCRIPTION);
 
             // Only add non-empty params
             if (!key.isEmpty()) {
-                paramsList.add(new HttpParam(enabled, key, value));
+                paramsList.add(new HttpParam(enabled, key, value, description));
             }
         }
         return paramsList;
@@ -129,8 +141,9 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
             boolean enabled = getBooleanValue(i, COL_ENABLED);
             String key = getStringValue(i, COL_KEY);
             String value = getStringValue(i, COL_VALUE);
+            String description = getStringValue(i, COL_DESCRIPTION);
             if (!key.isEmpty()) {
-                paramsList.add(new HttpParam(enabled, key, value));
+                paramsList.add(new HttpParam(enabled, key, value, description));
             }
         }
         return paramsList;
@@ -148,13 +161,13 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
             tableModel.setRowCount(0);
             if (paramsList != null) {
                 for (HttpParam param : paramsList) {
-                    tableModel.addRow(new Object[]{param.isEnabled(), param.getKey(), param.getValue(), ""});
+                    tableModel.addRow(new Object[]{param.isEnabled(), param.getKey(), param.getValue(), param.getDescription(), ""});
                 }
             }
 
             // Ensure there's always an empty row at the end
             if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", "", ""});
+                tableModel.addRow(createEmptyRow());
             }
         } finally {
             suppressAutoAppendRow = false;

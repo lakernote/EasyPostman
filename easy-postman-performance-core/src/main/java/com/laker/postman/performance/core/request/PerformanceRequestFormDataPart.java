@@ -11,12 +11,18 @@ public class PerformanceRequestFormDataPart {
     String key;
     String type;
     String value;
+    String description;
 
     public PerformanceRequestFormDataPart(boolean enabled, String key, String type, String value) {
+        this(enabled, key, type, value, "");
+    }
+
+    public PerformanceRequestFormDataPart(boolean enabled, String key, String type, String value, String description) {
         this.enabled = enabled;
         this.key = blankToEmpty(key);
         this.type = normalizeType(type);
         this.value = blankToEmpty(value);
+        this.description = blankToEmpty(description);
     }
 
     public boolean isFile() {

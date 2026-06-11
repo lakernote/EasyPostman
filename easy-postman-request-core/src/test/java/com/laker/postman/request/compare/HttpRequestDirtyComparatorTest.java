@@ -1,6 +1,9 @@
 package com.laker.postman.request.compare;
 
 import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.defaults.HttpRequestDefaults;
 import com.laker.postman.request.model.HttpRequestProxyPolicy;
@@ -128,6 +131,66 @@ public class HttpRequestDirtyComparatorTest {
 
         HttpRequestItem current = baseRequest();
         current.setProxyPolicy(HttpRequestProxyPolicy.NO_PROXY);
+
+        assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
+    }
+
+    @Test
+    public void shouldTreatChangedHeaderDescriptionAsModified() {
+        HttpRequestItem original = baseRequest();
+        original.setHeadersList(List.of(new HttpHeader(true, "X-Trace", "1", "old description")));
+
+        HttpRequestItem current = baseRequest();
+        current.setHeadersList(List.of(new HttpHeader(true, "X-Trace", "1", "new description")));
+
+        assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
+    }
+
+    @Test
+    public void shouldTreatChangedParamDescriptionAsModified() {
+        HttpRequestItem original = baseRequest();
+        original.setParamsList(List.of(new HttpParam(true, "page", "1", "old description")));
+
+        HttpRequestItem current = baseRequest();
+        current.setParamsList(List.of(new HttpParam(true, "page", "1", "new description")));
+
+        assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
+    }
+
+    @Test
+    public void shouldTreatChangedFormDataDescriptionAsModified() {
+        HttpRequestItem original = baseRequest();
+        original.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_DATA);
+        original.setFormDataList(List.of(new HttpFormData(
+                true,
+                "file",
+                HttpFormData.TYPE_FILE,
+                "/tmp/a.txt",
+                "old description"
+        )));
+
+        HttpRequestItem current = baseRequest();
+        current.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_DATA);
+        current.setFormDataList(List.of(new HttpFormData(
+                true,
+                "file",
+                HttpFormData.TYPE_FILE,
+                "/tmp/a.txt",
+                "new description"
+        )));
+
+        assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
+    }
+
+    @Test
+    public void shouldTreatChangedUrlencodedDescriptionAsModified() {
+        HttpRequestItem original = baseRequest();
+        original.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_URLENCODED);
+        original.setUrlencodedList(List.of(new HttpFormUrlencoded(true, "token", "abc", "old description")));
+
+        HttpRequestItem current = baseRequest();
+        current.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_URLENCODED);
+        current.setUrlencodedList(List.of(new HttpFormUrlencoded(true, "token", "abc", "new description")));
 
         assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
     }

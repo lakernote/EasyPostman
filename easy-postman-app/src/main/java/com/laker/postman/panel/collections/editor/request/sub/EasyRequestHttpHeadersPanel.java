@@ -256,14 +256,16 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
             Object enabledObj = row.get("Enabled");
             Object keyObj = row.get("Key");
             Object valueObj = row.get("Value");
+            Object descriptionObj = row.get("Description");
 
             boolean enabled = !(enabledObj instanceof Boolean b) || b;
             String key = keyObj == null ? "" : keyObj.toString().trim();
             String value = valueObj == null ? "" : valueObj.toString().trim();
+            String description = descriptionObj == null ? "" : descriptionObj.toString().trim();
 
             // Only add non-empty headers
             if (!key.isEmpty()) {
-                headersList.add(new HttpHeader(enabled, key, value));
+                headersList.add(new HttpHeader(enabled, key, value, description));
             }
         }
 
@@ -283,13 +285,15 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
             Object enabledObj = row.get("Enabled");
             Object keyObj    = row.get("Key");
             Object valueObj  = row.get("Value");
+            Object descriptionObj = row.get("Description");
 
             boolean enabled = !(enabledObj instanceof Boolean b) || b;
             String key   = keyObj   == null ? "" : keyObj.toString().trim();
             String value = valueObj == null ? "" : valueObj.toString().trim();
+            String description = descriptionObj == null ? "" : descriptionObj.toString().trim();
 
             if (!key.isEmpty()) {
-                headersList.add(new HttpHeader(enabled, key, value));
+                headersList.add(new HttpHeader(enabled, key, value, description));
             }
         }
         return headersList;
@@ -317,6 +321,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
             row.put("Enabled", header.isEnabled());
             row.put("Key", header.getKey());
             row.put("Value", header.getValue());
+            row.put("Description", header.getDescription());
             rows.add(row);
         }
 
@@ -501,9 +506,9 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
     private void addDefaultHeaderInOrder(String key, String value, DefaultTableModel model) {
         int insertPosition = findInsertPositionForDefaultHeader(key, model);
         if (insertPosition >= 0) {
-            model.insertRow(insertPosition, new Object[]{true, key, value, ""});
+            model.insertRow(insertPosition, new Object[]{true, key, value, "", ""});
         } else {
-            model.addRow(new Object[]{true, key, value, ""});
+            model.addRow(new Object[]{true, key, value, "", ""});
         }
     }
 
@@ -544,9 +549,11 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
             int lastRow = rowCount - 1;
             Object lastKey = model.getValueAt(lastRow, 1); // Column 1 is Key
             Object lastValue = model.getValueAt(lastRow, 2); // Column 2 is Value
+            Object lastDescription = model.getValueAt(lastRow, 3); // Column 3 is Description
 
             boolean lastRowIsEmpty = (lastKey == null || lastKey.toString().trim().isEmpty()) &&
-                    (lastValue == null || lastValue.toString().trim().isEmpty());
+                    (lastValue == null || lastValue.toString().trim().isEmpty()) &&
+                    (lastDescription == null || lastDescription.toString().trim().isEmpty());
 
             if (lastRowIsEmpty) {
                 // Replace the empty row with the new header
@@ -558,7 +565,7 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
         }
 
         // If no empty row at the end, add new row directly
-        model.addRow(new Object[]{true, key, value, ""});
+        model.addRow(new Object[]{true, key, value, "", ""});
     }
 
     /**
@@ -683,8 +690,11 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
         // 构建当前 header 的 enabled 状态快照，供后续复用
         Map<String, Boolean> enabledSnapshot = new java.util.LinkedHashMap<>();
+        Map<String, String> descriptionSnapshot = new java.util.LinkedHashMap<>();
         for (HttpHeader existing : getHeadersList()) {
-            enabledSnapshot.put(existing.getKey().trim().toLowerCase(java.util.Locale.ROOT), existing.isEnabled());
+            String normalizedKey = existing.getKey().trim().toLowerCase(java.util.Locale.ROOT);
+            enabledSnapshot.put(normalizedKey, existing.isEnabled());
+            descriptionSnapshot.put(normalizedKey, existing.getDescription());
         }
 
         List<HttpHeader> headers = new ArrayList<>();
@@ -718,8 +728,10 @@ public class EasyRequestHttpHeadersPanel extends JPanel {
 
             if (!key.isEmpty()) {
                 // 保留原来的 enabled 状态
-                boolean enabled = enabledSnapshot.getOrDefault(key.toLowerCase(java.util.Locale.ROOT), true);
-                headers.add(new HttpHeader(enabled, key, value));
+                String normalizedKey = key.toLowerCase(java.util.Locale.ROOT);
+                boolean enabled = enabledSnapshot.getOrDefault(normalizedKey, true);
+                String description = descriptionSnapshot.getOrDefault(normalizedKey, "");
+                headers.add(new HttpHeader(enabled, key, value, description));
             }
         }
 

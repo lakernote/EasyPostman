@@ -258,6 +258,7 @@ public class PostmanCollectionExporter {
                     JSONObject q = new JSONObject();
                     q.put("key", param.getKey());
                     q.put("value", param.getValue());
+                    putDescription(q, param.getDescription());
                     queryArr.add(q);
                 }
             }
@@ -272,6 +273,7 @@ public class PostmanCollectionExporter {
                     JSONObject h = new JSONObject();
                     h.put("key", header.getKey());
                     h.put("value", header.getValue());
+                    putDescription(h, header.getDescription());
                     headerArr.add(h);
                 }
             }
@@ -298,6 +300,7 @@ public class PostmanCollectionExporter {
                         o.put("src", formData.getValue());
                         o.put("type", "file");
                     }
+                    putDescription(o, formData.getDescription());
                     arr.add(o);
                 }
             }
@@ -315,6 +318,7 @@ public class PostmanCollectionExporter {
                     o.put("key", encoded.getKey());
                     o.put("value", encoded.getValue());
                     o.put("type", "text");
+                    putDescription(o, encoded.getDescription());
                     arr.add(o);
                 }
             }
@@ -380,6 +384,12 @@ public class PostmanCollectionExporter {
         }
 
         return postmanItem;
+    }
+
+    private static void putDescription(JSONObject target, String description) {
+        if (description != null && !description.trim().isEmpty()) {
+            target.put("description", description);
+        }
     }
 
     /**

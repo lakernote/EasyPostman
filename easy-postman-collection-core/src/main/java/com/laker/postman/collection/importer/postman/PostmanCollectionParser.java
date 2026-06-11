@@ -244,7 +244,12 @@ public class PostmanCollectionParser {
         for (Object q : queryArr) {
             JSONObject qObj = (JSONObject) q;
             boolean enabled = !qObj.getBool(KEY_DISABLED, false);
-            paramsList.add(new HttpParam(enabled, qObj.getStr("key", ""), qObj.getStr(KEY_VALUE, "")));
+            paramsList.add(new HttpParam(
+                    enabled,
+                    qObj.getStr("key", ""),
+                    qObj.getStr(KEY_VALUE, ""),
+                    qObj.getStr("description", "")
+            ));
         }
         return paramsList;
     }
@@ -261,7 +266,12 @@ public class PostmanCollectionParser {
         for (Object h : headers) {
             JSONObject hObj = (JSONObject) h;
             boolean enabled = !hObj.getBool(KEY_DISABLED, false);
-            headersList.add(new HttpHeader(enabled, hObj.getStr("key", ""), hObj.getStr(KEY_VALUE, "")));
+            headersList.add(new HttpHeader(
+                    enabled,
+                    hObj.getStr("key", ""),
+                    hObj.getStr(KEY_VALUE, ""),
+                    hObj.getStr("description", "")
+            ));
         }
         return headersList;
     }
@@ -323,6 +333,7 @@ public class PostmanCollectionParser {
             String formType = oObj.getStr("type", "text");
             String key = oObj.getStr("key", "");
             boolean enabled = !oObj.getBool(KEY_DISABLED, false);
+            String description = oObj.getStr("description", "");
             if ("file".equals(formType)) {
                 Object srcObj = oObj.get("src");
                 String src = "";
@@ -331,9 +342,15 @@ public class PostmanCollectionParser {
                 } else if (srcObj != null) {
                     src = String.valueOf(srcObj);
                 }
-                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, src));
+                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, src, description));
             } else {
-                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_TEXT, oObj.getStr(KEY_VALUE, "")));
+                formDataList.add(new HttpFormData(
+                        enabled,
+                        key,
+                        HttpFormData.TYPE_TEXT,
+                        oObj.getStr(KEY_VALUE, ""),
+                        description
+                ));
             }
         }
         return formDataList;
@@ -351,7 +368,12 @@ public class PostmanCollectionParser {
         for (Object o : arr) {
             JSONObject oObj = (JSONObject) o;
             boolean enabled = !oObj.getBool(KEY_DISABLED, false);
-            urlencodedList.add(new HttpFormUrlencoded(enabled, oObj.getStr("key", ""), oObj.getStr(KEY_VALUE, "")));
+            urlencodedList.add(new HttpFormUrlencoded(
+                    enabled,
+                    oObj.getStr("key", ""),
+                    oObj.getStr(KEY_VALUE, ""),
+                    oObj.getStr("description", "")
+            ));
         }
         return urlencodedList;
     }

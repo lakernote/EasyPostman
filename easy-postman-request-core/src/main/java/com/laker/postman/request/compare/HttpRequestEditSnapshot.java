@@ -82,11 +82,17 @@ record HttpRequestEditSnapshot(
             if (key.isEmpty()) {
                 continue;
             }
-            entries.add(new HeaderEntry(header.isEnabled(), key.toLowerCase(Locale.ROOT), string(header.getValue()).trim()));
+            entries.add(new HeaderEntry(
+                    header.isEnabled(),
+                    key.toLowerCase(Locale.ROOT),
+                    string(header.getValue()).trim(),
+                    string(header.getDescription()).trim()
+            ));
         }
         entries.sort(Comparator
                 .comparing(HeaderEntry::key)
                 .thenComparing(HeaderEntry::value)
+                .thenComparing(HeaderEntry::description)
                 .thenComparing(HeaderEntry::enabled));
         return entries;
     }
@@ -100,7 +106,12 @@ record HttpRequestEditSnapshot(
             if (param == null) {
                 continue;
             }
-            entries.add(new KeyValueEntry(param.isEnabled(), string(param.getKey()), string(param.getValue())));
+            entries.add(new KeyValueEntry(
+                    param.isEnabled(),
+                    string(param.getKey()),
+                    string(param.getValue()),
+                    string(param.getDescription())
+            ));
         }
         return entries;
     }
@@ -118,7 +129,8 @@ record HttpRequestEditSnapshot(
                     item.isEnabled(),
                     string(item.getKey()),
                     HttpFormData.normalizeType(item.getType()),
-                    string(item.getValue())
+                    string(item.getValue()),
+                    string(item.getDescription())
             ));
         }
         return entries;
@@ -133,7 +145,12 @@ record HttpRequestEditSnapshot(
             if (item == null) {
                 continue;
             }
-            entries.add(new KeyValueEntry(item.isEnabled(), string(item.getKey()), string(item.getValue())));
+            entries.add(new KeyValueEntry(
+                    item.isEnabled(),
+                    string(item.getKey()),
+                    string(item.getValue()),
+                    string(item.getDescription())
+            ));
         }
         return entries;
     }
@@ -165,12 +182,12 @@ record HttpRequestEditSnapshot(
         return value == null ? "" : value;
     }
 
-    record HeaderEntry(boolean enabled, String key, String value) {
+    record HeaderEntry(boolean enabled, String key, String value, String description) {
     }
 
-    record KeyValueEntry(boolean enabled, String key, String value) {
+    record KeyValueEntry(boolean enabled, String key, String value, String description) {
     }
 
-    record FormDataEntry(boolean enabled, String key, String type, String value) {
+    record FormDataEntry(boolean enabled, String key, String type, String value, String description) {
     }
 }

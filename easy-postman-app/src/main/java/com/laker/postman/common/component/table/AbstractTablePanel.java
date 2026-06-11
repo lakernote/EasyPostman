@@ -115,6 +115,16 @@ public abstract class AbstractTablePanel<T> extends JPanel {
     protected abstract int getLastEditableColumnIndex();
 
     /**
+     * 获取 Key 列按 Enter 后跳转的目标列。
+     * 默认沿用最后一个可编辑列；包含说明列的 Key/Value 表可覆盖为 Value 列。
+     *
+     * @return Enter 导航目标列索引
+     */
+    protected int getEnterTargetColumnIndex() {
+        return getLastEditableColumnIndex();
+    }
+
+    /**
      * 检查指定单元格是否可编辑（用于Tab导航）
      *
      * @param row    行索引
@@ -385,7 +395,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
 
     /** Enter 在 Key 列：跳到同行 Value 列 */
     private void enterFromKeyColumn(int row) {
-        int valueCol = getLastEditableColumnIndex();
+        int valueCol = getEnterTargetColumnIndex();
         if (table.isCellEditable(row, valueCol)) {
             // invokeLater 确保 stopCellEditing 已将 Key 值写入 model，Value 编辑器再读取
             SwingUtilities.invokeLater(() -> startEditAt(row, valueCol));

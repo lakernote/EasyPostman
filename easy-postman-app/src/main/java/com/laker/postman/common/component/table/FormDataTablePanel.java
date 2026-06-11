@@ -5,6 +5,8 @@ import com.laker.postman.request.model.HttpFormData;
 
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -26,7 +28,8 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
     private static final int COL_KEY = 1;
     private static final int COL_TYPE = 2;
     private static final int COL_VALUE = 3;
-    private static final int COL_DELETE = 4;
+    private static final int COL_DESCRIPTION = 4;
+    private static final int COL_DELETE = 5;
 
     // Use constants from HttpFormData to avoid duplication
     private static final String[] TYPE_OPTIONS = {HttpFormData.TYPE_TEXT, HttpFormData.TYPE_FILE};
@@ -45,7 +48,7 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
     public FormDataTablePanel(boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
-        super(new String[]{"", "Key", "Type", "Value", ""});
+        super(new String[]{"", "Key", "Type", "Value", I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION), ""});
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
@@ -79,26 +82,32 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
 
     @Override
     protected int getLastEditableColumnIndex() {
+        return COL_DESCRIPTION;
+    }
+
+    @Override
+    protected int getEnterTargetColumnIndex() {
         return COL_VALUE;
     }
 
     @Override
     protected boolean isCellEditableForNavigation(int row, int column) {
         // COL_KEY, COL_TYPE, COL_VALUE are editable
-        return column == COL_KEY || column == COL_TYPE || column == COL_VALUE;
+        return column == COL_KEY || column == COL_TYPE || column == COL_VALUE || column == COL_DESCRIPTION;
     }
 
     @Override
     protected boolean hasContentInRow(int row) {
         String key = getStringValue(row, COL_KEY);
         String value = getStringValue(row, COL_VALUE);
-        return !key.isEmpty() || !value.isEmpty();
+        String description = getStringValue(row, COL_DESCRIPTION);
+        return !key.isEmpty() || !value.isEmpty() || !description.isEmpty();
     }
 
     @Override
     protected Object[] createEmptyRow() {
-        // FormData has 5 columns including Type column with default value
-        return new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""};
+        // FormData has a Type column with default value.
+        return new Object[]{true, "", HttpFormData.TYPE_TEXT, "", "", ""};
     }
 
     // ========== 初始化方法 ==========
@@ -135,6 +144,9 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
         // Set Value column to dynamic text/file editor and renderer
         table.getColumnModel().getColumn(COL_VALUE).setCellEditor(new TextOrFileTableCellEditor());
         table.getColumnModel().getColumn(COL_VALUE).setCellRenderer(new TextOrFileTableCellRenderer());
+
+        table.getColumnModel().getColumn(COL_DESCRIPTION).setCellEditor(new EasySmartValueCellEditor());
+        table.getColumnModel().getColumn(COL_DESCRIPTION).setCellRenderer(new EasyTextFieldCellRenderer());
 
         // Set custom renderer for delete column
         table.getColumnModel().getColumn(COL_DELETE).setCellRenderer(new DeleteButtonRenderer());
@@ -243,8 +255,9 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
             String type = getStringValue(i, COL_TYPE);
             if (type.isEmpty()) type = HttpFormData.TYPE_TEXT;
             String value = getStringValue(i, COL_VALUE);
+            String description = getStringValue(i, COL_DESCRIPTION);
             if (!key.isEmpty()) {
-                dataList.add(new HttpFormData(enabled, key, HttpFormData.normalizeType(type), value));
+                dataList.add(new HttpFormData(enabled, key, HttpFormData.normalizeType(type), value, description));
             }
         }
         return dataList;
@@ -267,12 +280,13 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
                 type = HttpFormData.TYPE_TEXT;
             }
             String value = getStringValue(i, COL_VALUE);
+            String description = getStringValue(i, COL_DESCRIPTION);
 
             // Only add non-empty params
             if (!key.isEmpty()) {
                 // Normalize type to ensure consistency
                 String normalizedType = HttpFormData.normalizeType(type);
-                dataList.add(new HttpFormData(enabled, key, normalizedType, value));
+                dataList.add(new HttpFormData(enabled, key, normalizedType, value, description));
             }
         }
         return dataList;
@@ -297,6 +311,7 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
                             param.getKey(),
                             normalizedType,
                             param.getValue(),
+                            param.getDescription(),
                             ""
                     });
                 }
@@ -304,7 +319,7 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
 
             // Ensure there's always an empty row at the end
             if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", HttpFormData.TYPE_TEXT, "", ""});
+                tableModel.addRow(createEmptyRow());
             }
         } finally {
             suppressAutoAppendRow = false;

@@ -250,7 +250,12 @@ public class ApiPostCollectionParser {
         for (Object paramObj : parameters) {
             JSONObject param = (JSONObject) paramObj;
             boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
-            headersList.add(new HttpHeader(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
+            headersList.add(new HttpHeader(
+                    enabled,
+                    param.getStr("key", ""),
+                    param.getStr(KEY_VALUE, ""),
+                    readParameterDescription(param)
+            ));
         }
         req.setHeadersList(headersList);
     }
@@ -269,7 +274,12 @@ public class ApiPostCollectionParser {
         for (Object paramObj : parameters) {
             JSONObject param = (JSONObject) paramObj;
             boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
-            paramsList.add(new HttpParam(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
+            paramsList.add(new HttpParam(
+                    enabled,
+                    param.getStr("key", ""),
+                    param.getStr(KEY_VALUE, ""),
+                    readParameterDescription(param)
+            ));
         }
         req.setParamsList(paramsList);
     }
@@ -324,7 +334,12 @@ public class ApiPostCollectionParser {
                 for (Object paramObj : parameters) {
                     JSONObject param = (JSONObject) paramObj;
                     boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
-                    urlencodedList.add(new HttpFormUrlencoded(enabled, param.getStr("key", ""), param.getStr(KEY_VALUE, "")));
+                    urlencodedList.add(new HttpFormUrlencoded(
+                            enabled,
+                            param.getStr("key", ""),
+                            param.getStr(KEY_VALUE, ""),
+                            readParameterDescription(param)
+                    ));
                 }
                 req.setUrlencodedList(urlencodedList);
             }
@@ -341,10 +356,23 @@ public class ApiPostCollectionParser {
                     boolean enabled = param.getInt(KEY_IS_CHECKED, 1) == 1;
                     String fieldType = param.getStr("field_type", "string");
                     String key = param.getStr("key", "");
+                    String description = readParameterDescription(param);
                     if ("file".equals(fieldType) || param.containsKey("file_name")) {
-                        formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, param.getStr("file_name", "")));
+                        formDataList.add(new HttpFormData(
+                                enabled,
+                                key,
+                                HttpFormData.TYPE_FILE,
+                                param.getStr("file_name", ""),
+                                description
+                        ));
                     } else {
-                        formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_TEXT, param.getStr(KEY_VALUE, "")));
+                        formDataList.add(new HttpFormData(
+                                enabled,
+                                key,
+                                HttpFormData.TYPE_TEXT,
+                                param.getStr(KEY_VALUE, ""),
+                                description
+                        ));
                     }
                 }
                 req.setFormDataList(formDataList);
@@ -468,6 +496,17 @@ public class ApiPostCollectionParser {
                 result.addEnvironment(env);
             }
         }
+    }
+
+    private static String readParameterDescription(JSONObject parameter) {
+        if (parameter == null) {
+            return "";
+        }
+        String description = parameter.getStr("description", "");
+        if (description == null || description.isBlank()) {
+            description = parameter.getStr("desc", "");
+        }
+        return description == null ? "" : description;
     }
 
     private static int parseStatusCode(String codeStr) {

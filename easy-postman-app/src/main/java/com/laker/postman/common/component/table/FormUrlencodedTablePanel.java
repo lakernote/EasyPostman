@@ -3,6 +3,8 @@ package com.laker.postman.common.component.table;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 
 
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -20,7 +22,8 @@ public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlenco
     private static final int COL_ENABLED = 0;
     private static final int COL_KEY = 1;
     private static final int COL_VALUE = 2;
-    private static final int COL_DELETE = 3;
+    private static final int COL_DESCRIPTION = 3;
+    private static final int COL_DELETE = 4;
 
     /**
      * 构造函数，创建默认的 Form-Urlencoded 表格面板
@@ -36,7 +39,7 @@ public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlenco
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
     public FormUrlencodedTablePanel(boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
-        super(new String[]{"", "Key", "Value", ""});
+        super(new String[]{"", "Key", "Value", I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION), ""});
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
@@ -70,19 +73,25 @@ public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlenco
 
     @Override
     protected int getLastEditableColumnIndex() {
+        return COL_DESCRIPTION;
+    }
+
+    @Override
+    protected int getEnterTargetColumnIndex() {
         return COL_VALUE;
     }
 
     @Override
     protected boolean isCellEditableForNavigation(int row, int column) {
-        return column == COL_KEY || column == COL_VALUE;
+        return column == COL_KEY || column == COL_VALUE || column == COL_DESCRIPTION;
     }
 
     @Override
     protected boolean hasContentInRow(int row) {
         String key = getStringValue(row, COL_KEY);
         String value = getStringValue(row, COL_VALUE);
-        return !key.isEmpty() || !value.isEmpty();
+        String description = getStringValue(row, COL_DESCRIPTION);
+        return !key.isEmpty() || !value.isEmpty() || !description.isEmpty();
     }
 
     // ========== 初始化方法 ==========
@@ -103,8 +112,10 @@ public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlenco
         // Set editors for Key and Value columns
         setColumnEditor(COL_KEY, new EasyPostmanTextFieldCellEditor());
         setColumnEditor(COL_VALUE, new EasySmartValueCellEditor());
+        setColumnEditor(COL_DESCRIPTION, new EasySmartValueCellEditor());
         setColumnRenderer(COL_KEY, new EasyTextFieldCellRenderer());
         setColumnRenderer(COL_VALUE, new EasyTextFieldCellRenderer());
+        setColumnRenderer(COL_DESCRIPTION, new EasyTextFieldCellRenderer());
 
         // Set custom renderer for delete column
         setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
@@ -120,8 +131,9 @@ public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlenco
             boolean enabled = getBooleanValue(i, COL_ENABLED);
             String key = getStringValue(i, COL_KEY);
             String value = getStringValue(i, COL_VALUE);
+            String description = getStringValue(i, COL_DESCRIPTION);
             if (!key.isEmpty()) {
-                dataList.add(new HttpFormUrlencoded(enabled, key, value));
+                dataList.add(new HttpFormUrlencoded(enabled, key, value, description));
             }
         }
         return dataList;
@@ -140,10 +152,11 @@ public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlenco
             boolean enabled = getBooleanValue(i, COL_ENABLED);
             String key = getStringValue(i, COL_KEY);
             String value = getStringValue(i, COL_VALUE);
+            String description = getStringValue(i, COL_DESCRIPTION);
 
             // Only add non-empty params
             if (!key.isEmpty()) {
-                dataList.add(new HttpFormUrlencoded(enabled, key, value));
+                dataList.add(new HttpFormUrlencoded(enabled, key, value, description));
             }
         }
         return dataList;
@@ -161,13 +174,13 @@ public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlenco
             tableModel.setRowCount(0);
             if (dataList != null) {
                 for (HttpFormUrlencoded param : dataList) {
-                    tableModel.addRow(new Object[]{param.isEnabled(), param.getKey(), param.getValue(), ""});
+                    tableModel.addRow(new Object[]{param.isEnabled(), param.getKey(), param.getValue(), param.getDescription(), ""});
                 }
             }
 
             // Ensure there's always an empty row at the end
             if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
-                tableModel.addRow(new Object[]{true, "", "", ""});
+                tableModel.addRow(createEmptyRow());
             }
         } finally {
             suppressAutoAppendRow = false;

@@ -173,7 +173,8 @@ final class RequestBodyBulkEditSupport {
             rowStates.add(new FormDataRowState(
                     existing.getKey().trim().toLowerCase(Locale.ROOT),
                     existing.isEnabled(),
-                    HttpFormData.normalizeType(existing.getType())
+                    HttpFormData.normalizeType(existing.getType()),
+                    existing.getDescription()
             ));
         }
 
@@ -190,7 +191,8 @@ final class RequestBodyBulkEditSupport {
             ParsedFormDataLine parsedFormData = parseFormDataLine(parsed.key, parsed.value, matchedState);
             if (!parsedFormData.key.isEmpty()) {
                 boolean enabled = matchedState != null ? matchedState.isEnabled() : true;
-                params.add(new HttpFormData(enabled, parsedFormData.key, parsedFormData.type, parsedFormData.value));
+                String description = matchedState != null ? matchedState.getDescription() : "";
+                params.add(new HttpFormData(enabled, parsedFormData.key, parsedFormData.type, parsedFormData.value, description));
             }
         }
 
@@ -207,7 +209,8 @@ final class RequestBodyBulkEditSupport {
         for (HttpFormUrlencoded existing : formUrlencodedTablePanel.getFormDataList()) {
             rowStates.add(new RowEnabledState(
                     existing.getKey().trim().toLowerCase(Locale.ROOT),
-                    existing.isEnabled()
+                    existing.isEnabled(),
+                    existing.getDescription()
             ));
         }
 
@@ -223,7 +226,8 @@ final class RequestBodyBulkEditSupport {
             if (!parsed.key.isEmpty()) {
                 RowEnabledState matchedState = takeNextRowEnabledState(rowStates, parsed.key);
                 boolean enabled = matchedState != null ? matchedState.isEnabled() : true;
-                params.add(new HttpFormUrlencoded(enabled, parsed.key, parsed.value));
+                String description = matchedState != null ? matchedState.getDescription() : "";
+                params.add(new HttpFormUrlencoded(enabled, parsed.key, parsed.value, description));
             }
         }
 
@@ -353,15 +357,21 @@ final class RequestBodyBulkEditSupport {
     private static class RowEnabledState {
         private final String normalizedKey;
         private final boolean enabled;
+        private final String description;
         private boolean consumed;
 
-        private RowEnabledState(String normalizedKey, boolean enabled) {
+        private RowEnabledState(String normalizedKey, boolean enabled, String description) {
             this.normalizedKey = normalizedKey;
             this.enabled = enabled;
+            this.description = description == null ? "" : description;
         }
 
         protected final boolean isEnabled() {
             return enabled;
+        }
+
+        protected final String getDescription() {
+            return description;
         }
 
         protected final boolean tryMatch(String normalizedKey) {
@@ -376,8 +386,8 @@ final class RequestBodyBulkEditSupport {
     private static final class FormDataRowState extends RowEnabledState {
         private final String type;
 
-        private FormDataRowState(String normalizedKey, boolean enabled, String type) {
-            super(normalizedKey, enabled);
+        private FormDataRowState(String normalizedKey, boolean enabled, String type, String description) {
+            super(normalizedKey, enabled, description);
             this.type = type;
         }
     }

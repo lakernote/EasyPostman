@@ -97,7 +97,12 @@ public class PerformanceOutboundRequest {
         }
         return values.stream()
                 .filter(value -> value != null && value.isEnabled() && !value.getKey().isBlank())
-                .map(value -> new PerformanceRequestKeyValue(true, value.getKey().trim(), value.getValue()))
+                .map(value -> new PerformanceRequestKeyValue(
+                        true,
+                        value.getKey().trim(),
+                        value.getValue(),
+                        value.getDescription()
+                ))
                 .toList();
     }
 
@@ -107,7 +112,13 @@ public class PerformanceOutboundRequest {
         }
         return values.stream()
                 .filter(value -> value != null && value.isEnabled() && !value.getKey().isBlank())
-                .map(value -> new PerformanceRequestFormDataPart(true, value.getKey().trim(), value.getType(), value.getValue()))
+                .map(value -> new PerformanceRequestFormDataPart(
+                        true,
+                        value.getKey().trim(),
+                        value.getType(),
+                        value.getValue(),
+                        value.getDescription()
+                ))
                 .toList();
     }
 

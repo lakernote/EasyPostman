@@ -1,6 +1,5 @@
 package com.laker.postman.request.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,7 +11,6 @@ import java.io.Serializable;
  */
 @Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class HttpFormData implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -26,6 +24,19 @@ public class HttpFormData implements Serializable {
     private String key = "";
     private String type = TYPE_TEXT; // "Text" or "File"
     private String value = "";
+    private String description = "";
+
+    public HttpFormData(boolean enabled, String key, String type, String value) {
+        this(enabled, key, type, value, "");
+    }
+
+    public HttpFormData(boolean enabled, String key, String type, String value, String description) {
+        this.enabled = enabled;
+        this.key = key;
+        this.type = normalizeType(type);
+        this.value = value;
+        this.description = description;
+    }
 
     /**
      * Normalize the type to ensure consistent capitalization
@@ -69,4 +80,3 @@ public class HttpFormData implements Serializable {
         this.type = normalizeType(type);
     }
 }
-

@@ -1279,7 +1279,7 @@ public class HistoryPanel extends UiSingletonPanel {
         }
         for (HttpHeader header : request.sentHeadersList) {
             if (header != null) {
-                copiedHeaders.add(new HttpHeader(header.isEnabled(), header.getKey(), header.getValue()));
+                copiedHeaders.add(new HttpHeader(header.isEnabled(), header.getKey(), header.getValue(), header.getDescription()));
             }
         }
         return copiedHeaders;
@@ -1291,7 +1291,7 @@ public class HistoryPanel extends UiSingletonPanel {
             return copiedHeaders;
         }
         for (HttpHeader header : source) {
-            copiedHeaders.add(new HttpHeader(header.isEnabled(), header.getKey(), header.getValue()));
+            copiedHeaders.add(new HttpHeader(header.isEnabled(), header.getKey(), header.getValue(), header.getDescription()));
         }
         return copiedHeaders;
     }
@@ -1302,7 +1302,7 @@ public class HistoryPanel extends UiSingletonPanel {
             return copiedParams;
         }
         for (HttpParam param : source) {
-            copiedParams.add(new HttpParam(param.isEnabled(), param.getKey(), param.getValue()));
+            copiedParams.add(new HttpParam(param.isEnabled(), param.getKey(), param.getValue(), param.getDescription()));
         }
         return copiedParams;
     }
@@ -1317,7 +1317,8 @@ public class HistoryPanel extends UiSingletonPanel {
                     formData.isEnabled(),
                     formData.getKey(),
                     formData.getType(),
-                    formData.getValue()
+                    formData.getValue(),
+                    formData.getDescription()
             ));
         }
         return copiedFormData;
@@ -1332,7 +1333,8 @@ public class HistoryPanel extends UiSingletonPanel {
             copiedUrlencoded.add(new HttpFormUrlencoded(
                     formUrlencoded.isEnabled(),
                     formUrlencoded.getKey(),
-                    formUrlencoded.getValue()
+                    formUrlencoded.getValue(),
+                    formUrlencoded.getDescription()
             ));
         }
         return copiedUrlencoded;

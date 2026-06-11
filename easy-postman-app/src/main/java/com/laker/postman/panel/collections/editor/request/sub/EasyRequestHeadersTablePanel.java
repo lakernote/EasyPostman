@@ -1,12 +1,15 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.component.table.AbstractTablePanel;
+import com.laker.postman.common.component.table.EasySmartValueCellEditor;
 import com.laker.postman.common.component.table.HttpHeaderKeyEasyTextFieldCellEditor;
 import com.laker.postman.common.component.table.EasyTextFieldCellRenderer;
 import com.laker.postman.common.component.table.HttpHeaderValueEasyTextFieldCellEditor;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.request.defaults.HttpRequestDefaults;
 import com.laker.postman.util.HttpHeaderConstants;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -33,13 +36,14 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
     private static final int COL_ENABLED = 0;
     private static final int COL_KEY = 1;
     private static final int COL_VALUE = 2;
-    private static final int COL_DELETE = 3;
+    private static final int COL_DESCRIPTION = 3;
+    private static final int COL_DELETE = 4;
 
     // Parent panel reference for handling default headers
     private EasyRequestHttpHeadersPanel parentPanel;
 
     public EasyRequestHeadersTablePanel() {
-        super(new String[]{"", "Key", "Value", ""});
+        super(new String[]{"", "Key", "Value", I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION), ""});
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
@@ -124,6 +128,7 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
             // 1. 清空当前行
             tableModel.setValueAt("", row, COL_KEY);
             tableModel.setValueAt("", row, COL_VALUE);
+            tableModel.setValueAt("", row, COL_DESCRIPTION);
 
             // 2. 确保默认 headers 可见
             parentPanel.ensureDefaultHeadersVisible();
@@ -182,12 +187,17 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
 
     @Override
     protected int getLastEditableColumnIndex() {
+        return COL_DESCRIPTION;
+    }
+
+    @Override
+    protected int getEnterTargetColumnIndex() {
         return COL_VALUE;
     }
 
     @Override
     protected boolean isCellEditableForNavigation(int row, int column) {
-        if (column != COL_KEY && column != COL_VALUE) {
+        if (column != COL_KEY && column != COL_VALUE && column != COL_DESCRIPTION) {
             return false;
         }
         // 默认 Header 的 Key 列不可编辑（不参与 Tab/Enter 导航）
@@ -213,7 +223,8 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
     protected boolean hasContentInRow(int row) {
         String key = getStringValue(row, COL_KEY);
         String value = getStringValue(row, COL_VALUE);
-        return !key.isEmpty() || !value.isEmpty();
+        String description = getStringValue(row, COL_DESCRIPTION);
+        return !key.isEmpty() || !value.isEmpty() || !description.isEmpty();
     }
 
     // ========== 初始化方法 ==========
@@ -245,7 +256,7 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
         }
 
         // For non-default headers: Key and Value columns editable
-        return column == COL_KEY || column == COL_VALUE;
+        return column == COL_KEY || column == COL_VALUE || column == COL_DESCRIPTION;
     }
 
     @Override
@@ -324,6 +335,8 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
         // 设置渲染器以支持变量高亮等功能
         setColumnRenderer(COL_KEY, new EasyTextFieldCellRenderer());
         setColumnRenderer(COL_VALUE, new EasyTextFieldCellRenderer());
+        setColumnEditor(COL_DESCRIPTION, new EasySmartValueCellEditor());
+        setColumnRenderer(COL_DESCRIPTION, new EasyTextFieldCellRenderer());
 
         // 删除列使用自定义按钮渲染器
         setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
@@ -346,6 +359,7 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
             // Store Key and Value
             row.put("Key", getStringValue(i, COL_KEY));
             row.put("Value", getStringValue(i, COL_VALUE));
+            row.put("Description", getStringValue(i, COL_DESCRIPTION));
             rows.add(row);
         }
 
@@ -363,6 +377,7 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
             row.put("Enabled", getBooleanValue(i, COL_ENABLED));
             row.put("Key", getStringValue(i, COL_KEY));
             row.put("Value", getStringValue(i, COL_VALUE));
+            row.put("Description", getStringValue(i, COL_DESCRIPTION));
             rows.add(row);
         }
         return rows;
@@ -386,8 +401,9 @@ public class EasyRequestHeadersTablePanel extends AbstractTablePanel<Map<String,
                     }
                     Object key = row.get("Key");
                     Object value = row.get("Value");
+                    Object description = row.get("Description");
 
-                    tableModel.addRow(new Object[]{enabled, key, value, ""});
+                    tableModel.addRow(new Object[]{enabled, key, value, description, ""});
                 }
             }
 

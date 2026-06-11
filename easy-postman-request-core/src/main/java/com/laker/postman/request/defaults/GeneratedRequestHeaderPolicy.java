@@ -88,6 +88,6 @@ public final class GeneratedRequestHeaderPolicy {
     }
 
     private static HttpHeader copyHeader(HttpHeader header) {
-        return new HttpHeader(header.isEnabled(), header.getKey(), header.getValue());
+        return new HttpHeader(header.isEnabled(), header.getKey(), header.getValue(), header.getDescription());
     }
 }

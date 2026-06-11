@@ -34,6 +34,7 @@ public class FormDataTablePanelRendererTest extends AbstractSwingUiTest {
             assertEquals(renderedBackground(table, 1, 2), stripedBackground);
             assertEquals(renderedBackground(table, 1, 3), stripedBackground);
             assertEquals(renderedBackground(table, 1, 4), stripedBackground);
+            assertEquals(renderedBackground(table, 1, 5), stripedBackground);
         });
     }
 

@@ -45,7 +45,12 @@ public class HttpRequestDirtyComparator {
             if (key.isEmpty()) {
                 continue;
             }
-            normalized.add(new HttpHeader(header.isEnabled(), key, normalizeHeaderValue(header.getValue())));
+            normalized.add(new HttpHeader(
+                    header.isEnabled(),
+                    key,
+                    normalizeHeaderValue(header.getValue()),
+                    normalizeHeaderValue(header.getDescription())
+            ));
         }
         return normalized;
     }
@@ -72,7 +77,8 @@ public class HttpRequestDirtyComparator {
             if (header != null
                     && header.isEnabled() == candidate.isEnabled()
                     && equalsHeaderKey(header.getKey(), candidate.getKey())
-                    && equalsHeaderValue(header.getValue(), candidate.getValue())) {
+                    && equalsHeaderValue(header.getValue(), candidate.getValue())
+                    && equalsHeaderValue(header.getDescription(), candidate.getDescription())) {
                 return true;
             }
         }

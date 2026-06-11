@@ -436,7 +436,7 @@ public class HistoryPersistenceService {
                 if (header == null || !header.isEnabled() || header.getKey() == null || header.getKey().isBlank()) {
                     continue;
                 }
-                sentHeaders.add(new HttpHeader(true, header.getKey(), header.getValue()));
+                sentHeaders.add(new HttpHeader(true, header.getKey(), header.getValue(), header.getDescription()));
             }
             request.sentHeadersList = sentHeaders;
         }
@@ -534,6 +534,7 @@ public class HistoryPersistenceService {
             jsonObject.set("enabled", header.isEnabled());
             jsonObject.set("key", header.getKey());
             jsonObject.set("value", header.getValue());
+            jsonObject.set("description", header.getDescription());
             jsonArray.add(jsonObject);
         }
         return jsonArray;
@@ -549,7 +550,8 @@ public class HistoryPersistenceService {
             headersList.add(new HttpHeader(
                     jsonObject.getBool("enabled", true),
                     jsonObject.getStr("key", ""),
-                    jsonObject.getStr("value", "")
+                    jsonObject.getStr("value", ""),
+                    jsonObject.getStr("description", "")
             ));
         }
         return headersList;
@@ -568,6 +570,7 @@ public class HistoryPersistenceService {
             jsonObject.set("enabled", param.isEnabled());
             jsonObject.set("key", param.getKey());
             jsonObject.set("value", param.getValue());
+            jsonObject.set("description", param.getDescription());
             jsonArray.add(jsonObject);
         }
         return jsonArray;
@@ -583,7 +586,8 @@ public class HistoryPersistenceService {
             paramsList.add(new HttpParam(
                     jsonObject.getBool("enabled", true),
                     jsonObject.getStr("key", ""),
-                    jsonObject.getStr("value", "")
+                    jsonObject.getStr("value", ""),
+                    jsonObject.getStr("description", "")
             ));
         }
         return paramsList;
@@ -603,6 +607,7 @@ public class HistoryPersistenceService {
             jsonObject.set("key", formData.getKey());
             jsonObject.set("type", formData.getType());
             jsonObject.set("value", formData.getValue());
+            jsonObject.set("description", formData.getDescription());
             jsonArray.add(jsonObject);
         }
         return jsonArray;
@@ -619,7 +624,8 @@ public class HistoryPersistenceService {
                     jsonObject.getBool("enabled", true),
                     jsonObject.getStr("key", ""),
                     jsonObject.getStr("type", HttpFormData.TYPE_TEXT),
-                    jsonObject.getStr("value", "")
+                    jsonObject.getStr("value", ""),
+                    jsonObject.getStr("description", "")
             ));
         }
         return formDataList;
@@ -638,6 +644,7 @@ public class HistoryPersistenceService {
             jsonObject.set("enabled", urlencoded.isEnabled());
             jsonObject.set("key", urlencoded.getKey());
             jsonObject.set("value", urlencoded.getValue());
+            jsonObject.set("description", urlencoded.getDescription());
             jsonArray.add(jsonObject);
         }
         return jsonArray;
@@ -653,7 +660,8 @@ public class HistoryPersistenceService {
             urlencodedList.add(new HttpFormUrlencoded(
                     jsonObject.getBool("enabled", true),
                     jsonObject.getStr("key", ""),
-                    jsonObject.getStr("value", "")
+                    jsonObject.getStr("value", ""),
+                    jsonObject.getStr("description", "")
             ));
         }
         return urlencodedList;

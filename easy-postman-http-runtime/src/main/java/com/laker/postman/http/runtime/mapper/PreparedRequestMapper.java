@@ -198,7 +198,7 @@ public class PreparedRequestMapper {
         }
         List<HttpHeader> cloned = new ArrayList<>(list.size());
         for (HttpHeader item : list) {
-            cloned.add(item == null ? null : new HttpHeader(item.isEnabled(), item.getKey(), item.getValue()));
+            cloned.add(item == null ? null : new HttpHeader(item.isEnabled(), item.getKey(), item.getValue(), item.getDescription()));
         }
         return cloned;
     }
@@ -209,7 +209,13 @@ public class PreparedRequestMapper {
         }
         List<HttpFormData> cloned = new ArrayList<>(list.size());
         for (HttpFormData item : list) {
-            cloned.add(item == null ? null : new HttpFormData(item.isEnabled(), item.getKey(), item.getType(), item.getValue()));
+            cloned.add(item == null ? null : new HttpFormData(
+                    item.isEnabled(),
+                    item.getKey(),
+                    item.getType(),
+                    item.getValue(),
+                    item.getDescription()
+            ));
         }
         return cloned;
     }
@@ -220,7 +226,12 @@ public class PreparedRequestMapper {
         }
         List<HttpFormUrlencoded> cloned = new ArrayList<>(list.size());
         for (HttpFormUrlencoded item : list) {
-            cloned.add(item == null ? null : new HttpFormUrlencoded(item.isEnabled(), item.getKey(), item.getValue()));
+            cloned.add(item == null ? null : new HttpFormUrlencoded(
+                    item.isEnabled(),
+                    item.getKey(),
+                    item.getValue(),
+                    item.getDescription()
+            ));
         }
         return cloned;
     }
@@ -231,7 +242,7 @@ public class PreparedRequestMapper {
         }
         List<HttpParam> cloned = new ArrayList<>(list.size());
         for (HttpParam item : list) {
-            cloned.add(item == null ? null : new HttpParam(item.isEnabled(), item.getKey(), item.getValue()));
+            cloned.add(item == null ? null : new HttpParam(item.isEnabled(), item.getKey(), item.getValue(), item.getDescription()));
         }
         return cloned;
     }

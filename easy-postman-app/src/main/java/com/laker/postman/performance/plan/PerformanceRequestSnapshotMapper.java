@@ -73,18 +73,29 @@ public class PerformanceRequestSnapshotMapper {
         item.setMethod(snapshot.getMethod());
         item.setProtocol(toRequestItemProtocol(snapshot.getProtocol()));
         item.setHeadersList(snapshot.getHeaders().stream()
-                .map(value -> new HttpHeader(value.isEnabled(), value.getKey(), value.getValue()))
+                .map(value -> new HttpHeader(value.isEnabled(), value.getKey(), value.getValue(), value.getDescription()))
                 .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)));
         item.setBodyType(snapshot.getBodyType());
         item.setBody(snapshot.getBody());
         item.setParamsList(snapshot.getParams().stream()
-                .map(value -> new HttpParam(value.isEnabled(), value.getKey(), value.getValue()))
+                .map(value -> new HttpParam(value.isEnabled(), value.getKey(), value.getValue(), value.getDescription()))
                 .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)));
         item.setFormDataList(snapshot.getFormData().stream()
-                .map(value -> new HttpFormData(value.isEnabled(), value.getKey(), value.getType(), value.getValue()))
+                .map(value -> new HttpFormData(
+                        value.isEnabled(),
+                        value.getKey(),
+                        value.getType(),
+                        value.getValue(),
+                        value.getDescription()
+                ))
                 .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)));
         item.setUrlencodedList(snapshot.getUrlencoded().stream()
-                .map(value -> new HttpFormUrlencoded(value.isEnabled(), value.getKey(), value.getValue()))
+                .map(value -> new HttpFormUrlencoded(
+                        value.isEnabled(),
+                        value.getKey(),
+                        value.getValue(),
+                        value.getDescription()
+                ))
                 .collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new)));
         item.setAuthType(toRequestAuthType(snapshot.getAuthType()));
         item.setAuthUsername(snapshot.getAuthUsername());
@@ -178,13 +189,18 @@ public class PerformanceRequestSnapshotMapper {
 
     private PerformanceRequestKeyValue toKeyValue(Object value) {
         if (value instanceof HttpHeader header) {
-            return new PerformanceRequestKeyValue(header.isEnabled(), header.getKey(), header.getValue());
+            return new PerformanceRequestKeyValue(header.isEnabled(), header.getKey(), header.getValue(), header.getDescription());
         }
         if (value instanceof HttpParam param) {
-            return new PerformanceRequestKeyValue(param.isEnabled(), param.getKey(), param.getValue());
+            return new PerformanceRequestKeyValue(param.isEnabled(), param.getKey(), param.getValue(), param.getDescription());
         }
         if (value instanceof HttpFormUrlencoded urlencoded) {
-            return new PerformanceRequestKeyValue(urlencoded.isEnabled(), urlencoded.getKey(), urlencoded.getValue());
+            return new PerformanceRequestKeyValue(
+                    urlencoded.isEnabled(),
+                    urlencoded.getKey(),
+                    urlencoded.getValue(),
+                    urlencoded.getDescription()
+            );
         }
         return null;
     }
@@ -199,7 +215,8 @@ public class PerformanceRequestSnapshotMapper {
                         value.isEnabled(),
                         value.getKey(),
                         value.getType(),
-                        value.getValue()
+                        value.getValue(),
+                        value.getDescription()
                 ))
                 .toList();
     }

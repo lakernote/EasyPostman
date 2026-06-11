@@ -332,7 +332,7 @@ public class ElasticsearchPanel extends JPanel {
 
         JPanel form = new JPanel(new MigLayout(
                 "insets 0, fillx, gapy 2, novisualpadding, hidemode 3",
-                "[grow,fill]",
+                ConnectionToolbarUi.compactFormColumns(),
                 "[][]"
         ));
 
@@ -341,7 +341,7 @@ public class ElasticsearchPanel extends JPanel {
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(HOST_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(AUTH_MODE_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + "6[]push",
                 "[]"
         ));
         mainRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PROFILE)));
@@ -370,8 +370,8 @@ public class ElasticsearchPanel extends JPanel {
         authRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PASS)));
         authRow.add(passwordField);
 
-        form.add(mainRow, "growx, wrap");
-        form.add(authRow, "growx");
+        form.add(mainRow, "wrap");
+        form.add(authRow);
         panel.add(form, BorderLayout.CENTER);
         setAuthOptionsVisible(false);
         ConnectionToolbarUi.registerSaveShortcut(form, () -> saveCurrentConnectionProfile(true));
@@ -1022,6 +1022,7 @@ public class ElasticsearchPanel extends JPanel {
         SecondaryButton loadTplBtn = new SecondaryButton(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_LOAD_TEMPLATE), "icons/load.svg");
         ConnectionToolbarUi.compactButton(loadTplBtn, 104);
+        loadTplBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_LOAD_TEMPLATE));
         loadTplBtn.addActionListener(e -> applyTemplate(templateCombo.getSelectedIndex()));
 
         FormatButton formatBtn = new FormatButton();

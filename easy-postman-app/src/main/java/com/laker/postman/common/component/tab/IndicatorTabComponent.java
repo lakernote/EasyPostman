@@ -15,8 +15,9 @@ import java.awt.*;
 public class IndicatorTabComponent extends JPanel {
     private static final int INDICATOR_DIAMETER = 6; // 指示器直径
     private static final int INDICATOR_SPACING = 6; // 指示器与文字之间的间距
-    private static final int LABEL_HORIZONTAL_PADDING = 0; // Label 左右内边距
+    private static final int LABEL_HORIZONTAL_PADDING = 6; // Label 左右内边距
     private static final int LABEL_VERTICAL_PADDING = 4; // Label 上下内边距
+    private static final int INDICATOR_STROKE_MARGIN = 1; // drawOval 右/下边框占用
 
     private final String title;
     private boolean showIndicator = false; // 是否显示指示器
@@ -60,7 +61,7 @@ public class IndicatorTabComponent extends JPanel {
 
         // 只有在显示指示器时才增加指示器的宽度
         if (showIndicator) {
-            width += INDICATOR_DIAMETER + INDICATOR_SPACING;
+            width += INDICATOR_DIAMETER + INDICATOR_STROKE_MARGIN + INDICATOR_SPACING;
         }
 
         int height = fm.getHeight() + LABEL_VERTICAL_PADDING * 2;

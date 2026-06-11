@@ -48,7 +48,7 @@ public class ModernTabButton extends JButton {
         setForeground(ModernTabButtonTheme.foreground(true));
 
         // 设置内边距
-        setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 16));
 
         // 设置光标
         setCursor(new Cursor(Cursor.HAND_CURSOR));

@@ -1,11 +1,8 @@
 package com.laker.postman.plugin.kafka.consumer.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.laker.postman.plugin.kafka.MessageKeys;
-import com.laker.postman.plugin.kafka.consumer.KafkaConsumedMessage;
-import com.laker.postman.plugin.kafka.shared.KafkaPanelSupport;
-import com.laker.postman.plugin.kafka.shared.ui.KafkaPropertiesEditorPanel;
 import com.laker.postman.common.component.ChipLabel;
+import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowChrome;
@@ -17,6 +14,10 @@ import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.plugin.kafka.MessageKeys;
+import com.laker.postman.plugin.kafka.consumer.KafkaConsumedMessage;
+import com.laker.postman.plugin.kafka.shared.KafkaPanelSupport;
+import com.laker.postman.plugin.kafka.shared.ui.KafkaPropertiesEditorPanel;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
@@ -135,7 +136,7 @@ public class KafkaConsumerPanel extends JPanel {
 
         JPanel advancedRowPanel = new JPanel(new MigLayout(
                 "insets 4 10 6 8, fillx",
-                "[]8[grow,fill]16[]8[grow,fill]16[]8[140!]28[]8[grow,fill]",
+                "[]8[grow,fill]16[]8[grow,fill]16[]8[pref!,fill]28[]8[grow,fill]",
                 "[]6[]"
         ));
         ToolWindowSurfaceStyle.applySectionHeader(advancedRowPanel);
@@ -147,15 +148,16 @@ public class KafkaConsumerPanel extends JPanel {
         partitionSelector = new KafkaPartitionSelector();
         partitionSelector.setPreferredSize(new Dimension(0, 28));
 
-        autoOffsetCombo = new JComboBox<>(new String[]{
+        autoOffsetCombo = new EasyComboBox<>(new String[]{
                 t(MessageKeys.TOOLBOX_KAFKA_OFFSET_RESET_LATEST),
                 t(MessageKeys.TOOLBOX_KAFKA_OFFSET_RESET_EARLIEST),
                 t(MessageKeys.TOOLBOX_KAFKA_OFFSET_RESET_NONE),
                 t(MessageKeys.TOOLBOX_KAFKA_OFFSET_RESET_TIMESTAMP),
                 t(MessageKeys.TOOLBOX_KAFKA_OFFSET_RESET_OFFSET)
-        });
+        }, EasyComboBox.WidthMode.FIXED_MAX);
         autoOffsetCombo.setSelectedIndex(0);
-        autoOffsetCombo.setPreferredSize(new Dimension(140, 28));
+        Dimension autoOffsetSize = autoOffsetCombo.getPreferredSize();
+        autoOffsetCombo.setPreferredSize(new Dimension(autoOffsetSize.width, 28));
 
         consumeStartValueField = new JTextField("");
         consumeStartValueField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_OFFSET_VALUE_PLACEHOLDER));

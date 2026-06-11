@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.kafka.connection.ui;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
@@ -17,10 +18,9 @@ public class KafkaConnectionPanel extends JPanel {
     private static final String CARD_CONNECT = "connect";
     private static final String CARD_DISCONNECT = "disconnect";
     private static final int KAFKA_LABEL_WIDTH = 64;
+    private static final int KAFKA_WIDE_LABEL_WIDTH = 112;
     private static final int BOOTSTRAP_FIELD_WIDTH = 240;
-    private static final int PROTOCOL_FIELD_WIDTH = 128;
     private static final int CLIENT_ID_FIELD_WIDTH = BOOTSTRAP_FIELD_WIDTH;
-    private static final int SASL_MECHANISM_FIELD_WIDTH = PROTOCOL_FIELD_WIDTH;
     private static final int AUTH_FIELD_WIDTH = 150;
     private static final int CONNECTION_BUTTON_WIDTH = 78;
 
@@ -57,7 +57,7 @@ public class KafkaConnectionPanel extends JPanel {
 
         JPanel form = new JPanel(new MigLayout(
                 "insets 0, fillx, gapy 2, novisualpadding, hidemode 3",
-                "[grow,fill]",
+                ConnectionToolbarUi.compactFormColumns(),
                 "[][]"
         ));
         form.setOpaque(false);
@@ -71,10 +71,14 @@ public class KafkaConnectionPanel extends JPanel {
         clientIdField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_CLIENT_ID_PLACEHOLDER));
         ConnectionToolbarUi.compactControl(clientIdField);
 
-        securityProtocolCombo = new JComboBox<>(new String[]{"PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL", "SSL"});
+        securityProtocolCombo = new EasyComboBox<>(
+                new String[]{"PLAINTEXT", "SASL_PLAINTEXT", "SASL_SSL", "SSL"},
+                EasyComboBox.WidthMode.FIXED_MAX);
         ConnectionToolbarUi.compactControl(securityProtocolCombo);
 
-        saslMechanismCombo = new JComboBox<>(new String[]{"PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"});
+        saslMechanismCombo = new EasyComboBox<>(
+                new String[]{"PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512"},
+                EasyComboBox.WidthMode.FIXED_MAX);
         ConnectionToolbarUi.compactControl(saslMechanismCombo);
 
         usernameField = new JTextField("");
@@ -105,8 +109,8 @@ public class KafkaConnectionPanel extends JPanel {
                 "insets 0, fillx, novisualpadding, gapx 0",
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, BOOTSTRAP_FIELD_WIDTH) + "4"
-                        + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, PROTOCOL_FIELD_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + ConnectionToolbarUi.autoConnectionFieldColumns(KAFKA_LABEL_WIDTH)
+                        + "6[]push",
                 "[]"
         ));
         mainRow.setOpaque(false);
@@ -128,7 +132,7 @@ public class KafkaConnectionPanel extends JPanel {
                 "insets 2 0 2 0, fillx, novisualpadding, gapx 0",
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, CLIENT_ID_FIELD_WIDTH) + "4"
-                        + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, SASL_MECHANISM_FIELD_WIDTH) + "4"
+                        + ConnectionToolbarUi.autoConnectionFieldColumns(KAFKA_WIDE_LABEL_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, AUTH_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, AUTH_FIELD_WIDTH) + "push",
                 "[]"
@@ -143,8 +147,8 @@ public class KafkaConnectionPanel extends JPanel {
         optionsRow.add(ConnectionToolbarUi.label(t(MessageKeys.TOOLBOX_KAFKA_PASS)));
         optionsRow.add(passwordField);
 
-        form.add(mainRow, "growx, wrap");
-        form.add(optionsRow, "growx");
+        form.add(mainRow, "wrap");
+        form.add(optionsRow);
         add(form, BorderLayout.CENTER);
         ConnectionToolbarUi.lockConnectionPanelHeight(this, true);
     }

@@ -7,6 +7,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.Map;
 
@@ -43,5 +44,15 @@ public class ModernTabButtonThemeTest {
 
         assertEquals(ModernTabButtonTheme.hoverBackground(0.5f), ModernColors.withAlpha(hover, 128));
         assertEquals(ModernTabButtonTheme.selectedBackground(), ModernColors.withAlpha(surface, 0));
+    }
+
+    @Test
+    public void tabButtonShouldReserveTrailingSpaceForBadgeText() {
+        ModernTabButton button = new ModernTabButton(
+                "<html>Tests <span style='color:#ef4444'>(12)</span></html>", 0);
+
+        Insets insets = ((EmptyBorder) button.getBorder()).getBorderInsets();
+
+        assertEquals(insets.right, 16);
     }
 }

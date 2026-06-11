@@ -66,8 +66,8 @@ public class ResponseSizeCalculator {
         if (isCompressed) {
             displayText = String.format("%s (%s %.0f%%)",
                     formatBytes(httpEventInfo.getBodyBytesReceived()), enc, compressionRatio);
-            normalColor = ModernColors.getSuccess();
-            hoverColor = ModernColors.getSuccessDark();
+            normalColor = ModernColors.getTextSecondary();
+            hoverColor = ModernColors.getPrimary();
         } else {
             displayText = formatBytes(uncompressedBytes);
             normalColor = ModernColors.getTextHint();

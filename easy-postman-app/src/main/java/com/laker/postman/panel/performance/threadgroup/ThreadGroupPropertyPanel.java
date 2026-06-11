@@ -73,7 +73,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 中间部分：左侧配置面板，右侧预览图
         JPanel mainPanel = new JPanel(new MigLayout(
                 "insets 0, fill, novisualpadding, gap 0",
-                "[360:410:460,fill]16[420::,grow,fill]",
+                "[430:520:620,fill]16[420::,grow,fill]",
                 "[grow,fill]"
         ));
         mainPanel.setOpaque(false);
@@ -82,15 +82,17 @@ public class ThreadGroupPropertyPanel extends JPanel {
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.setOpaque(false);
-        // 动态调整配置面板大小以适应不同语言的标签长度
-        int configPanelWidth = I18nUtil.isChinese() ? 360 : 430;  // 英文需要更多空间
+        int configPanelWidth = 520;
         cardPanel.setPreferredSize(new Dimension(configPanelWidth, 128));
 
         // 初始化所有控件和面板
         // 1. 固定模式面板
-        fixedPanel = new JPanel(new GridBagLayout());
+        fixedPanel = new JPanel(new MigLayout(
+                "insets 5, fillx, novisualpadding",
+                "[right]8[80!]24[right]8[pref!]",
+                "[]8[]"
+        ));
         fixedPanel.setOpaque(false);
-        fixedPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         fixedNumThreadsSpinner = threadCountSpinner(1);
         fixedNumThreadsSpinner.setPreferredSize(new Dimension(80, 28));
         fixedLoopsSpinner = EasyJSpinner.intSpinner(1, 1, null, 1);
@@ -184,9 +186,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
         // 预览图表区域
         previewPanel = new ThreadLoadPreviewPanel();
-        // 在英文环境下适当调整预览面板的最小尺寸
-        int previewPanelWidth = I18nUtil.isChinese() ? 560 : 500;  // 英文环境给配置面板更多空间
-        previewPanel.setPreferredSize(new Dimension(previewPanelWidth, 180));
+        previewPanel.setPreferredSize(new Dimension(500, 180));
         previewPanel.setMinimumSize(new Dimension(360, 170));  // 设置最小尺寸防止过度压缩
         previewPanel.setOpaque(false);
         previewPanel.setBorder(BorderFactory.createEmptyBorder(14, 4, 6, 4));
@@ -222,39 +222,15 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
     // 设置固定模式面板
     private void setupFixedPanel() {
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 5, 3, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.anchor = GridBagConstraints.WEST;
+        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_USERS), SwingConstants.RIGHT));
+        fixedPanel.add(fixedNumThreadsSpinner, "w 80!, h 28!");
+        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_MODE), SwingConstants.RIGHT));
+        fixedPanel.add(createExecutionModePanel(), "w pref!, wrap");
 
-        // 第一行
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 1;
-        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_USERS), SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 1;
-        fixedPanel.add(fixedNumThreadsSpinner, gbc);
-
-        gbc.gridx = 2;
-        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_MODE), SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 3;
-        fixedPanel.add(createExecutionModePanel(), gbc);
-
-        // 第二行
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_LOOPS), SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 1;
-        fixedPanel.add(fixedLoopsSpinner, gbc);
-
-        gbc.gridx = 2;
-        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_DURATION), SwingConstants.RIGHT), gbc);
-
-        gbc.gridx = 3;
-        fixedPanel.add(durationSpinner, gbc);
+        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_LOOPS), SwingConstants.RIGHT));
+        fixedPanel.add(fixedLoopsSpinner, "w 80!, h 28!");
+        fixedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_DURATION), SwingConstants.RIGHT));
+        fixedPanel.add(durationSpinner, "w 80!, h 28!");
     }
 
     // 设置递增模式面板

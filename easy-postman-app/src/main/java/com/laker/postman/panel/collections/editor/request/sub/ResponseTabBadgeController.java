@@ -31,10 +31,10 @@ final class ResponseTabBadgeController {
             String countHtml = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS) +
                     "<span style='color:" + ModernColors.toHtmlColor(ModernColors.getSuccess())
                             + ";font-weight:bold;'>" + countText + "</span>";
-            headersButton.setText("<html>" + countHtml + "</html>");
+            setTabText(headersButton, "<html>" + countHtml + "</html>");
             return;
         }
-        headersButton.setText(I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
+        setTabText(headersButton, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
     }
 
     void updateTestResults(List<TestResult> testResults) {
@@ -48,9 +48,19 @@ final class ResponseTabBadgeController {
             String color = ModernColors.toHtmlColor(allPassed ? ModernColors.getSuccess() : ModernColors.getError());
             String countHtml = I18nUtil.getMessage(MessageKeys.TAB_TESTS) +
                     "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
-            testsButton.setText("<html>" + countHtml + "</html>");
+            setTabText(testsButton, "<html>" + countHtml + "</html>");
             return;
         }
-        testsButton.setText(I18nUtil.getMessage(MessageKeys.TAB_TESTS));
+        setTabText(testsButton, I18nUtil.getMessage(MessageKeys.TAB_TESTS));
+    }
+
+    private static void setTabText(JButton button, String text) {
+        button.setText(text);
+        button.revalidate();
+        if (button.getParent() != null) {
+            button.getParent().revalidate();
+            button.getParent().repaint();
+        }
+        button.repaint();
     }
 }

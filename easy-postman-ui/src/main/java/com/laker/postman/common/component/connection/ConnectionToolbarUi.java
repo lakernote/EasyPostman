@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.connection;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.IconUtil;
 import lombok.experimental.UtilityClass;
@@ -64,6 +65,14 @@ public class ConnectionToolbarUi {
         return "[" + labelWidth + "!,right]4[" + fieldWidth + "!,fill]";
     }
 
+    public static String autoConnectionFieldColumns(int labelWidth) {
+        return "[" + labelWidth + "!,right]4[pref!,fill]";
+    }
+
+    public static String compactFormColumns() {
+        return "[pref!]push";
+    }
+
     public static void lockConnectionPanelHeight(JComponent component, boolean hasSecondRow) {
         int height = hasSecondRow ? DOUBLE_ROW_HEIGHT : SINGLE_ROW_HEIGHT;
         Dimension preferredSize = component.getPreferredSize();
@@ -101,10 +110,13 @@ public class ConnectionToolbarUi {
     }
 
     public static void compactButton(JButton button, int width) {
-        button.setPreferredSize(new Dimension(width, CONNECTION_BUTTON_HEIGHT));
-        button.setMinimumSize(new Dimension(width, CONNECTION_BUTTON_HEIGHT));
-        button.setMaximumSize(new Dimension(width, CONNECTION_BUTTON_HEIGHT));
         button.setBorder(BorderFactory.createEmptyBorder(4, 9, 4, 9));
+        Dimension naturalSize = button.getPreferredSize();
+        int resolvedWidth = Math.max(width, naturalSize == null ? 0 : naturalSize.width);
+        Dimension size = new Dimension(resolvedWidth, CONNECTION_BUTTON_HEIGHT);
+        button.setPreferredSize(size);
+        button.setMinimumSize(size);
+        button.setMaximumSize(size);
     }
 
     public static JLabel label(String text) {
@@ -135,9 +147,9 @@ public class ConnectionToolbarUi {
     }
 
     public static <T> JComboBox<T> comboBox(T[] values, Function<T, String> displayNameProvider) {
-        JComboBox<T> comboBox = new JComboBox<>(values);
-        compactControl(comboBox);
+        JComboBox<T> comboBox = new EasyComboBox<>(values, EasyComboBox.WidthMode.FIXED_MAX);
         comboBox.setRenderer(displayRenderer(displayNameProvider));
+        compactControl(comboBox);
         return comboBox;
     }
 

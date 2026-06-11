@@ -684,7 +684,7 @@ public class InfluxDbPanel extends JPanel {
 
         JPanel form = new JPanel(new MigLayout(
                 "insets 0, fillx, gapy 2, novisualpadding, hidemode 3",
-                "[grow,fill]",
+                ConnectionToolbarUi.compactFormColumns(),
                 "[][]"
         ));
 
@@ -755,7 +755,7 @@ public class InfluxDbPanel extends JPanel {
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(HOST_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(MODE_FIELD_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + "6[]push",
                 "[]"
         ));
         mainRow.add(ConnectionToolbarUi.label(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE)));
@@ -776,8 +776,8 @@ public class InfluxDbPanel extends JPanel {
         modeFields.add(buildV2FieldsPanel(), QueryMode.FLUX_V2.name());
         modeFields.add(buildV1FieldsPanel(), QueryMode.INFLUXQL_V1.name());
 
-        form.add(mainRow, "growx, wrap");
-        form.add(modeFields, "growx");
+        form.add(mainRow, "wrap");
+        form.add(modeFields);
 
         panel.add(form, BorderLayout.CENTER);
         ConnectionToolbarUi.lockConnectionPanelHeight(panel, true);
@@ -820,10 +820,10 @@ public class InfluxDbPanel extends JPanel {
                 "insets 2 0 2 0, fillx, novisualpadding, gapx 0",
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(DB_FIELD_WIDTH) + "4"
-                        + ConnectionToolbarUi.connectionFieldColumns(MEASUREMENT_FIELD_WIDTH) + "4"
+                        + ConnectionToolbarUi.wideConnectionFieldColumns(MEASUREMENT_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(AUTH_FIELD_WIDTH) + "4"
-                        + ConnectionToolbarUi.connectionFieldColumns(AUTH_FIELD_WIDTH)
-                        + "6[" + RELOAD_BUTTON_WIDTH + "!]push",
+                        + ConnectionToolbarUi.wideConnectionFieldColumns(AUTH_FIELD_WIDTH)
+                        + "6[]push",
                 "[]"
         ));
 
@@ -859,6 +859,7 @@ public class InfluxDbPanel extends JPanel {
 
         SecondaryButton reloadMetaBtn = new SecondaryButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_RELOAD_META));
         ConnectionToolbarUi.compactButton(reloadMetaBtn, RELOAD_BUTTON_WIDTH);
+        reloadMetaBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_RELOAD_META));
         reloadMetaBtn.addActionListener(e -> {
             String db = getSelectedDatabase();
             loadDatabases(() -> {

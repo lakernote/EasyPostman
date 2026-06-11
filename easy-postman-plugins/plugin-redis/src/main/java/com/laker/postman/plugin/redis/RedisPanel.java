@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.redis;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
@@ -193,7 +194,7 @@ public class RedisPanel extends JPanel {
 
         connectionForm = new JPanel(new MigLayout(
                 "insets 0, fillx, gapy 2, novisualpadding, hidemode 3",
-                "[grow,fill]",
+                ConnectionToolbarUi.compactFormColumns(),
                 "[][]"
         ));
         connectionForm.setOpaque(false);
@@ -260,7 +261,7 @@ public class RedisPanel extends JPanel {
                         + "[36!,right]4[" + PORT_FIELD_WIDTH + "!,fill]4"
                         + "[28!,right]4[" + DB_FIELD_WIDTH + "!,fill]4"
                         + ConnectionToolbarUi.connectionFieldColumns(AUTH_MODE_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + "6[]push",
                 "[" + ConnectionToolbarUi.FORM_CONTROL_HEIGHT + "!]"
         ));
         toolbar.setOpaque(false);
@@ -289,7 +290,7 @@ public class RedisPanel extends JPanel {
                         + "[36!,right]4[" + PORT_FIELD_WIDTH + "!,fill]4"
                         + "[28!,right]4[" + DB_FIELD_WIDTH + "!,fill]4"
                         + ConnectionToolbarUi.connectionFieldColumns(AUTH_MODE_WIDTH)
-                        + "6[" + CONNECTION_BUTTON_WIDTH + "!]push",
+                        + "6[]push",
                 "[]"
         ));
         authRow.setOpaque(false);
@@ -298,8 +299,8 @@ public class RedisPanel extends JPanel {
         authRow.add(ConnectionToolbarUi.label(t(MessageKeys.TOOLBOX_REDIS_PASS)));
         authRow.add(passwordField, "span 5, growx");
 
-        connectionForm.add(toolbar, "growx, wrap");
-        connectionForm.add(authRow, "growx");
+        connectionForm.add(toolbar, "wrap");
+        connectionForm.add(authRow);
         panel.add(connectionForm, BorderLayout.CENTER);
         setAuthOptionsVisible(false);
 
@@ -335,10 +336,7 @@ public class RedisPanel extends JPanel {
     }
 
     private void compactRedisButton(JButton button) {
-        button.setPreferredSize(new Dimension(CONNECTION_BUTTON_WIDTH, ConnectionToolbarUi.CONNECTION_BUTTON_HEIGHT));
-        button.setMinimumSize(new Dimension(CONNECTION_BUTTON_WIDTH, ConnectionToolbarUi.CONNECTION_BUTTON_HEIGHT));
-        button.setMaximumSize(new Dimension(CONNECTION_BUTTON_WIDTH, ConnectionToolbarUi.CONNECTION_BUTTON_HEIGHT));
-        button.setBorder(BorderFactory.createEmptyBorder(4, 9, 4, 9));
+        ConnectionToolbarUi.compactButton(button, CONNECTION_BUTTON_WIDTH);
     }
 
     private AuthMode getSelectedAuthMode() {
@@ -482,7 +480,7 @@ public class RedisPanel extends JPanel {
         ));
         ToolWindowSurfaceStyle.applySectionHeader(panel);
 
-        templateCombo = new JComboBox<>();
+        templateCombo = new EasyComboBox<>(EasyComboBox.WidthMode.FIXED_MAX);
         for (String[] template : TEMPLATES) {
             templateCombo.addItem(template[0]);
         }
@@ -497,12 +495,14 @@ public class RedisPanel extends JPanel {
                 return lbl;
             }
         });
+        ConnectionToolbarUi.compactControl(templateCombo);
 
         SecondaryButton loadTplBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_REDIS_LOAD_TEMPLATE), "icons/load.svg");
+        loadTplBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_LOAD_TEMPLATE));
         loadTplBtn.addActionListener(e -> loadTemplate(templateCombo.getSelectedIndex()));
 
-        commandCombo = new JComboBox<>(COMMANDS);
-        commandCombo.setPreferredSize(new Dimension(110, 30));
+        commandCombo = new EasyComboBox<>(COMMANDS, EasyComboBox.WidthMode.FIXED_MAX);
+        ConnectionToolbarUi.compactControl(commandCombo);
         commandCombo.addActionListener(e -> updateArgsPlaceholder());
 
         keyField = new JTextField();
@@ -527,12 +527,12 @@ public class RedisPanel extends JPanel {
 
         JPanel row2 = new JPanel(new MigLayout(
                 "insets 2, fillx",
-                "[]8[120!]8[]8[grow,fill]8[]8[grow,fill]8[]",
+                "[]8[pref!,fill]8[]8[grow,fill]8[]8[grow,fill]8[]",
                 "[]"
         ));
         row2.setOpaque(false);
         row2.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_COMMAND)));
-        row2.add(commandCombo, "w 120!");
+        row2.add(commandCombo);
         row2.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_KEY)));
         row2.add(keyField, "growx");
         row2.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_ARGS)));

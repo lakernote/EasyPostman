@@ -24,4 +24,17 @@ public class CollectionTreeToolbarFileChooserTest {
         assertFalse(source.contains("JFileChooser"),
                 "raw JFileChooser shows the old Swing file chooser instead of the native system dialog");
     }
+
+    @Test(description = "Detected clipboard cURL text should prefill the import dialog instead of bypassing it")
+    public void defaultCurlImportShouldStillOpenEditableDialog() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/collections/tree/CollectionTreeToolbar.java"));
+        String importMethod = source.substring(source.indexOf("private void importCurlToCollection"));
+        importMethod = importMethod.substring(0, importMethod.indexOf("private boolean containsCurlCommands"));
+
+        assertTrue(importMethod.contains("CurlImportDialog.show(mainFrame"),
+                "cURL imports should always open the editable dialog");
+        assertFalse(importMethod.contains("if (defaultCurl != null && !defaultCurl.trim().isEmpty())"),
+                "default cURL text should prefill the dialog, not bypass it");
+    }
 }

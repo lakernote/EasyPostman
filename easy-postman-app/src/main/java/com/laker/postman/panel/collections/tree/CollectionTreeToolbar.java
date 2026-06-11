@@ -516,17 +516,11 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
 
     private void importCurlToCollection(String defaultCurl) {
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        String curlText;
-        // 如果已经提供了 curl 文本（从剪贴板检测到的），直接使用，跳过输入对话框
-        if (defaultCurl != null && !defaultCurl.trim().isEmpty()) {
-            curlText = defaultCurl;
-        } else {
-            // 否则弹出输入对话框
-            curlText = CurlImportDialog.show(mainFrame,
-                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE),
-                    I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT), defaultCurl);
-            if (curlText == null || curlText.trim().isEmpty()) return;
-        }
+        String curlText = CurlImportDialog.show(mainFrame,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_TITLE),
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DIALOG_PROMPT),
+                defaultCurl);
+        if (curlText == null || curlText.trim().isEmpty()) return;
         try {
             CurlImportResult importResult = parseCurlImport(curlText);
             if (importResult.items().isEmpty()) {

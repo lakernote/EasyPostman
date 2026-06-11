@@ -29,6 +29,7 @@ public class CurlImportDialog extends JDialog {
 
     private void initComponents(String message, String defaultText) {
         ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
+        setResizable(true);
         JPanel rootPanel = new JPanel(new BorderLayout(10, 10));
         ToolWindowSurfaceStyle.applyDialogSurface(rootPanel);
         setContentPane(rootPanel);
@@ -38,8 +39,8 @@ public class CurlImportDialog extends JDialog {
         rootPanel.add(createButtonPanel(), BorderLayout.SOUTH);
         configureDialogShortcuts();
 
-        setPreferredSize(DIALOG_SIZE);
-        pack();
+        setMinimumSize(DIALOG_SIZE);
+        setSize(DIALOG_SIZE);
     }
 
     private void addMessageLabel(JPanel rootPanel, String message) {

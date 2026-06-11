@@ -161,9 +161,15 @@ final class WebSocketRequestExecutor {
 
                 @Override
                 public void onClosing(WebSocket webSocket, int code, String reason) {
-                    if (shouldHandleActiveCallback(null)) {
-                        log.debug("closing WebSocket: code={}, reason={}", code, reason);
+                    if (!shouldHandleActiveCallback("onClosing") || !executionState.markClosed()) {
+                        return;
                     }
+                    log.debug("closing WebSocket: code={}, reason={}", code, reason);
+                    if (webSocket != null) {
+                        webSocket.close(code, reason);
+                    }
+                    appendTerminalEvent(MessageType.CLOSED, code + " " + reason);
+                    finishTerminalResponse();
                 }
 
                 @Override
@@ -256,6 +262,7 @@ final class WebSocketRequestExecutor {
 
         private void finishTerminalResponse(Runnable afterUiReset) {
             requestExecutionState.clearCurrentWebSocket();
+            requestExecutionState.clearCurrentWebSocketConnectionId();
             finalizeResponse();
             SwingUtilities.invokeLater(() -> runUiTeardown(afterUiReset));
         }

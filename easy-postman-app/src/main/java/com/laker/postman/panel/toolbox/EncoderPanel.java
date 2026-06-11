@@ -1,7 +1,5 @@
 package com.laker.postman.panel.toolbox;
 
-import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -30,9 +28,7 @@ public class EncoderPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(8, 8));
-        ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(8, 10, 10, 10));
+        ToolboxWorkbench.applyRoot(this);
 
         // 顶部工具栏
         JLabel typeLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_TITLE) + ":");
@@ -46,35 +42,24 @@ public class EncoderPanel extends JPanel {
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
 
-        JPanel topPanel = ToolWindowActionToolbar.inlineLeft(
-                typeLabel,
-                typeCombo,
-                encodeBtn,
-                decodeBtn,
-                copyBtn,
-                clearBtn
-        );
-        ToolWindowSurfaceStyle.applySectionCard(topPanel);
-
-        add(topPanel, BorderLayout.NORTH);
+        JPanel leftControls = ToolboxWorkbench.leftToolbar(typeLabel, typeCombo);
+        JPanel rightActions = ToolboxWorkbench.rightToolbar(encodeBtn, decodeBtn, copyBtn, clearBtn);
+        add(ToolboxWorkbench.toolbar(leftControls, rightActions), BorderLayout.NORTH);
 
         // 中间分割面板
         // 输入区域
-        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        inputPanel.setOpaque(false);
-        inputPanel.add(createSectionLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_INPUT)), BorderLayout.NORTH);
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
         ToolWindowSurfaceStyle.applyTextComponentInput(inputArea);
         JScrollPane inputScrollPane = new JScrollPane(inputArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(inputScrollPane);
-        inputPanel.add(inputScrollPane, BorderLayout.CENTER);
+        JPanel inputPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_INPUT),
+                inputScrollPane
+        );
 
         // 输出区域
-        JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        outputPanel.setOpaque(false);
-        outputPanel.add(createSectionLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_OUTPUT)), BorderLayout.NORTH);
         outputArea = new JTextArea();
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
@@ -82,11 +67,13 @@ public class EncoderPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(outputArea);
         JScrollPane outputScrollPane = new JScrollPane(outputArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(outputScrollPane);
-        outputPanel.add(outputScrollPane, BorderLayout.CENTER);
+        JPanel outputPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ENCODER_OUTPUT),
+                outputScrollPane
+        );
 
-        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 220);
+        JSplitPane splitPane = ToolboxWorkbench.editorSplit(inputPanel, outputPanel, 220);
         splitPane.setResizeWeight(0.42);
-
         add(splitPane, BorderLayout.CENTER);
 
         // 按钮事件
@@ -97,12 +84,6 @@ public class EncoderPanel extends JPanel {
             inputArea.setText("");
             outputArea.setText("");
         });
-    }
-
-    private JLabel createSectionLabel(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(label.getFont().deriveFont(Font.BOLD));
-        return label;
     }
 
     private void encode() {

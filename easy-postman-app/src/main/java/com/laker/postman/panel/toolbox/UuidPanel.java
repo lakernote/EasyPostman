@@ -1,7 +1,5 @@
 package com.laker.postman.panel.toolbox;
 
-import com.laker.postman.common.component.AppToolWindowChrome;
-import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -70,12 +68,10 @@ public class UuidPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        ToolWindowSurfaceStyle.applyCard(this);
+        ToolboxWorkbench.applyRoot(this);
 
         // 主分割面板
-        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane splitPane = ToolboxWorkbench.horizontalSplit(
                 createGeneratorPanel(),
                 createParsePanel(),
                 0
@@ -201,7 +197,7 @@ public class UuidPanel extends JPanel {
         clearBtn.setPreferredSize(new Dimension(100, 32));
         clearBtn.setFocusPainted(false);
 
-        JPanel buttonPanel = ToolWindowActionToolbar.inlineLeft(
+        JPanel buttonPanel = ToolboxWorkbench.leftToolbar(
                 generateBtn,
                 copyBtn,
                 copyOneBtn,
@@ -213,10 +209,6 @@ public class UuidPanel extends JPanel {
         panel.add(topPanel, BorderLayout.NORTH);
 
         // 中间UUID显示区域
-        JPanel centerPanel = new JPanel(new BorderLayout(5, 5));
-        centerPanel.setOpaque(false);
-        centerPanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_GENERATED)), BorderLayout.NORTH);
-
         uuidArea = new JTextArea();
         uuidArea.setEditable(false);
         uuidArea.setLineWrap(true);
@@ -227,7 +219,10 @@ public class UuidPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(uuidArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
-        centerPanel.add(scrollPane, BorderLayout.CENTER);
+        JPanel centerPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_GENERATED),
+                scrollPane
+        );
 
         panel.add(centerPanel, BorderLayout.CENTER);
 
@@ -360,7 +355,10 @@ public class UuidPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(parseArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
-        panel.add(scrollPane, BorderLayout.CENTER);
+        panel.add(ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_PARSE_RESULT),
+                scrollPane
+        ), BorderLayout.CENTER);
 
         // 解析按钮事件
         parseBtn.addActionListener(e -> parseUuid(inputField.getText().trim()));
@@ -372,8 +370,7 @@ public class UuidPanel extends JPanel {
     }
 
     private JLabel createSectionTitle(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+        JLabel label = ToolboxWorkbench.sectionTitle(text);
         label.setForeground(ModernColors.getTextPrimary());
         label.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
         label.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -608,24 +605,23 @@ public class UuidPanel extends JPanel {
                 uuid.substring(20, 32));
 
         StringBuilder result = new StringBuilder();
-        result.append("═══════════════════════════════\n");
         result.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_PARSE_RESULT)).append("\n");
-        result.append("═══════════════════════════════\n\n");
+        result.append("\n");
 
-        result.append("📋 ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_STANDARD_FORMAT)).append(":\n");
+        result.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_STANDARD_FORMAT)).append(":\n");
         result.append("   ").append(formattedUuid).append("\n\n");
 
-        result.append("🔤 ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_UPPERCASE)).append(":\n");
+        result.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_UPPERCASE)).append(":\n");
         result.append("   ").append(formattedUuid.toUpperCase()).append("\n\n");
 
-        result.append("🔗 ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_WITHOUT_HYPHENS)).append(":\n");
+        result.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_WITHOUT_HYPHENS)).append(":\n");
         result.append("   ").append(uuid).append("\n\n");
 
         // 解析版本和变体
         int version = Integer.parseInt(uuid.substring(12, 13), 16);
         int variantNibble = Integer.parseInt(uuid.substring(16, 17), 16);
 
-        result.append("ℹ️  ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VERSION)).append(": ");
+        result.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VERSION)).append(": ");
         result.append(version).append("\n");
         result.append("   ");
         switch (version) {
@@ -641,7 +637,7 @@ public class UuidPanel extends JPanel {
         }
         result.append("\n\n");
 
-        result.append("🔀 ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VARIANT)).append(": ");
+        result.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_VARIANT)).append(": ");
         result.append(resolveVariantName(variantNibble)).append("\n");
         result.append("\n");
 
@@ -650,7 +646,7 @@ public class UuidPanel extends JPanel {
         // 如果是 v3 或 v5，提示这是基于名称的 UUID
         if (version == 3 || version == 5) {
             result.append("\n");
-            result.append("📝 ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_NAME_BASED)).append("\n");
+            result.append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_NAME_BASED)).append("\n");
             result.append("   ").append(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_NAME_BASED_DESC)).append("\n");
         }
 

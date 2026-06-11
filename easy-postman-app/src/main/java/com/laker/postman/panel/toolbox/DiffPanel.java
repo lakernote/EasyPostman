@@ -1,7 +1,5 @@
 package com.laker.postman.panel.toolbox;
 
-import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -31,25 +29,19 @@ public class DiffPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(10, 10));
-        ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        ToolboxWorkbench.applyRoot(this);
 
         // 顶部工具栏
         JButton compareBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_COMPARE));
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
-        JButton swapBtn = new JButton("⇄ Swap");
+        JButton swapBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_SWAP));
 
-        JPanel topPanel = ToolWindowActionToolbar.inlineLeft(compareBtn, copyBtn, swapBtn, clearBtn);
-
-        add(topPanel, BorderLayout.NORTH);
+        JPanel topPanel = ToolboxWorkbench.leftToolbar(compareBtn, copyBtn, swapBtn, clearBtn);
+        add(ToolboxWorkbench.toolbar(topPanel, null), BorderLayout.NORTH);
 
         // 中间：三栏布局
         // 原始文本
-        JPanel originalPanel = new JPanel(new BorderLayout(5, 5));
-        originalPanel.setOpaque(false);
-        originalPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_ORIGINAL) + ":"), BorderLayout.NORTH);
         originalArea = new JTextArea();
         originalArea.setLineWrap(true);
         originalArea.setWrapStyleWord(true);
@@ -58,12 +50,12 @@ public class DiffPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentInput(originalArea);
         JScrollPane originalScrollPane = new JScrollPane(originalArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(originalScrollPane);
-        originalPanel.add(originalScrollPane, BorderLayout.CENTER);
+        JPanel originalPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_ORIGINAL),
+                originalScrollPane
+        );
 
         // 修改后文本
-        JPanel modifiedPanel = new JPanel(new BorderLayout(5, 5));
-        modifiedPanel.setOpaque(false);
-        modifiedPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_MODIFIED) + ":"), BorderLayout.NORTH);
         modifiedArea = new JTextArea();
         modifiedArea.setLineWrap(true);
         modifiedArea.setWrapStyleWord(true);
@@ -72,21 +64,20 @@ public class DiffPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentInput(modifiedArea);
         JScrollPane modifiedScrollPane = new JScrollPane(modifiedArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(modifiedScrollPane);
-        modifiedPanel.add(modifiedScrollPane, BorderLayout.CENTER);
+        JPanel modifiedPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_MODIFIED),
+                modifiedScrollPane
+        );
 
-        JSplitPane topSplitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane topSplitPane = ToolboxWorkbench.horizontalSplit(
                 originalPanel,
                 modifiedPanel,
                 360
         );
-        topSplitPane.setResizeWeight(0.5); // 平均分配空间
 
         // 整体分割面板
 
         // 差异结果显示
-        JPanel resultPanel = new JPanel(new BorderLayout(5, 5));
-        resultPanel.setOpaque(false);
-        resultPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_RESULT) + ":"), BorderLayout.NORTH);
         resultPane = new JTextPane();
         resultPane.setEditable(false);
         resultPane.setFont(FontsUtil.getMonospacedFontWithOffset(Font.PLAIN, 0));
@@ -94,9 +85,12 @@ public class DiffPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(resultPane);
         JScrollPane resultScrollPane = new JScrollPane(resultPane);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(resultScrollPane);
-        resultPanel.add(resultScrollPane, BorderLayout.CENTER);
+        JPanel resultPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_DIFF_RESULT),
+                resultScrollPane
+        );
 
-        JSplitPane mainSplitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
+        JSplitPane mainSplitPane = ToolboxWorkbench.editorSplit(
                 topSplitPane,
                 resultPanel,
                 250

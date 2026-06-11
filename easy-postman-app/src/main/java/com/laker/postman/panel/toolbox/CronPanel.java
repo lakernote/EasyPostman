@@ -1,8 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
-import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.CronExpressionUtil;
@@ -63,9 +61,7 @@ public class CronPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(5, 5));
-        setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-        ToolWindowSurfaceStyle.applyCard(this);
+        ToolboxWorkbench.applyRoot(this);
         add(buildModeBar(), BorderLayout.NORTH);
         JTabbedPane tabbedPane = new JTabbedPane();
         ToolWindowSurfaceStyle.applyTabbedPaneCard(tabbedPane);
@@ -78,11 +74,10 @@ public class CronPanel extends JPanel {
     // Mode bar
     // =========================================================
     private JPanel buildModeBar() {
-        JPanel bar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
-        bar.setOpaque(false);
+        JPanel bar = ToolboxWorkbench.optionsRow();
 
         JLabel lbl = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_MODE_LABEL) + ":");
-        lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
+        lbl.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         bar.add(lbl);
 
         springModeBtn = new JToggleButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_MODE_SPRING));
@@ -108,7 +103,7 @@ public class CronPanel extends JPanel {
 
         springModeBtn.addActionListener(e -> { currentMode = CronMode.SPRING_QUARTZ; applyModeToUI(); });
         linuxModeBtn.addActionListener(e  -> { currentMode = CronMode.LINUX_CRONTAB; applyModeToUI(); });
-        return bar;
+        return ToolboxWorkbench.toolbar(bar, null);
     }
 
     // =========================================================
@@ -149,14 +144,11 @@ public class CronPanel extends JPanel {
         JButton parseBtn  = createAccentButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_PARSE));
         JButton copyBtn   = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton clearBtn  = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
-        JPanel btnRow = ToolWindowActionToolbar.inlineLeft(parseBtn, copyBtn, clearBtn);
+        JPanel btnRow = ToolboxWorkbench.leftToolbar(parseBtn, copyBtn, clearBtn);
         inputPanel.add(btnRow, BorderLayout.SOUTH);
         panel.add(inputPanel, BorderLayout.NORTH);
 
         // ── split: description (top) + execution times (bottom) ─────
-        JPanel descPanel = new JPanel(new BorderLayout(4, 4));
-        descPanel.setOpaque(false);
-        descPanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_DESCRIPTION)), BorderLayout.NORTH);
         descriptionArea = new JTextArea();
         descriptionArea.setEditable(false);
         descriptionArea.setLineWrap(true);
@@ -164,11 +156,11 @@ public class CronPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(descriptionArea);
         JScrollPane descScrollPane = new JScrollPane(descriptionArea);
         ToolWindowSurfaceStyle.applyScrollPaneCard(descScrollPane);
-        descPanel.add(descScrollPane, BorderLayout.CENTER);
+        JPanel descPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_DESCRIPTION),
+                descScrollPane
+        );
 
-        JPanel tablePanel = new JPanel(new BorderLayout(4, 4));
-        tablePanel.setOpaque(false);
-        tablePanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_NEXT_EXECUTIONS)), BorderLayout.NORTH);
         String[] cols = {"#", I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_EXECUTION_TIME)};
         tableModel = new DefaultTableModel(cols, 0) {
             @Override public boolean isCellEditable(int r, int c) { return false; }
@@ -179,9 +171,12 @@ public class CronPanel extends JPanel {
         nextExecutionTable.setToolTipText(null);
         JScrollPane tableScrollPane = new JScrollPane(nextExecutionTable);
         ToolWindowSurfaceStyle.applyTableScrollPaneCard(tableScrollPane, nextExecutionTable);
-        tablePanel.add(tableScrollPane, BorderLayout.CENTER);
+        JPanel tablePanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_NEXT_EXECUTIONS),
+                tableScrollPane
+        );
 
-        JSplitPane split = AppToolWindowChrome.createVerticalInnerSplitPane(descPanel, tablePanel, 180);
+        JSplitPane split = ToolboxWorkbench.editorSplit(descPanel, tablePanel, 180);
         split.setResizeWeight(0.4);   // 40% description, 60% table
         panel.add(split, BorderLayout.CENTER);
 
@@ -263,7 +258,7 @@ public class CronPanel extends JPanel {
         JButton generateBtn = createAccentButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_GENERATE));
         JButton copyGenBtn  = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton presetBtn   = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_QUICK_PRESETS) + " ▾");
-        JPanel btnRow = ToolWindowActionToolbar.inlineLeft(generateBtn, copyGenBtn, presetBtn);
+        JPanel btnRow = ToolboxWorkbench.leftToolbar(generateBtn, copyGenBtn, presetBtn);
         top.add(btnRow);
         top.add(Box.createVerticalStrut(4));
 
@@ -289,9 +284,6 @@ public class CronPanel extends JPanel {
         panel.add(top, BorderLayout.NORTH);
 
         // Preset panel — double-click to use
-        JPanel presetPanel = new JPanel(new BorderLayout(4, 4));
-        presetPanel.setOpaque(false);
-        presetPanel.add(createSectionTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_COMMON_PRESETS)), BorderLayout.NORTH);
         presetArea = new JTextArea();
         presetArea.setEditable(false);
         presetArea.setFont(FontsUtil.getMonospacedFontWithOffset(Font.PLAIN, -1));
@@ -308,7 +300,10 @@ public class CronPanel extends JPanel {
 
         JScrollPane presetScrollPane = new JScrollPane(presetArea);
         ToolWindowSurfaceStyle.applyScrollPaneCard(presetScrollPane);
-        presetPanel.add(presetScrollPane, BorderLayout.CENTER);
+        JPanel presetPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_CRON_COMMON_PRESETS),
+                presetScrollPane
+        );
         panel.add(presetPanel, BorderLayout.CENTER);
 
         // Live-update generated expression and description on any combo change
@@ -737,8 +732,7 @@ public class CronPanel extends JPanel {
     }
 
     private JLabel createSectionTitle(String text) {
-        JLabel label = new JLabel(text);
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 0));
+        JLabel label = ToolboxWorkbench.sectionTitle(text);
         label.setForeground(ModernColors.getTextPrimary());
         label.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
         return label;

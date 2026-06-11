@@ -75,16 +75,34 @@ public class ToolWindowStyleConventionsTest {
             "easy-postman-plugins/plugin-decompiler/src/main/java/com/laker/postman/plugin/decompiler/DecompilerPanel.java",
             "easy-postman-plugins/plugin-kafka/src/main/java/com/laker/postman/plugin/kafka/consumer/ui/KafkaConsumerPanel.java"
     );
+    private static final List<String> TOOLBOX_EDITOR_WORKBENCH_PAGES = List.of(
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/CronPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/CryptoPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/DiffPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/EncoderPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/HashPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/JsonToolPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/MarkdownToolPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/SqlToolPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/TimestampPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/UuidPanel.java"
+    );
     private static final List<String> COMPACT_TOOL_WINDOW_FONT_PANELS = List.of(
             "easy-postman-app/src/main/java/com/laker/postman/common/component/dialog/WorkspaceSelectionDialog.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/collections/editor/request/sub/AuthTabPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/CronPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/CryptoPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/DiffPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/ElasticsearchPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/EncoderPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/HashPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/InfluxDbPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/JsonToolPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/MarkdownToolPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/SqlToolPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/TimestampPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/ToolboxPanel.java",
+            "easy-postman-app/src/main/java/com/laker/postman/panel/toolbox/UuidPanel.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/update/AutoUpdateNotification.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/update/PluginUpdateNotification.java",
             "easy-postman-app/src/main/java/com/laker/postman/panel/performance/PerformancePanelViewFactory.java",
@@ -330,10 +348,24 @@ public class ToolWindowStyleConventionsTest {
     @Test
     public void compactToolWindowActionRowsShouldUseSharedToolbarMetrics() {
         List<String> violations = TOOL_WINDOW_ACTION_TOOLBARS.stream()
-                .filter(path -> !readUnchecked(ROOT.resolve(path)).contains("ToolWindowActionToolbar"))
+                .filter(path -> {
+                    String source = readUnchecked(ROOT.resolve(path));
+                    return !source.contains("ToolWindowActionToolbar")
+                            && !source.contains("ToolboxWorkbench.");
+                })
                 .toList();
 
         assertTrue(violations.isEmpty(), "Use ToolWindowActionToolbar for compact tool-window action rows: " + violations);
+    }
+
+    @Test
+    public void toolboxEditorPagesShouldUseSharedWorkbenchChrome() {
+        List<String> violations = TOOLBOX_EDITOR_WORKBENCH_PAGES.stream()
+                .filter(path -> !readUnchecked(ROOT.resolve(path)).contains("ToolboxWorkbench."))
+                .toList();
+
+        assertTrue(violations.isEmpty(),
+                "Use ToolboxWorkbench for consistent toolbox editor page chrome: " + violations);
     }
 
     @Test

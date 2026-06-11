@@ -1,7 +1,5 @@
 package com.laker.postman.panel.toolbox;
 
-import com.laker.postman.common.component.AppToolWindowChrome;
-import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
@@ -42,9 +40,7 @@ public class HashPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(5, 5));
-        ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        ToolboxWorkbench.applyRoot(this);
 
         // 顶部工具栏
         add(createToolbar(), BorderLayout.NORTH);
@@ -57,12 +53,8 @@ public class HashPanel extends JPanel {
     }
 
     private JPanel createToolbar() {
-        JPanel toolbarPanel = new JPanel(new BorderLayout(5, 5));
-        toolbarPanel.setOpaque(false);
-
         // 算法按钮面板
-        JPanel algorithmPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        algorithmPanel.setOpaque(false);
+        JPanel algorithmPanel = ToolboxWorkbench.optionsRow();
         algorithmPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_OUTPUT) + ":"));
 
         String[] algorithms = {"MD5", "SHA-1", "SHA-256", "SHA-512"};
@@ -123,31 +115,25 @@ public class HashPanel extends JPanel {
         clearBtn.setToolTipText("Ctrl+L / Cmd+L");
         clearBtn.addActionListener(e -> clearAll());
 
-        JSeparator actionSeparator = new JSeparator(SwingConstants.VERTICAL);
-        actionSeparator.setPreferredSize(new Dimension(1, ToolWindowActionToolbar.ACTION_SIZE));
-        JPanel optionsPanel = ToolWindowActionToolbar.inlineLeft(
+        JPanel optionsPanel = ToolboxWorkbench.leftToolbar(
                 calculateAllCheckBox,
                 uppercaseCheckBox,
-                actionSeparator,
+                ToolboxWorkbench.verticalSeparator(),
                 calculateBtn,
                 copyBtn,
                 clearBtn);
 
-        toolbarPanel.add(algorithmPanel, BorderLayout.NORTH);
-        toolbarPanel.add(optionsPanel, BorderLayout.SOUTH);
-
         // 默认选中MD5按钮
         updateButtonStates("MD5");
 
-        return toolbarPanel;
+        return ToolboxWorkbench.stackedTop(
+                algorithmPanel,
+                ToolboxWorkbench.toolbar(optionsPanel, null)
+        );
     }
 
     private JSplitPane createMainPanel() {
         // 输入区域
-        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        inputPanel.setOpaque(false);
-        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_INPUT)), BorderLayout.NORTH);
-
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
@@ -175,13 +161,12 @@ public class HashPanel extends JPanel {
 
         JScrollPane inputScroll = new JScrollPane(inputArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(inputScroll);
-        inputPanel.add(inputScroll, BorderLayout.CENTER);
+        JPanel inputPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_INPUT),
+                inputScroll
+        );
 
         // 输出区域
-        JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        outputPanel.setOpaque(false);
-        outputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_OUTPUT)), BorderLayout.NORTH);
-
         outputArea = new JTextArea();
         outputArea.setLineWrap(true);
         outputArea.setEditable(false);
@@ -191,26 +176,20 @@ public class HashPanel extends JPanel {
 
         JScrollPane outputScroll = new JScrollPane(outputArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(outputScroll);
-        outputPanel.add(outputScroll, BorderLayout.CENTER);
+        JPanel outputPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_HASH_OUTPUT),
+                outputScroll
+        );
 
-        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 260);
-        splitPane.setResizeWeight(0.5);
-
-        return splitPane;
+        return ToolboxWorkbench.editorSplit(inputPanel, outputPanel, 260);
     }
 
     private JPanel createStatusBar() {
-        JPanel statusPanel = new JPanel(new BorderLayout());
-        statusPanel.setOpaque(false);
-        statusPanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-
         statusLabel = new JLabel(" ");
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         statusLabel.setForeground(ModernColors.getTextSecondary());
 
-        statusPanel.add(statusLabel, BorderLayout.WEST);
-
-        return statusPanel;
+        return ToolboxWorkbench.statusBar(statusLabel);
     }
 
     private void handleInputChange() {

@@ -1,8 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.extras.components.FlatTextField;
-import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -41,9 +39,7 @@ public class CryptoPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(5, 5));
-        ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        ToolboxWorkbench.applyRoot(this);
 
         // 顶部工具栏
         add(createToolbar(), BorderLayout.NORTH);
@@ -53,9 +49,6 @@ public class CryptoPanel extends JPanel {
     }
 
     private JPanel createToolbar() {
-        JPanel toolbarPanel = new JPanel(new BorderLayout(5, 5));
-        toolbarPanel.setOpaque(false);
-
         // 配置面板
         JPanel configPanel = new JPanel();
         configPanel.setOpaque(false);
@@ -63,8 +56,7 @@ public class CryptoPanel extends JPanel {
         configPanel.setBorder(BorderFactory.createEmptyBorder());
 
         // 第一行：算法和模式选择
-        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        row1.setOpaque(false);
+        JPanel row1 = ToolboxWorkbench.optionsRow();
         row1.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_ALGORITHM) + ":"));
         algorithmCombo = new JComboBox<>(new String[]{"AES-128", "AES-256", "DES"});
         algorithmCombo.addActionListener(e -> updatePlaceholders());
@@ -79,8 +71,7 @@ public class CryptoPanel extends JPanel {
         configPanel.add(row1);
 
         // 第二行：密钥输入和生成
-        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        row2.setOpaque(false);
+        JPanel row2 = ToolboxWorkbench.optionsRow();
         row2.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_KEY) + ":"));
         keyField = new FlatTextField();
         keyField.setColumns(35);
@@ -95,8 +86,7 @@ public class CryptoPanel extends JPanel {
         configPanel.add(row2);
 
         // 第三行：IV输入和生成（仅CBC模式显示）
-        ivPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
-        ivPanel.setOpaque(false);
+        ivPanel = ToolboxWorkbench.optionsRow();
         ivPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_IV) + ":"));
         ivField = new FlatTextField();
         ivField.setColumns(35);
@@ -110,8 +100,6 @@ public class CryptoPanel extends JPanel {
         ivPanel.add(generateIvBtn);
 
         configPanel.add(ivPanel);
-
-        toolbarPanel.add(configPanel, BorderLayout.NORTH);
 
         base64UrlCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_BASE64URL), false);
         base64UrlCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_BASE64URL_TOOLTIP));
@@ -132,44 +120,38 @@ public class CryptoPanel extends JPanel {
         clearBtn.setToolTipText("Ctrl+L / Cmd+L");
         clearBtn.addActionListener(e -> clearAll());
 
-        JSeparator actionSeparator = new JSeparator(SwingConstants.VERTICAL);
-        actionSeparator.setPreferredSize(new Dimension(1, ToolWindowActionToolbar.ACTION_SIZE));
-        JPanel optionsPanel = ToolWindowActionToolbar.inlineLeft(
+        JPanel optionsPanel = ToolboxWorkbench.leftToolbar(
                 base64UrlCheckBox,
-                actionSeparator,
+                ToolboxWorkbench.verticalSeparator(),
                 encryptBtn,
                 decryptBtn,
                 copyBtn,
                 clearBtn);
 
-        toolbarPanel.add(optionsPanel, BorderLayout.SOUTH);
-
         // 初始化状态
         updatePlaceholders();
         updateIvVisibility();
 
-        return toolbarPanel;
+        return ToolboxWorkbench.stackedTop(
+                configPanel,
+                ToolboxWorkbench.toolbar(optionsPanel, null)
+        );
     }
 
     private JSplitPane createMainPanel() {
         // 输入区域
-        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        inputPanel.setOpaque(false);
-        inputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_INPUT)), BorderLayout.NORTH);
-
         inputArea = new JTextArea();
         inputArea.setLineWrap(true);
         inputArea.setWrapStyleWord(true);
         ToolWindowSurfaceStyle.applyTextComponentInput(inputArea);
         JScrollPane inputScrollPane = new JScrollPane(inputArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(inputScrollPane);
-        inputPanel.add(inputScrollPane, BorderLayout.CENTER);
+        JPanel inputPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_INPUT),
+                inputScrollPane
+        );
 
         // 输出区域
-        JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        outputPanel.setOpaque(false);
-        outputPanel.add(new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_OUTPUT)), BorderLayout.NORTH);
-
         outputArea = new JTextArea();
         outputArea.setLineWrap(true);
         outputArea.setWrapStyleWord(true);
@@ -177,12 +159,12 @@ public class CryptoPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(outputArea);
         JScrollPane outputScrollPane = new JScrollPane(outputArea);
         ToolWindowSurfaceStyle.applyFramedScrollPaneCard(outputScrollPane);
-        outputPanel.add(outputScrollPane, BorderLayout.CENTER);
+        JPanel outputPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_CRYPTO_OUTPUT),
+                outputScrollPane
+        );
 
-        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 260);
-        splitPane.setResizeWeight(0.5);
-
-        return splitPane;
+        return ToolboxWorkbench.editorSplit(inputPanel, outputPanel, 260);
     }
 
     private void setupKeyBindings() {

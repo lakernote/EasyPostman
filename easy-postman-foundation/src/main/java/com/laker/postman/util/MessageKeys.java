@@ -149,6 +149,7 @@ public final class MessageKeys {
     public static final String GENERAL_SEARCH = "general.search";
     public static final String GENERAL_OPEN_FOLDER = "general.open_folder";
     public static final String CONSOLE_TITLE = "console.title";
+    public static final String REQUEST_TABLE_COLUMN_DESCRIPTION = "request.table.column.description";
 
     // ============ 插件管理 ============
     public static final String PLUGIN_MANAGER_TITLE = "plugin.manager.title";
@@ -2319,6 +2320,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_DIFF_ORIGINAL = "toolbox.diff.original";
     public static final String TOOLBOX_DIFF_MODIFIED = "toolbox.diff.modified";
     public static final String TOOLBOX_DIFF_COMPARE = "toolbox.diff.compare";
+    public static final String TOOLBOX_DIFF_SWAP = "toolbox.diff.swap";
     public static final String TOOLBOX_DIFF_RESULT = "toolbox.diff.result";
 
     // ============ Elasticsearch 工具相关 ============

@@ -1166,7 +1166,7 @@ public class ElasticsearchPanel extends JPanel {
                     default -> ModernColors.getSuccess(); // GET
                 };
                 lbl.setForeground(c);
-                lbl.setFont(lbl.getFont().deriveFont(Font.BOLD));
+                lbl.setFont(FontsUtil.getDefaultFont(Font.BOLD));
             }
             return lbl;
         }

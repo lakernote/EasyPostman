@@ -2,9 +2,6 @@ package com.laker.postman.panel.toolbox;
 
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.common.component.SearchableTextArea;
-import com.laker.postman.common.component.ToolWindowActionToolbar;
-import com.laker.postman.common.component.AppToolWindowChrome;
-import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.EditorThemeUtil;
@@ -41,14 +38,9 @@ public class JsonToolPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(5, 5));
-        ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        ToolboxWorkbench.applyRoot(this);
 
         // 顶部工具栏
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.setOpaque(false);
-
         JButton formatBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_FORMAT));
         JButton compressBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_COMPRESS));
         JButton validateBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_VALIDATE));
@@ -63,9 +55,8 @@ public class JsonToolPanel extends JPanel {
         unescapeBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_UNESCAPE));
         sortBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_SORT));
 
-        JSeparator transformSeparator = new JSeparator(SwingConstants.VERTICAL);
-        transformSeparator.setPreferredSize(new Dimension(1, ToolWindowActionToolbar.ACTION_SIZE));
-        JPanel leftBtnPanel = ToolWindowActionToolbar.inlineLeft(
+        JSeparator transformSeparator = ToolboxWorkbench.verticalSeparator();
+        JPanel leftBtnPanel = ToolboxWorkbench.leftToolbar(
                 formatBtn,
                 compressBtn,
                 validateBtn,
@@ -78,57 +69,42 @@ public class JsonToolPanel extends JPanel {
         JButton copyBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY));
         JButton pasteBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_PASTE));
         JButton clearBtn = new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLEAR));
-        JButton swapBtn = new JButton("↕ " + I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_SWAP));
+        JButton swapBtn = new JButton(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_SWAP));
 
         copyBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_COPY));
         pasteBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_PASTE));
         clearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_CLEAR));
         swapBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_TOOLTIP_SWAP));
 
-        JPanel rightBtnPanel = ToolWindowActionToolbar.inlineRight(copyBtn, pasteBtn, clearBtn, swapBtn);
-
-        topPanel.add(leftBtnPanel, BorderLayout.WEST);
-        topPanel.add(rightBtnPanel, BorderLayout.EAST);
-
-        add(topPanel, BorderLayout.NORTH);
+        JPanel rightBtnPanel = ToolboxWorkbench.rightToolbar(copyBtn, pasteBtn, clearBtn, swapBtn);
+        add(ToolboxWorkbench.toolbar(leftBtnPanel, rightBtnPanel), BorderLayout.NORTH);
 
         // 中间分割面板
         // 输入区域 - 使用RSyntaxTextArea
-        JPanel inputPanel = new JPanel(new BorderLayout(5, 5));
-        inputPanel.setOpaque(false);
-        JLabel inputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_INPUT));
-        inputPanel.add(inputLabel, BorderLayout.NORTH);
-
         inputArea = createJsonTextArea();
         inputArea.setEditable(true);
         SearchableTextArea searchableInputArea = new SearchableTextArea(inputArea);
         searchableInputArea.setLineNumbersEnabled(true);
-        inputPanel.add(searchableInputArea, BorderLayout.CENTER);
+        JPanel inputPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_INPUT),
+                searchableInputArea
+        );
 
         // 输出区域 - 使用RSyntaxTextArea
-        JPanel outputPanel = new JPanel(new BorderLayout(5, 5));
-        outputPanel.setOpaque(false);
-        JLabel outputLabel = new JLabel(I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_OUTPUT));
-        outputPanel.add(outputLabel, BorderLayout.NORTH);
-
         outputArea = createJsonTextArea();
         outputArea.setEditable(false);
         SearchableTextArea searchableOutputArea = new SearchableTextArea(outputArea, false);
         searchableOutputArea.setLineNumbersEnabled(true);
-        outputPanel.add(searchableOutputArea, BorderLayout.CENTER);
-
-        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(inputPanel, outputPanel, 300);
-        splitPane.setResizeWeight(0.5); // 平均分配空间
-
-        add(splitPane, BorderLayout.CENTER);
+        JPanel outputPanel = ToolboxWorkbench.editorSection(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_JSON_OUTPUT),
+                searchableOutputArea
+        );
+        add(ToolboxWorkbench.editorSplit(inputPanel, outputPanel, 300), BorderLayout.CENTER);
 
         // 底部状态栏
-        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 3));
-        statusPanel.setOpaque(false);
         statusLabel = new JLabel(" ");
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        statusPanel.add(statusLabel);
-        add(statusPanel, BorderLayout.SOUTH);
+        add(ToolboxWorkbench.statusBar(statusLabel), BorderLayout.SOUTH);
 
         // 按钮事件
         formatBtn.addActionListener(e -> formatJson());

@@ -1,8 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
 import com.laker.postman.common.component.MarkdownEditorPanel;
-import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-
 import javax.swing.*;
 import java.awt.*;
 
@@ -19,9 +17,7 @@ public class MarkdownToolPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout());
-        ToolWindowSurfaceStyle.applyCard(this);
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        ToolboxWorkbench.applyRoot(this);
 
         // 创建 Markdown 编辑器
         markdownEditor = new MarkdownEditorPanel();

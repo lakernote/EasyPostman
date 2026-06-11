@@ -1,6 +1,8 @@
 package com.laker.postman.performance.execution;
 
+import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
 import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
@@ -12,6 +14,8 @@ import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -23,6 +27,18 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 
 public class HttpSamplerExecutorTest {
+
+    @BeforeMethod
+    public void isolateRuntimeSettings() {
+        HttpRuntimeSettingsProvider.reset();
+        OkHttpClientManager.clearClientCache();
+    }
+
+    @AfterMethod
+    public void tearDownRuntimeSettings() {
+        OkHttpClientManager.clearClientCache();
+        HttpRuntimeSettingsProvider.reset();
+    }
 
     @Test
     public void executeShouldTrackHttpCallsWithRunNetworkRuntime() throws Exception {

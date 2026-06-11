@@ -41,6 +41,7 @@ public class EasyLafThemePropertiesTest {
     @BeforeMethod
     public void setUp() {
         previousLookAndFeel = UIManager.getLookAndFeel();
+        clearThemeAssertionKeys();
     }
 
     @AfterMethod
@@ -130,6 +131,35 @@ public class EasyLafThemePropertiesTest {
 
         for (String key : REQUIRED_COMPONENT_SURFACE_KEYS) {
             assertTrue(properties.containsKey(key), resourcePath + " must define " + key);
+        }
+    }
+
+    private void clearThemeAssertionKeys() {
+        for (String key : REQUIRED_COMPONENT_SURFACE_KEYS) {
+            UIManager.getDefaults().remove(key);
+        }
+        for (String key : List.of(
+                ThemeColors.TEXT_PRIMARY,
+                ThemeColors.BACKGROUND,
+                ThemeColors.SURFACE,
+                ThemeColors.WINDOW_CHROME_BACKGROUND,
+                ThemeColors.INPUT_BACKGROUND,
+                ThemeColors.TAB_BACKGROUND,
+                ThemeColors.TAB_SELECTED_BACKGROUND,
+                ThemeColors.TAB_HOVER_BACKGROUND,
+                ThemeColors.TAB_SEPARATOR,
+                ThemeColors.PRIMARY,
+                ThemeColors.SELECTION_BACKGROUND,
+                ThemeColors.CONSOLE_SELECTION_BACKGROUND,
+                "Component.accentColor",
+                "Component.focusColor",
+                "Component.focusedBorderColor",
+                "MenuBar.background",
+                "TitlePane.background",
+                "TitlePane.inactiveBackground",
+                "ToggleButton.toolbar.selectedForeground"
+        )) {
+            UIManager.getDefaults().remove(key);
         }
     }
 

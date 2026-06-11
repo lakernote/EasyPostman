@@ -19,7 +19,7 @@ public class TableUIConstantsTest {
     @BeforeMethod
     public void rememberThemeTokens() {
         previousThemeTokens = remember(
-                ThemeColors.BORDER_LIGHT,
+                "Table.gridColor",
                 ThemeColors.HOVER_BACKGROUND,
                 ThemeColors.PRIMARY_LIGHT,
                 ThemeColors.TEXT_HINT
@@ -32,13 +32,13 @@ public class TableUIConstantsTest {
     }
 
     @Test
-    public void shouldUseSemanticThemeColors() {
+    public void shouldUseThemeTokens() {
         Color border = new Color(1, 2, 3);
         Color hover = new Color(4, 5, 6);
         Color selectedText = new Color(7, 8, 9);
         Color emptyText = new Color(10, 11, 12);
 
-        UIManager.put(ThemeColors.BORDER_LIGHT, border);
+        UIManager.put("Table.gridColor", border);
         UIManager.put(ThemeColors.HOVER_BACKGROUND, hover);
         UIManager.put(ThemeColors.PRIMARY_LIGHT, selectedText);
         UIManager.put(ThemeColors.TEXT_HINT, emptyText);

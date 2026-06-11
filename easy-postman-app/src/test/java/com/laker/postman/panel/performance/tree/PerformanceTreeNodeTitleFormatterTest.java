@@ -92,7 +92,9 @@ public class PerformanceTreeNodeTitleFormatterTest {
         String title = PerformanceTreeNodeTitleFormatter.sseReadTitle(data);
 
         assertTrue(title.contains("15s"), title);
-        assertTrue(title.contains("流关闭") || title.contains("Stream Closed"), title);
+        assertTrue(title.contains("流关闭")
+                || title.contains("Stream Closed")
+                || title.contains("stream closes"), title);
     }
 
     @Test(description = "Loop 标题应归一化循环次数")

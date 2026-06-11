@@ -5,6 +5,7 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.StepIndicator;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitOperation;
@@ -442,12 +443,15 @@ public class GitOperationDialog extends JDialog {
     }
 
     static JButton createExecuteButton(GitOperation operation) {
-        JButton button = ModernButtonFactory.createButton(
+        Color baseColor = GitOperationPresentation.getColor(operation);
+        PrimaryButton button = new PrimaryButton(
                 operation.getDisplayName(),
-                true,
-                GitOperationPresentation.getIconName(operation),
-                16
+                GitOperationPresentation.getIconName(operation)
         );
+        button.putClientProperty("baseColor", baseColor);
+        button.putClientProperty("hoverColor", ModernColors.blendColors(baseColor, Color.WHITE, 0.18f));
+        button.putClientProperty("pressColor", ModernColors.blendColors(baseColor, Color.BLACK, 0.18f));
+        button.putClientProperty("colorsInitialized", false);
         button.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
         button.setPreferredSize(new Dimension(100, 34));
         button.setToolTipText(operation.getDisplayName());

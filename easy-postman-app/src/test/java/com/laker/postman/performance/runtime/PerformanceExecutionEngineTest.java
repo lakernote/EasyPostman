@@ -1,5 +1,7 @@
 package com.laker.postman.performance.runtime;
 
+import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
@@ -29,6 +31,8 @@ import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.HashSet;
@@ -46,6 +50,18 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceExecutionEngineTest {
+
+    @BeforeMethod
+    public void isolateRuntimeSettings() {
+        HttpRuntimeSettingsProvider.reset();
+        OkHttpClientManager.clearClientCache();
+    }
+
+    @AfterMethod
+    public void tearDownRuntimeSettings() {
+        OkHttpClientManager.clearClientCache();
+        HttpRuntimeSettingsProvider.reset();
+    }
 
     @Test
     public void executionApisShouldNotExposeSwingTreeCompatibilityMethods() {

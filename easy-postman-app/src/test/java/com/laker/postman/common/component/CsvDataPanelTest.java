@@ -96,8 +96,8 @@ public class CsvDataPanelTest {
         assertEquals(table.getSelectionBackground(), selectionBackground);
     }
 
-    @Test(description = "CSV 表格基础背景应使用统一 card surface")
-    public void csvTableBackgroundShouldUseCardSurface() throws Exception {
+    @Test(description = "CSV 表格基础背景应使用 FlatLaf table token")
+    public void csvTableBackgroundShouldUseTableBackgroundToken() throws Exception {
         Color tableBackground = new Color(20, 21, 22);
         Color cardBackground = new Color(31, 32, 33);
         UIManager.put("Table.background", tableBackground);
@@ -107,7 +107,7 @@ public class CsvDataPanelTest {
         CsvDataPanel panel = new CsvDataPanel();
         invokeConfigureCsvTable(panel, table);
 
-        assertEquals(table.getBackground(), cardBackground);
+        assertEquals(table.getBackground(), tableBackground);
     }
 
     @Test(description = "CSV 文件选择器应优先使用当前 CSV 所在目录，其次使用上一次成功导入目录")

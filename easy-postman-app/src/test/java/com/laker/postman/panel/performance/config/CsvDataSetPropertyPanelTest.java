@@ -70,8 +70,8 @@ public class CsvDataSetPropertyPanelTest extends AbstractSwingUiTest {
         assertEquals(previewTable.getRowHeight(), 30);
         assertTrue(previewTable.getShowHorizontalLines());
         assertTrue(previewTable.getShowVerticalLines());
-        assertEquals(previewTable.getIntercellSpacing(), new Dimension(1, 0));
-        assertEquals(previewTable.getRowMargin(), 0);
+        assertEquals(previewTable.getIntercellSpacing(), new Dimension(1, 1));
+        assertEquals(previewTable.getRowMargin(), 1);
         assertFalse(previewTable.getTableHeader().getReorderingAllowed());
     }
 

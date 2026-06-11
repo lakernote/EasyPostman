@@ -23,7 +23,8 @@ public class WebSocketStagePropertyPanelTest extends AbstractSwingUiTest {
             String hint = WebSocketStagePropertyPanel.resolveReadModeHint(mode);
 
             assertFalse(hint == null || hint.isBlank(), mode.name());
-            assertFalse(!hint.contains("消息正文") && !hint.contains("message bodies"), mode.name());
+            assertFalse(!hint.contains("消息正文")
+                    && !hint.toLowerCase(Locale.ROOT).contains("message bodies"), mode.name());
         }
     }
 

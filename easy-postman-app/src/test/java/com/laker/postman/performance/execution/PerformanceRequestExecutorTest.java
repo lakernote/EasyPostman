@@ -1,7 +1,9 @@
 package com.laker.postman.performance.execution;
 
+import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
 import com.laker.postman.model.Environment;
 import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
@@ -26,6 +28,9 @@ import okhttp3.WebSocket;
 import okhttp3.WebSocketListener;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -35,12 +40,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceRequestExecutorTest {
+
+    private static final long RECORDED_REQUEST_TIMEOUT_SECONDS = 5L;
+
+    @BeforeMethod
+    public void isolateRuntimeSettings() {
+        HttpRuntimeSettingsProvider.reset();
+        OkHttpClientManager.clearClientCache();
+    }
+
+    @AfterMethod
+    public void tearDownRuntimeSettings() {
+        OkHttpClientManager.clearClientCache();
+        HttpRuntimeSettingsProvider.reset();
+    }
 
     @Test
     public void shouldKeepFullResponseBodyOutsideEfficientMode() {
@@ -348,7 +369,7 @@ public class PerformanceRequestExecutorTest {
             );
 
             assertFalse(result.executionFailed, result.errorMsg);
-            assertEquals(server.takeRequest().getHeader("X-Tenant"), "headless-tenant");
+            assertEquals(takeRecordedRequest(server).getHeader("X-Tenant"), "headless-tenant");
         }
     }
 
@@ -376,7 +397,7 @@ public class PerformanceRequestExecutorTest {
             );
 
             assertFalse(result.executionFailed, result.errorMsg);
-            assertEquals(server.takeRequest().getHeader("X-Tree-Inherited"), null);
+            assertEquals(takeRecordedRequest(server).getHeader("X-Tree-Inherited"), null);
         }
     }
 
@@ -584,6 +605,13 @@ public class PerformanceRequestExecutorTest {
         AssertionData data = new AssertionData();
         data.type = type;
         return new PerformanceAssertionElement(type, data);
+    }
+
+    private static RecordedRequest takeRecordedRequest(MockWebServer server) throws InterruptedException {
+        RecordedRequest recordedRequest = server.takeRequest(RECORDED_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        assertNotNull(recordedRequest, "Expected MockWebServer to receive a request within "
+                + RECORDED_REQUEST_TIMEOUT_SECONDS + " seconds");
+        return recordedRequest;
     }
 
     private static Path moduleDir() {

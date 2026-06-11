@@ -209,8 +209,8 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
         Component totalRateCell = webSocketTable.getCellRenderer(1, 4)
                 .getTableCellRendererComponent(webSocketTable, webSocketTable.getValueAt(1, 4), false, false, 1, 4);
 
-        assertEquals(apiRateCell.getForeground(), Color.RED);
-        assertEquals(totalRateCell.getForeground(), Color.RED);
+        assertEquals(apiRateCell.getForeground(), PerformanceTheme.reportErrorForeground());
+        assertEquals(totalRateCell.getForeground(), PerformanceTheme.reportErrorForeground());
     }
 
     @Test

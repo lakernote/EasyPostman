@@ -2,6 +2,7 @@ package com.laker.postman.service.js.api;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import okhttp3.mockwebserver.MockResponse;
@@ -30,6 +31,8 @@ public class PostmanApiContextSendRequestTest {
 
     @BeforeMethod
     public void setUp() throws IOException {
+        HttpRuntimeSettingsProvider.reset();
+        OkHttpClientManager.clearClientCache();
         originalDataFilePath = EnvironmentService.getDataFilePath();
         tempEnvFile = Files.createTempFile("easy-postman-pm-send-request-", ".json");
         Files.writeString(tempEnvFile, "[]");
@@ -43,6 +46,7 @@ public class PostmanApiContextSendRequestTest {
             server = null;
         }
         OkHttpClientManager.clearClientCache();
+        HttpRuntimeSettingsProvider.reset();
         HttpCookieStore.clearAllCookies();
         if (originalDataFilePath != null && !originalDataFilePath.isBlank()) {
             EnvironmentService.setDataFilePath(originalDataFilePath);

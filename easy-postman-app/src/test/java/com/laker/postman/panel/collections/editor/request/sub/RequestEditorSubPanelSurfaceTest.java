@@ -25,10 +25,14 @@ public class RequestEditorSubPanelSurfaceTest extends AbstractSwingUiTest {
     public void requestAndResponseSubPanelsShouldUseCardSurface() throws Exception {
         Object previousSurface = UIManager.get(ThemeColors.SURFACE);
         Object previousInputBackground = UIManager.get(ThemeColors.INPUT_BACKGROUND);
+        Object previousTableBackground = UIManager.get("Table.background");
+        Object previousTableHeaderBackground = UIManager.get("TableHeader.background");
         Color surface = new Color(255, 255, 255);
         Color inputBackground = new Color(248, 250, 252);
         UIManager.put(ThemeColors.SURFACE, surface);
         UIManager.put(ThemeColors.INPUT_BACKGROUND, inputBackground);
+        UIManager.put("Table.background", surface);
+        UIManager.put("TableHeader.background", inputBackground);
 
         try {
             List<JComponent> panels = createPanels();
@@ -41,6 +45,8 @@ public class RequestEditorSubPanelSurfaceTest extends AbstractSwingUiTest {
         } finally {
             UIManager.put(ThemeColors.SURFACE, previousSurface);
             UIManager.put(ThemeColors.INPUT_BACKGROUND, previousInputBackground);
+            UIManager.put("Table.background", previousTableBackground);
+            UIManager.put("TableHeader.background", previousTableHeaderBackground);
         }
     }
 

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import cn.hutool.json.JSONUtil;
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.common.component.setting.SettingsSectionPanel;
@@ -9,6 +10,7 @@ import com.laker.postman.certificate.TrustedCertificateEntry;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.http.runtime.ssl.CustomTrustMaterialLoader;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -522,10 +524,9 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
         }
 
         private void chooseFile() {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            fileChooser.setDialogTitle(I18nUtil.getMessage(
-                    MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_DIALOG_BROWSE_TITLE));
+            SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                    "settings.trustedMaterial.file",
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_DIALOG_BROWSE_TITLE));
             String currentPath = pathField.getText().trim();
             if (!currentPath.isEmpty()) {
                 File currentFile = new File(currentPath);
@@ -534,7 +535,7 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
                     fileChooser.setCurrentDirectory(parent);
                 }
             }
-            if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            if (fileChooser.showOpenDialog(this) == SystemFileChooser.APPROVE_OPTION) {
                 File file = fileChooser.getSelectedFile();
                 if (file != null) {
                     pathField.setText(file.getAbsolutePath());

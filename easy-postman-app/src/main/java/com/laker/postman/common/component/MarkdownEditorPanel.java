@@ -1,8 +1,10 @@
 package com.laker.postman.common.component;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.EditorThemeUtil;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -804,11 +806,12 @@ public class MarkdownEditorPanel extends JPanel {
      * 导出为 HTML（使用国际化文本）
      */
     private void exportToHtml() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_HTML));
-        fileChooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("HTML 文件", "html"));
+        SystemFileChooser fileChooser = FileChooserUtil.createSaveFileChooser(
+                "markdown.export.html",
+                I18nUtil.getMessage(MessageKeys.MARKDOWN_EXPORT_HTML));
+        fileChooser.setFileFilter(FileChooserUtil.extensionFilter("HTML 文件", "html"));
 
-        if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+        if (fileChooser.showSaveDialog(this) == SystemFileChooser.APPROVE_OPTION) {
             try {
                 String html = convertMarkdownToHtml(editorArea.getText());
                 java.io.File file = fileChooser.getSelectedFile();

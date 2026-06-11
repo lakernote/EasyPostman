@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.clientcert;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.component.setting.SettingsSectionPanel;
@@ -8,6 +9,7 @@ import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
@@ -17,7 +19,6 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
-import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -603,9 +604,9 @@ public class ClientCertificateSettingsPanel extends JPanel {
         }
 
         private void selectFile(JTextField targetField) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            fileChooser.setDialogTitle(ClientCertI18n.t(MessageKeys.CERT_SELECT_FILE));
+            SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                    "plugin.clientCertificate.file",
+                    ClientCertI18n.t(MessageKeys.CERT_SELECT_FILE));
 
             String currentPath = targetField.getText();
             if (currentPath != null && !currentPath.trim().isEmpty()) {
@@ -615,7 +616,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
                 }
             }
 
-            if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            if (fileChooser.showOpenDialog(this) == SystemFileChooser.APPROVE_OPTION) {
                 targetField.setText(fileChooser.getSelectedFile().getAbsolutePath());
             }
         }

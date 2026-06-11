@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.common.component.setting.SettingsSectionPanel;
@@ -9,6 +10,7 @@ import com.laker.postman.panel.topmenu.plugin.PluginManagerDialog;
 import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
 import com.laker.postman.plugin.host.ClientCertificatePluginAccess;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -672,9 +674,9 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         }
 
         private void selectFile(JTextField targetField) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.CERT_SELECT_FILE));
+            SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                    "settings.clientCertificate.file",
+                    I18nUtil.getMessage(MessageKeys.CERT_SELECT_FILE));
 
             // 设置初始目录为当前文本框的文件路径（如果有）
             String currentPath = targetField.getText();
@@ -685,7 +687,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
                 }
             }
 
-            if (fileChooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
+            if (fileChooser.showOpenDialog(this) == SystemFileChooser.APPROVE_OPTION) {
                 File file = fileChooser.getSelectedFile();
                 targetField.setText(file.getAbsolutePath());
             }

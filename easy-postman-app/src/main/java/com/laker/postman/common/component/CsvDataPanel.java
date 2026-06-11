@@ -1,6 +1,7 @@
 package com.laker.postman.common.component;
 
 import cn.hutool.core.text.CharSequenceUtil;
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
 import com.laker.postman.common.component.button.CloseButton;
@@ -12,7 +13,6 @@ import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
@@ -1431,9 +1431,10 @@ public class CsvDataPanel extends JPanel {
      * 选择 CSV 文件
      */
     private boolean selectCsvFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.CSV_SELECT_FILE));
-        fileChooser.setFileFilter(new FileNameExtensionFilter(I18nUtil.getMessage(MessageKeys.CSV_FILE_FILTER), "csv"));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                "csv.import",
+                I18nUtil.getMessage(MessageKeys.CSV_SELECT_FILE));
+        fileChooser.setFileFilter(FileChooserUtil.extensionFilter(I18nUtil.getMessage(MessageKeys.CSV_FILE_FILTER), "csv"));
 
         File initialDirectory = CsvFileChooserDirectoryMemory.resolveInitialDirectory(
                 csvFile,
@@ -1444,7 +1445,7 @@ public class CsvDataPanel extends JPanel {
         }
 
         int result = fileChooser.showOpenDialog(UiSingletonFactory.getInstance(MainFrame.class));
-        if (result == JFileChooser.APPROVE_OPTION) {
+        if (result == SystemFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
 
             // 验证文件

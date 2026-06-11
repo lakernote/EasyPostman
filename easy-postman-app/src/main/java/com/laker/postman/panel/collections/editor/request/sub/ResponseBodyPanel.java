@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import cn.hutool.core.util.XmlUtil;
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
@@ -220,15 +221,16 @@ public class ResponseBodyPanel extends JPanel {
      * </p>
      */
     private void saveFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Save File");
+        SystemFileChooser fileChooser = FileChooserUtil.createSaveFileChooser(
+                "response.body.save",
+                "Save File");
 
         // 智能设置默认文件名和扩展名
         String defaultFileName = generateFileName();
         fileChooser.setSelectedFile(new File(defaultFileName));
 
         int userSelection = fileChooser.showSaveDialog(UiSingletonFactory.getInstance(MainFrame.class));
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File destFile = fileChooser.getSelectedFile();
             try {
                 if (currentFilePath != null && !currentFilePath.isEmpty()) {

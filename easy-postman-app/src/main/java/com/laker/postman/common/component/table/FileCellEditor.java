@@ -1,10 +1,11 @@
 package com.laker.postman.common.component.table;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.util.FileChooserUtil;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -27,7 +28,7 @@ public class FileCellEditor extends DefaultCellEditor {
     private File lastDirectory = null;
 
     // 可选的文件类型过滤器
-    private transient FileNameExtensionFilter fileFilter = null;
+    private transient SystemFileChooser.FileNameExtensionFilter fileFilter = null;
 
     public FileCellEditor(Component parentComponent) {
         super(new JCheckBox());
@@ -96,7 +97,7 @@ public class FileCellEditor extends DefaultCellEditor {
      */
     public void setFileFilter(String description, String... extensions) {
         if (extensions != null && extensions.length > 0) {
-            this.fileFilter = new FileNameExtensionFilter(description, extensions);
+            this.fileFilter = FileChooserUtil.extensionFilter(description, extensions);
         } else {
             this.fileFilter = null;
         }
@@ -106,8 +107,9 @@ public class FileCellEditor extends DefaultCellEditor {
      * 打开文件选择对话框
      */
     private void openFileChooser() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(TableUIConstants.SELECT_FILE_TEXT);
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                "table.fileCellEditor.open",
+                TableUIConstants.SELECT_FILE_TEXT);
 
         // 应用文件过滤器
         if (fileFilter != null) {
@@ -129,7 +131,7 @@ public class FileCellEditor extends DefaultCellEditor {
 
         // 显示文件选择器
         int result = fileChooser.showOpenDialog(parentComponent);
-        if (result == JFileChooser.APPROVE_OPTION) {
+        if (result == SystemFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             filePath = selectedFile.getAbsolutePath();
             pathField.setText(filePath);

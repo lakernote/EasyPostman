@@ -1,5 +1,6 @@
 package com.laker.postman.panel.performance;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpRequestItem;
 
@@ -63,6 +64,7 @@ import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.service.collections.RequestSaveEventPublisher;
 import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -980,11 +982,12 @@ public class PerformancePanel extends UiSingletonPanel {
         propertyPanelSupport.forceCommitAllSpinners();
         saveAllPropertyPanelData();
 
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RUN_PLAN_EXPORT_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createSaveFileChooser(
+                "performance.runPlan.export",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_RUN_PLAN_EXPORT_TITLE));
         fileChooser.setSelectedFile(new File("plan.json"));
         int result = fileChooser.showSaveDialog(this);
-        if (result != JFileChooser.APPROVE_OPTION) {
+        if (result != SystemFileChooser.APPROVE_OPTION) {
             return;
         }
 

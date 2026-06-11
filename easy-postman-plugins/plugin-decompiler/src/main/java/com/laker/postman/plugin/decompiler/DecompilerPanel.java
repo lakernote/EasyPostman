@@ -2,6 +2,7 @@ package com.laker.postman.plugin.decompiler;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -15,7 +16,6 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
@@ -395,10 +395,10 @@ public class DecompilerPanel extends JPanel {
      * 浏览并选择文件
      */
     private void browseFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT));
-
-        FileNameExtensionFilter filter = new FileNameExtensionFilter(
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                "plugin.decompiler.open",
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT));
+        SystemFileChooser.FileNameExtensionFilter filter = FileChooserUtil.extensionFilter(
                 "JAR/WAR/Class/Zip Files (*.jar, *.war, *.class, *.zip)", "jar", "war", "class", "zip");
         fileChooser.setFileFilter(filter);
 
@@ -407,7 +407,7 @@ public class DecompilerPanel extends JPanel {
         }
 
         int result = fileChooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
+        if (result == SystemFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
             loadFile(selectedFile);
         }

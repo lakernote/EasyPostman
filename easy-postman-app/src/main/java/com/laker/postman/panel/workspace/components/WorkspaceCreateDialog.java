@@ -1,6 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
 import cn.hutool.core.util.RandomUtil;
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.constants.ConfigPathConstants;
@@ -480,9 +481,9 @@ public class WorkspaceCreateDialog extends ProgressDialog {
     }
 
     private void browseForPath(ActionEvent e) {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        chooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.WORKSPACE_SELECT_PATH));
+        SystemFileChooser chooser = FileChooserUtil.createDirectoryChooser(
+                "workspace.create.path",
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_SELECT_PATH));
 
         String currentPath = pathField.getText().trim();
         if (currentPath.isEmpty()) {
@@ -498,7 +499,7 @@ public class WorkspaceCreateDialog extends ProgressDialog {
         }
 
         int result = chooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
+        if (result == SystemFileChooser.APPROVE_OPTION) {
             File selectedDir = chooser.getSelectedFile();
             pathField.setText(selectedDir.getAbsolutePath());
             // 取消自动生成，因为用户手动选择了路径

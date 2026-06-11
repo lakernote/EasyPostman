@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.plugin;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
@@ -14,6 +15,7 @@ import com.laker.postman.plugin.runtime.PluginFileInfo;
 import com.laker.postman.service.update.plugin.PluginCatalogPreferenceResolver;
 import com.laker.postman.service.update.plugin.PluginUpdateMetadataResolver;
 import com.laker.postman.platform.update.version.VersionComparator;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -22,7 +24,6 @@ import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -594,10 +595,11 @@ public class PluginManagerDialog extends JDialog {
     }
 
     private void installLocalPluginJar() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_FILE_CHOOSER));
-        chooser.setFileFilter(new FileNameExtensionFilter("JAR", "jar"));
-        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) {
+        SystemFileChooser chooser = FileChooserUtil.createOpenFileChooser(
+                "plugins.install.localJar",
+                I18nUtil.getMessage(MessageKeys.PLUGIN_MANAGER_FILE_CHOOSER));
+        chooser.setFileFilter(FileChooserUtil.extensionFilter("JAR", "jar"));
+        if (chooser.showOpenDialog(this) != SystemFileChooser.APPROVE_OPTION) {
             return;
         }
 

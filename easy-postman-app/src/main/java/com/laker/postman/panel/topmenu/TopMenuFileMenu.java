@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.ioc.BeanFactory;
@@ -7,6 +8,7 @@ import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.lifecycle.AppExitCoordinator;
 import com.laker.postman.service.setting.ShortcutManager;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
@@ -14,7 +16,6 @@ import com.laker.postman.util.NotificationUtil;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.JFileChooser;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
@@ -63,11 +64,12 @@ class TopMenuFileMenu {
 
     private void exportAllCollections(Component parent) {
         CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createSaveFileChooser(
+                "collections.export",
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_DIALOG_TITLE));
         fileChooser.setSelectedFile(new File(CollectionTreePanel.EXPORT_FILE_NAME));
         int userSelection = fileChooser.showSaveDialog(parent);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 leftPanel.getCollectionTreePersistence().exportCurrentTree(fileToSave);

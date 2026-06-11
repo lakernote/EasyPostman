@@ -6,6 +6,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.IdUtil;
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.collection.model.CollectionDocument;
 import com.laker.postman.common.UiSingletonPanel;
@@ -34,6 +35,7 @@ import com.laker.postman.collection.importer.postman.PostmanCollectionParser;
 import com.laker.postman.service.swagger.SwaggerParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import com.laker.postman.service.curl.CurlImportUtil;
@@ -42,7 +44,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.filechooser.FileFilter;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
@@ -62,8 +63,12 @@ import static com.laker.postman.panel.collections.tree.CollectionTreePanel.*;
 
 @Slf4j
 public class CollectionTreeToolbar extends UiSingletonPanel {
-    // 记录上次文件选择器打开的目录（应用运行期间保持）
-    private static File lastSelectedDirectory = null;
+    private static final String FILE_CHOOSER_STATE_COLLECTION_IMPORT = "collections.import";
+    private static final String FILE_CHOOSER_STATE_POSTMAN_IMPORT = "collections.import.postman";
+    private static final String FILE_CHOOSER_STATE_HAR_IMPORT = "collections.import.har";
+    private static final String FILE_CHOOSER_STATE_SWAGGER_IMPORT = "collections.import.swagger";
+    private static final String FILE_CHOOSER_STATE_HTTP_IMPORT = "collections.import.http";
+    private static final String FILE_CHOOSER_STATE_APIPOST_IMPORT = "collections.import.apipost";
 
     private SearchTextField searchField;
     /**
@@ -269,12 +274,12 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
     private void importRequestCollection() {
         CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = createFileChooserWithLastPath();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_DIALOG_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                FILE_CHOOSER_STATE_COLLECTION_IMPORT,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
-            updateLastSelectedDirectory(fileToOpen);
             try {
                 // 导入时不清空老数据，而是全部加入到一个新分组下
                 String groupName = "EasyPostman";
@@ -309,12 +314,12 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
     private void importPostmanCollection() {
         CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = createFileChooserWithLastPath();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_DIALOG_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                FILE_CHOOSER_STATE_POSTMAN_IMPORT,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_POSTMAN_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
-            updateLastSelectedDirectory(fileToOpen);
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 CollectionParseResult parseResult =
@@ -341,12 +346,12 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
     private void importHarCollection() {
         CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = createFileChooserWithLastPath();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HAR_DIALOG_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                FILE_CHOOSER_STATE_HAR_IMPORT,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HAR_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
-            updateLastSelectedDirectory(fileToOpen);
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 DefaultMutableTreeNode collectionNode = HarParser.parseHar(json);
@@ -370,12 +375,12 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
     private void importSwaggerCollection() {
         CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = createFileChooserWithLastPath();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SWAGGER_DIALOG_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                FILE_CHOOSER_STATE_SWAGGER_IMPORT,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_SWAGGER_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
-            updateLastSelectedDirectory(fileToOpen);
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 CollectionParseResult parseResult = SwaggerParser.parseSwagger(json);
@@ -440,25 +445,15 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
     private void importHttpFile() {
         CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = createFileChooserWithLastPath();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE));
-        // 设置文件过滤器，只显示 .http 文件
-        FileFilter httpFilter = new FileFilter() {
-            @Override
-            public boolean accept(File f) {
-                return f.isDirectory() || f.getName().toLowerCase().endsWith(".http");
-            }
-
-            @Override
-            public String getDescription() {
-                return "HTTP Files (*.http)";
-            }
-        };
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                FILE_CHOOSER_STATE_HTTP_IMPORT,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_HTTP_DIALOG_TITLE));
+        SystemFileChooser.FileNameExtensionFilter httpFilter =
+                FileChooserUtil.extensionFilter("HTTP Files (*.http)", "http");
         fileChooser.setFileFilter(httpFilter);
         int userSelection = fileChooser.showOpenDialog(mainFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
-            updateLastSelectedDirectory(fileToOpen);
             try {
                 String content = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 String filename = fileToOpen.getName();
@@ -488,12 +483,12 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
     private void importApiPostCollection() {
         CollectionTreePanel leftPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         MainFrame mainFrame = UiSingletonFactory.getInstance(MainFrame.class);
-        JFileChooser fileChooser = createFileChooserWithLastPath();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST_DIALOG_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                FILE_CHOOSER_STATE_APIPOST_IMPORT,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_APIPOST_DIALOG_TITLE));
         int userSelection = fileChooser.showOpenDialog(mainFrame);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
-            updateLastSelectedDirectory(fileToOpen);
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
                 CollectionParseResult parseResult =
@@ -751,31 +746,4 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
         }
     }
 
-    /**
-     * 创建带有上次路径记忆的文件选择器
-     *
-     * @return JFileChooser 实例
-     */
-    private static JFileChooser createFileChooserWithLastPath() {
-        JFileChooser fileChooser = new JFileChooser();
-        if (lastSelectedDirectory != null && lastSelectedDirectory.exists()) {
-            fileChooser.setCurrentDirectory(lastSelectedDirectory);
-        }
-        return fileChooser;
-    }
-
-    /**
-     * 更新上次选择的目录
-     *
-     * @param selectedFile 用户选择的文件
-     */
-    private static void updateLastSelectedDirectory(File selectedFile) {
-        if (selectedFile != null) {
-            if (selectedFile.isDirectory()) {
-                lastSelectedDirectory = selectedFile;
-            } else {
-                lastSelectedDirectory = selectedFile.getParentFile();
-            }
-        }
-    }
 }

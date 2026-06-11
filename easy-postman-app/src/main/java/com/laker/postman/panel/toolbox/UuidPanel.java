@@ -1,8 +1,10 @@
 package com.laker.postman.panel.toolbox;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
@@ -780,12 +782,13 @@ public class UuidPanel extends JPanel {
             return;
         }
 
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_EXPORT));
+        SystemFileChooser fileChooser = FileChooserUtil.createSaveFileChooser(
+                "toolbox.uuid.export",
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_UUID_EXPORT));
         fileChooser.setSelectedFile(new File("uuids_" + System.currentTimeMillis() + ".txt"));
 
         int result = fileChooser.showSaveDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
+        if (result == SystemFileChooser.APPROVE_OPTION) {
             File file = fileChooser.getSelectedFile();
             try (FileWriter writer = new FileWriter(file)) {
                 writer.write(text);

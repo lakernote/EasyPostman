@@ -60,7 +60,7 @@
         <mainClass>com.laker.postman.App</mainClass>
 
         <!-- UI / core 基础依赖版本 -->
-        <flatlaf.version>3.7</flatlaf.version>
+        <flatlaf.version>3.7.1</flatlaf.version>
         <miglayout.version>11.4.2</miglayout.version>
         <hutool.version>5.8.41</hutool.version>
         <jiconfont-swing.version>1.0.1</jiconfont-swing.version>

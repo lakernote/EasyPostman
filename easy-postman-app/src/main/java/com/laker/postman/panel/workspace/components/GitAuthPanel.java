@@ -1,9 +1,11 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.EasyPasswordField;
 import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitAuthType;
+import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
@@ -128,9 +130,9 @@ public class GitAuthPanel extends JPanel {
      * 选择SSH私钥文件
      */
     private void selectSshKeyFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_SELECT_KEY));
-        fileChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                "workspace.git.sshKey",
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_SELECT_KEY));
 
         // 设置默认目录为用户主目录下的 .ssh 文件夹
         String userHome = System.getProperty("user.home");
@@ -140,7 +142,7 @@ public class GitAuthPanel extends JPanel {
         }
 
         int result = fileChooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
+        if (result == SystemFileChooser.APPROVE_OPTION) {
             java.io.File selectedFile = fileChooser.getSelectedFile();
             sshKeyPathField.setText(selectedFile.getAbsolutePath());
         }

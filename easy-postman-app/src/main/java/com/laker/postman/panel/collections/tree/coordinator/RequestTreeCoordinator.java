@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.tree.coordinator;
 
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Workspace;
@@ -684,14 +685,13 @@ public class RequestTreeCoordinator {
 
         String groupName = CollectionTreeNodes.group(groupNode).orElseThrow().getName();
 
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE)
-        );
+        SystemFileChooser fileChooser = FileChooserUtil.createSaveFileChooser(
+                "collections.export.postman",
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_EXPORT_POSTMAN_DIALOG_TITLE));
         fileChooser.setSelectedFile(new File(groupName + "-postman.json"));
 
         int userSelection = fileChooser.showSaveDialog(UiSingletonFactory.getInstance(MainFrame.class));
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             exportToFile(groupNode, groupName, fileChooser.getSelectedFile());
         }
     }

@@ -4,6 +4,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.json.JSONUtil;
+import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
@@ -585,11 +586,12 @@ public class EnvironmentPanel extends UiSingletonPanel {
      * 导出所有环境变量为JSON文件
      */
     public void exportEnvironments() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createSaveFileChooser(
+                "environments.export",
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_TITLE));
         fileChooser.setSelectedFile(new File(EXPORT_FILE_NAME));
         int userSelection = fileChooser.showSaveDialog(this);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
                 java.util.List<Environment> envs = EnvironmentService.getAllEnvironments();
@@ -608,10 +610,11 @@ public class EnvironmentPanel extends UiSingletonPanel {
      * 导入环境变量JSON文件
      */
     private void importEnvironments() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                "environments.import.easyPostman",
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_TITLE));
         int userSelection = fileChooser.showOpenDialog(this);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 java.util.List<Environment> envs = JSONUtil.toList(JSONUtil.readJSONArray(fileToOpen, StandardCharsets.UTF_8), Environment.class);
@@ -640,10 +643,11 @@ public class EnvironmentPanel extends UiSingletonPanel {
      * 导入Postman环境变量JSON文件
      */
     private void importPostmanEnvironments() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                "environments.import.postman",
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_POSTMAN_TITLE));
         int userSelection = fileChooser.showOpenDialog(this);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             java.io.File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
@@ -669,10 +673,11 @@ public class EnvironmentPanel extends UiSingletonPanel {
      * 导入IntelliJ IDEA HTTP Client环境变量JSON文件
      */
     private void importIntelliJEnvironments() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_INTELLIJ_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                "environments.import.intellijHttp",
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_INTELLIJ_TITLE));
         int userSelection = fileChooser.showOpenDialog(this);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToOpen = fileChooser.getSelectedFile();
             try {
                 String json = FileUtil.readString(fileToOpen, StandardCharsets.UTF_8);
@@ -894,11 +899,12 @@ public class EnvironmentPanel extends UiSingletonPanel {
         EnvironmentItem item = environmentList.getSelectedValue();
         if (item == null) return;
         Environment env = item.getEnvironment();
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_POSTMAN_TITLE));
+        SystemFileChooser fileChooser = FileChooserUtil.createSaveFileChooser(
+                "environments.export.postman",
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_POSTMAN_TITLE));
         fileChooser.setSelectedFile(new File(env.getName() + "-postman-env.json"));
         int userSelection = fileChooser.showSaveDialog(this);
-        if (userSelection == JFileChooser.APPROVE_OPTION) {
+        if (userSelection == SystemFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 // 只导出当前环境为Postman格式

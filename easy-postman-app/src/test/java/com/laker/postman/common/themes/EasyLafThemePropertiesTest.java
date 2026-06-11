@@ -108,6 +108,15 @@ public class EasyLafThemePropertiesTest {
         assertTopChromeSurfaces(new Color(38, 40, 44));
     }
 
+    @Test
+    public void shouldExposeToolbarToggleSelectedForegroundForReadableAccentSelection() {
+        assertTrue(EasyLightLaf.setup());
+        assertEquals(UIManager.getColor("ToggleButton.toolbar.selectedForeground"), Color.WHITE);
+
+        assertTrue(EasyDarkLaf.setup());
+        assertEquals(UIManager.getColor("ToggleButton.toolbar.selectedForeground"), Color.WHITE);
+    }
+
     private void assertDefinesThemeColors(String resourcePath) throws Exception {
         Properties properties = loadProperties(resourcePath);
 

@@ -13,8 +13,8 @@
 
 	<!-- General editor colors - IDEA-like dark editor surface -->
 	<background color="1E1F22" />
-	<caret color="C9CCD3" />
-	<selection useFG="false" bg="2B4D7D" roundedEdges="true" />  <!-- 蓝色选中背景，圆角 -->
+	<caret color="CED0D6" />
+	<selection useFG="false" bg="214283" roundedEdges="true" />  <!-- 蓝色选中背景，圆角 -->
 	<currentLineHighlight color="25282D" fade="true" />  <!-- 当前行高亮 -->
 	<marginLine fg="2B2D30" />  <!-- 边距线，暗色下避免过亮 -->
 	<markAllHighlight color="364235" />  <!-- 标记所有匹配项 -->
@@ -30,10 +30,10 @@
 	</secondaryLanguages>
 
 	<!-- Gutter styling - 行号区域样式 -->
-	<gutterBackground color="1E1F22" />
+	<gutterBackground color="1C1D20" />
 	<gutterBorder color="2B2D30" />
-	<lineNumbers fg="6C7078" currentFG="A9B0BC"/>  <!-- 当前行号更亮 -->
-	<foldIndicator fg="6C7078" armedFg="A9B0BC" iconBg="1E1F22" iconArmedBg="2B2D30" />
+	<lineNumbers fg="6F737A" currentFG="AEB6C2"/>  <!-- 当前行号更亮 -->
+	<foldIndicator fg="6F737A" armedFg="AEB6C2" iconBg="1C1D20" iconArmedBg="2B2D30" />
 	<iconRowHeader activeLineRange="3592C4" />
 
 	<!-- Syntax tokens - 语法高亮配色 -->

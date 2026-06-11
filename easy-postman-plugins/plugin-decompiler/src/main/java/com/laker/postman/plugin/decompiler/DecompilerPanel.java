@@ -47,6 +47,12 @@ import java.util.zip.ZipFile;
 @Slf4j
 public class DecompilerPanel extends JPanel {
 
+    private static final int ROOT_TOP = 8;
+    private static final int ROOT_LEFT = 10;
+    private static final int ROOT_BOTTOM = 8;
+    private static final int ROOT_RIGHT = 10;
+    private static final int SECTION_GAP = 6;
+
     private static final String CLASS_EXTENSION = ".class";
     private static final String JAR_EXTENSION = ".jar";
     private static final String ZIP_EXTENSION = ".zip";
@@ -70,16 +76,16 @@ public class DecompilerPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(0, 8));
-        setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-        ToolWindowSurfaceStyle.applyBackground(this);
+        setLayout(new BorderLayout(0, SECTION_GAP));
+        setBorder(BorderFactory.createEmptyBorder(ROOT_TOP, ROOT_LEFT, ROOT_BOTTOM, ROOT_RIGHT));
+        ToolWindowSurfaceStyle.applyCard(this);
 
         add(createFileSelectionPanel(), BorderLayout.NORTH);
 
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
                 createTreePanel(),
                 createCodePanel(),
-                400
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
@@ -91,11 +97,14 @@ public class DecompilerPanel extends JPanel {
      * 创建文件选择面板 - 优化布局和视觉效果
      */
     private JPanel createFileSelectionPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 5));
-        ToolWindowSurfaceStyle.applySectionHeader(panel, 6, 10, 6, 10);
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
 
-        JLabel sectionTitle = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR));
-        sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD));
+        JPanel panel = new JPanel(new BorderLayout(10, 6));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
+
+        JLabel sectionTitle = createSectionTitle(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR));
         panel.add(sectionTitle, BorderLayout.NORTH);
 
         JPanel fileInfoPanel = new JPanel(new BorderLayout(5, 0));
@@ -129,25 +138,27 @@ public class DecompilerPanel extends JPanel {
                 DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW),
                 SwingConstants.CENTER
         );
-        dragDropLabel.setFont(dragDropLabel.getFont().deriveFont(Font.ITALIC));
+        dragDropLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -1));
         dragDropLabel.setForeground(ModernColors.getTextSecondary());
         panel.add(dragDropLabel, BorderLayout.SOUTH);
 
-        return panel;
+        wrapper.add(panel, BorderLayout.CENTER);
+        wrapper.add(new JSeparator(SwingConstants.HORIZONTAL), BorderLayout.SOUTH);
+
+        return wrapper;
     }
 
     /**
      * 创建文件树面板
      */
     private JPanel createTreePanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 0));
+        JPanel panel = new JPanel(new BorderLayout(0, SECTION_GAP));
         panel.setOpaque(false);
 
-        JPanel topPanel = new JPanel(new BorderLayout(5, 5));
-        ToolWindowSurfaceStyle.applySectionHeader(topPanel, 5, 8, 5, 8);
+        JPanel topPanel = new JPanel(new BorderLayout(5, 0));
+        topPanel.setOpaque(false);
 
-        JLabel label = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_TREE_TITLE));
-        label.setFont(label.getFont().deriveFont(Font.BOLD));
+        JLabel label = createSectionTitle(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_TREE_TITLE));
         topPanel.add(label, BorderLayout.WEST);
 
         compressionInfoLabel = new JLabel("");
@@ -214,6 +225,7 @@ public class DecompilerPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(fileTree);
         ToolWindowSurfaceStyle.applyTreeScrollPaneCard(scrollPane, fileTree);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 为树面板添加拖拽支持
@@ -254,8 +266,11 @@ public class DecompilerPanel extends JPanel {
                 sortByNameBtn,
                 sortBySizeBtn
         );
-        ToolWindowSurfaceStyle.applySectionHeader(buttonPanel, 5, 0, 0, 0);
-        panel.add(buttonPanel, BorderLayout.SOUTH);
+        JPanel footerPanel = new JPanel(new BorderLayout(0, 4));
+        footerPanel.setOpaque(false);
+        footerPanel.add(new JSeparator(SwingConstants.HORIZONTAL), BorderLayout.NORTH);
+        footerPanel.add(buttonPanel, BorderLayout.CENTER);
+        panel.add(footerPanel, BorderLayout.SOUTH);
 
         return panel;
     }
@@ -264,13 +279,12 @@ public class DecompilerPanel extends JPanel {
      * 创建代码显示面板 - 优化工具栏和布局
      */
     private JPanel createCodePanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 0));
+        JPanel panel = new JPanel(new BorderLayout(0, SECTION_GAP));
         panel.setOpaque(false);
 
         JPanel headerPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applySectionHeader(headerPanel, 5, 8, 5, 8);
-        JLabel label = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_OUTPUT));
-        label.setFont(label.getFont().deriveFont(Font.BOLD));
+        headerPanel.setOpaque(false);
+        JLabel label = createSectionTitle(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_OUTPUT));
         headerPanel.add(label, BorderLayout.WEST);
 
         JButton copyBtn = ModernButtonFactory.createButton(
@@ -303,12 +317,11 @@ public class DecompilerPanel extends JPanel {
         RTextScrollPane scrollPane = new RTextScrollPane(codeArea);
         scrollPane.setFoldIndicatorEnabled(true);
         scrollPane.setLineNumbersEnabled(true);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 为代码面板添加拖拽支持
         setupDragAndDrop(codeArea);
-
 
         return panel;
     }
@@ -317,15 +330,26 @@ public class DecompilerPanel extends JPanel {
      * 创建状态栏 - 优化样式和分隔
      */
     private JPanel createStatusPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applySectionHeader(panel, 4, 10, 4, 10);
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.setOpaque(false);
+        panel.add(new JSeparator(SwingConstants.HORIZONTAL), BorderLayout.NORTH);
 
         statusLabel = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_READY));
         statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         statusLabel.setForeground(ModernColors.getTextSecondary());
-        panel.add(statusLabel, BorderLayout.WEST);
+
+        JPanel statusContent = new JPanel(new BorderLayout());
+        statusContent.setOpaque(false);
+        statusContent.add(statusLabel, BorderLayout.WEST);
+        panel.add(statusContent, BorderLayout.CENTER);
 
         return panel;
+    }
+
+    private JLabel createSectionTitle(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
+        return label;
     }
 
     /**

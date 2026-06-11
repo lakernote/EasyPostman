@@ -15,7 +15,7 @@
         插件版本单独维护。
         初始独立版本从 5.3.16 起步，后续只在该插件有变更时单独递增。
      -->
-    <version>6.0.2</version>
+    <version>6.0.3</version>
     <artifactId>easy-postman-plugin-decompiler</artifactId>
     <packaging>jar</packaging>
 
@@ -34,7 +34,7 @@
         <plugin.name>Decompiler Plugin</plugin.name>
         <plugin.entryClass>com.laker.postman.plugin.decompiler.DecompilerPlugin</plugin.entryClass>
         <plugin.description>Java decompiler toolbox panel powered by CFR.</plugin.description>
-        <plugin.minAppVersion>6.0.2</plugin.minAppVersion>
+        <plugin.minAppVersion>6.0.3</plugin.minAppVersion>
         <!--
             运行时插件平台兼容范围，匹配的是 runtime/SPI 装配边界，不是宿主发行版 revision。
             这里不要直接跟随 ${revision}：

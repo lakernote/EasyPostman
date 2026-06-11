@@ -143,7 +143,7 @@ public class KafkaPanel extends JPanel {
         add(connectionPanel, BorderLayout.NORTH);
 
         JSplitPane mainSplit = ToolWindowChrome.createHorizontalInnerSplitPane(
-                topicPanel,
+                buildTopicSidePanel(),
                 buildWorkPanel(),
                 240
         );
@@ -151,6 +151,19 @@ public class KafkaPanel extends JPanel {
         mainSplit.setResizeWeight(0.23);
         add(mainSplit, BorderLayout.CENTER);
         ToolWindowSurfaceStyle.applyPanelTreeCard(this);
+    }
+
+    private JComponent buildTopicSidePanel() {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setMinimumSize(new Dimension(120, 0));
+        wrapper.setPreferredSize(new Dimension(240, 0));
+
+        JTabbedPane sideTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        ToolWindowSurfaceStyle.applyTabbedPaneCard(sideTabs);
+        sideTabs.addTab(t(MessageKeys.TOOLBOX_KAFKA_TOPIC_MANAGEMENT), topicPanel);
+        wrapper.add(sideTabs, BorderLayout.CENTER);
+        return wrapper;
     }
 
     private JComponent buildWorkPanel() {

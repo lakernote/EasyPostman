@@ -26,7 +26,6 @@ import static com.laker.postman.plugin.kafka.KafkaI18n.t;
 public class KafkaProducerPanel extends JPanel {
 
     private static final String MIG_GROWX = "growx";
-    private static final String MIG_GROWX_WRAP = "growx, wrap";
     private static final String ACTION_KAFKA_SEND = "kafka-send";
 
     public final JTextField topicField;
@@ -41,13 +40,7 @@ public class KafkaProducerPanel extends JPanel {
 
     public KafkaProducerPanel(Runnable sendAction) {
         super(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applyCard(this);
-
-        JPanel titleBar = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applySectionHeader(titleBar, 6, 10, 6, 10);
-        JLabel titleLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_TITLE));
-        titleLbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
-        titleBar.add(titleLbl, BorderLayout.WEST);
+        setOpaque(false);
 
         JToggleButton advancedToggleBtn = new JToggleButton();
         advancedToggleBtn.setIcon(IconUtil.createThemed("icons/more.svg", 16, 16));
@@ -58,14 +51,13 @@ public class KafkaProducerPanel extends JPanel {
         advancedToggleBtn.setFocusable(false);
         advancedToggleBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         advancedToggleBtn.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
-        titleBar.add(advancedToggleBtn, BorderLayout.EAST);
 
         JPanel form = new JPanel(new MigLayout(
-                "insets 8 10 6 10, fillx, gapy 6",
-                "[]8[grow,fill]8[]8[grow,fill]",
+                "insets 4 6 4 6, fillx, novisualpadding",
+                "[]8[grow,fill]8[]8[grow,fill]8[]8[90!]8[]8[]",
                 "[]"
         ));
-        ToolWindowSurfaceStyle.applySectionCard(form);
+        ToolWindowSurfaceStyle.applySectionHeader(form);
 
         topicField = new JTextField("");
         topicField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_TOPIC_PLACEHOLDER));
@@ -84,11 +76,11 @@ public class KafkaProducerPanel extends JPanel {
         form.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_TOPIC)));
         form.add(topicField, MIG_GROWX);
         form.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_KEY)));
-        form.add(keyField, MIG_GROWX_WRAP);
-
-        form.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PARTITION)), "span, split 3");
+        form.add(keyField, MIG_GROWX);
+        form.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PARTITION)));
         form.add(partitionSpinner, "w 90!");
-        form.add(sendBtn, "push, al right");
+        form.add(sendBtn);
+        form.add(advancedToggleBtn);
 
         customPropsPanel = new KafkaPropertiesEditorPanel(
                 t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_CUSTOM_PROPERTIES),
@@ -101,7 +93,7 @@ public class KafkaProducerPanel extends JPanel {
         advancedToggleBtn.addActionListener(e -> advancedPanel.setVisible(advancedToggleBtn.isSelected()));
 
         JPanel headersPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applySectionCard(headersPanel);
+        headersPanel.setOpaque(false);
         JPanel headersHeader = new JPanel(new MigLayout("insets 4 8 4 8, fillx", "[]push", "[]"));
         ToolWindowSurfaceStyle.applySectionHeader(headersHeader);
         JLabel headersLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_HEADERS));
@@ -119,7 +111,7 @@ public class KafkaProducerPanel extends JPanel {
         headersPanel.add(headersScroll, BorderLayout.CENTER);
 
         JPanel payloadPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applySectionCard(payloadPanel);
+        payloadPanel.setOpaque(false);
         JPanel payloadHeader = new JPanel(new MigLayout("insets 4 8 4 8, fillx", "[]push[]", "[]"));
         ToolWindowSurfaceStyle.applySectionHeader(payloadHeader);
         JLabel payloadLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_PAYLOAD));
@@ -157,7 +149,6 @@ public class KafkaProducerPanel extends JPanel {
         statusLabel.setForeground(ModernColors.getTextSecondary());
         statusLabel.setBorder(new EmptyBorder(4, 8, 4, 8));
 
-        add(titleBar, BorderLayout.NORTH);
         JPanel content = new JPanel(new BorderLayout(0, 0));
         content.setOpaque(false);
         content.add(form, BorderLayout.NORTH);

@@ -5,6 +5,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -69,14 +70,12 @@ public class DecompilerPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        ToolWindowSurfaceStyle.applyCard(this);
+        setLayout(new BorderLayout(0, 8));
+        setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
+        ToolWindowSurfaceStyle.applyBackground(this);
 
-        // 顶部文件选择面板
         add(createFileSelectionPanel(), BorderLayout.NORTH);
 
-        // 中间主要内容区域（分割面板：文件树 | 代码显示）
         JSplitPane splitPane = ToolWindowChrome.createHorizontalCardSplitPane(
                 createTreePanel(),
                 createCodePanel(),
@@ -85,24 +84,20 @@ public class DecompilerPanel extends JPanel {
         splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
 
-        // 底部状态栏
         add(createStatusPanel(), BorderLayout.SOUTH);
-        ToolWindowSurfaceStyle.applyPanelTreeCard(this);
     }
 
     /**
      * 创建文件选择面板 - 优化布局和视觉效果
      */
     private JPanel createFileSelectionPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 6));
-        panel.setOpaque(false);
-        panel.setBorder(BorderFactory.createEmptyBorder(0, 0, 2, 0));
+        JPanel panel = new JPanel(new BorderLayout(10, 5));
+        ToolWindowSurfaceStyle.applySectionHeader(panel, 6, 10, 6, 10);
 
         JLabel sectionTitle = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_JAR));
         sectionTitle.setFont(sectionTitle.getFont().deriveFont(Font.BOLD));
         panel.add(sectionTitle, BorderLayout.NORTH);
 
-        // 文件路径显示区域
         JPanel fileInfoPanel = new JPanel(new BorderLayout(5, 0));
         fileInfoPanel.setOpaque(false);
         filePathField = new JTextField();
@@ -111,12 +106,18 @@ public class DecompilerPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentInput(filePathField);
         fileInfoPanel.add(filePathField, BorderLayout.CENTER);
 
-        JButton browseButton = new JButton(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_BROWSE));
-        browseButton.setIcon(IconUtil.createThemed("icons/file.svg", 16, 16));
+        JButton browseButton = ModernButtonFactory.createButton(
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_BROWSE),
+                false,
+                "icons/file.svg"
+        );
         browseButton.addActionListener(e -> browseFile());
 
-        JButton clearButton = new JButton(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLEAR));
-        clearButton.setIcon(IconUtil.createThemed("icons/clear.svg", 16, 16));
+        JButton clearButton = ModernButtonFactory.createButton(
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLEAR),
+                false,
+                "icons/clear.svg"
+        );
         clearButton.addActionListener(e -> clearAll());
 
         JPanel buttonPanel = ToolWindowActionToolbar.inlineRight(browseButton, clearButton);
@@ -124,9 +125,8 @@ public class DecompilerPanel extends JPanel {
 
         panel.add(fileInfoPanel, BorderLayout.CENTER);
 
-        // 拖放提示标签 - 提示拖到下方面板
         JLabel dragDropLabel = new JLabel(
-                "💡 " + DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW),
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_DRAG_DROP_HINT_TO_BELOW),
                 SwingConstants.CENTER
         );
         dragDropLabel.setFont(dragDropLabel.getFont().deriveFont(Font.ITALIC));
@@ -140,20 +140,18 @@ public class DecompilerPanel extends JPanel {
      * 创建文件树面板
      */
     private JPanel createTreePanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
         panel.setOpaque(false);
 
-        // 顶部面板：标题 + 压缩信息
         JPanel topPanel = new JPanel(new BorderLayout(5, 5));
-        topPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionHeader(topPanel, 5, 8, 5, 8);
 
         JLabel label = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_TREE_TITLE));
         label.setFont(label.getFont().deriveFont(Font.BOLD));
         topPanel.add(label, BorderLayout.WEST);
 
-        // 压缩信息标签（初始为空，加载文件后显示）
         compressionInfoLabel = new JLabel("");
-        compressionInfoLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        compressionInfoLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         compressionInfoLabel.setForeground(ModernColors.getTextSecondary());
         compressionInfoLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         topPanel.add(compressionInfoLabel, BorderLayout.CENTER);
@@ -256,6 +254,7 @@ public class DecompilerPanel extends JPanel {
                 sortByNameBtn,
                 sortBySizeBtn
         );
+        ToolWindowSurfaceStyle.applySectionHeader(buttonPanel, 5, 0, 0, 0);
         panel.add(buttonPanel, BorderLayout.SOUTH);
 
         return panel;
@@ -265,18 +264,21 @@ public class DecompilerPanel extends JPanel {
      * 创建代码显示面板 - 优化工具栏和布局
      */
     private JPanel createCodePanel() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
         panel.setOpaque(false);
 
-        // 顶部工具栏 - 标题和操作按钮整合
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionHeader(headerPanel, 5, 8, 5, 8);
         JLabel label = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_OUTPUT));
         label.setFont(label.getFont().deriveFont(Font.BOLD));
         headerPanel.add(label, BorderLayout.WEST);
 
-        JButton copyBtn = new JButton(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE));
-        copyBtn.setIcon(new FlatSVGIcon("icons/copy.svg", 14, 14));
+        JButton copyBtn = ModernButtonFactory.createButton(
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE),
+                false,
+                "icons/copy.svg",
+                14
+        );
         copyBtn.addActionListener(e -> copyCode());
 
         JPanel toolPanel = ToolWindowActionToolbar.inlineRight(copyBtn);
@@ -316,7 +318,7 @@ public class DecompilerPanel extends JPanel {
      */
     private JPanel createStatusPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applySectionHeader(panel, 5, 10, 5, 10);
+        ToolWindowSurfaceStyle.applySectionHeader(panel, 4, 10, 4, 10);
 
         statusLabel = new JLabel(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_READY));
         statusLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));

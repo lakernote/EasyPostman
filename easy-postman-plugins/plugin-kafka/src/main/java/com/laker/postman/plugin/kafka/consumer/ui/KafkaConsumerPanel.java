@@ -71,13 +71,7 @@ public class KafkaConsumerPanel extends JPanel {
 
     public KafkaConsumerPanel(Runnable startAction, Runnable stopAction, Runnable clearAction, Runnable selectionChanged) {
         super(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applyCard(this);
-
-        JPanel titleBar = new JPanel(new MigLayout("insets 5 10 5 8, fillx", "[]push[]4[]4[]4[]", "[]"));
-        ToolWindowSurfaceStyle.applySectionHeader(titleBar);
-
-        JLabel titleLbl = new JLabel(t(MessageKeys.TOOLBOX_KAFKA_CONSUMER_TITLE));
-        titleLbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
+        setOpaque(false);
 
         JToggleButton detailToggleBtn = new JToggleButton();
         detailToggleBtn.setIcon(IconUtil.createThemed("icons/detail.svg", 16, 16));
@@ -103,17 +97,12 @@ public class KafkaConsumerPanel extends JPanel {
         clearConsumeBtn.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_CONSUMER_CLEAR));
         clearConsumeBtn.addActionListener(e -> clearAction.run());
 
-        titleBar.add(titleLbl);
-        titleBar.add(clearConsumeBtn);
-        titleBar.add(advancedToggleBtn);
-        titleBar.add(detailToggleBtn);
-
         JPanel mainControls = new JPanel(new MigLayout(
-                "insets 6 10 6 8, fillx",
-                "[]8[grow,fill]8[]",
+                "insets 4 6 4 6, fillx, novisualpadding",
+                "[]8[grow,fill]8[]8[]",
                 "[]"
         ));
-        ToolWindowSurfaceStyle.applySectionCard(mainControls);
+        ToolWindowSurfaceStyle.applySectionHeader(mainControls);
 
         topicField = new JTextField("");
         topicField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_TOPIC_PLACEHOLDER));
@@ -135,16 +124,21 @@ public class KafkaConsumerPanel extends JPanel {
         mainControls.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_TOPIC)));
         mainControls.add(topicField);
         mainControls.add(consumeBtnCard);
+        mainControls.add(ToolWindowActionToolbar.inlineRight(
+                clearConsumeBtn,
+                advancedToggleBtn,
+                detailToggleBtn
+        ));
 
         JPanel advancedPanel = new JPanel(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applySectionCard(advancedPanel);
+        advancedPanel.setOpaque(false);
 
         JPanel advancedRowPanel = new JPanel(new MigLayout(
                 "insets 4 10 6 8, fillx",
                 "[]8[grow,fill]16[]8[grow,fill]16[]8[140!]28[]8[grow,fill]",
                 "[]6[]"
         ));
-        advancedRowPanel.setOpaque(false);
+        ToolWindowSurfaceStyle.applySectionHeader(advancedRowPanel);
 
         groupIdField = new JTextField("easy-postman-consumer");
         groupIdField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_GROUP_ID_PLACEHOLDER));
@@ -226,7 +220,7 @@ public class KafkaConsumerPanel extends JPanel {
         });
 
         JPanel detailPanel = new JPanel(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applySectionCard(detailPanel);
+        detailPanel.setOpaque(false);
         detailPanel.setMinimumSize(new Dimension(0, 0));
 
         JPanel detailHeader = new JPanel(new MigLayout("insets 4 10 4 8, fillx", "[]8[]8[]8[]8[]push[]4[]", "[]2[]"));
@@ -299,8 +293,7 @@ public class KafkaConsumerPanel extends JPanel {
 
         JPanel north = new JPanel(new BorderLayout());
         north.setOpaque(false);
-        north.add(titleBar, BorderLayout.NORTH);
-        north.add(mainControls, BorderLayout.CENTER);
+        north.add(mainControls, BorderLayout.NORTH);
         north.add(advancedPanel, BorderLayout.SOUTH);
 
         add(north, BorderLayout.NORTH);

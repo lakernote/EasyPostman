@@ -14,7 +14,7 @@ public class KafkaPropertiesEditorPanel extends JPanel {
 
     public KafkaPropertiesEditorPanel(String title, String hint, String placeholder, Color separatorColor, Color hintColor) {
         super(new BorderLayout(0, 0));
-        ToolWindowSurfaceStyle.applySectionHeader(this);
+        setOpaque(false);
 
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);

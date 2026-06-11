@@ -2,7 +2,7 @@ package com.laker.postman.plugin.clientcert;
 
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.setting.SettingsInputStyle;
-import com.laker.postman.common.component.setting.SettingsHintLabel;
+import com.laker.postman.common.component.setting.SettingsSectionPanel;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
@@ -12,6 +12,7 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.NotificationUtil;
 import lombok.Getter;
 
+import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -25,6 +26,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.Scrollable;
 import javax.swing.ListSelectionModel;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingConstants;
@@ -34,7 +36,6 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dialog;
 import java.awt.Dimension;
@@ -43,6 +44,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.Window;
 import java.io.File;
 import java.text.MessageFormat;
@@ -52,10 +54,10 @@ import java.util.Objects;
 
 public class ClientCertificateSettingsPanel extends JPanel {
 
-    private static final int DESCRIPTION_WIDTH = 620;
     private static final Dimension ACTION_BUTTON_SIZE = new Dimension(82, 30);
     private static final Dimension HELP_BUTTON_SIZE = new Dimension(70, 30);
     private static final Dimension CLOSE_BUTTON_SIZE = new Dimension(96, 32);
+    private static final Dimension TABLE_VIEW_SIZE = new Dimension(620, 300);
 
     private final Window parentWindow;
     private final ClientCertificatePluginService certificateService;
@@ -74,49 +76,40 @@ public class ClientCertificateSettingsPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(0, 12));
-        ToolWindowSurfaceStyle.applyBackground(this);
-        setBorder(new EmptyBorder(24, 24, 16, 24));
+        setLayout(new BorderLayout(0, 0));
+        ToolWindowSurfaceStyle.applyDialogSurface(this);
 
-        add(createDescriptionPanel(), BorderLayout.NORTH);
-        add(createTablePanel(), BorderLayout.CENTER);
+        JPanel contentPanel = new ViewportWidthTrackingPanel();
+        contentPanel.setLayout(new javax.swing.BoxLayout(contentPanel, javax.swing.BoxLayout.Y_AXIS));
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
+        contentPanel.setBorder(new EmptyBorder(20, 24, 16, 24));
+        contentPanel.add(createDescriptionPanel());
+        contentPanel.add(Box.createVerticalStrut(12));
+        contentPanel.add(createTablePanel());
+
+        JScrollPane contentScrollPane = new JScrollPane(contentPanel);
+        contentScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        contentScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        contentScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(contentScrollPane);
+
+        add(contentScrollPane, BorderLayout.CENTER);
         add(createFooterPanel(), BorderLayout.SOUTH);
     }
 
     private JPanel createDescriptionPanel() {
-        JPanel panel = new JPanel(new BorderLayout(0, 6));
-        panel.setOpaque(false);
-
-        JLabel titleLabel = new JLabel(ClientCertI18n.t(MessageKeys.CERT_TITLE));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        titleLabel.setForeground(ModernColors.getTextPrimary());
-
-        SettingsHintLabel descriptionLabel = new SettingsHintLabel(
+        return new SettingsSectionPanel(
+                ClientCertI18n.t(MessageKeys.CERT_TITLE),
                 ClientCertI18n.t(MessageKeys.CERT_DESCRIPTION),
-                DESCRIPTION_WIDTH
+                SettingsSectionPanel.DEFAULT_DESCRIPTION_WIDTH
         );
-
-        panel.add(titleLabel, BorderLayout.NORTH);
-        panel.add(descriptionLabel, BorderLayout.CENTER);
-        return panel;
     }
 
     private JPanel createTablePanel() {
-        JPanel section = new JPanel(new BorderLayout(0, 8));
-        ToolWindowSurfaceStyle.applyCard(section);
-        section.setBorder(new EmptyBorder(14, 14, 14, 14));
-
-        JPanel headerPanel = new JPanel(new BorderLayout(10, 0));
-        headerPanel.setOpaque(false);
-
-        JLabel sectionTitle = new JLabel(ClientCertI18n.t(MessageKeys.CERT_LIST_TITLE));
-        sectionTitle.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        sectionTitle.setForeground(ModernColors.getTextPrimary());
-        headerPanel.add(sectionTitle, BorderLayout.WEST);
-        headerPanel.add(createActionBar(), BorderLayout.EAST);
-
-        section.add(headerPanel, BorderLayout.NORTH);
-        section.add(createTableScrollPane(), BorderLayout.CENTER);
+        JPanel section = new SettingsSectionPanel(ClientCertI18n.t(MessageKeys.CERT_LIST_TITLE), "");
+        section.add(createActionBar());
+        section.add(Box.createVerticalStrut(8));
+        section.add(createTableScrollPane());
         return section;
     }
 
@@ -131,7 +124,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         deleteButton.addActionListener(e -> deleteCertificate());
         helpButton.addActionListener(e -> showHelp());
 
-        return ToolWindowActionToolbar.inlineRight(addButton, editButton, deleteButton, helpButton);
+        return ToolWindowActionToolbar.inlineLeft(addButton, editButton, deleteButton, helpButton);
     }
 
     private JScrollPane createTableScrollPane() {
@@ -165,6 +158,9 @@ public class ClientCertificateSettingsPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(certificateTable);
         ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, certificateTable);
+        scrollPane.setPreferredSize(TABLE_VIEW_SIZE);
+        scrollPane.setMaximumSize(new Dimension(Integer.MAX_VALUE, TABLE_VIEW_SIZE.height));
+        scrollPane.setMinimumSize(new Dimension(360, 180));
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         return scrollPane;
@@ -173,7 +169,10 @@ public class ClientCertificateSettingsPanel extends JPanel {
     private JPanel createFooterPanel() {
         JButton closeButton = createSizedButton(ClientCertI18n.t(MessageKeys.CERT_CLOSE), false, CLOSE_BUTTON_SIZE);
         closeButton.addActionListener(e -> closeParentWindow());
-        return ToolWindowActionToolbar.inlineRight(closeButton);
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(footer);
+        footer.add(closeButton);
+        return footer;
     }
 
     private static JButton createSizedButton(String text, boolean primary, Dimension size) {
@@ -289,12 +288,13 @@ public class ClientCertificateSettingsPanel extends JPanel {
         textArea.setLineWrap(true);
         textArea.setWrapStyleWord(true);
         textArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        ToolWindowSurfaceStyle.applyTextComponentCard(textArea);
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(textArea);
         textArea.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         JScrollPane scrollPane = new JScrollPane(textArea);
         scrollPane.setPreferredSize(new Dimension(600, 350));
-        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
+        ToolWindowSurfaceStyle.applyDialogFrame(scrollPane);
 
         JOptionPane.showMessageDialog(
                 this,
@@ -377,6 +377,33 @@ public class ClientCertificateSettingsPanel extends JPanel {
     }
 
     private record FormRow(String label, Component field, boolean required) {
+    }
+
+    private static final class ViewportWidthTrackingPanel extends JPanel implements Scrollable {
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return 16;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return Math.max(16, visibleRect.height - 16);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
+        }
     }
 
     private static final class CertificateEditDialog extends JDialog {

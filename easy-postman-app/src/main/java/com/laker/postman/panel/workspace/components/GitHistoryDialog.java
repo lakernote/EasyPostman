@@ -45,8 +45,7 @@ public class GitHistoryDialog extends JDialog {
     private boolean needRefresh = false;
 
     public GitHistoryDialog(Window owner, Workspace workspace) {
-        super(owner, I18nUtil.getMessage(MessageKeys.GIT_HISTORY_TITLE) + " - " + workspace.getName(),
-                ModalityType.APPLICATION_MODAL);
+        super(owner, I18nUtil.getMessage(MessageKeys.GIT_HISTORY_TITLE), ModalityType.APPLICATION_MODAL);
         this.workspace = workspace;
         this.workspaceService = WorkspaceService.getInstance();
         initUI();
@@ -89,9 +88,10 @@ public class GitHistoryDialog extends JDialog {
         JLabel workspaceLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_NAME) + ": " + workspace.getName());
         workspaceLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         workspaceLabel.setForeground(ModernColors.getTextSecondary());
+        workspaceLabel.setToolTipText(workspace.getName());
         titlePanel.add(titleLabel);
         titlePanel.add(workspaceLabel);
-        toolbar.add(titlePanel, BorderLayout.WEST);
+        toolbar.add(titlePanel, BorderLayout.CENTER);
 
         RefreshButton refreshButton = new RefreshButton();
         refreshButton.addActionListener(e -> loadHistory());

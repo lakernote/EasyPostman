@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.setting;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.EasyPasswordField;
 import org.testng.annotations.Test;
 
 import javax.swing.JTextField;
@@ -25,6 +26,17 @@ public class SettingsTextFieldValidatorTest {
                 "Settings text fields should keep FlatLaf's own border/focus rendering");
         assertTrue(Objects.toString(field.getClientProperty(FlatClientProperties.STYLE), "")
                 .contains("arc"));
+    }
+
+    @Test
+    public void settingsInputStyleShouldPreservePasswordRevealButton() {
+        EasyPasswordField field = new EasyPasswordField();
+
+        SettingsInputStyle.apply(field);
+
+        String style = Objects.toString(field.getClientProperty(FlatClientProperties.STYLE), "");
+        assertTrue(style.contains("arc"));
+        assertTrue(style.contains("showRevealButton: true"));
     }
 
     @Test

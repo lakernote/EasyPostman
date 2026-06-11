@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.setting;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.EasyPasswordField;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.FontsUtil;
 import lombok.experimental.UtilityClass;
@@ -28,7 +29,11 @@ public class SettingsInputStyle {
         component.setForeground(ModernColors.getTextPrimary());
 
         if (component instanceof JTextField field) {
-            field.putClientProperty(FlatClientProperties.STYLE, TEXT_FIELD_STYLE);
+            if (field instanceof EasyPasswordField passwordField) {
+                passwordField.setCustomStyle(TEXT_FIELD_STYLE);
+            } else {
+                field.putClientProperty(FlatClientProperties.STYLE, TEXT_FIELD_STYLE);
+            }
             field.putClientProperty(FlatClientProperties.OUTLINE, null);
         } else if (component instanceof JComboBox<?> comboBox) {
             comboBox.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));

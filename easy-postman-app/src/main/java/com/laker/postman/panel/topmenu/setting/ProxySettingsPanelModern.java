@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.laker.postman.common.component.EasyPasswordField;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
@@ -25,11 +26,13 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
     private JTextField proxyHostField;
     private JTextField proxyPortField;
     private JTextField proxyUsernameField;
-    private JPasswordField proxyPasswordField;
+    private EasyPasswordField proxyPasswordField;
     private JCheckBox sslVerificationDisabledCheckBox;
     private JTextArea proxyAuthHintArea;
     private JTextArea proxyStatusArea;
     private JTextField proxyPreviewTargetField;
+    private JPanel proxyPreviewTargetRow;
+    private Component proxyPreviewSpacing;
 
     private record ProxyViewState(
             boolean proxyEnabled,
@@ -107,7 +110,7 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         );
         proxySection.add(proxyUsernameRow);
         proxySection.add(createVerticalSpace(FIELD_SPACING));
-        proxyPasswordField = new JPasswordField(10);
+        proxyPasswordField = new EasyPasswordField(10);
         proxyPasswordField.setText(SettingManager.getProxyPassword());
         JPanel proxyPasswordRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PASSWORD),
@@ -131,12 +134,14 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         proxySection.add(createVerticalSpace(FIELD_SPACING));
         proxyPreviewTargetField = new JTextField(10);
         proxyPreviewTargetField.setText(DEFAULT_PROXY_PREVIEW_TARGET);
-        proxySection.add(createPreviewFieldRow(
+        proxyPreviewTargetRow = createPreviewFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PREVIEW_TARGET),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PREVIEW_TARGET_TOOLTIP),
                 proxyPreviewTargetField
-        ));
-        proxySection.add(createVerticalSpace(FIELD_SPACING));
+        );
+        proxySection.add(proxyPreviewTargetRow);
+        proxyPreviewSpacing = createVerticalSpace(FIELD_SPACING);
+        proxySection.add(proxyPreviewSpacing);
         proxyStatusArea = createInfoTextArea();
         proxySection.add(proxyStatusArea);
         contentPanel.add(proxySection);
@@ -298,6 +303,17 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         proxyPasswordField.setEnabled(state.authFieldsEnabled());
         sslVerificationDisabledCheckBox.setEnabled(state.proxyEnabled());
         proxyPreviewTargetField.setEnabled(state.showSystemPreviewControls());
+        updateSystemPreviewVisibility(state.showSystemPreviewControls());
+    }
+
+    private void updateSystemPreviewVisibility(boolean visible) {
+        if (proxyPreviewTargetRow.isVisible() == visible) {
+            return;
+        }
+        proxyPreviewTargetRow.setVisible(visible);
+        proxyPreviewSpacing.setVisible(visible);
+        revalidate();
+        repaint();
     }
 
     private void updateInformationalAreas(ProxyViewState state) {

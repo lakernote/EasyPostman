@@ -18,8 +18,8 @@ import java.awt.*;
  * - 中性色：Slate（优雅、易读）
  * <p>
  * - 背景、文字、边框等UI元素颜色全部主题自适应
- * 面板背景色（暗色主题 - 主背景色）25, 26, 28
- * @panelBg=#191a1c
+ * 面板背景色（暗色主题 - 外层边界）38, 40, 44
+ * @panelBg=#26282c
  * 面板背景色（亮色主题 - 主背景色浅灰色）
  * @panelBg=#e9eaee
  *
@@ -419,16 +419,16 @@ public final class ModernColors {
     /**
      * 获取主背景色 - 根据主题自适应
      * 亮色主题：IDEA-like workspace gray (233, 234, 238)
-     * 暗色主题：IDEA-like workspace gray (39, 41, 44)
+     * 暗色主题：IDEA-like workspace chrome (38, 40, 44)
      */
     public static Color getBackgroundColor() {
-        return color(ThemeColors.BACKGROUND, new Color(233, 234, 238), new Color(39, 41, 44));
+        return color(ThemeColors.BACKGROUND, new Color(233, 234, 238), new Color(38, 40, 44));
     }
 
     /**
      * 获取卡片/区域背景色 - 根据主题自适应
      * 亮色主题：白色 (255, 255, 255)
-     * 暗色主题：IDEA-like card/editor dark (25, 26, 28)
+     * 暗色主题：IDEA-like inner surface (30, 31, 34)
      */
     public static Color getCardBackgroundColor() {
         return color(ThemeColors.SURFACE, new Color(255, 255, 255), new Color(30, 31, 34));
@@ -438,7 +438,7 @@ public final class ModernColors {
      * 获取窗口顶部 chrome 背景色 - 菜单栏和主窗口 TitlePane 共用。
      */
     public static Color getWindowChromeBackgroundColor() {
-        return color(ThemeColors.WINDOW_CHROME_BACKGROUND, new Color(233, 234, 238), new Color(39, 41, 44));
+        return color(ThemeColors.WINDOW_CHROME_BACKGROUND, new Color(233, 234, 238), new Color(38, 40, 44));
     }
 
     /**
@@ -451,7 +451,7 @@ public final class ModernColors {
     /**
      * 获取输入框背景色 - 根据主题自适应
      * 亮色主题：白色 (255, 255, 255)
-     * 暗色主题：外层灰上的输入区 (39, 41, 44)
+     * 暗色主题：外层灰上的输入区 (43, 45, 48)
      */
     public static Color getInputBackgroundColor() {
         return color(ThemeColors.INPUT_BACKGROUND, new Color(255, 255, 255), new Color(43, 45, 48));
@@ -475,7 +475,7 @@ public final class ModernColors {
      * 获取 Tab 悬停背景色 - 根据主题自适应。
      */
     public static Color getTabHoverBackgroundColor() {
-        return color(ThemeColors.TAB_HOVER_BACKGROUND, new Color(242, 246, 255), new Color(37, 40, 44));
+        return color(ThemeColors.TAB_HOVER_BACKGROUND, new Color(242, 246, 255), new Color(38, 40, 44));
     }
 
     /**
@@ -600,7 +600,7 @@ public final class ModernColors {
     /**
      * 获取滚动条轨道颜色 - 根据主题自适应
      * 亮色主题：Slate-50 (245, 247, 250)
-     * 暗色主题：与主背景相同 (25, 26, 28)
+     * 暗色主题：与内容面相同 (30, 31, 34)
      */
     public static Color getScrollbarTrackColor() {
         return color(ThemeColors.SCROLLBAR_TRACK, new Color(243, 244, 247), new Color(30, 31, 34));
@@ -685,7 +685,7 @@ public final class ModernColors {
     /**
      * Console 文本区域背景色 - 根据主题自适应
      * 亮色主题：浅灰色 (243, 244, 247) - #f3f4f7
-     * 暗色主题：略深的灰色 (39, 41, 44) - #27292c
+     * 暗色主题：内容面深灰 (30, 31, 34) - #1e1f22
      */
     public static Color getConsoleTextAreaBg() {
         return color(ThemeColors.CONSOLE_TEXT_AREA_BACKGROUND, new Color(243, 244, 247), new Color(30, 31, 34));
@@ -760,7 +760,7 @@ public final class ModernColors {
      * 暗色主题：略浅的灰色 (58, 60, 62) - #3a3c3e
      */
     public static Color getConsoleToolbarBg() {
-        return color(ThemeColors.CONSOLE_TOOLBAR_BACKGROUND, new Color(248, 250, 252), new Color(37, 40, 44));
+        return color(ThemeColors.CONSOLE_TOOLBAR_BACKGROUND, new Color(248, 250, 252), new Color(38, 40, 44));
     }
 
     /**
@@ -782,7 +782,7 @@ public final class ModernColors {
     }
 
     public static Color getNotificationBackground() {
-        return color(ThemeColors.NOTIFICATION_BACKGROUND, new Color(252, 252, 253), new Color(37, 40, 44));
+        return color(ThemeColors.NOTIFICATION_BACKGROUND, new Color(252, 252, 253), new Color(38, 40, 44));
     }
 
     public static Color getNotificationBorder() {

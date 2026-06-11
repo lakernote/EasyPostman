@@ -79,17 +79,17 @@ public class EasyLafThemePropertiesTest {
         );
 
         assertTrue(EasyDarkLaf.setup());
-        assertThemeBrandColors(new Color(55, 113, 225), new Color(45, 64, 95));
+        assertThemeBrandColors(new Color(53, 116, 240), new Color(43, 67, 113));
         assertThemeSurfaceColors(
-                new Color(206, 211, 218),
-                new Color(39, 41, 44),
-                new Color(25, 26, 28),
-                new Color(39, 41, 44),
-                new Color(39, 41, 44),
-                new Color(25, 26, 28),
-                new Color(39, 41, 44),
-                new Color(34, 36, 40),
-                new Color(49, 51, 56)
+                new Color(201, 204, 211),
+                new Color(38, 40, 44),
+                new Color(30, 31, 34),
+                new Color(38, 40, 44),
+                new Color(43, 45, 48),
+                new Color(30, 31, 34),
+                new Color(43, 45, 48),
+                new Color(38, 40, 44),
+                new Color(43, 45, 48)
         );
 
         assertNotNull(UIManager.getColor(ThemeColors.CONSOLE_SELECTION_BACKGROUND));
@@ -99,11 +99,13 @@ public class EasyLafThemePropertiesTest {
     public void shouldExposeIdeaLikeComponentSurfacesAfterLafSetup() {
         assertTrue(EasyLightLaf.setup());
         assertComponentSurfaces(Color.WHITE, new Color(244, 246, 248), new Color(233, 234, 238));
+        assertWorkspaceSurfaces(new Color(233, 234, 238), Color.WHITE);
         assertTopChromeSurfaces(new Color(233, 234, 238));
 
         assertTrue(EasyDarkLaf.setup());
-        assertComponentSurfaces(new Color(25, 26, 28), new Color(39, 41, 44), new Color(49, 51, 56));
-        assertTopChromeSurfaces(new Color(39, 41, 44));
+        assertComponentSurfaces(new Color(30, 31, 34), new Color(43, 45, 48), new Color(43, 45, 48));
+        assertWorkspaceSurfaces(new Color(38, 40, 44), new Color(30, 31, 34));
+        assertTopChromeSurfaces(new Color(38, 40, 44));
     }
 
     private void assertDefinesThemeColors(String resourcePath) throws Exception {
@@ -167,8 +169,6 @@ public class EasyLafThemePropertiesTest {
                 "TextPane.background",
                 "EditorPane.background",
                 "Table.background",
-                "List.background",
-                "Tree.background",
                 "TabbedPane.background",
                 "TabbedPane.tabAreaBackground"
         )) {
@@ -177,6 +177,14 @@ public class EasyLafThemePropertiesTest {
         assertEquals(UIManager.getColor("TabbedPane.contentAreaColor"), tabSeparator);
         assertEquals(UIManager.getColor("TabbedPane.tabSeparatorColor"), tabSeparator);
         assertEquals(UIManager.getColor("TableHeader.background"), tableHeaderBackground);
+    }
+
+    private void assertWorkspaceSurfaces(Color background, Color toolWindowBackground) {
+        assertEquals(UIManager.getColor(ThemeColors.BACKGROUND), background);
+        assertEquals(UIManager.getColor("Panel.background"), background);
+        assertEquals(UIManager.getColor("SplitPane.background"), background);
+        assertEquals(UIManager.getColor("List.background"), toolWindowBackground);
+        assertEquals(UIManager.getColor("Tree.background"), toolWindowBackground);
     }
 
     private void assertTopChromeSurfaces(Color expected) {

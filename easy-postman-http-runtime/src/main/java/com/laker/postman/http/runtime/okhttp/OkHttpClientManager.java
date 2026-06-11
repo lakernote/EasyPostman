@@ -56,6 +56,7 @@ public class OkHttpClientManager {
             shutdownClient(client);
         }
         clientMap.clear();
+        SocksProxyAuthenticatorSupport.clearAllowedEndpoints();
     }
 
     private static void shutdownClient(OkHttpClient client) {
@@ -132,7 +133,7 @@ public class OkHttpClientManager {
         }
 
         if (settings().isSystemProxyMode()) {
-            configureSystemProxy(builder);
+            configureSystemProxy(builder, baseUri, resolvedProxyPolicy);
             return;
         }
 
@@ -143,6 +144,7 @@ public class OkHttpClientManager {
             }
 
             builder.proxy(proxy);
+            SocksProxyAuthenticatorSupport.configureFor(proxy, shouldAllowSocksAuthenticationWhenGlobalProxyDisabled(resolvedProxyPolicy));
             configureProxyAuthenticator(builder);
         } catch (Exception e) {
             log.error("Failed to configure proxy for {}: {}", baseUri, e.getMessage(), e);
@@ -161,7 +163,9 @@ public class OkHttpClientManager {
         return new Proxy(type, new InetSocketAddress(proxyHost, proxyPort));
     }
 
-    private static void configureSystemProxy(OkHttpClient.Builder builder) {
+    private static void configureSystemProxy(OkHttpClient.Builder builder,
+                                             String baseUri,
+                                             HttpRequestProxyPolicy proxyPolicy) {
         ProxySelector selector = getSystemProxySelector();
         if (selector == null) {
             log.debug("System proxy auto-detection is unavailable, using direct connection");
@@ -169,7 +173,28 @@ public class OkHttpClientManager {
         }
 
         builder.proxySelector(selector);
+        configureSystemSocksProxyAuthentication(selector, baseUri, shouldAllowSocksAuthenticationWhenGlobalProxyDisabled(proxyPolicy));
         configureProxyAuthenticator(builder);
+    }
+
+    private static void configureSystemSocksProxyAuthentication(ProxySelector selector,
+                                                               String baseUri,
+                                                               boolean allowWhenGlobalProxyDisabled) {
+        URI uri = tryParseUri(baseUri, "system SOCKS proxy authentication");
+        if (uri == null) {
+            return;
+        }
+        List<Proxy> proxies = selectProxyCandidates(selector, uri, baseUri);
+        if (proxies == null || proxies.isEmpty()) {
+            return;
+        }
+        for (Proxy proxy : proxies) {
+            SocksProxyAuthenticatorSupport.configureFor(proxy, allowWhenGlobalProxyDisabled);
+        }
+    }
+
+    private static boolean shouldAllowSocksAuthenticationWhenGlobalProxyDisabled(HttpRequestProxyPolicy proxyPolicy) {
+        return proxyPolicy == HttpRequestProxyPolicy.USE_PROXY && !settings().isProxyEnabled();
     }
 
     private static void configureProxyAuthenticator(OkHttpClient.Builder builder) {
@@ -444,10 +469,6 @@ public class OkHttpClientManager {
         return isProxyActiveForBaseUri(baseUri, proxyPolicy);
     }
 
-    private static boolean isProxyActiveForBaseUri(String baseUri) {
-        return isProxyActiveForBaseUri(baseUri, HttpRequestProxyPolicy.DEFAULT);
-    }
-
     private static boolean isProxyActiveForBaseUri(String baseUri, HttpRequestProxyPolicy proxyPolicy) {
         HttpRequestProxyPolicy resolvedProxyPolicy = HttpRequestProxyPolicy.normalize(proxyPolicy);
         if (resolvedProxyPolicy == HttpRequestProxyPolicy.NO_PROXY || !isProxyEnabledForPolicy(resolvedProxyPolicy)) {
@@ -476,10 +497,6 @@ public class OkHttpClientManager {
 
     public static CookieManager getGlobalCookieManager() {
         return GLOBAL_COOKIE_MANAGER;
-    }
-
-    private static SSLConfigurationUtil.SSLVerificationMode resolveSslVerificationMode(String baseUri) {
-        return resolveSslVerificationMode(baseUri, HttpRequestProxyPolicy.DEFAULT);
     }
 
     private static SSLConfigurationUtil.SSLVerificationMode resolveSslVerificationMode(String baseUri, HttpRequestProxyPolicy proxyPolicy) {

@@ -7,17 +7,22 @@ import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
 import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
 import com.laker.postman.plugin.runtime.PluginRegistry;
 import com.laker.postman.plugin.runtime.PluginRuntime;
+import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.service.setting.SettingManager;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.net.ssl.KeyManager;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.Authenticator;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.ProxySelector;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -312,6 +317,94 @@ public class OkHttpClientManagerTest {
     }
 
     @Test
+    public void socksProxyShouldUseConfiguredCredentialsDuringHandshake() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+        Authenticator originalAuthenticator = Authenticator.getDefault();
+        String expectedUsername = "configured-proxy-user";
+        String expectedPassword = "p@ss:wo=rd#?&%\\\\ end";
+
+        try (FakeSocks5Server socksServer = new FakeSocks5Server()) {
+            Authenticator.setDefault(null);
+            props.clear();
+            props.setProperty("proxy_enabled", "true");
+            props.setProperty("proxy_mode", SettingManager.PROXY_MODE_MANUAL);
+            props.setProperty("proxy_type", SettingManager.PROXY_TYPE_SOCKS);
+            props.setProperty("proxy_host", "127.0.0.1");
+            props.setProperty("proxy_port", String.valueOf(socksServer.port()));
+            props.setProperty("proxy_username", expectedUsername);
+            props.setProperty("proxy_password", expectedPassword);
+            props.setProperty("ssl_verification_enabled", "true");
+            props.setProperty("proxy_ssl_verification_disabled", "false");
+
+            OkHttpClient client = OkHttpClientManager.getClient("http://example.com", true);
+
+            try {
+                client.newCall(new Request.Builder()
+                        .url("http://example.com/")
+                        .build()).execute();
+            } catch (Exception ignored) {
+                // The fake proxy closes after capturing the SOCKS authentication exchange.
+            }
+
+            assertEquals(socksServer.username(), expectedUsername);
+            assertEquals(socksServer.password(), expectedPassword);
+        } finally {
+            Authenticator.setDefault(originalAuthenticator);
+            props.clear();
+            props.putAll(backup);
+            OkHttpClientManager.clearClientCache();
+        }
+    }
+
+    @Test
+    public void socksProxyShouldUseConfiguredCredentialsWhenRequestForcesProxy() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+        Authenticator originalAuthenticator = Authenticator.getDefault();
+        String expectedUsername = "forced-proxy-user";
+        String expectedPassword = "forced-secret";
+
+        try (FakeSocks5Server socksServer = new FakeSocks5Server()) {
+            Authenticator.setDefault(null);
+            props.clear();
+            props.setProperty("proxy_enabled", "false");
+            props.setProperty("proxy_mode", SettingManager.PROXY_MODE_MANUAL);
+            props.setProperty("proxy_type", SettingManager.PROXY_TYPE_SOCKS);
+            props.setProperty("proxy_host", "127.0.0.1");
+            props.setProperty("proxy_port", String.valueOf(socksServer.port()));
+            props.setProperty("proxy_username", expectedUsername);
+            props.setProperty("proxy_password", expectedPassword);
+            props.setProperty("ssl_verification_enabled", "true");
+            props.setProperty("proxy_ssl_verification_disabled", "false");
+
+            OkHttpClient client = OkHttpClientManager.getClient(
+                    "http://example.com",
+                    true,
+                    HttpRequestProxyPolicy.USE_PROXY
+            );
+
+            try {
+                client.newCall(new Request.Builder()
+                        .url("http://example.com/")
+                        .build()).execute();
+            } catch (Exception ignored) {
+                // The fake proxy closes after capturing the SOCKS authentication exchange.
+            }
+
+            assertEquals(socksServer.username(), expectedUsername);
+            assertEquals(socksServer.password(), expectedPassword);
+        } finally {
+            Authenticator.setDefault(originalAuthenticator);
+            props.clear();
+            props.putAll(backup);
+            OkHttpClientManager.clearClientCache();
+        }
+    }
+
+    @Test
     public void runtimeSettingsCacheKeyShouldChangeWhenClientCertificateChanges() throws Exception {
         PluginRegistry registry = PluginRuntime.getRegistry();
         Map<Class<?>, Object> services = getPluginServices(registry);
@@ -399,5 +492,106 @@ public class OkHttpClientManagerTest {
                 return new KeyManager[0];
             }
         };
+    }
+
+    private static final class FakeSocks5Server implements AutoCloseable {
+        private final ServerSocket serverSocket;
+        private final Thread serverThread;
+        private volatile String username;
+        private volatile String password;
+
+        private FakeSocks5Server() throws Exception {
+            serverSocket = new ServerSocket(0);
+            serverThread = new Thread(this::acceptOneConnection, "fake-socks5-proxy");
+            serverThread.setDaemon(true);
+            serverThread.start();
+        }
+
+        private int port() {
+            return serverSocket.getLocalPort();
+        }
+
+        private String username() {
+            return username;
+        }
+
+        private String password() {
+            return password;
+        }
+
+        private void acceptOneConnection() {
+            try (Socket socket = serverSocket.accept()) {
+                byte[] greetingHeader = readExactly(socket, 2);
+                if (greetingHeader.length < 2 || greetingHeader[0] != 0x05) {
+                    return;
+                }
+                readExactly(socket, greetingHeader[1] & 0xff);
+                socket.getOutputStream().write(new byte[]{0x05, 0x02});
+                socket.getOutputStream().flush();
+
+                byte[] authHeader = readExactly(socket, 2);
+                if (authHeader.length < 2 || authHeader[0] != 0x01) {
+                    return;
+                }
+                username = new String(readExactly(socket, authHeader[1] & 0xff), StandardCharsets.ISO_8859_1);
+                byte[] passwordLengthBytes = readExactly(socket, 1);
+                int passwordLength = passwordLengthBytes.length == 0 ? 0 : passwordLengthBytes[0] & 0xff;
+                password = new String(readExactly(socket, passwordLength), StandardCharsets.ISO_8859_1);
+                socket.getOutputStream().write(new byte[]{0x01, 0x00});
+                socket.getOutputStream().flush();
+
+                byte[] connectHeader = readExactly(socket, 4);
+                if (connectHeader.length < 4) {
+                    return;
+                }
+                skipSocksAddress(socket, connectHeader[3] & 0xff);
+                readExactly(socket, 2);
+                socket.getOutputStream().write(new byte[]{0x05, 0x01, 0x00, 0x01, 0, 0, 0, 0, 0, 0});
+                socket.getOutputStream().flush();
+            } catch (Exception ignored) {
+                // The test asserts on whatever credentials were captured before the connection failed.
+            }
+        }
+
+        private static byte[] readExactly(Socket socket, int length) throws Exception {
+            byte[] data = new byte[length];
+            int offset = 0;
+            while (offset < length) {
+                int count = socket.getInputStream().read(data, offset, length - offset);
+                if (count < 0) {
+                    break;
+                }
+                offset += count;
+            }
+            if (offset == length) {
+                return data;
+            }
+            byte[] partial = new byte[offset];
+            System.arraycopy(data, 0, partial, 0, offset);
+            return partial;
+        }
+
+        private static void skipSocksAddress(Socket socket, int addressType) throws Exception {
+            if (addressType == 0x01) {
+                readExactly(socket, 4);
+                return;
+            }
+            if (addressType == 0x03) {
+                byte[] lengthBytes = readExactly(socket, 1);
+                if (lengthBytes.length == 1) {
+                    readExactly(socket, lengthBytes[0] & 0xff);
+                }
+                return;
+            }
+            if (addressType == 0x04) {
+                readExactly(socket, 16);
+            }
+        }
+
+        @Override
+        public void close() throws Exception {
+            serverSocket.close();
+            serverThread.join(1000L);
+        }
     }
 }

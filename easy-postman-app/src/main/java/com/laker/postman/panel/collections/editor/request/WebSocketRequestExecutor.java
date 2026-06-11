@@ -13,8 +13,6 @@ import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
-import lombok.AccessLevel;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okhttp3.WebSocket;
@@ -27,16 +25,44 @@ import java.util.UUID;
 import java.util.concurrent.CancellationException;
 
 @Slf4j
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 final class WebSocketRequestExecutor {
     private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
 
     private final ResponsePanel responsePanel;
-    private final RequestExecutionUiUpdater requestExecutionUiUpdater;
+    private final WebSocketConnectionUi webSocketConnectionUi;
     private final RequestStreamUiAppender requestStreamUiAppender;
-    private final RequestResponseHandler requestResponseHandler;
+    private final WebSocketResponseHandler requestResponseHandler;
     private final RequestExecutionState requestExecutionState;
-    private final HttpTransport httpTransport = new DefaultHttpTransport();
+    private final HttpTransport httpTransport;
+
+    WebSocketRequestExecutor(ResponsePanel responsePanel,
+                             WebSocketConnectionUi webSocketConnectionUi,
+                             RequestStreamUiAppender requestStreamUiAppender,
+                             WebSocketResponseHandler requestResponseHandler,
+                             RequestExecutionState requestExecutionState) {
+        this(
+                responsePanel,
+                webSocketConnectionUi,
+                requestStreamUiAppender,
+                requestResponseHandler,
+                requestExecutionState,
+                new DefaultHttpTransport()
+        );
+    }
+
+    WebSocketRequestExecutor(ResponsePanel responsePanel,
+                             WebSocketConnectionUi webSocketConnectionUi,
+                             RequestStreamUiAppender requestStreamUiAppender,
+                             WebSocketResponseHandler requestResponseHandler,
+                             RequestExecutionState requestExecutionState,
+                             HttpTransport httpTransport) {
+        this.responsePanel = responsePanel;
+        this.webSocketConnectionUi = webSocketConnectionUi;
+        this.requestStreamUiAppender = requestStreamUiAppender;
+        this.requestResponseHandler = requestResponseHandler;
+        this.requestExecutionState = requestExecutionState;
+        this.httpTransport = httpTransport == null ? new DefaultHttpTransport() : httpTransport;
+    }
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
         req.collectBasicInfo = true;
@@ -127,10 +153,10 @@ final class WebSocketRequestExecutor {
                         if (!shouldHandleActiveCallback(null)) {
                             return;
                         }
-                        requestExecutionUiUpdater.updateUIForResponse(WebSocketSession.this.response);
-                        requestExecutionUiUpdater.activateWebSocketBodyTab();
-                        requestExecutionUiUpdater.switchSendButtonToClose();
-                        requestExecutionUiUpdater.setWebSocketConnected(true);
+                        webSocketConnectionUi.updateUIForResponse(WebSocketSession.this.response);
+                        webSocketConnectionUi.activateWebSocketBodyTab();
+                        webSocketConnectionUi.switchSendButtonToClose();
+                        webSocketConnectionUi.setWebSocketConnected(true);
                         responsePanel.setRequestDetails(req);
                         responsePanel.setResponseDetails(WebSocketSession.this.response);
                     });
@@ -161,25 +187,21 @@ final class WebSocketRequestExecutor {
 
                 @Override
                 public void onClosing(WebSocket webSocket, int code, String reason) {
-                    if (!shouldHandleActiveCallback("onClosing") || !executionState.markClosed()) {
+                    if (!markClosedCallback("onClosing", code, reason)) {
                         return;
                     }
-                    log.debug("closing WebSocket: code={}, reason={}", code, reason);
                     if (webSocket != null) {
                         webSocket.close(code, reason);
                     }
-                    appendTerminalEvent(MessageType.CLOSED, code + " " + reason);
-                    finishTerminalResponse();
+                    finishClosedResponse(code, reason);
                 }
 
                 @Override
                 public void onClosed(WebSocket webSocket, int code, String reason) {
-                    if (!shouldHandleActiveCallback("onClosed") || !executionState.markClosed()) {
+                    if (!markClosedCallback("onClosed", code, reason)) {
                         return;
                     }
-                    log.debug("closed WebSocket: code={}, reason={}", code, reason);
-                    appendTerminalEvent(MessageType.CLOSED, code + " " + reason);
-                    finishTerminalResponse();
+                    finishClosedResponse(code, reason);
                 }
 
                 @Override
@@ -216,9 +238,9 @@ final class WebSocketRequestExecutor {
                 if (requestExecutionState.isDisposed()) {
                     return;
                 }
-                requestExecutionUiUpdater.updateUIForResponse(null);
+                webSocketConnectionUi.updateUIForResponse(null);
                 NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
-                requestExecutionUiUpdater.setWebSocketConnected(false);
+                webSocketConnectionUi.setWebSocketConnected(false);
             });
         }
 
@@ -260,6 +282,19 @@ final class WebSocketRequestExecutor {
             requestStreamUiAppender.appendWebSocketRawEvent(bodyBuilder, type, text);
         }
 
+        private boolean markClosedCallback(String callbackName, int code, String reason) {
+            if (!shouldHandleActiveCallback(callbackName) || !executionState.markClosed()) {
+                return false;
+            }
+            log.debug("{} WebSocket: code={}, reason={}", callbackName, code, reason);
+            return true;
+        }
+
+        private void finishClosedResponse(int code, String reason) {
+            appendTerminalEvent(MessageType.CLOSED, code + " " + reason);
+            finishTerminalResponse();
+        }
+
         private void finishTerminalResponse(Runnable afterUiReset) {
             requestExecutionState.clearCurrentWebSocket();
             requestExecutionState.clearCurrentWebSocketConnectionId();
@@ -280,11 +315,11 @@ final class WebSocketRequestExecutor {
             if (requestExecutionState.isDisposed()) {
                 return;
             }
-            requestExecutionUiUpdater.updateUIForResponse(response);
+            webSocketConnectionUi.updateUIForResponse(response);
             responsePanel.setRequestDetails(req);
             responsePanel.setResponseDetails(response);
-            requestExecutionUiUpdater.resetSendButton();
-            requestExecutionUiUpdater.setWebSocketConnected(false);
+            webSocketConnectionUi.resetSendButton();
+            webSocketConnectionUi.setWebSocketConnected(false);
             afterUiReset.run();
         }
 

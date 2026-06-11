@@ -12,7 +12,7 @@ import java.awt.event.ActionListener;
 import java.util.function.BooleanSupplier;
 
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-final class RequestExecutionUiUpdater {
+final class RequestExecutionUiUpdater implements WebSocketConnectionUi {
     private final ResponsePanel responsePanel;
     private final RequestLinePanel requestLinePanel;
     private final RequestBodyPanel requestBodyPanel;
@@ -44,7 +44,7 @@ final class RequestExecutionUiUpdater {
         responsePanel.showLoadingOverlay();
     }
 
-    void updateUIForResponse(HttpResponse resp) {
+    public void updateUIForResponse(HttpResponse resp) {
         responsePanel.hideLoadingOverlay();
 
         if (resp == null) {
@@ -72,19 +72,19 @@ final class RequestExecutionUiUpdater {
         responsePanel.markResponseDataLoaded();
     }
 
-    void resetSendButton() {
+    public void resetSendButton() {
         requestLinePanel.setSendButtonToSend(sendAction);
     }
 
-    void switchSendButtonToClose() {
+    public void switchSendButtonToClose() {
         requestLinePanel.setSendButtonToClose(sendAction);
     }
 
-    void setWebSocketConnected(boolean connected) {
+    public void setWebSocketConnected(boolean connected) {
         requestBodyPanel.setWebSocketConnected(connected);
     }
 
-    void activateWebSocketBodyTab() {
+    public void activateWebSocketBodyTab() {
         RequestTabSelector.selectFirstVisible(reqTabs, requestBodyPanel);
         requestBodyPanel.getWsSendButton().requestFocusInWindow();
     }

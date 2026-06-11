@@ -1,28 +1,31 @@
 package com.laker.postman.panel.collections.editor.request;
 
-import com.laker.postman.common.component.button.WebSocketSendButton;
-import com.laker.postman.common.component.button.WebSocketTimedSendButton;
+import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
-import com.laker.postman.panel.collections.editor.request.sub.RequestBodyPanel;
-import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
+import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
+import com.laker.postman.http.runtime.transport.HttpTransport;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
+import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
+import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
+import com.laker.postman.script.model.TestResult;
+import com.laker.postman.service.js.ScriptExecutionPipeline;
 import okhttp3.WebSocketListener;
+import okhttp3.sse.EventSourceListener;
 import org.testng.annotations.Test;
 
-import javax.swing.*;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class WebSocketRequestExecutorTest {
@@ -48,100 +51,43 @@ public class WebSocketRequestExecutorTest {
     @Test(description = "远端发起关闭时应结束 WebSocket 会话并把顶部按钮恢复为连接")
     public void shouldResetConnectButtonWhenRemotePeerStartsClosing() throws Exception {
         RequestExecutionState requestState = new RequestExecutionState();
-        RequestLinePanel requestLinePanel = newHeadlessRequestLinePanel();
         ResponsePanel responsePanel = new ResponsePanel(RequestItemProtocolEnum.WEBSOCKET, false);
-        RequestBodyPanel requestBodyPanel = newHeadlessRequestBodyPanel();
-        JTabbedPane requestTabs = new JTabbedPane();
-        RequestExecutionUiUpdater uiUpdater = new RequestExecutionUiUpdater(
-                responsePanel,
-                requestLinePanel,
-                requestBodyPanel,
-                requestTabs,
-                e -> {
-                },
-                () -> false,
-                () -> false,
-                () -> false,
-                () -> true
-        );
+        FakeWebSocketConnectionUi connectionUi = new FakeWebSocketConnectionUi();
+        FakeWebSocketResponseHandler responseHandler = new FakeWebSocketResponseHandler();
+        FakeHttpTransport transport = new FakeHttpTransport();
         WebSocketRequestExecutor executor = new WebSocketRequestExecutor(
                 responsePanel,
-                uiUpdater,
+                connectionUi,
                 new RequestStreamUiAppender(responsePanel, DateTimeFormatter.ofPattern("HH:mm:ss")),
-                new RequestResponseHandler(new JPanel(), responsePanel, results -> {
-                }, (request, response) -> {
-                }),
-                requestState
+                responseHandler,
+                requestState,
+                transport
         );
-
-        Object session = newSession(executor);
-        String connectionId = (String) invoke(session, "connectionId");
-        requestState.beginWebSocketConnection(connectionId);
-        requestState.attachWebSocketConnection(new NoopWebSocketConnection());
-        uiUpdater.switchSendButtonToClose();
-
-        WebSocketListener listener = (WebSocketListener) invoke(session, "newListener");
-        listener.onClosing(null, 1013, "session replacement failed");
-        flushEdt();
-
-        WebSocketExecutionState sessionState = (WebSocketExecutionState) readField(session, "executionState");
-        assertTrue(sessionState.shouldSaveHistory(false));
-        assertNull(requestState.currentWebSocket());
-        assertFalse(requestBodyPanel.getWsSendButton().isEnabled());
-        assertEquals(requestLinePanel.getSendButton().getText(), I18nUtil.getMessage(MessageKeys.BUTTON_CONNECT));
-    }
-
-    private Object newSession(WebSocketRequestExecutor executor) throws Exception {
-        Class<?> sessionClass = Class.forName(WebSocketRequestExecutor.class.getName() + "$WebSocketSession");
-        Constructor<?> constructor = sessionClass.getDeclaredConstructor(
-                WebSocketRequestExecutor.class,
-                PreparedRequest.class,
-                com.laker.postman.service.js.ScriptExecutionPipeline.class
-        );
-        constructor.setAccessible(true);
         PreparedRequest request = new PreparedRequest();
         request.url = "ws://example.test/socket";
         request.method = "GET";
-        return constructor.newInstance(executor, request, null);
-    }
+        SwingWorker<Void, Void> worker = executor.createWorker(request, null);
 
-    private Object invoke(Object target, String methodName) throws Exception {
-        Method method = target.getClass().getDeclaredMethod(methodName);
-        method.setAccessible(true);
-        return method.invoke(target);
-    }
+        requestState.startWorker(worker);
+        worker.execute();
+        assertTrue(transport.awaitWebSocketOpen());
+        assertTrue(awaitCondition(() -> requestState.currentWebSocket() != null));
+        assertNotNull(requestState.currentWebSocketConnectionId());
 
-    private Object readField(Object target, String fieldName) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        return field.get(target);
-    }
+        connectionUi.switchSendButtonToClose();
+        connectionUi.setWebSocketConnected(true);
+        transport.listener.onClosing(null, 1013, "session replacement failed");
+        worker.get(5, TimeUnit.SECONDS);
+        flushEdt();
 
-    private RequestLinePanel newHeadlessRequestLinePanel() throws Exception {
-        RequestLinePanel requestLinePanel = allocateWithoutConstructor(RequestLinePanel.class);
-        writeField(requestLinePanel, "protocol", RequestItemProtocolEnum.WEBSOCKET);
-        writeField(requestLinePanel, "sendButton", new JButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE)));
-        return requestLinePanel;
-    }
-
-    private RequestBodyPanel newHeadlessRequestBodyPanel() throws Exception {
-        RequestBodyPanel requestBodyPanel = allocateWithoutConstructor(RequestBodyPanel.class);
-        writeField(requestBodyPanel, "wsSendButton", new WebSocketSendButton());
-        writeField(requestBodyPanel, "wsTimedSendButton", new WebSocketTimedSendButton());
-        return requestBodyPanel;
-    }
-
-    private <T> T allocateWithoutConstructor(Class<T> type) throws Exception {
-        Field unsafeField = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
-        unsafeField.setAccessible(true);
-        sun.misc.Unsafe unsafe = (sun.misc.Unsafe) unsafeField.get(null);
-        return type.cast(unsafe.allocateInstance(type));
-    }
-
-    private void writeField(Object target, String fieldName, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, value);
+        assertNull(requestState.currentWebSocket());
+        assertNull(requestState.currentWebSocketConnectionId());
+        assertTrue(awaitCondition(() -> requestState.currentWorker() == null));
+        assertTrue(connectionUi.responseUpdated);
+        assertTrue(connectionUi.resetSendButtonCalled);
+        assertFalse(connectionUi.closeButtonVisible);
+        assertFalse(connectionUi.webSocketConnected);
+        assertTrue(responseHandler.historySaved);
     }
 
     private void flushEdt() throws Exception {
@@ -153,7 +99,94 @@ public class WebSocketRequestExecutorTest {
         assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    private static final class NoopWebSocketConnection implements com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection {
+    private boolean awaitCondition(BooleanSupplier condition) throws InterruptedException {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+        while (System.nanoTime() < deadline) {
+            if (condition.getAsBoolean()) {
+                return true;
+            }
+            Thread.sleep(10);
+        }
+        return condition.getAsBoolean();
+    }
+
+    private static final class FakeWebSocketResponseHandler implements WebSocketResponseHandler {
+        private boolean historySaved;
+
+        @Override
+        public List<TestResult> handleStreamMessage(ScriptExecutionPipeline pipeline, String message) {
+            return List.of();
+        }
+
+        @Override
+        public void saveHistory(PreparedRequest request, HttpResponse response, String label) {
+            historySaved = true;
+        }
+    }
+
+    private static final class FakeWebSocketConnectionUi implements WebSocketConnectionUi {
+        private boolean responseUpdated;
+        private boolean resetSendButtonCalled;
+        private boolean closeButtonVisible;
+        private boolean webSocketConnected;
+
+        @Override
+        public void updateUIForResponse(HttpResponse resp) {
+            responseUpdated = true;
+        }
+
+        @Override
+        public void resetSendButton() {
+            resetSendButtonCalled = true;
+            closeButtonVisible = false;
+        }
+
+        @Override
+        public void switchSendButtonToClose() {
+            closeButtonVisible = true;
+        }
+
+        @Override
+        public void setWebSocketConnected(boolean connected) {
+            webSocketConnected = connected;
+        }
+
+        @Override
+        public void activateWebSocketBodyTab() {
+        }
+    }
+
+    private static final class FakeHttpTransport implements HttpTransport {
+        private final CountDownLatch webSocketOpen = new CountDownLatch(1);
+        private volatile WebSocketListener listener;
+
+        @Override
+        public HttpResponse execute(PreparedRequest request, HttpExchangeOptions options) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public RealtimeConnectionHandle openSse(PreparedRequest request,
+                                                EventSourceListener listener,
+                                                RealtimeConnectionOptions options) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public RealtimeWebSocketConnection openWebSocket(PreparedRequest request,
+                                                        WebSocketListener listener,
+                                                        RealtimeConnectionOptions options) {
+            this.listener = listener;
+            webSocketOpen.countDown();
+            return new FakeWebSocketConnection();
+        }
+
+        private boolean awaitWebSocketOpen() throws InterruptedException {
+            return webSocketOpen.await(5, TimeUnit.SECONDS);
+        }
+    }
+
+    private static final class FakeWebSocketConnection implements RealtimeWebSocketConnection {
         @Override
         public boolean send(String text) {
             return true;

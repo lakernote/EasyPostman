@@ -23,7 +23,7 @@ import java.util.function.Consumer;
 
 @Slf4j
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-final class RequestResponseHandler {
+final class RequestResponseHandler implements WebSocketResponseHandler {
     private final Component owner;
     private final ResponsePanel responsePanel;
     private final Consumer<List<TestResult>> testResultsConsumer;
@@ -56,7 +56,7 @@ final class RequestResponseHandler {
         saveHistory(request, response, "request");
     }
 
-    List<TestResult> handleStreamMessage(ScriptExecutionPipeline pipeline, String message) {
+    public List<TestResult> handleStreamMessage(ScriptExecutionPipeline pipeline, String message) {
         HttpResponse response = new HttpResponse();
         response.body = message;
         response.bodySize = message != null ? message.length() : 0;
@@ -72,12 +72,21 @@ final class RequestResponseHandler {
         exchangeRecorder.accept(request, response);
     }
 
-    void saveHistory(PreparedRequest request, HttpResponse response, String label) {
+    public void saveHistory(PreparedRequest request, HttpResponse response, String label) {
         try {
             UiSingletonFactory.getInstance(HistoryPanel.class).addRequestHistory(request, response);
         } catch (Exception ex) {
             log.error("Error saving {} to history: {}", label, ex.getMessage(), ex);
-            ConsolePanel.appendLog("[Warning] Failed to save " + label + " to history: " + ex.getMessage(), ConsolePanel.LogType.WARN);
+            appendHistoryWarning(label, ex);
+        }
+    }
+
+    private void appendHistoryWarning(String label, Exception ex) {
+        try {
+            ConsolePanel.appendLog("[Warning] Failed to save " + label + " to history: " + ex.getMessage(),
+                    ConsolePanel.LogType.WARN);
+        } catch (RuntimeException consoleEx) {
+            log.debug("Failed to append {} history warning to console: {}", label, consoleEx.getMessage(), consoleEx);
         }
     }
 }

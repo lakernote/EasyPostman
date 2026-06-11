@@ -3,15 +3,15 @@ package com.laker.postman.panel.collections.editor.request.sub;
 import com.laker.postman.common.component.button.WrapToggleButton;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.test.AbstractSwingUiTest;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
+import com.laker.postman.util.UiI18n;
+import com.laker.postman.util.UiMessageKeys;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import javax.swing.event.PopupMenuEvent;
 import java.awt.*;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -70,8 +70,8 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
 
         JPopupMenu popupMenu = panel.getResponseBodyPane().getPopupMenu();
 
-        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_COPY_JSON_KEY)));
-        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_COPY_JSON_VALUE)));
+        assertTrue(hasMenuItem(popupMenu, UiI18n.get(UiMessageKeys.EDITOR_POPUP_COPY_KEY)));
+        assertTrue(hasMenuItem(popupMenu, UiI18n.get(UiMessageKeys.EDITOR_POPUP_COPY_VALUE)));
     }
 
     @Test
@@ -82,10 +82,10 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
 
         assertFalse(hasAnyMenuItem(popupMenu, "Undo", "Can't Redo", "Cut", "Paste", "Delete",
                 "撤销", "无法恢复", "剪切", "粘贴", "删除"));
-        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_COPY_SELECTED)));
-        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_COPY_ALL)));
-        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_SELECT_ALL)));
-        assertTrue(hasMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_FOLDING)));
+        assertTrue(hasMenuItem(popupMenu, UiI18n.get(UiMessageKeys.EDITOR_POPUP_COPY_SELECTED)));
+        assertTrue(hasMenuItem(popupMenu, UiI18n.get(UiMessageKeys.EDITOR_POPUP_COPY_ALL)));
+        assertTrue(hasMenuItem(popupMenu, UiI18n.get(UiMessageKeys.EDITOR_POPUP_SELECT_ALL)));
+        assertTrue(hasMenuItem(popupMenu, UiI18n.get(UiMessageKeys.EDITOR_POPUP_FOLDING)));
     }
 
     @Test
@@ -93,9 +93,9 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
         ResponseBodyPanel panel = createPanelWithResponse(responseWithBody("{\"data\":\"value\"}"));
         JPopupMenu popupMenu = panel.getResponseBodyPane().getPopupMenu();
 
-        configurePopupMenu(panel.getResponseBodyPane(), popupMenu);
+        firePopupWillBecomeVisible(popupMenu);
 
-        JMenuItem copyItem = findMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_COPY_ALL));
+        JMenuItem copyItem = findMenuItem(popupMenu, UiI18n.get(UiMessageKeys.EDITOR_POPUP_COPY_ALL));
         assertNotNull(copyItem);
         assertTrue(copyItem.isEnabled());
     }
@@ -106,39 +106,11 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
         JPopupMenu popupMenu = panel.getResponseBodyPane().getPopupMenu();
 
         SwingUtilities.invokeAndWait(() -> panel.getResponseBodyPane().select(1, 7));
-        configurePopupMenu(panel.getResponseBodyPane(), popupMenu);
+        firePopupWillBecomeVisible(popupMenu);
 
-        JMenuItem copyItem = findMenuItem(popupMenu, I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_COPY_SELECTED));
+        JMenuItem copyItem = findMenuItem(popupMenu, UiI18n.get(UiMessageKeys.EDITOR_POPUP_COPY_SELECTED));
         assertNotNull(copyItem);
         assertTrue(copyItem.isEnabled());
-    }
-
-    @Test
-    public void shouldKeepSelectionWhenContextPopupOpensInsideSelection() throws Exception {
-        ResponseBodyPanel panel = createPanelWithResponse(responseWithBody("{\"data\":\"value\"}"));
-        RSyntaxTextArea textArea = panel.getResponseBodyPane();
-
-        SwingUtilities.invokeAndWait(() -> {
-            textArea.select(1, 7);
-            panel.rememberJsonPopupOffset(3);
-        });
-
-        assertEquals(textArea.getSelectionStart(), 1);
-        assertEquals(textArea.getSelectionEnd(), 7);
-    }
-
-    @Test
-    public void shouldMoveCaretWhenContextPopupOpensOutsideSelection() throws Exception {
-        ResponseBodyPanel panel = createPanelWithResponse(responseWithBody("{\"data\":\"value\"}"));
-        RSyntaxTextArea textArea = panel.getResponseBodyPane();
-
-        SwingUtilities.invokeAndWait(() -> {
-            textArea.select(1, 7);
-            panel.rememberJsonPopupOffset(7);
-        });
-
-        assertEquals(textArea.getSelectionStart(), 7);
-        assertEquals(textArea.getSelectionEnd(), 7);
     }
 
     private ResponseBodyPanel createPanelWithResponse(HttpResponse response) throws Exception {
@@ -220,13 +192,10 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
         return false;
     }
 
-    private void configurePopupMenu(RSyntaxTextArea textArea, JPopupMenu popupMenu) {
-        try {
-            Method method = RSyntaxTextArea.class.getDeclaredMethod("configurePopupMenu", JPopupMenu.class);
-            method.setAccessible(true);
-            method.invoke(textArea, popupMenu);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(e);
+    private void firePopupWillBecomeVisible(JPopupMenu popupMenu) {
+        PopupMenuEvent event = new PopupMenuEvent(popupMenu);
+        for (var listener : popupMenu.getPopupMenuListeners()) {
+            listener.popupMenuWillBecomeVisible(event);
         }
     }
 }

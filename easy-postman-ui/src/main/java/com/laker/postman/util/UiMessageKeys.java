@@ -7,6 +7,24 @@ public final class UiMessageKeys {
 
     public static final String BUTTON_TOGGLE_LINE_WRAP = "ui.button.toggleLineWrap";
 
+    public static final String EDITOR_SHORTCUTS_SELECT_LINE_DEFAULT = "ui.editor.shortcuts.selectLine.default";
+    public static final String EDITOR_SHORTCUTS_SELECT_LINE_MAC = "ui.editor.shortcuts.selectLine.mac";
+    public static final String EDITOR_POPUP_UNDO = "ui.editor.popup.undo";
+    public static final String EDITOR_POPUP_REDO = "ui.editor.popup.redo";
+    public static final String EDITOR_POPUP_CUT = "ui.editor.popup.cut";
+    public static final String EDITOR_POPUP_COPY_KEY = "ui.editor.popup.copyKey";
+    public static final String EDITOR_POPUP_COPY_VALUE = "ui.editor.popup.copyValue";
+    public static final String EDITOR_POPUP_COPY_SELECTED = "ui.editor.popup.copySelected";
+    public static final String EDITOR_POPUP_COPY_ALL = "ui.editor.popup.copyAll";
+    public static final String EDITOR_POPUP_PASTE = "ui.editor.popup.paste";
+    public static final String EDITOR_POPUP_DELETE = "ui.editor.popup.delete";
+    public static final String EDITOR_POPUP_SELECT_ALL = "ui.editor.popup.selectAll";
+    public static final String EDITOR_POPUP_FOLDING = "ui.editor.popup.folding";
+    public static final String EDITOR_POPUP_TOGGLE_CURRENT_FOLD = "ui.editor.popup.toggleCurrentFold";
+    public static final String EDITOR_POPUP_COLLAPSE_COMMENT_FOLDS = "ui.editor.popup.collapseCommentFolds";
+    public static final String EDITOR_POPUP_COLLAPSE_ALL_FOLDS = "ui.editor.popup.collapseAllFolds";
+    public static final String EDITOR_POPUP_EXPAND_ALL_FOLDS = "ui.editor.popup.expandAllFolds";
+
     public static final String SEARCH_MATCH_CASE = "ui.search.matchCase";
     public static final String SEARCH_MATCH_WHOLE_WORD = "ui.search.matchWholeWord";
     public static final String SEARCH_TOGGLE_REPLACE = "ui.search.toggleReplace";

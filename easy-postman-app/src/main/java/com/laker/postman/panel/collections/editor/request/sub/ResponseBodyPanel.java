@@ -16,16 +16,11 @@ import com.laker.postman.util.*;
 import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
-import org.fife.ui.rtextarea.RTextArea;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -60,8 +55,6 @@ public class ResponseBodyPanel extends JPanel {
     private final CopyButton copyButton;
     private final WrapToggleButton wrapButton;
     private final SearchableTextArea searchableTextArea; // 带搜索功能的文本编辑器
-    private JsonCopyTargetResolver.CopyTarget currentJsonCopyTarget;
-    private int jsonContextPopupOffset = -1;
 
     // 常量定义
     private static final int LARGE_RESPONSE_THRESHOLD = 500 * 1024; // 500KB threshold
@@ -72,7 +65,6 @@ public class ResponseBodyPanel extends JPanel {
     private static final String SKIP_AUTO_FORMAT_MESSAGE = " Skip auto-format for large response.";
     private static final String CARD_TEXT = "TEXT";
     private static final String CARD_IMAGE = "IMAGE";
-    private static final String POPUP_MESSAGE_KEY_PROPERTY = "easyPostman.popupMessageKey";
 
     // 图片预览组件
     private final JLabel imagePreviewLabel;
@@ -93,7 +85,6 @@ public class ResponseBodyPanel extends JPanel {
         // 关闭括号匹配的小浮层提示，避免响应体中长 JSON 滚动查看时遮挡内容
         responseBodyPane.setShowMatchedBracketPopup(false);
         responseBodyPane.setTokenPainterFactory(textArea -> new ViewportClippedTokenPainter());
-        installJsonCopyContextMenu();
 
         // 加载编辑器主题 - 支持亮色和暗色主题自适应（必须在 setFont 之前，否则主题会覆盖字体）
         EditorThemeUtil.loadTheme(responseBodyPane);
@@ -321,200 +312,6 @@ public class ResponseBodyPanel extends JPanel {
         }
 
         copyTextToClipboard(text);
-    }
-
-    private void installJsonCopyContextMenu() {
-        JMenuItem copyKeyItem = createPopupMenuItem(MessageKeys.RESPONSE_BODY_COPY_JSON_KEY);
-        JMenuItem copyValueItem = createPopupMenuItem(MessageKeys.RESPONSE_BODY_COPY_JSON_VALUE);
-        copyKeyItem.addActionListener(e -> copyJsonTarget(true));
-        copyValueItem.addActionListener(e -> copyJsonTarget(false));
-
-        JPopupMenu popupMenu = createResponseBodyPopupMenu(copyKeyItem, copyValueItem);
-        localizeResponseBodyPopupMenu(popupMenu);
-        responseBodyPane.setPopupMenu(popupMenu);
-
-        responseBodyPane.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                rememberJsonPopupOffset(e);
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-                rememberJsonPopupOffset(e);
-            }
-        });
-
-        popupMenu.addPopupMenuListener(new PopupMenuListener() {
-            @Override
-            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-                currentJsonCopyTarget = resolveCurrentJsonCopyTarget();
-                copyKeyItem.setEnabled(currentJsonCopyTarget != null && currentJsonCopyTarget.key() != null);
-                copyValueItem.setEnabled(currentJsonCopyTarget != null && currentJsonCopyTarget.value() != null);
-                localizeResponseBodyPopupMenu(popupMenu);
-            }
-
-            @Override
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-                clearJsonPopupTarget();
-            }
-
-            @Override
-            public void popupMenuCanceled(PopupMenuEvent e) {
-                clearJsonPopupTarget();
-            }
-        });
-    }
-
-    private JMenuItem createPopupMenuItem(String messageKey) {
-        JMenuItem menuItem = new JMenuItem(I18nUtil.getMessage(messageKey));
-        menuItem.putClientProperty(POPUP_MESSAGE_KEY_PROPERTY, messageKey);
-        return menuItem;
-    }
-
-    private JPopupMenu createResponseBodyPopupMenu(JMenuItem copyKeyItem, JMenuItem copyValueItem) {
-        JPopupMenu defaultMenu = responseBodyPane.getPopupMenu();
-        JMenuItem copySelectedItem = findActionMenuItem(defaultMenu, RTextArea.COPY_ACTION);
-        JMenuItem copyAllItem = createPopupMenuItem(MessageKeys.RESPONSE_BODY_CONTEXT_COPY_ALL);
-        copyAllItem.addActionListener(e -> copyToClipboard());
-        JMenuItem selectAllItem = findActionMenuItem(defaultMenu, RTextArea.SELECT_ALL_ACTION);
-        JMenu foldingMenu = findFoldingMenu(defaultMenu);
-
-        JPopupMenu popupMenu = new JPopupMenu();
-        ToolWindowSurfaceStyle.applyPopupMenuCard(popupMenu);
-        popupMenu.add(copyKeyItem);
-        popupMenu.add(copyValueItem);
-        popupMenu.addSeparator();
-        addIfPresent(popupMenu, copySelectedItem);
-        popupMenu.add(copyAllItem);
-        addIfPresent(popupMenu, selectAllItem);
-        if (foldingMenu != null) {
-            popupMenu.addSeparator();
-            popupMenu.add(foldingMenu);
-        }
-        return popupMenu;
-    }
-
-    private JMenuItem findActionMenuItem(JPopupMenu menu, int actionConstant) {
-        Action action = RTextArea.getAction(actionConstant);
-        if (action == null) {
-            return null;
-        }
-        for (Component component : menu.getComponents()) {
-            if (component instanceof JMenuItem menuItem && menuItem.getAction() == action) {
-                return menuItem;
-            }
-        }
-        return new JMenuItem(action);
-    }
-
-    private JMenu findFoldingMenu(JPopupMenu menu) {
-        for (Component component : menu.getComponents()) {
-            if (component instanceof JMenu foldingMenu) {
-                return foldingMenu;
-            }
-        }
-        return null;
-    }
-
-    private void addIfPresent(JPopupMenu popupMenu, JMenuItem menuItem) {
-        if (menuItem != null) {
-            popupMenu.add(menuItem);
-        }
-    }
-
-    private void localizeResponseBodyPopupMenu(JPopupMenu popupMenu) {
-        for (Component component : popupMenu.getComponents()) {
-            if (component instanceof JMenu menu) {
-                localizeFoldingMenu(menu);
-            } else if (component instanceof JMenuItem menuItem) {
-                localizePopupMenuItem(menuItem);
-            }
-        }
-    }
-
-    private void localizePopupMenuItem(JMenuItem menuItem) {
-        Object messageKey = menuItem.getClientProperty(POPUP_MESSAGE_KEY_PROPERTY);
-        if (messageKey instanceof String key) {
-            menuItem.setText(I18nUtil.getMessage(key));
-            return;
-        }
-
-        Action action = menuItem.getAction();
-        if (action == RTextArea.getAction(RTextArea.COPY_ACTION)) {
-            menuItem.setText(I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_COPY_SELECTED));
-        } else if (action == RTextArea.getAction(RTextArea.SELECT_ALL_ACTION)) {
-            menuItem.setText(I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_SELECT_ALL));
-        }
-    }
-
-    private void localizeFoldingMenu(JMenu foldingMenu) {
-        foldingMenu.setText(I18nUtil.getMessage(MessageKeys.RESPONSE_BODY_CONTEXT_FOLDING));
-        setMenuItemText(foldingMenu, 0, MessageKeys.RESPONSE_BODY_CONTEXT_TOGGLE_CURRENT_FOLD);
-        setMenuItemText(foldingMenu, 1, MessageKeys.RESPONSE_BODY_CONTEXT_COLLAPSE_COMMENT_FOLDS);
-        setMenuItemText(foldingMenu, 2, MessageKeys.RESPONSE_BODY_CONTEXT_COLLAPSE_ALL_FOLDS);
-        setMenuItemText(foldingMenu, 3, MessageKeys.RESPONSE_BODY_CONTEXT_EXPAND_ALL_FOLDS);
-    }
-
-    private void setMenuItemText(JMenu menu, int index, String messageKey) {
-        if (index < menu.getItemCount()) {
-            JMenuItem item = menu.getItem(index);
-            if (item != null) {
-                item.setText(I18nUtil.getMessage(messageKey));
-            }
-        }
-    }
-
-    private void rememberJsonPopupOffset(MouseEvent e) {
-        if (!e.isPopupTrigger()) {
-            return;
-        }
-        int offset = responseBodyPane.viewToModel2D(e.getPoint());
-        rememberJsonPopupOffset(offset);
-    }
-
-    void rememberJsonPopupOffset(int offset) {
-        if (offset >= 0 && offset <= responseBodyPane.getDocument().getLength()) {
-            jsonContextPopupOffset = offset;
-            if (!isOffsetInsideSelection(offset)) {
-                responseBodyPane.setCaretPosition(offset);
-            }
-        }
-    }
-
-    private boolean isOffsetInsideSelection(int offset) {
-        int selectionStart = responseBodyPane.getSelectionStart();
-        int selectionEnd = responseBodyPane.getSelectionEnd();
-        return selectionStart != selectionEnd && offset >= selectionStart && offset < selectionEnd;
-    }
-
-    private JsonCopyTargetResolver.CopyTarget resolveCurrentJsonCopyTarget() {
-        String text = responseBodyPane.getText();
-        if (text == null || text.isEmpty()) {
-            return null;
-        }
-        int offset = jsonContextPopupOffset >= 0 ? jsonContextPopupOffset : responseBodyPane.getCaretPosition();
-        return JsonCopyTargetResolver.resolve(text, offset).orElse(null);
-    }
-
-    private void copyJsonTarget(boolean copyKey) {
-        JsonCopyTargetResolver.CopyTarget target = currentJsonCopyTarget != null
-                ? currentJsonCopyTarget
-                : resolveCurrentJsonCopyTarget();
-        if (target == null) {
-            return;
-        }
-
-        String text = copyKey ? target.key() : target.value();
-        if (text == null) {
-            return;
-        }
-        copyTextToClipboard(text);
-    }
-
-    private void clearJsonPopupTarget() {
-        currentJsonCopyTarget = null;
-        jsonContextPopupOffset = -1;
     }
 
     private void copyTextToClipboard(String text) {

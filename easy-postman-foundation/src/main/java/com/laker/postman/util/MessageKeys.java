@@ -1406,16 +1406,6 @@ public final class MessageKeys {
     public static final String RESPONSE_SAVE_NO_RESPONSE = "response.save.no_response";
     public static final String RESPONSE_SAVE_REQUEST_NOT_SAVED = "response.save.request_not_saved";
     public static final String RESPONSE_SAVE_REQUEST_NOT_FOUND = "response.save.request_not_found";
-    public static final String RESPONSE_BODY_COPY_JSON_KEY = "response.body.copy_json_key";
-    public static final String RESPONSE_BODY_COPY_JSON_VALUE = "response.body.copy_json_value";
-    public static final String RESPONSE_BODY_CONTEXT_COPY_SELECTED = "response.body.context.copy_selected";
-    public static final String RESPONSE_BODY_CONTEXT_COPY_ALL = "response.body.context.copy_all";
-    public static final String RESPONSE_BODY_CONTEXT_SELECT_ALL = "response.body.context.select_all";
-    public static final String RESPONSE_BODY_CONTEXT_FOLDING = "response.body.context.folding";
-    public static final String RESPONSE_BODY_CONTEXT_TOGGLE_CURRENT_FOLD = "response.body.context.toggle_current_fold";
-    public static final String RESPONSE_BODY_CONTEXT_COLLAPSE_COMMENT_FOLDS = "response.body.context.collapse_comment_folds";
-    public static final String RESPONSE_BODY_CONTEXT_COLLAPSE_ALL_FOLDS = "response.body.context.collapse_all_folds";
-    public static final String RESPONSE_BODY_CONTEXT_EXPAND_ALL_FOLDS = "response.body.context.expand_all_folds";
 
     // ============ CSV Data Panel related ============
     public static final String CSV_STATUS_NO_DATA = "csv.status.no_data";

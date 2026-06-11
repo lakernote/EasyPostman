@@ -1,4 +1,4 @@
-package com.laker.postman.panel.collections.editor.request.sub;
+package com.laker.postman.common.component;
 
 import org.testng.annotations.Test;
 

@@ -367,7 +367,7 @@ public class ExecutionResultsPanel extends JPanel {
         detailTabs.removeAll();
         JPanel welcomePanel = createWelcomePanel();
         detailTabs.addTab(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TAB_OVERVIEW),
-                new FlatSVGIcon("icons/info.svg", 16, 16), welcomePanel);
+                IconUtil.createThemed("icons/info.svg", 16, 16), welcomePanel);
         detailTabs.revalidate();
         detailTabs.repaint();
     }

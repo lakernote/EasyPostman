@@ -1,6 +1,5 @@
 package com.laker.postman.panel.workspace.components;
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.EasyPasswordField;
 import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.constants.ModernColors;
@@ -63,7 +62,7 @@ public class GitAuthPanel extends JPanel {
         sshKeyPathField = new JTextField(20);
         sshPassphraseField = new EasyPasswordField(20);
 
-        sshKeyBrowseButton = new JButton(new FlatSVGIcon("icons/file.svg", 16, 16));
+        sshKeyBrowseButton = new JButton(IconUtil.createThemed("icons/file.svg", 16, 16));
         sshKeyBrowseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_SELECT_KEY));
         sshKeyBrowseButton.setFocusPainted(false);
         sshKeyBrowseButton.setPreferredSize(BROWSE_BUTTON_SIZE);

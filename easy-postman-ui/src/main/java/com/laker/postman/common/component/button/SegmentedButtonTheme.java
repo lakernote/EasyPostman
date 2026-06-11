@@ -8,10 +8,37 @@ import java.awt.Color;
 @UtilityClass
 class SegmentedButtonTheme {
     Color segmentBackground() {
-        return ModernColors.getHoverBackgroundColor();
+        return ModernColors.getInputBackgroundColor();
     }
 
     Color segmentBorder() {
-        return ModernColors.getBorderMediumColor();
+        return ModernColors.getBorderLightColor();
+    }
+
+    Color segmentHoverBackground() {
+        return ModernColors.getHoverBackgroundColor();
+    }
+
+    Color segmentPressedBackground() {
+        return ModernColors.getButtonPressedColor();
+    }
+
+    Color selectedSegmentBackground() {
+        return ModernColors.getPrimary();
+    }
+
+    Color selectedSegmentHoverBackground() {
+        return ModernColors.getPrimaryLight();
+    }
+
+    Color selectedSegmentPressedBackground() {
+        return ModernColors.getPrimaryDarker();
+    }
+
+    Color segmentText(boolean selected, boolean disabled) {
+        if (disabled) {
+            return ModernColors.getTextDisabled();
+        }
+        return selected ? ModernColors.getTextInverse() : ModernColors.getTextPrimary();
     }
 }

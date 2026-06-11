@@ -18,7 +18,10 @@ public class SegmentedButtonThemeTest {
 
     @BeforeMethod
     public void rememberThemeTokens() {
-        previousThemeTokens = remember(ThemeColors.HOVER_BACKGROUND, ThemeColors.BORDER_MEDIUM);
+        previousThemeTokens = remember(
+                ThemeColors.INPUT_BACKGROUND,
+                ThemeColors.BORDER_LIGHT
+        );
     }
 
     @AfterMethod
@@ -30,8 +33,8 @@ public class SegmentedButtonThemeTest {
     public void shouldUseSemanticColorsForSegmentContainer() {
         Color background = new Color(11, 22, 33);
         Color border = new Color(44, 55, 66);
-        UIManager.put(ThemeColors.HOVER_BACKGROUND, background);
-        UIManager.put(ThemeColors.BORDER_MEDIUM, border);
+        UIManager.put(ThemeColors.INPUT_BACKGROUND, background);
+        UIManager.put(ThemeColors.BORDER_LIGHT, border);
 
         assertEquals(SegmentedButtonTheme.segmentBackground(), background);
         assertEquals(SegmentedButtonTheme.segmentBorder(), border);

@@ -13,9 +13,11 @@ import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 
 import javax.swing.JTable;
+import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Container;
+import java.util.Locale;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -80,11 +82,67 @@ public class RequestDescriptionColumnTablePanelTest extends AbstractSwingUiTest 
         });
     }
 
+    @Test
+    public void requestParameterLabelsShouldFollowCurrentLocale() throws Exception {
+        Locale originalLocale = I18nUtil.currentLocale();
+        try {
+            I18nUtil.setLocale(Locale.CHINESE);
+            SwingUtilities.invokeAndWait(() -> {
+                assertColumnHeaders(
+                        new ParamsTablePanel().getTable(),
+                        "",
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_VALUE),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION),
+                        ""
+                );
+                assertColumnHeaders(
+                        new EasyRequestHeadersTablePanel().getTable(),
+                        "",
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_VALUE),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION),
+                        ""
+                );
+                assertColumnHeaders(
+                        new FormDataTablePanel(false, false).getTable(),
+                        "",
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_TYPE),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_VALUE),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION),
+                        ""
+                );
+                assertColumnHeaders(
+                        new FormUrlencodedTablePanel(false, false).getTable(),
+                        "",
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_VALUE),
+                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION),
+                        ""
+                );
+
+                EasyRequestParamsPanel paramsPanel = new EasyRequestParamsPanel();
+                JLabel titleLabel = findLabel(paramsPanel, I18nUtil.getMessage(MessageKeys.REQUEST_PARAMS_TITLE));
+                assertNotNull(titleLabel);
+            });
+        } finally {
+            I18nUtil.setLocale(originalLocale);
+        }
+    }
+
     private static void assertDescriptionColumn(JTable table, int descriptionColumn) {
         assertEquals(
                 table.getColumnName(descriptionColumn),
                 I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION)
         );
+    }
+
+    private static void assertColumnHeaders(JTable table, String... expectedHeaders) {
+        assertEquals(table.getColumnCount(), expectedHeaders.length);
+        for (int i = 0; i < expectedHeaders.length; i++) {
+            assertEquals(table.getColumnName(i), expectedHeaders[i], "column " + i);
+        }
     }
 
     private static JTable findTable(Component component) {
@@ -96,6 +154,21 @@ public class RequestDescriptionColumnTablePanelTest extends AbstractSwingUiTest 
                 JTable table = findTable(child);
                 if (table != null) {
                     return table;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static JLabel findLabel(Component component, String text) {
+        if (component instanceof JLabel label && text.equals(label.getText())) {
+            return label;
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JLabel label = findLabel(child, text);
+                if (label != null) {
+                    return label;
                 }
             }
         }

@@ -48,7 +48,14 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
      * @param autoAppendRowEnabled 是否启用自动补空行
      */
     public FormDataTablePanel(boolean popupMenuEnabled, boolean autoAppendRowEnabled) {
-        super(new String[]{"", "Key", "Type", "Value", I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION), ""});
+        super(new String[]{
+                "",
+                I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY),
+                I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_TYPE),
+                I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_VALUE),
+                I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION),
+                ""
+        });
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();

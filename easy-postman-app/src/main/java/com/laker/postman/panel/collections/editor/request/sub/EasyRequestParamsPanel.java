@@ -40,7 +40,7 @@ public class EasyRequestParamsPanel extends JPanel {
         // Create header panel
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
         ToolWindowSurfaceStyle.applyCard(headerPanel);
-        JLabel label = new JLabel("Params");
+        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_PARAMS_TITLE));
 
         // Create Bulk Edit button
         bulkEditButton = new EditButton();

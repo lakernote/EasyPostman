@@ -149,7 +149,11 @@ public final class MessageKeys {
     public static final String GENERAL_SEARCH = "general.search";
     public static final String GENERAL_OPEN_FOLDER = "general.open_folder";
     public static final String CONSOLE_TITLE = "console.title";
+    public static final String REQUEST_TABLE_COLUMN_KEY = "request.table.column.key";
+    public static final String REQUEST_TABLE_COLUMN_VALUE = "request.table.column.value";
+    public static final String REQUEST_TABLE_COLUMN_TYPE = "request.table.column.type";
     public static final String REQUEST_TABLE_COLUMN_DESCRIPTION = "request.table.column.description";
+    public static final String REQUEST_PARAMS_TITLE = "request.params.title";
 
     // ============ 插件管理 ============
     public static final String PLUGIN_MANAGER_TITLE = "plugin.manager.title";

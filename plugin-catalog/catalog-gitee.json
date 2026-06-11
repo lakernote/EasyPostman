@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (Gitee)",
-  "generatedAt": "2026-06-11T08:50:19Z",
+  "generatedAt": "2026-06-11T08:55:08Z",
   "plugins": [
     {
       "id": "plugin-capture",
@@ -64,6 +64,14 @@
       "description": "Java decompiler toolbox panel powered by CFR.",
       "homepage": "https://gitee.com/lakernote/easy-postman",
       "releases": [
+        {
+          "version": "6.0.3",
+          "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-decompiler-v6.0.3/easy-postman-6.0.3-plugin-decompiler.jar",
+          "sha256": "3e6774ec65a9447813a53079da45fed86ed932e7a26c42264fdc9a106faf6f43",
+          "minAppVersion": "6.0.3",
+          "minPlatformVersion": "3.0.0",
+          "maxPlatformVersion": "3.0.0"
+        },
         {
           "version": "6.0.2",
           "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-decompiler-v6.0.2/easy-postman-6.0.2-plugin-decompiler.jar",

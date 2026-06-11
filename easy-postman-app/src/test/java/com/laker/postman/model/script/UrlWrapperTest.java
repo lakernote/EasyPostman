@@ -1,10 +1,12 @@
-package com.laker.postman.service.js.api;
+package com.laker.postman.model.script;
 
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
 
 import java.util.ArrayList;
 
-import static org.testng.Assert.assertEquals;
+import org.testng.annotations.Test;
+
+import com.laker.postman.service.js.api.UrlWrapper;
 
 /**
  * UrlWrapper 测试

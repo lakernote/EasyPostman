@@ -1,11 +1,7 @@
-package com.laker.postman.service.js.api;
+package com.laker.postman.model.script;
 
-import cn.hutool.json.JSONUtil;
-import com.laker.postman.model.Environment;
-import com.laker.postman.service.EnvironmentService;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,8 +9,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.laker.postman.model.Environment;
+import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.js.api.PostmanApiContext;
+
+import cn.hutool.json.JSONUtil;
 
 public class PostmanApiContextPersistenceTest {
 

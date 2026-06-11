@@ -22,3 +22,7 @@ logs/
 temp/
 /.m2/
 /.superpowers/
+.project
+.classpath
+.settings
+.settings/

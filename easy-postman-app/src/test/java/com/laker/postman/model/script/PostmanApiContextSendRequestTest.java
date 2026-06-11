@@ -1,26 +1,29 @@
-package com.laker.postman.service.js.api;
+package com.laker.postman.model.script;
 
-import com.laker.postman.model.Environment;
-import com.laker.postman.service.EnvironmentService;
-import com.laker.postman.http.runtime.cookie.HttpCookieStore;
-import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
-import okhttp3.mockwebserver.MockResponse;
-import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
-import org.graalvm.polyglot.Context;
-import org.graalvm.polyglot.HostAccess;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
+import org.graalvm.polyglot.Context;
+import org.graalvm.polyglot.HostAccess;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import com.laker.postman.http.runtime.cookie.HttpCookieStore;
+import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
+import com.laker.postman.model.Environment;
+import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.js.api.PostmanApiContext;
+
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
+import okhttp3.mockwebserver.RecordedRequest;
 
 public class PostmanApiContextSendRequestTest {
 

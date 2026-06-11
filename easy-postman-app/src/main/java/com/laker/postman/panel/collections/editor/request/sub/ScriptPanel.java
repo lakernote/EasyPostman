@@ -9,6 +9,7 @@ import com.laker.postman.common.component.dialog.SnippetDialog;
 import com.laker.postman.common.component.editor.PostmanJavaScriptTokenMaker;
 import com.laker.postman.common.component.editor.ScriptSnippetManager;
 import com.laker.postman.common.component.tab.IndicatorTabComponent;
+import com.laker.postman.common.component.tab.state.TabState;
 import com.laker.postman.snippet.Snippet;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
@@ -70,15 +71,18 @@ public class ScriptPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTabbedPaneCard(tabbedPane);
 
         // 创建带指示器的 Tab 组件
-        preScriptTab = new IndicatorTabComponent("Pre-script");
-        postScriptTab = new IndicatorTabComponent("Post-script");
+        String preScriptTitle = I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS_PRE);
+        String postScriptTitle = I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS_POST);
+        
+		preScriptTab = new IndicatorTabComponent(TabState.getBeforeTextState(preScriptTitle));
+        postScriptTab = new IndicatorTabComponent(TabState.getBeforeTextState(postScriptTitle));
 
         // Pre-script 标签带指示器
-        tabbedPane.addTab("Pre-script", prescriptSearchableArea);
+        tabbedPane.addTab(preScriptTitle, prescriptSearchableArea);
         tabbedPane.setTabComponentAt(0, preScriptTab);
 
         // Post-script 标签带指示器
-        tabbedPane.addTab("Post-script", postscriptSearchableArea);
+        tabbedPane.addTab(postScriptTitle, postscriptSearchableArea);
         tabbedPane.setTabComponentAt(1, postScriptTab);
 
         // 添加文档监听器以更新指示器

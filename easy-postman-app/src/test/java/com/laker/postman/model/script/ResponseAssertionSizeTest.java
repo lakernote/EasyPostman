@@ -1,11 +1,13 @@
-package com.laker.postman.service.js.api;
-
-import com.laker.postman.http.runtime.model.HttpResponse;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
-import org.testng.annotations.Test;
+package com.laker.postman.model.script;
 
 import static org.testng.Assert.assertEquals;
+
+import org.testng.annotations.Test;
+
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.service.js.api.ResponseAssertion;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 
 public class ResponseAssertionSizeTest {
 

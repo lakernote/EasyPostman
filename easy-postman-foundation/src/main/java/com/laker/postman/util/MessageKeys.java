@@ -332,6 +332,9 @@ public final class MessageKeys {
     public static final String TAB_VARIABLES = "tab.variables";
     public static final String TAB_AUTHORIZATION = "tab.authorization";
     public static final String TAB_SCRIPTS = "tab.scripts";
+    public static final String TAB_SCRIPTS_PRE = "tab.scripts.pre";
+    public static final String TAB_SCRIPTS_POST = "tab.scripts.post";
+
     public static final String TAB_SETTINGS = "tab.settings";
     public static final String TAB_TESTS = "tab.tests";
     public static final String TAB_NETWORK_LOG = "tab.network_log";

@@ -10,7 +10,9 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
+import com.laker.postman.panel.performance.controller.ConditionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -39,6 +41,8 @@ final class PerformanceTreeSelectionSupport {
     private final ThreadGroupPropertyPanel threadGroupPanel;
     private final CsvDataSetPropertyPanel csvDataSetPanel;
     private final LoopPropertyPanel loopPanel;
+    private final ConditionPropertyPanel conditionPanel;
+    private final WhilePropertyPanel whilePanel;
     private final AssertionPropertyPanel assertionPanel;
     private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
@@ -59,6 +63,10 @@ final class PerformanceTreeSelectionSupport {
     private final String threadGroupCard;
     private final String csvDataSetCard;
     private final String loopCard;
+    private final String simpleCard;
+    private final String conditionCard;
+    private final String whileCard;
+    private final String onceOnlyCard;
     private final String requestCard;
     private final String assertionCard;
     private final String extractorCard;
@@ -98,6 +106,14 @@ final class PerformanceTreeSelectionSupport {
             }
             case LOOP -> {
                 loopPanel.saveLoopData();
+                treeModel.nodeChanged(lastNode);
+            }
+            case CONDITION -> {
+                conditionPanel.saveConditionData();
+                treeModel.nodeChanged(lastNode);
+            }
+            case WHILE -> {
+                whilePanel.saveWhileData();
                 treeModel.nodeChanged(lastNode);
             }
             case REQUEST -> saveRequestNodeAction.accept(lastNode);
@@ -147,6 +163,24 @@ final class PerformanceTreeSelectionSupport {
             case LOOP -> {
                 propertyCardLayout.show(propertyPanel, loopCard);
                 loopPanel.setLoopData(nodeData);
+                currentRequestNodeSetter.accept(null);
+            }
+            case SIMPLE -> {
+                propertyCardLayout.show(propertyPanel, simpleCard);
+                currentRequestNodeSetter.accept(null);
+            }
+            case CONDITION -> {
+                propertyCardLayout.show(propertyPanel, conditionCard);
+                conditionPanel.setConditionData(nodeData);
+                currentRequestNodeSetter.accept(null);
+            }
+            case WHILE -> {
+                propertyCardLayout.show(propertyPanel, whileCard);
+                whilePanel.setWhileData(nodeData);
+                currentRequestNodeSetter.accept(null);
+            }
+            case ONCE_ONLY -> {
+                propertyCardLayout.show(propertyPanel, onceOnlyCard);
                 currentRequestNodeSetter.accept(null);
             }
             case REQUEST -> {

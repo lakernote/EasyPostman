@@ -1,6 +1,7 @@
 package com.laker.postman.performance.core.plan;
 
 import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.request.PerformanceRequestFormDataPart;
 import com.laker.postman.performance.core.request.PerformanceRequestKeyValue;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
@@ -75,6 +76,35 @@ public class PerformanceCorePlanDocumentSanitizerTest {
         assertEquals(snapshot.getParams().get(0).getKey(), "enabled-param");
         assertEquals(snapshot.getFormData().size(), 1);
         assertEquals(snapshot.getFormData().get(0).getValue(), "enabled.png");
+    }
+
+    @Test
+    public void enabledOnlyShouldPreserveConditionData() {
+        ConditionData conditionData = new ConditionData();
+        conditionData.expression = "{{status}} == 200";
+        PerformanceCorePlanNode condition = PerformanceCorePlanNode.builder()
+                .name("condition")
+                .type(NodeType.CONDITION)
+                .conditionData(conditionData)
+                .children(List.of(PerformanceCorePlanNode.builder()
+                        .name("request")
+                        .type(NodeType.REQUEST)
+                        .requestSnapshot(PerformanceRequestSnapshot.builder()
+                                .url("https://example.test")
+                                .build())
+                        .build()))
+                .build();
+
+        PerformanceCorePlanDocument sanitized = PerformanceCorePlanDocumentSanitizer.enabledOnly(
+                new PerformanceCorePlanDocument(PerformanceCorePlanNode.builder()
+                        .name("root")
+                        .type(NodeType.ROOT)
+                        .children(List.of(condition))
+                        .build())
+        );
+
+        PerformanceCorePlanNode sanitizedCondition = sanitized.getRoot().getChildren().get(0);
+        assertEquals(sanitizedCondition.getConditionData().expression, "{{status}} == 200");
     }
 
     private static ThreadGroupData threadGroupData() {

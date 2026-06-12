@@ -277,10 +277,10 @@ public final class PerformanceCoreThreadGroupRunner<C> {
         AtomicInteger activeWorkerThreads = new AtomicInteger(0);
         ConcurrentHashMap<Thread, Long> threadEndTimes = new ConcurrentHashMap<>();
 
-        int phaseSum = rampUpTime + holdTime + rampDownTime;
-        int adjustedRampUpTime = totalTime * rampUpTime / phaseSum;
-        int adjustedHoldTime = totalTime * holdTime / phaseSum;
-        int adjustedRampDownTime = totalTime - adjustedRampUpTime - adjustedHoldTime;
+        SpikePhaseDurations phases = calculateSpikePhaseDurations(rampUpTime, holdTime, rampDownTime, totalTime);
+        int adjustedRampUpTime = phases.rampUpSeconds();
+        int adjustedHoldTime = phases.holdSeconds();
+        int adjustedRampDownTime = phases.rampDownSeconds();
 
         for (int i = 0; i < minThreads; i++) {
             if (!runningSupplier.getAsBoolean()) {
@@ -314,17 +314,19 @@ public final class PerformanceCoreThreadGroupRunner<C> {
             long now = System.currentTimeMillis();
             int targetThreads;
 
-            if (elapsedSeconds < adjustedRampUpTime) {
+            if (adjustedRampUpTime > 0 && elapsedSeconds < adjustedRampUpTime) {
                 double progress = (double) elapsedSeconds / adjustedRampUpTime;
                 targetThreads = minThreads + (int) (progress * (maxThreads - minThreads));
                 adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads,
                         groupVirtualUserCounter, threadEndTimes);
-            } else if (elapsedSeconds < adjustedRampUpTime + adjustedHoldTime) {
+            } else if (adjustedHoldTime > 0 && elapsedSeconds < adjustedRampUpTime + adjustedHoldTime) {
                 targetThreads = maxThreads;
                 adjustSpikeThreadCount(groupPlan, tg, activeWorkerThreads, targetThreads, totalTime, progressUpdater, totalThreads,
                         groupVirtualUserCounter, threadEndTimes);
             } else {
-                double progress = (double) (elapsedSeconds - adjustedRampUpTime - adjustedHoldTime) / adjustedRampDownTime;
+                double progress = adjustedRampDownTime <= 0
+                        ? 1.0
+                        : (double) (elapsedSeconds - adjustedRampUpTime - adjustedHoldTime) / adjustedRampDownTime;
                 targetThreads = maxThreads - (int) (progress * (maxThreads - minThreads));
                 targetThreads = Math.max(targetThreads, minThreads);
 
@@ -527,16 +529,16 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                     .toList();
 
             if (!availableThreads.isEmpty()) {
-                int rampDownTime = tg.spikeRampDownTime;
-                int totalSpikeTime = tg.spikeDuration;
-                int rampUpTime = tg.spikeRampUpTime;
-                int holdTime = tg.spikeHoldTime;
-                int phaseSum = rampUpTime + holdTime + rampDownTime;
-                int adjustedRampDownTime = totalSpikeTime * rampDownTime / phaseSum;
-                adjustedRampDownTime = Math.max(adjustedRampDownTime, 1);
+                SpikePhaseDurations phases = calculateSpikePhaseDurations(
+                        tg.spikeRampUpTime,
+                        tg.spikeHoldTime,
+                        tg.spikeRampDownTime,
+                        totalTime
+                );
+                int adjustedRampDownTime = Math.max(phases.rampDownSeconds(), 1);
 
                 long elapsedSeconds = (now - startTimeSupplier.getAsLong()) / 1000;
-                long rampDownStartTime = (long) (rampUpTime + holdTime) * totalSpikeTime / phaseSum;
+                long rampDownStartTime = (long) phases.rampUpSeconds() + phases.holdSeconds();
                 long timeLeftInRampDown = Math.max(1, adjustedRampDownTime - (elapsedSeconds - rampDownStartTime));
 
                 for (int i = 0; i < availableThreads.size(); i++) {
@@ -617,6 +619,101 @@ public final class PerformanceCoreThreadGroupRunner<C> {
         int threadRange = Math.max(0, endThreads - startThreads);
         int safeStep = Math.max(1, step);
         return Math.max(1, (threadRange + safeStep - 1) / safeStep);
+    }
+
+    record SpikePhaseDurations(int rampUpSeconds, int holdSeconds, int rampDownSeconds) {
+    }
+
+    static SpikePhaseDurations calculateSpikePhaseDurations(int rampUpTime,
+                                                            int holdTime,
+                                                            int rampDownTime,
+                                                            int totalTime) {
+        int safeTotalTime = Math.max(1, totalTime);
+        int[] weights = {
+                Math.max(0, rampUpTime),
+                Math.max(0, holdTime),
+                Math.max(0, rampDownTime)
+        };
+        int positivePhaseCount = 0;
+        long totalWeight = 0L;
+        for (int weight : weights) {
+            if (weight > 0) {
+                positivePhaseCount++;
+                totalWeight += weight;
+            }
+        }
+        if (positivePhaseCount == 0) {
+            return new SpikePhaseDurations(0, 0, safeTotalTime);
+        }
+
+        int[] seconds = new int[weights.length];
+        if (safeTotalTime < positivePhaseCount) {
+            for (int i = 0; i < safeTotalTime; i++) {
+                seconds[largestUnassignedWeightIndex(weights, seconds)] = 1;
+            }
+            return new SpikePhaseDurations(seconds[0], seconds[1], seconds[2]);
+        }
+
+        int remainingSeconds = safeTotalTime;
+        for (int i = 0; i < weights.length; i++) {
+            if (weights[i] > 0) {
+                seconds[i] = 1;
+                remainingSeconds--;
+            }
+        }
+        if (remainingSeconds <= 0) {
+            return new SpikePhaseDurations(seconds[0], seconds[1], seconds[2]);
+        }
+
+        long[] remainders = new long[weights.length];
+        int assignedSeconds = 0;
+        for (int i = 0; i < weights.length; i++) {
+            if (weights[i] <= 0) {
+                continue;
+            }
+            long scaledSeconds = (long) remainingSeconds * weights[i];
+            int wholeSeconds = (int) (scaledSeconds / totalWeight);
+            seconds[i] += wholeSeconds;
+            assignedSeconds += wholeSeconds;
+            remainders[i] = scaledSeconds % totalWeight;
+        }
+        while (assignedSeconds < remainingSeconds) {
+            int index = largestRemainderIndex(remainders, weights);
+            seconds[index]++;
+            remainders[index] = -1L;
+            assignedSeconds++;
+        }
+        return new SpikePhaseDurations(seconds[0], seconds[1], seconds[2]);
+    }
+
+    private static int largestUnassignedWeightIndex(int[] weights, int[] seconds) {
+        int selectedIndex = 0;
+        int selectedWeight = Integer.MIN_VALUE;
+        for (int i = 0; i < weights.length; i++) {
+            if (seconds[i] == 0 && weights[i] > selectedWeight) {
+                selectedIndex = i;
+                selectedWeight = weights[i];
+            }
+        }
+        return selectedIndex;
+    }
+
+    private static int largestRemainderIndex(long[] remainders, int[] weights) {
+        int selectedIndex = 0;
+        long selectedRemainder = Long.MIN_VALUE;
+        int selectedWeight = Integer.MIN_VALUE;
+        for (int i = 0; i < remainders.length; i++) {
+            if (weights[i] <= 0) {
+                continue;
+            }
+            if (remainders[i] > selectedRemainder
+                    || remainders[i] == selectedRemainder && weights[i] > selectedWeight) {
+                selectedIndex = i;
+                selectedRemainder = remainders[i];
+                selectedWeight = weights[i];
+            }
+        }
+        return selectedIndex;
     }
 
     private static boolean isOpenEndedWorker(ConcurrentHashMap<Thread, Long> threadEndTimes, Thread thread) {

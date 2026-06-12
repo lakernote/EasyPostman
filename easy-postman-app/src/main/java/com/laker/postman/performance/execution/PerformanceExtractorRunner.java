@@ -2,12 +2,11 @@ package com.laker.postman.performance.execution;
 
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.extractor.ExtractorType;
+import com.laker.postman.performance.core.extractor.ResponseField;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
-
-
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
@@ -126,12 +125,27 @@ public final class PerformanceExtractorRunner {
                 );
                 case HEADER -> findHeader(response == null ? null : response.headers, expression);
                 case COOKIE -> findCookie(response == null ? null : response.headers, expression);
+                case RESPONSE_FIELD -> extractResponseField(response, expression);
             };
         } catch (Exception e) {
             log.debug("Performance extractor failed: type={}, expression={}, message={}",
                     type.getStorageValue(), expression, e.getMessage());
             return null;
         }
+    }
+
+    private static String extractResponseField(HttpResponse response, String expression) {
+        if (response == null) {
+            return null;
+        }
+        ResponseField field = ResponseField.fromStorageValue(expression);
+        return switch (field) {
+            case STATUS_CODE -> String.valueOf(response.code);
+            case RESPONSE_TIME_MS -> String.valueOf(response.costMs);
+            case BODY_SIZE_BYTES -> String.valueOf(response.bodySize);
+            case HEADERS_SIZE_BYTES -> String.valueOf(response.headersSize);
+            case PROTOCOL -> CharSequenceUtil.isBlank(response.protocol) ? null : response.protocol;
+        };
     }
 
     private static String extractRegex(String body, String expression, int matchIndex, int groupIndex) {

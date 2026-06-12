@@ -5,7 +5,9 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
@@ -25,6 +27,8 @@ public class PerformanceTreeNode {
     public ThreadGroupData threadGroupData; // 线程组数据
     public CsvDataSetData csvDataSetData;   // CSV Data Set 配置
     public LoopData loopData;             // Loop 控制器数据
+    public ConditionData conditionData;   // 条件控制器数据
+    public WhileData whileData;   // While 控制器数据
     public AssertionData assertionData;   // 断言数据
     public ExtractorData extractorData;   // 提取器数据
     public TimerData timerData;           // 定时器数据
@@ -46,11 +50,13 @@ public class PerformanceTreeNode {
             case THREAD_GROUP -> this.threadGroupData = (ThreadGroupData) data;
             case CSV_DATA_SET -> this.csvDataSetData = (CsvDataSetData) data;
             case LOOP -> this.loopData = (LoopData) data;
+            case CONDITION -> this.conditionData = (ConditionData) data;
+            case WHILE -> this.whileData = (WhileData) data;
             case REQUEST -> this.httpRequestItem = (HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case EXTRACTOR -> this.extractorData = (ExtractorData) data;
             case TIMER -> this.timerData = (TimerData) data;
-            case SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> {
+            case SIMPLE, ONCE_ONLY, SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> {
             }
         }
     }
@@ -60,11 +66,13 @@ public class PerformanceTreeNode {
             case THREAD_GROUP -> threadGroupData;
             case CSV_DATA_SET -> csvDataSetData;
             case LOOP -> loopData;
+            case CONDITION -> conditionData;
+            case WHILE -> whileData;
             case REQUEST -> httpRequestItem;
             case ASSERTION -> assertionData;
             case EXTRACTOR -> extractorData;
             case TIMER -> timerData;
-            case SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> null;
+            case SIMPLE, ONCE_ONLY, SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> null;
             default -> null;
         };
     }
@@ -74,11 +82,13 @@ public class PerformanceTreeNode {
             case THREAD_GROUP -> this.threadGroupData = (ThreadGroupData) data;
             case CSV_DATA_SET -> this.csvDataSetData = (CsvDataSetData) data;
             case LOOP -> this.loopData = (LoopData) data;
+            case CONDITION -> this.conditionData = (ConditionData) data;
+            case WHILE -> this.whileData = (WhileData) data;
             case REQUEST -> this.httpRequestItem = (com.laker.postman.request.model.HttpRequestItem) data;
             case ASSERTION -> this.assertionData = (AssertionData) data;
             case EXTRACTOR -> this.extractorData = (ExtractorData) data;
             case TIMER -> this.timerData = (TimerData) data;
-            case SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> {
+            case SIMPLE, ONCE_ONLY, SSE_CONNECT, SSE_READ, WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE, ROOT -> {
             }
         }
     }

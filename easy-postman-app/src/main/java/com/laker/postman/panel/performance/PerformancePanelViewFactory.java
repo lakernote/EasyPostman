@@ -24,7 +24,10 @@ import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.component.PerformanceTreeCellRenderer;
 import com.laker.postman.panel.performance.component.TreeNodeTransferHandler;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
+import com.laker.postman.panel.performance.controller.ConditionPropertyPanel;
+import com.laker.postman.panel.performance.controller.ControllerDescriptionPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
@@ -77,6 +80,10 @@ final class PerformancePanelViewFactory {
                                           String threadGroupCard,
                                           String csvDataSetCard,
                                           String loopCard,
+                                          String simpleCard,
+                                          String conditionCard,
+                                          String whileCard,
+                                          String onceOnlyCard,
                                           String requestCard,
                                           String assertionCard,
                                           String extractorCard,
@@ -102,6 +109,18 @@ final class PerformancePanelViewFactory {
 
         LoopPropertyPanel loopPanel = new LoopPropertyPanel();
         propertyPanel.add(loopPanel, loopCard);
+
+        ControllerDescriptionPanel simplePanel = ControllerDescriptionPanel.simpleControllerPanel();
+        propertyPanel.add(simplePanel, simpleCard);
+
+        ConditionPropertyPanel conditionPanel = new ConditionPropertyPanel();
+        propertyPanel.add(conditionPanel, conditionCard);
+
+        WhilePropertyPanel whilePanel = new WhilePropertyPanel();
+        propertyPanel.add(whilePanel, whileCard);
+
+        ControllerDescriptionPanel onceOnlyPanel = ControllerDescriptionPanel.onceOnlyControllerPanel();
+        propertyPanel.add(onceOnlyPanel, onceOnlyCard);
 
         RequestEditSubPanel requestEditSubPanel = RequestEditSubPanel.performanceSnapshot("", RequestItemProtocolEnum.HTTP, true);
         RequestEditorSection requestEditorSection = createRequestEditorSection(requestEditSubPanel);
@@ -135,6 +154,10 @@ final class PerformancePanelViewFactory {
                 threadGroupPanel,
                 csvDataSetPanel,
                 loopPanel,
+                simplePanel,
+                conditionPanel,
+                whilePanel,
+                onceOnlyPanel,
                 assertionPanel,
                 extractorPanel,
                 timerPanel,
@@ -664,6 +687,10 @@ final class PerformancePanelViewFactory {
                            ThreadGroupPropertyPanel threadGroupPanel,
                            CsvDataSetPropertyPanel csvDataSetPanel,
                            LoopPropertyPanel loopPanel,
+                           ControllerDescriptionPanel simplePanel,
+                           ConditionPropertyPanel conditionPanel,
+                           WhilePropertyPanel whilePanel,
+                           ControllerDescriptionPanel onceOnlyPanel,
                            AssertionPropertyPanel assertionPanel,
                            ExtractorPropertyPanel extractorPanel,
                            TimerPropertyPanel timerPanel,

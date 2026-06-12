@@ -6,9 +6,11 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.controller.LoopData;
 import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.plan.PerformanceLoopController;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import org.testng.annotations.Test;
 
@@ -72,6 +74,27 @@ public class PerformancePlanDocumentCompilerTest {
         PerformanceLoopController loopController = (PerformanceLoopController) group.getElements().get(0);
         assertEquals(loopController.getIterationCount(), 2);
         assertTrue(loopController.getElements().get(0) instanceof PerformanceRequestSampler);
+    }
+
+    @Test
+    public void requestNodeNameShouldOverrideStaleSnapshotName() {
+        PerformanceRequestSnapshot staleSnapshot = PerformanceRequestSnapshot.builder()
+                .id("request-1")
+                .name("213")
+                .url("https://example.test")
+                .protocol(PerformanceProtocol.HTTP)
+                .build();
+        PerformancePlanNode request = PerformancePlanNode.builder()
+                .name("111")
+                .type(NodeType.REQUEST)
+                .requestSnapshot(staleSnapshot)
+                .build();
+
+        PerformanceRequestSampler sampler = PerformancePlanDocumentCompiler.compileRequestSampler(request);
+
+        assertEquals(sampler.getName(), "111");
+        assertEquals(sampler.getRequestSnapshot().getName(), "111");
+        assertEquals(sampler.getHttpRequestItem().getName(), "111");
     }
 
     private static boolean hasParameterTypeName(Class<?> type, String parameterTypeName) {

@@ -1,13 +1,16 @@
 package com.laker.postman.performance.core.threadgroup;
 
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.plan.PerformanceConditionController;
 import com.laker.postman.performance.core.plan.PerformanceCoreRequestSampler;
 import com.laker.postman.performance.core.plan.PerformanceLoopController;
+import com.laker.postman.performance.core.plan.PerformanceOnceOnlyController;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -38,6 +41,48 @@ public class PerformanceCoreThreadGroupPlannerTest {
         ));
 
         assertEquals(new PerformanceCoreThreadGroupPlanner().estimateTotalRequests(plan), 3L);
+    }
+
+    @Test
+    public void estimateTotalRequestsShouldCountOnceOnlyOncePerVirtualUser() {
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+        threadGroupData.numThreads = 2;
+        threadGroupData.useTime = false;
+        threadGroupData.loops = 3;
+        LoopData loopData = new LoopData();
+        loopData.iterations = 4;
+        PerformanceTestPlan plan = new PerformanceTestPlan(List.of(
+                new PerformanceThreadGroupPlan("group", threadGroupData, List.of(
+                        new PerformanceLoopController("loop", loopData, List.of(
+                                new PerformanceOnceOnlyController("once only", List.of(request("login")))
+                        ))
+                ))
+        ));
+
+        PerformanceRequestEstimate estimate = new PerformanceCoreThreadGroupPlanner().estimateRequestCount(plan);
+
+        assertEquals(estimate.estimatedRequests(), 2L);
+        assertEquals(estimate.dynamic(), false);
+    }
+
+    @Test
+    public void estimateRequestCountShouldMarkConditionSubtreeAsDynamicUpperBound() {
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+        threadGroupData.numThreads = 2;
+        threadGroupData.useTime = false;
+        threadGroupData.loops = 3;
+        PerformanceTestPlan plan = new PerformanceTestPlan(List.of(
+                new PerformanceThreadGroupPlan("group", threadGroupData, List.of(
+                        new PerformanceConditionController("condition", null, List.of(request("conditional")))
+                ))
+        ));
+
+        PerformanceRequestEstimate estimate = new PerformanceCoreThreadGroupPlanner().estimateRequestCount(plan);
+
+        assertEquals(estimate.estimatedRequests(), 6L);
+        assertEquals(estimate.dynamic(), true);
     }
 
     @Test
@@ -88,5 +133,32 @@ public class PerformanceCoreThreadGroupPlannerTest {
         ));
 
         assertTrue(new PerformanceCoreThreadGroupPlanner().estimateTotalRequests(plan) > 0L);
+    }
+
+    @Test
+    public void estimatesShouldIgnoreNullThreadGroups() {
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+        threadGroupData.numThreads = 1;
+        threadGroupData.useTime = false;
+        threadGroupData.loops = 1;
+        PerformanceTestPlan plan = new PerformanceTestPlan(Arrays.asList(
+                null,
+                new PerformanceThreadGroupPlan("group", threadGroupData, List.of(request("request")))
+        ));
+
+        PerformanceCoreThreadGroupPlanner planner = new PerformanceCoreThreadGroupPlanner();
+
+        assertEquals(planner.getTotalThreads(plan), 1);
+        assertEquals(planner.estimateTotalRequests(plan), 1L);
+    }
+
+    private static PerformanceCoreRequestSampler request(String name) {
+        return new PerformanceCoreRequestSampler(
+                name,
+                PerformanceRequestSnapshot.empty(),
+                null,
+                List.of()
+        );
     }
 }

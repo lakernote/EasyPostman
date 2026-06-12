@@ -131,6 +131,27 @@ public class PerformanceCoreThreadGroupRunnerTest {
     }
 
     @Test
+    public void spikePhaseDurationsShouldKeepPositiveConfiguredPhasesWhenPossible() {
+        PerformanceCoreThreadGroupRunner.SpikePhaseDurations phases =
+                PerformanceCoreThreadGroupRunner.calculateSpikePhaseDurations(20, 15, 20, 3);
+
+        assertEquals(phases.rampUpSeconds(), 1);
+        assertEquals(phases.holdSeconds(), 1);
+        assertEquals(phases.rampDownSeconds(), 1);
+    }
+
+    @Test
+    public void spikePhaseDurationsShouldFitShortDurationWithoutNegativeValues() {
+        PerformanceCoreThreadGroupRunner.SpikePhaseDurations phases =
+                PerformanceCoreThreadGroupRunner.calculateSpikePhaseDurations(20, 15, 20, 1);
+
+        assertEquals(phases.rampUpSeconds() + phases.holdSeconds() + phases.rampDownSeconds(), 1);
+        assertTrue(phases.rampUpSeconds() >= 0);
+        assertTrue(phases.holdSeconds() >= 0);
+        assertTrue(phases.rampDownSeconds() >= 0);
+    }
+
+    @Test
     public void fixedLoopModeShouldNotUseHardCodedOneHourTerminationCutoff() throws Exception {
         String source = Files.readString(Path.of(
                 "src/main/java/com/laker/postman/performance/core/runtime/PerformanceCoreThreadGroupRunner.java"

@@ -3,6 +3,7 @@ package com.laker.postman.performance.core.runtime;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.threadgroup.PerformanceCoreThreadGroupPlanner;
+import com.laker.postman.performance.core.threadgroup.PerformanceRequestEstimate;
 
 import java.util.List;
 import java.util.function.BooleanSupplier;
@@ -117,6 +118,10 @@ public final class PerformanceCoreExecutionEngine<C> implements PerformanceCoreR
 
     public long estimateTotalRequests(PerformanceTestPlan plan) {
         return threadGroupPlanner.estimateTotalRequests(plan);
+    }
+
+    public PerformanceRequestEstimate estimateRequestCount(PerformanceTestPlan plan) {
+        return threadGroupPlanner.estimateRequestCount(plan);
     }
 
     @Override

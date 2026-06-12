@@ -9,7 +9,9 @@ import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
+import com.laker.postman.panel.performance.controller.ConditionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -41,6 +43,8 @@ final class PerformanceTreeInteractionSupport {
     private final ThreadGroupPropertyPanel threadGroupPanel;
     private final CsvDataSetPropertyPanel csvDataSetPanel;
     private final LoopPropertyPanel loopPanel;
+    private final ConditionPropertyPanel conditionPanel;
+    private final WhilePropertyPanel whilePanel;
     private final AssertionPropertyPanel assertionPanel;
     private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
@@ -63,6 +67,10 @@ final class PerformanceTreeInteractionSupport {
     private final String threadGroupCard;
     private final String csvDataSetCard;
     private final String loopCard;
+    private final String simpleCard;
+    private final String conditionCard;
+    private final String whileCard;
+    private final String onceOnlyCard;
     private final String requestCard;
     private final String assertionCard;
     private final String extractorCard;
@@ -97,6 +105,8 @@ final class PerformanceTreeInteractionSupport {
                 threadGroupPanel,
                 csvDataSetPanel,
                 loopPanel,
+                conditionPanel,
+                whilePanel,
                 assertionPanel,
                 extractorPanel,
                 timerPanel,
@@ -117,6 +127,10 @@ final class PerformanceTreeInteractionSupport {
                 threadGroupCard,
                 csvDataSetCard,
                 loopCard,
+                simpleCard,
+                conditionCard,
+                whileCard,
+                onceOnlyCard,
                 requestCard,
                 assertionCard,
                 extractorCard,
@@ -160,6 +174,10 @@ final class PerformanceTreeInteractionSupport {
         JMenuItem addWsRead = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_READ));
         JMenuItem addWsClose = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WS_CLOSE));
         JMenuItem addLoop = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_LOOP));
+        JMenuItem addSimple = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_SIMPLE));
+        JMenuItem addCondition = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_CONDITION));
+        JMenuItem addWhile = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_WHILE));
+        JMenuItem addOnceOnly = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_ONCE_ONLY));
         JMenuItem addAssertion = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_ASSERTION));
         JMenuItem addExtractor = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_EXTRACTOR));
         JMenuItem addTimer = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_ADD_TIMER));
@@ -169,11 +187,19 @@ final class PerformanceTreeInteractionSupport {
         JMenuItem disableNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_DISABLE));
         JMenuItem copyNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_COPY));
         JMenuItem pasteNode = new JMenuItem(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_PASTE));
+        JMenu addDataMenu = new JMenu(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_GROUP_REQUEST_DATA));
+        JMenu addControllerMenu = new JMenu(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_GROUP_CONTROLLERS));
+        JMenu addProtocolMenu = new JMenu(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_GROUP_PROTOCOL_STEPS));
+        JMenu addCheckTimingMenu = new JMenu(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MENU_GROUP_CHECK_TIMING));
         PerformanceTreeMenuItems menuItems = new PerformanceTreeMenuItems(
                 addThreadGroup,
                 addCsvDataSet,
                 addRequest,
                 addLoop,
+                addSimple,
+                addCondition,
+                addWhile,
+                addOnceOnly,
                 addSseConnect,
                 addSseRead,
                 addWsConnect,
@@ -203,20 +229,31 @@ final class PerformanceTreeInteractionSupport {
         JSeparator separator1 = new JSeparator();
         JSeparator separator2 = new JSeparator();
         JSeparator separator3 = new JSeparator();
+        JSeparator protocolMenuSeparator = new JSeparator();
 
-        treeMenu.add(addThreadGroup);
-        treeMenu.add(addCsvDataSet);
-        treeMenu.add(addRequest);
-        treeMenu.add(addLoop);
-        treeMenu.add(addSseConnect);
-        treeMenu.add(addSseRead);
-        treeMenu.add(addWsConnect);
-        treeMenu.add(addWsSend);
-        treeMenu.add(addWsRead);
-        treeMenu.add(addWsClose);
-        treeMenu.add(addAssertion);
-        treeMenu.add(addExtractor);
-        treeMenu.add(addTimer);
+        addDataMenu.add(addThreadGroup);
+        addDataMenu.add(addCsvDataSet);
+        addDataMenu.add(addRequest);
+        addControllerMenu.add(addSimple);
+        addControllerMenu.add(addLoop);
+        addControllerMenu.add(addCondition);
+        addControllerMenu.add(addWhile);
+        addControllerMenu.add(addOnceOnly);
+        addProtocolMenu.add(addSseConnect);
+        addProtocolMenu.add(addSseRead);
+        addProtocolMenu.add(protocolMenuSeparator);
+        addProtocolMenu.add(addWsConnect);
+        addProtocolMenu.add(addWsSend);
+        addProtocolMenu.add(addWsRead);
+        addProtocolMenu.add(addWsClose);
+        addCheckTimingMenu.add(addAssertion);
+        addCheckTimingMenu.add(addExtractor);
+        addCheckTimingMenu.add(addTimer);
+
+        treeMenu.add(addDataMenu);
+        treeMenu.add(addControllerMenu);
+        treeMenu.add(addProtocolMenu);
+        treeMenu.add(addCheckTimingMenu);
         treeMenu.add(separator1);
         treeMenu.add(enableNode);
         treeMenu.add(disableNode);
@@ -228,7 +265,28 @@ final class PerformanceTreeInteractionSupport {
         treeMenu.add(deleteNode);
 
         Runnable updateMenuSeparators = () -> {
-            boolean hasAddGroup = menuItems.hasVisibleAddItem();
+            syncAddMenuVisibility(addDataMenu, addThreadGroup, addCsvDataSet, addRequest);
+            syncAddMenuVisibility(addControllerMenu, addSimple, addLoop, addCondition, addWhile, addOnceOnly);
+            boolean hasSseItems = addSseConnect.isVisible() || addSseRead.isVisible();
+            boolean hasWebSocketItems = addWsConnect.isVisible()
+                    || addWsSend.isVisible()
+                    || addWsRead.isVisible()
+                    || addWsClose.isVisible();
+            protocolMenuSeparator.setVisible(hasSseItems && hasWebSocketItems);
+            syncAddMenuVisibility(
+                    addProtocolMenu,
+                    addSseConnect,
+                    addSseRead,
+                    addWsConnect,
+                    addWsSend,
+                    addWsRead,
+                    addWsClose
+            );
+            syncAddMenuVisibility(addCheckTimingMenu, addAssertion, addExtractor, addTimer);
+            boolean hasAddGroup = addDataMenu.isVisible()
+                    || addControllerMenu.isVisible()
+                    || addProtocolMenu.isVisible()
+                    || addCheckTimingMenu.isVisible();
             boolean hasToggleGroup = menuItems.hasVisibleToggleItem();
             boolean hasClipboardGroup = menuItems.hasVisibleClipboardItem();
             boolean hasEditGroup = menuItems.hasVisibleEditItem();
@@ -241,6 +299,10 @@ final class PerformanceTreeInteractionSupport {
         addCsvDataSet.addActionListener(e -> treeSupport.addCsvDataSetNode(performanceTree, saveConfigAction));
         addRequest.addActionListener(e -> nodeCommandSupport.addRequestNodes());
         addLoop.addActionListener(e -> treeSupport.addLoopNode(performanceTree, saveConfigAction));
+        addSimple.addActionListener(e -> treeSupport.addSimpleNode(performanceTree, saveConfigAction));
+        addCondition.addActionListener(e -> treeSupport.addConditionNode(performanceTree, saveConfigAction));
+        addWhile.addActionListener(e -> treeSupport.addWhileNode(performanceTree, saveConfigAction));
+        addOnceOnly.addActionListener(e -> treeSupport.addOnceOnlyNode(performanceTree, saveConfigAction));
         addSseConnect.addActionListener(e -> treeSupport.addSseStageNode(performanceTree, NodeType.SSE_CONNECT, saveConfigAction));
         addSseRead.addActionListener(e -> treeSupport.addSseStageNode(performanceTree, NodeType.SSE_READ, saveConfigAction));
         addWsConnect.addActionListener(e -> treeSupport.addWebSocketStepNode(performanceTree, NodeType.WS_CONNECT, saveConfigAction));
@@ -311,6 +373,14 @@ final class PerformanceTreeInteractionSupport {
                 treeMenu.show(performanceTree, e.getX(), e.getY());
             }
         });
+    }
+
+    private void syncAddMenuVisibility(JMenu menu, JMenuItem... items) {
+        boolean visible = false;
+        for (JMenuItem item : items) {
+            visible = visible || item.isVisible();
+        }
+        menu.setVisible(visible);
     }
 
     private void alignSelectionForPopup(TreePath clickedPath) {

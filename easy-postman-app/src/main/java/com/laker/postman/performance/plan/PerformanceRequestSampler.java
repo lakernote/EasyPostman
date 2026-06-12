@@ -55,7 +55,9 @@ public final class PerformanceRequestSampler implements PerformanceSampler {
         PerformanceRequestSnapshot resolvedSnapshot = requestSnapshot != null
                 ? requestSnapshot
                 : PerformanceRequestSnapshotMapper.fromHttpRequestItem(httpRequestItem, requestExecutionScope);
-        this.requestSnapshot = PerformanceRequestSnapshotMapper.copyRequestSnapshot(resolvedSnapshot);
+        this.requestSnapshot = PerformanceRequestSnapshotMapper.copyRequestSnapshot(
+                withSamplerDisplayName(resolvedSnapshot, name)
+        );
         this.webSocketPerformanceData = PerformancePlanDataCopies.copyWebSocketPerformanceData(webSocketPerformanceData);
         RequestExecutionScope resolvedScope = requestExecutionScope != null
                 ? requestExecutionScope
@@ -100,5 +102,14 @@ public final class PerformanceRequestSampler implements PerformanceSampler {
     @Override
     public boolean executesChildrenInSamplerOrder() {
         return requestSnapshot != null && requestSnapshot.executesChildrenInSamplerOrder();
+    }
+
+    private static PerformanceRequestSnapshot withSamplerDisplayName(PerformanceRequestSnapshot snapshot, String samplerName) {
+        if (snapshot == null || samplerName == null || samplerName.trim().isEmpty()) {
+            return snapshot;
+        }
+        return snapshot.toBuilder()
+                .name(samplerName.trim())
+                .build();
     }
 }

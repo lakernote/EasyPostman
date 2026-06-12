@@ -9,6 +9,7 @@ import com.laker.postman.performance.result.PerformanceResultCollector;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.runtime.*;
+import com.laker.postman.performance.core.threadgroup.PerformanceRequestEstimate;
 import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.ExecutionVariableContext;
@@ -22,6 +23,7 @@ public final class PerformanceExecutionEngine {
 
     private final PerformanceNetworkRuntime networkRuntime;
     private final PerformanceCoreExecutionEngine<ExecutionVariableContext> delegate;
+    private final PerformanceIterationContextFactory iterationContextFactory;
     private volatile PerformanceCoreResultSink resultSink = PerformanceCoreResultSink.NOOP;
     private volatile JsScriptExecutor.PooledScriptExecutor runScriptExecutor;
     private volatile boolean preparedPlanUsesScripts = true;
@@ -125,7 +127,7 @@ public final class PerformanceExecutionEngine {
                 resultCollector,
                 this::currentResultSink
         );
-        PerformanceIterationContextFactory iterationContextFactory = new PerformanceIterationContextFactory(virtualUsers);
+        this.iterationContextFactory = new PerformanceIterationContextFactory(virtualUsers);
         PerformancePlanExecutor planExecutor = new PerformancePlanExecutor(runningSupplier, samplerExecutor);
         this.delegate = new PerformanceCoreExecutionEngine<>(
                 runningSupplier,
@@ -147,7 +149,7 @@ public final class PerformanceExecutionEngine {
                 },
                 virtualUsers,
                 realtimeMetrics,
-                iterationContextFactory::create,
+                this.iterationContextFactory::create,
                 planExecutor::executeIteration,
                 runListener
         );
@@ -185,6 +187,7 @@ public final class PerformanceExecutionEngine {
     }
 
     public void resetVirtualUsers() {
+        iterationContextFactory.resetControlState();
         delegate.resetVirtualUsers();
     }
 
@@ -202,6 +205,10 @@ public final class PerformanceExecutionEngine {
 
     public long estimateTotalRequests(PerformanceTestPlan plan) {
         return delegate.estimateTotalRequests(plan);
+    }
+
+    public PerformanceRequestEstimate estimateRequestCount(PerformanceTestPlan plan) {
+        return delegate.estimateRequestCount(plan);
     }
 
     void prepareRun(PerformanceTestPlan plan) {

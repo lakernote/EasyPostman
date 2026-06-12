@@ -30,7 +30,9 @@ import com.laker.postman.panel.performance.control.PerformanceRunUiEventBridge;
 import com.laker.postman.panel.performance.control.PerformanceStatisticsCoordinator;
 import com.laker.postman.panel.performance.control.PerformanceTimerManager;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
+import com.laker.postman.panel.performance.controller.ConditionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.performance.model.PerformanceTreeNode;
@@ -90,6 +92,10 @@ public class PerformancePanel extends UiSingletonPanel {
     public static final String THREAD_GROUP = "threadGroup";
     public static final String CSV_DATA_SET = "csvDataSet";
     public static final String LOOP = "loop";
+    public static final String SIMPLE = "simple";
+    public static final String CONDITION = "condition";
+    public static final String WHILE = "while";
+    public static final String ONCE_ONLY = "onceOnly";
     public static final String REQUEST = "request";
     public static final String ASSERTION = "assertion";
     public static final String EXTRACTOR = "extractor";
@@ -108,6 +114,8 @@ public class PerformancePanel extends UiSingletonPanel {
     private ThreadGroupPropertyPanel threadGroupPanel;
     private CsvDataSetPropertyPanel csvDataSetPanel;
     private LoopPropertyPanel loopPanel;
+    private ConditionPropertyPanel conditionPanel;
+    private WhilePropertyPanel whilePanel;
     private AssertionPropertyPanel assertionPanel;
     private ExtractorPropertyPanel extractorPanel;
     private TimerPropertyPanel timerPanel;
@@ -202,6 +210,10 @@ public class PerformancePanel extends UiSingletonPanel {
                 THREAD_GROUP,
                 CSV_DATA_SET,
                 LOOP,
+                SIMPLE,
+                CONDITION,
+                WHILE,
+                ONCE_ONLY,
                 REQUEST,
                 ASSERTION,
                 EXTRACTOR,
@@ -218,6 +230,8 @@ public class PerformancePanel extends UiSingletonPanel {
         threadGroupPanel = propertySection.threadGroupPanel();
         csvDataSetPanel = propertySection.csvDataSetPanel();
         loopPanel = propertySection.loopPanel();
+        conditionPanel = propertySection.conditionPanel();
+        whilePanel = propertySection.whilePanel();
         assertionPanel = propertySection.assertionPanel();
         extractorPanel = propertySection.extractorPanel();
         timerPanel = propertySection.timerPanel();
@@ -240,6 +254,8 @@ public class PerformancePanel extends UiSingletonPanel {
                 threadGroupPanel,
                 csvDataSetPanel,
                 loopPanel,
+                conditionPanel,
+                whilePanel,
                 assertionPanel,
                 extractorPanel,
                 timerPanel,
@@ -1123,6 +1139,8 @@ public class PerformancePanel extends UiSingletonPanel {
                 threadGroupPanel,
                 csvDataSetPanel,
                 loopPanel,
+                conditionPanel,
+                whilePanel,
                 assertionPanel,
                 extractorPanel,
                 timerPanel,
@@ -1145,6 +1163,10 @@ public class PerformancePanel extends UiSingletonPanel {
                 THREAD_GROUP,
                 CSV_DATA_SET,
                 LOOP,
+                SIMPLE,
+                CONDITION,
+                WHILE,
+                ONCE_ONLY,
                 REQUEST,
                 ASSERTION,
                 EXTRACTOR,

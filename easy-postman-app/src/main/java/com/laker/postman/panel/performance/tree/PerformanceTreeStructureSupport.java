@@ -146,7 +146,7 @@ public class PerformanceTreeStructureSupport {
 
     public void addLoopNode(JTree performanceTree, Runnable saveConfigAction) {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
-        DefaultMutableTreeNode parentNode = resolveLoopInsertParent(selectedNode);
+        DefaultMutableTreeNode parentNode = resolveControllerInsertParent(selectedNode);
         if (parentNode == null) {
             return;
         }
@@ -163,6 +163,90 @@ public class PerformanceTreeStructureSupport {
         treeModel.insertNodeInto(loopNode, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
         performanceTree.expandPath(new TreePath(parentNode.getPath()));
         performanceTree.setSelectionPath(new TreePath(loopNode.getPath()));
+        saveConfigAction.run();
+    }
+
+    public void addSimpleNode(JTree performanceTree, Runnable saveConfigAction) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode parentNode = resolveControllerInsertParent(selectedNode);
+        if (parentNode == null) {
+            return;
+        }
+        DefaultMutableTreeNode simpleNode = PerformanceTreeNodeFactory.simpleNode();
+
+        int insertIndex = parentNode.getChildCount();
+        if (selectedNode.getParent() == parentNode) {
+            insertIndex = parentNode.getIndex(selectedNode) + 1;
+        }
+        DefaultMutableTreeNode requestNode = getParentWebSocketRequestNode(parentNode);
+        if (parentNode == requestNode) {
+            insertIndex = Math.max(1, insertIndex);
+        }
+        treeModel.insertNodeInto(simpleNode, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
+        performanceTree.expandPath(new TreePath(parentNode.getPath()));
+        performanceTree.setSelectionPath(new TreePath(simpleNode.getPath()));
+        saveConfigAction.run();
+    }
+
+    public void addConditionNode(JTree performanceTree, Runnable saveConfigAction) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode parentNode = resolveControllerInsertParent(selectedNode);
+        if (parentNode == null) {
+            return;
+        }
+        DefaultMutableTreeNode conditionNode = PerformanceTreeNodeFactory.conditionNode();
+
+        int insertIndex = parentNode.getChildCount();
+        if (selectedNode.getParent() == parentNode) {
+            insertIndex = parentNode.getIndex(selectedNode) + 1;
+        }
+        DefaultMutableTreeNode requestNode = getParentWebSocketRequestNode(parentNode);
+        if (parentNode == requestNode) {
+            insertIndex = Math.max(1, insertIndex);
+        }
+        treeModel.insertNodeInto(conditionNode, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
+        performanceTree.expandPath(new TreePath(parentNode.getPath()));
+        performanceTree.setSelectionPath(new TreePath(conditionNode.getPath()));
+        saveConfigAction.run();
+    }
+
+    public void addWhileNode(JTree performanceTree, Runnable saveConfigAction) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode parentNode = resolveControllerInsertParent(selectedNode);
+        if (parentNode == null) {
+            return;
+        }
+        DefaultMutableTreeNode whileNode = PerformanceTreeNodeFactory.whileNode();
+
+        int insertIndex = parentNode.getChildCount();
+        if (selectedNode.getParent() == parentNode) {
+            insertIndex = parentNode.getIndex(selectedNode) + 1;
+        }
+        DefaultMutableTreeNode requestNode = getParentWebSocketRequestNode(parentNode);
+        if (parentNode == requestNode) {
+            insertIndex = Math.max(1, insertIndex);
+        }
+        treeModel.insertNodeInto(whileNode, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
+        performanceTree.expandPath(new TreePath(parentNode.getPath()));
+        performanceTree.setSelectionPath(new TreePath(whileNode.getPath()));
+        saveConfigAction.run();
+    }
+
+    public void addOnceOnlyNode(JTree performanceTree, Runnable saveConfigAction) {
+        DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) performanceTree.getLastSelectedPathComponent();
+        DefaultMutableTreeNode parentNode = resolveRequestControllerInsertParent(selectedNode);
+        if (parentNode == null) {
+            return;
+        }
+        DefaultMutableTreeNode onceOnlyNode = PerformanceTreeNodeFactory.onceOnlyNode();
+
+        int insertIndex = parentNode.getChildCount();
+        if (selectedNode.getParent() == parentNode) {
+            insertIndex = parentNode.getIndex(selectedNode) + 1;
+        }
+        treeModel.insertNodeInto(onceOnlyNode, parentNode, Math.min(insertIndex, parentNode.getChildCount()));
+        performanceTree.expandPath(new TreePath(parentNode.getPath()));
+        performanceTree.setSelectionPath(new TreePath(onceOnlyNode.getPath()));
         saveConfigAction.run();
     }
 
@@ -196,7 +280,7 @@ public class PerformanceTreeStructureSupport {
             if (wsParent == getParentWebSocketRequestNode(wsParent)) {
                 insertIndex = Math.max(1, insertIndex);
             }
-        } else if (isRequestContainerLoop(selectedNode)) {
+        } else if (isRequestContainerController(selectedNode)) {
             parentNode = selectedNode;
             insertIndex = parentNode.getChildCount();
         }
@@ -213,6 +297,10 @@ public class PerformanceTreeStructureSupport {
 
     public boolean isRequestContainerLoop(DefaultMutableTreeNode node) {
         return PerformanceTreeRules.isRequestContainerLoop(node);
+    }
+
+    public boolean isRequestContainerController(DefaultMutableTreeNode node) {
+        return PerformanceTreeRules.isRequestContainerController(node);
     }
 
     public DefaultMutableTreeNode resolveCsvDataSetParent(DefaultMutableTreeNode selectedNode) {
@@ -264,14 +352,16 @@ public class PerformanceTreeStructureSupport {
         if (nodeData.type == NodeType.REQUEST && PerformanceTreeRules.isWebSocketPerfRequest(nodeData.httpRequestItem)) {
             return selectedNode;
         }
-        if (nodeData.type == NodeType.LOOP && isWebSocketScenarioLoop(selectedNode)) {
+        if ((nodeData.type == NodeType.LOOP || nodeData.type == NodeType.SIMPLE || nodeData.type == NodeType.CONDITION
+                || nodeData.type == NodeType.WHILE)
+                && isWebSocketScenarioController(selectedNode)) {
             return selectedNode;
         }
         if (nodeData.type == NodeType.WS_CONNECT
                 || nodeData.type == NodeType.TIMER
                 || isWebSocketStepNode(nodeData.type)) {
             DefaultMutableTreeNode parent = (DefaultMutableTreeNode) selectedNode.getParent();
-            if (isWebSocketScenarioLoop(parent)) {
+            if (isWebSocketScenarioController(parent)) {
                 return parent;
             }
             return getParentWebSocketRequestNode(selectedNode);
@@ -293,14 +383,24 @@ public class PerformanceTreeStructureSupport {
         return PerformanceTreeRules.isSsePerfRequest(requestNodeData.httpRequestItem) ? requestNode : null;
     }
 
-    private DefaultMutableTreeNode resolveLoopInsertParent(DefaultMutableTreeNode selectedNode) {
+    private DefaultMutableTreeNode resolveControllerInsertParent(DefaultMutableTreeNode selectedNode) {
         if (selectedNode == null || !(selectedNode.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return null;
         }
-        if (nodeData.type == NodeType.THREAD_GROUP || isRequestContainerLoop(selectedNode)) {
+        if (nodeData.type == NodeType.THREAD_GROUP || isRequestContainerController(selectedNode)) {
             return selectedNode;
         }
         return resolveWebSocketStepParent(selectedNode);
+    }
+
+    private DefaultMutableTreeNode resolveRequestControllerInsertParent(DefaultMutableTreeNode selectedNode) {
+        if (selectedNode == null || !(selectedNode.getUserObject() instanceof PerformanceTreeNode nodeData)) {
+            return null;
+        }
+        if (nodeData.type == NodeType.THREAD_GROUP || isRequestContainerController(selectedNode)) {
+            return selectedNode;
+        }
+        return null;
     }
 
     private int firstNonCsvChildIndex(DefaultMutableTreeNode parentNode) {
@@ -312,11 +412,13 @@ public class PerformanceTreeStructureSupport {
         return insertIndex;
     }
 
-    private boolean isWebSocketScenarioLoop(DefaultMutableTreeNode node) {
+    private boolean isWebSocketScenarioController(DefaultMutableTreeNode node) {
         if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)) {
             return false;
         }
-        return nodeData.type == NodeType.LOOP && getParentWebSocketRequestNode(node) != null;
+        return (nodeData.type == NodeType.LOOP || nodeData.type == NodeType.SIMPLE || nodeData.type == NodeType.CONDITION
+                || nodeData.type == NodeType.WHILE)
+                && getParentWebSocketRequestNode(node) != null;
     }
 
     private DefaultMutableTreeNode getParentWebSocketRequestNode(DefaultMutableTreeNode node) {
@@ -412,7 +514,10 @@ public class PerformanceTreeStructureSupport {
         return type == NodeType.WS_SEND
                 || type == NodeType.WS_READ
                 || type == NodeType.WS_CLOSE
-                || type == NodeType.LOOP;
+                || type == NodeType.LOOP
+                || type == NodeType.SIMPLE
+                || type == NodeType.CONDITION
+                || type == NodeType.WHILE;
     }
 
     private void moveAssertionsFromWebSocketScenario(DefaultMutableTreeNode from, DefaultMutableTreeNode requestNode) {
@@ -482,6 +587,8 @@ public class PerformanceTreeStructureSupport {
                         nodeData.name = PerformanceTreeNodeTitleFormatter.webSocketReadTitle(nodeData.webSocketPerformanceData);
                 case WS_CLOSE -> nodeData.name = I18nUtil.getMessage(MessageKeys.PERFORMANCE_WS_NODE_CLOSE);
                 case LOOP -> nodeData.name = PerformanceTreeNodeTitleFormatter.loopTitle(nodeData.loopData);
+                case CONDITION -> nodeData.name = PerformanceTreeNodeTitleFormatter.conditionTitle(nodeData.conditionData);
+                case WHILE -> nodeData.name = PerformanceTreeNodeTitleFormatter.whileTitle(nodeData.whileData);
                 case EXTRACTOR -> nodeData.name = PerformanceTreeNodeTitleFormatter.extractorTitle(nodeData.extractorData);
                 default -> {
                 }

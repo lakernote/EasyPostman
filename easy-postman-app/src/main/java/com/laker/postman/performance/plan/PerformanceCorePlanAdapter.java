@@ -2,13 +2,17 @@ package com.laker.postman.performance.plan;
 
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformanceConditionController;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocument;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanNode;
 import com.laker.postman.performance.core.plan.PerformanceCoreRequestSampler;
 import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
 import com.laker.postman.performance.core.plan.PerformanceLoopController;
+import com.laker.postman.performance.core.plan.PerformanceOnceOnlyController;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceWhileController;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
+import com.laker.postman.performance.core.plan.PerformanceSimpleController;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.performance.core.plan.PerformanceTimerElement;
@@ -41,6 +45,8 @@ public class PerformanceCorePlanAdapter {
                 .threadGroupData(node.getThreadGroupData())
                 .csvDataSetData(node.getCsvDataSetData())
                 .loopData(node.getLoopData())
+                .conditionData(node.getConditionData())
+                .whileData(node.getWhileData())
                 .requestSnapshot(node.getRequestSnapshot())
                 .assertionData(node.getAssertionData())
                 .extractorData(node.getExtractorData())
@@ -63,6 +69,8 @@ public class PerformanceCorePlanAdapter {
                 .threadGroupData(node.getThreadGroupData())
                 .csvDataSetData(node.getCsvDataSetData())
                 .loopData(node.getLoopData())
+                .conditionData(node.getConditionData())
+                .whileData(node.getWhileData())
                 .requestSnapshot(node.getRequestSnapshot())
                 .assertionData(node.getAssertionData())
                 .extractorData(node.getExtractorData())
@@ -157,6 +165,32 @@ public class PerformanceCorePlanAdapter {
                     loop.getName(),
                     loop.getLoopData(),
                     toAppElements(loop.getElements())
+            );
+        }
+        if (element instanceof PerformanceSimpleController simple) {
+            return new PerformanceSimpleController(
+                    simple.getName(),
+                    toAppElements(simple.getElements())
+            );
+        }
+        if (element instanceof PerformanceConditionController condition) {
+            return new PerformanceConditionController(
+                    condition.getName(),
+                    condition.getConditionData(),
+                    toAppElements(condition.getElements())
+            );
+        }
+        if (element instanceof PerformanceWhileController whileController) {
+            return new PerformanceWhileController(
+                    whileController.getName(),
+                    whileController.getWhileData(),
+                    toAppElements(whileController.getElements())
+            );
+        }
+        if (element instanceof PerformanceOnceOnlyController onceOnly) {
+            return new PerformanceOnceOnlyController(
+                    onceOnly.getName(),
+                    toAppElements(onceOnly.getElements())
             );
         }
         if (element instanceof PerformanceProtocolStageElement stage) {

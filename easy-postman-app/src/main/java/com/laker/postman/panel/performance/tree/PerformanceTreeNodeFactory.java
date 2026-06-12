@@ -3,7 +3,9 @@ package com.laker.postman.panel.performance.tree;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
@@ -39,6 +41,32 @@ public class PerformanceTreeNodeFactory {
         LoopData data = new LoopData();
         return new DefaultMutableTreeNode(
                 new PerformanceTreeNode(PerformanceTreeNodeTitleFormatter.loopTitle(data), NodeType.LOOP, data)
+        );
+    }
+
+    DefaultMutableTreeNode simpleNode() {
+        return new DefaultMutableTreeNode(
+                new PerformanceTreeNode(PerformanceTreeNodeTitleFormatter.simpleTitle(), NodeType.SIMPLE)
+        );
+    }
+
+    DefaultMutableTreeNode conditionNode() {
+        ConditionData data = new ConditionData();
+        return new DefaultMutableTreeNode(
+                new PerformanceTreeNode(PerformanceTreeNodeTitleFormatter.conditionTitle(data), NodeType.CONDITION, data)
+        );
+    }
+
+    DefaultMutableTreeNode whileNode() {
+        WhileData data = new WhileData();
+        return new DefaultMutableTreeNode(
+                new PerformanceTreeNode(PerformanceTreeNodeTitleFormatter.whileTitle(data), NodeType.WHILE, data)
+        );
+    }
+
+    DefaultMutableTreeNode onceOnlyNode() {
+        return new DefaultMutableTreeNode(
+                new PerformanceTreeNode(PerformanceTreeNodeTitleFormatter.onceOnlyTitle(), NodeType.ONCE_ONLY)
         );
     }
 

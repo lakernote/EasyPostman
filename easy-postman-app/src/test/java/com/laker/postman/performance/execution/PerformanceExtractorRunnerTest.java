@@ -45,6 +45,32 @@ public class PerformanceExtractorRunnerTest {
     }
 
     @Test
+    public void shouldExtractResponseFieldsIntoExecutionVariables() {
+        HttpResponse response = response();
+        response.costMs = 123;
+        response.bodySize = 456;
+        response.headersSize = 78;
+        response.protocol = "HTTP/2";
+
+        ExecutionVariableContext context = new ExecutionVariableContext();
+        try (ExecutionContextScope ignored = ExecutionContextScope.open(context)) {
+            PerformanceExtractorRunner.runExtractorElements(List.of(
+                    extractor("Response Field", "Status Code", "statusCode"),
+                    extractor("Response Field", "Response Time (ms)", "responseTimeMs"),
+                    extractor("Response Field", "Body Size (bytes)", "bodySizeBytes"),
+                    extractor("Response Field", "Headers Size (bytes)", "headersSizeBytes"),
+                    extractor("Response Field", "Protocol", "protocol")
+            ), response);
+        }
+
+        assertEquals(context.getVariables().get("statusCode"), "200");
+        assertEquals(context.getVariables().get("responseTimeMs"), "123");
+        assertEquals(context.getVariables().get("bodySizeBytes"), "456");
+        assertEquals(context.getVariables().get("headersSizeBytes"), "78");
+        assertEquals(context.getVariables().get("protocol"), "HTTP/2");
+    }
+
+    @Test
     public void shouldUseDefaultValueWhenExtractionMisses() {
         HttpResponse response = response();
         response.body = "{}";
@@ -67,7 +93,8 @@ public class PerformanceExtractorRunnerTest {
     public void shouldRequireResponseBodyOnlyForBodyBasedExtractors() {
         assertFalse(PerformanceExtractorRunner.requiresResponseBodyElements(List.of(
                 extractor("Header", "X-Trace", "trace"),
-                extractor("Cookie", "sid", "sid")
+                extractor("Cookie", "sid", "sid"),
+                extractor("Response Field", "Status Code", "statusCode")
         )));
         org.testng.Assert.assertTrue(PerformanceExtractorRunner.requiresResponseBodyElements(List.of(
                 extractor("JSONPath", "$.token", "token"),

@@ -1,10 +1,6 @@
 package com.laker.postman.performance.core.plan;
 
-import java.util.List;
-
-public interface PerformanceController extends PerformancePlanElement {
+public interface PerformanceController extends PerformanceElementContainer {
 
     int getIterationCount();
-
-    List<PerformancePlanElement> getElements();
 }

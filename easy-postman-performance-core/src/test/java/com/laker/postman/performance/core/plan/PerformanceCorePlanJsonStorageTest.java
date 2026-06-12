@@ -1,6 +1,8 @@
 package com.laker.postman.performance.core.plan;
 
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.ConditionData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
@@ -34,6 +36,7 @@ public class PerformanceCorePlanJsonStorageTest {
         String json = storage.toJson(document);
 
         assertTrue(json.contains("\"requestSnapshot\""));
+        assertTrue(json.contains("\"conditionData\""));
         assertFalse(json.contains("\"requestItem\""));
         assertFalse(json.contains("\"requestItemId\""));
 
@@ -47,7 +50,20 @@ public class PerformanceCorePlanJsonStorageTest {
 
         PerformanceCorePlanNode loadedLoop = loadedGroup.getChildren().get(0);
         assertEquals(loadedLoop.getLoopData().iterations, 3);
-        PerformanceCorePlanNode loadedRequest = loadedLoop.getChildren().get(0);
+        PerformanceCorePlanNode loadedSimple = loadedLoop.getChildren().get(0);
+        assertEquals(loadedSimple.getType(), NodeType.SIMPLE);
+        PerformanceCorePlanNode loadedOnceOnly = loadedSimple.getChildren().get(0);
+        assertEquals(loadedOnceOnly.getType(), NodeType.ONCE_ONLY);
+        PerformanceCorePlanNode loadedWhile = loadedOnceOnly.getChildren().get(0);
+        assertEquals(loadedWhile.getType(), NodeType.WHILE);
+        assertEquals(loadedWhile.getWhileData().expression, "{{retryCount}} < 3");
+        assertEquals(loadedWhile.getWhileData().intervalMs, 500);
+        assertEquals(loadedWhile.getWhileData().maxIterations, 20);
+        assertEquals(loadedWhile.getWhileData().timeoutMs, 15000);
+        PerformanceCorePlanNode loadedCondition = loadedWhile.getChildren().get(0);
+        assertEquals(loadedCondition.getType(), NodeType.CONDITION);
+        assertEquals(loadedCondition.getConditionData().expression, "{{enabled}} == true");
+        PerformanceCorePlanNode loadedRequest = loadedCondition.getChildren().get(0);
         assertTrue(loadedRequest.isRequestInheritanceSnapshot());
         assertEquals(loadedRequest.getWebSocketPerformanceData().connectTimeoutMs, 2468);
         assertEquals(loadedRequest.getWebSocketPerformanceData().sendMode,
@@ -128,6 +144,13 @@ public class PerformanceCorePlanJsonStorageTest {
 
         LoopData loopData = new LoopData();
         loopData.iterations = 3;
+        ConditionData conditionData = new ConditionData();
+        conditionData.expression = "{{enabled}} == true";
+        WhileData whileData = new WhileData();
+        whileData.expression = "{{retryCount}} < 3";
+        whileData.intervalMs = 500;
+        whileData.maxIterations = 20;
+        whileData.timeoutMs = 15000;
         PerformanceCorePlanNode request = PerformanceCorePlanNode.builder()
                 .name("socket request")
                 .type(NodeType.REQUEST)
@@ -136,11 +159,33 @@ public class PerformanceCorePlanJsonStorageTest {
                 .webSocketPerformanceData(webSocketData)
                 .children(List.of(timer))
                 .build();
+        PerformanceCorePlanNode condition = PerformanceCorePlanNode.builder()
+                .name("condition")
+                .type(NodeType.CONDITION)
+                .conditionData(conditionData)
+                .children(List.of(request))
+                .build();
+        PerformanceCorePlanNode whileNode = PerformanceCorePlanNode.builder()
+                .name("while")
+                .type(NodeType.WHILE)
+                .whileData(whileData)
+                .children(List.of(condition))
+                .build();
+        PerformanceCorePlanNode onceOnly = PerformanceCorePlanNode.builder()
+                .name("once only")
+                .type(NodeType.ONCE_ONLY)
+                .children(List.of(whileNode))
+                .build();
+        PerformanceCorePlanNode simple = PerformanceCorePlanNode.builder()
+                .name("simple")
+                .type(NodeType.SIMPLE)
+                .children(List.of(onceOnly))
+                .build();
         PerformanceCorePlanNode loop = PerformanceCorePlanNode.builder()
                 .name("loop")
                 .type(NodeType.LOOP)
                 .loopData(loopData)
-                .children(List.of(request))
+                .children(List.of(simple))
                 .build();
 
         ThreadGroupData threadGroupData = new ThreadGroupData();

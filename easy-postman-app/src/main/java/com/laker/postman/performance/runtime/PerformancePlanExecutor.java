@@ -29,7 +29,12 @@ public final class PerformancePlanExecutor {
         this.delegate = new PerformanceCorePlanExecutor<>(
                 runningSupplier,
                 samplerExecutor::execute,
-                timerSleeper::sleep
+                timerSleeper::sleep,
+                PerformanceConditionEvaluator::evaluate,
+                (controller, context) -> context != null && context.markOnceOnlyExecuted(
+                        "once-only:" + System.identityHashCode(controller)
+                ),
+                PerformanceConditionEvaluator::evaluate
         );
     }
 

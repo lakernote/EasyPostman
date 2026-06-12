@@ -30,7 +30,7 @@ final class PerformanceTreeCommandPolicy {
             return commands;
         }
 
-        boolean requestContainerLoop = treeSupport.isRequestContainerLoop(node);
+        boolean requestContainerController = treeSupport.isRequestContainerController(node);
         boolean canAddCsvDataSet = treeSupport.resolveCsvDataSetParent(node) != null;
         boolean canManageSseStages = treeSupport.resolveSseStageParent(node) != null;
         boolean canManageWsConnect = treeSupport.resolveWebSocketConnectParent(node) != null;
@@ -39,11 +39,15 @@ final class PerformanceTreeCommandPolicy {
         if (canAddCsvDataSet) {
             commands.add(PerformanceTreeCommand.ADD_CSV_DATA_SET);
         }
-        if (nodeData.type == NodeType.THREAD_GROUP || requestContainerLoop) {
+        if (nodeData.type == NodeType.THREAD_GROUP || requestContainerController) {
             commands.add(PerformanceTreeCommand.ADD_REQUEST);
+            commands.add(PerformanceTreeCommand.ADD_ONCE_ONLY);
         }
-        if (nodeData.type == NodeType.THREAD_GROUP || requestContainerLoop || canManageWsSteps) {
+        if (nodeData.type == NodeType.THREAD_GROUP || requestContainerController || canManageWsSteps) {
             commands.add(PerformanceTreeCommand.ADD_LOOP);
+            commands.add(PerformanceTreeCommand.ADD_SIMPLE);
+            commands.add(PerformanceTreeCommand.ADD_CONDITION);
+            commands.add(PerformanceTreeCommand.ADD_WHILE);
         }
         if (canManageSseStages) {
             commands.add(PerformanceTreeCommand.ADD_SSE_CONNECT);
@@ -63,7 +67,7 @@ final class PerformanceTreeCommandPolicy {
         if (canAddExtractor(nodeData)) {
             commands.add(PerformanceTreeCommand.ADD_EXTRACTOR);
         }
-        if (nodeData.type == NodeType.REQUEST || requestContainerLoop || canManageWsSteps) {
+        if (nodeData.type == NodeType.REQUEST || requestContainerController || canManageWsSteps) {
             commands.add(PerformanceTreeCommand.ADD_TIMER);
         }
         if (treeSupport.hasCopyableNodes(singlePath(node))) {
@@ -127,6 +131,9 @@ final class PerformanceTreeCommandPolicy {
                 && nodeData.type != NodeType.ROOT
                 && !isFixedNameNode(nodeData.type)
                 && nodeData.type != NodeType.LOOP
+                && nodeData.type != NodeType.CONDITION
+                && nodeData.type != NodeType.WHILE
+                && nodeData.type != NodeType.ONCE_ONLY
                 && nodeData.type != NodeType.EXTRACTOR
                 && !treeSupport.isWebSocketStepNode(nodeData.type);
     }

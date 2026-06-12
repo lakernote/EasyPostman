@@ -32,6 +32,8 @@ public final class PerformanceTestPlanNode {
                 .threadGroupData(data.threadGroupData)
                 .csvDataSetData(data.csvDataSetData)
                 .loopData(data.loopData)
+                .conditionData(data.conditionData)
+                .whileData(data.whileData)
                 .httpRequestItem(data.httpRequestItem)
                 .requestSnapshot(data.requestSnapshot)
                 .assertionData(data.assertionData)

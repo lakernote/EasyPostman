@@ -154,6 +154,41 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void controllerSelectionShouldShowDescriptionCards() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            TreeFixture fixture = new TreeFixture();
+            DefaultMutableTreeNode simpleNode = new DefaultMutableTreeNode(
+                    new PerformanceTreeNode("simple", NodeType.SIMPLE)
+            );
+            DefaultMutableTreeNode onceOnlyNode = new DefaultMutableTreeNode(
+                    new PerformanceTreeNode("once only", NodeType.ONCE_ONLY)
+            );
+            DefaultMutableTreeNode root = (DefaultMutableTreeNode) fixture.treeModel.getRoot();
+            fixture.treeModel.insertNodeInto(simpleNode, root, root.getChildCount());
+            fixture.treeModel.insertNodeInto(onceOnlyNode, root, root.getChildCount());
+            AtomicReference<DefaultMutableTreeNode> currentRequest = new AtomicReference<>();
+            PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                    ignored -> {
+                    },
+                    ignored -> {
+                    },
+                    (node, treeNode) -> {
+                    },
+                    currentRequest::set
+            );
+            support.install();
+
+            fixture.tree.setSelectionPath(new TreePath(simpleNode.getPath()));
+            assertTrue(fixture.simpleCard.isVisible());
+            assertNull(currentRequest.get());
+
+            fixture.tree.setSelectionPath(new TreePath(onceOnlyNode.getPath()));
+            assertTrue(fixture.onceOnlyCard.isVisible());
+            assertNull(currentRequest.get());
+        });
+    }
+
+    @Test
     public void webSocketConnectSelectionShouldEditConnectStageNode() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             TreeFixture fixture = new TreeFixture();
@@ -218,6 +253,8 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
 
     private static final class TreeFixture {
         private static final String EMPTY_CARD = "empty";
+        private static final String SIMPLE_CARD = "simple";
+        private static final String ONCE_ONLY_CARD = "onceOnly";
         private static final String REQUEST_CARD = "request";
         private static final String WS_CONNECT_CARD = "wsConnect";
 
@@ -229,6 +266,8 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
         private final CardLayout cardLayout = new CardLayout();
         private final JPanel propertyPanel = new JPanel(cardLayout);
         private final JPanel emptyCard = new JPanel();
+        private final JPanel simpleCard = new JPanel();
+        private final JPanel onceOnlyCard = new JPanel();
         private final JPanel requestCard = new JPanel();
         private final JPanel wsConnectCard = new JPanel();
 
@@ -243,9 +282,13 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
             treeModel = new DefaultTreeModel(root);
             tree = new JTree(treeModel);
             emptyCard.add(new JLabel("empty"));
+            simpleCard.add(new JLabel("simple"));
+            onceOnlyCard.add(new JLabel("onceOnly"));
             requestCard.add(new JLabel("request"));
             wsConnectCard.add(new JLabel("wsConnect"));
             propertyPanel.add(emptyCard, EMPTY_CARD);
+            propertyPanel.add(simpleCard, SIMPLE_CARD);
+            propertyPanel.add(onceOnlyCard, ONCE_ONLY_CARD);
             propertyPanel.add(requestCard, REQUEST_CARD);
             propertyPanel.add(wsConnectCard, WS_CONNECT_CARD);
             cardLayout.show(propertyPanel, EMPTY_CARD);
@@ -320,6 +363,8 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     null,
                     null,
                     null,
+                    null,
+                    null,
                     wsConnectPanel,
                     null,
                     null,
@@ -337,6 +382,10 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                     "threadGroup",
                     "csvDataSet",
                     "loop",
+                    SIMPLE_CARD,
+                    "condition",
+                    "while",
+                    ONCE_ONLY_CARD,
                     REQUEST_CARD,
                     "assertion",
                     "extractor",

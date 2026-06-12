@@ -7,6 +7,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.config.CsvDataSetData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 
 import static org.testng.Assert.assertEquals;
 
@@ -119,6 +121,117 @@ public class PerformancePlanExecutorTest {
     }
 
     @Test
+    public void shouldExecuteSimpleControllerChildrenOncePerLoopIteration() {
+        PerformanceTestPlanNode groupNode = threadGroupNode();
+        PerformanceTestPlanNode loopNode = loopNode(2);
+        PerformanceTestPlanNode simpleNode = new PerformanceTestPlanNode(
+                new PerformanceTreeNode("simple", NodeType.SIMPLE)
+        );
+        simpleNode.add(timerNode("simple timer", 9));
+        simpleNode.add(requestNode("inside simple", RequestItemProtocolEnum.HTTP));
+        loopNode.add(simpleNode);
+        groupNode.add(loopNode);
+
+        List<String> events = new ArrayList<>();
+        PerformancePlanExecutor executor = newExecutor(
+                () -> true,
+                events,
+                false,
+                delayMs -> events.add("timer:" + delayMs)
+        );
+
+        executor.executeIteration(
+                compile(groupNode).getThreadGroups().get(0),
+                new ExecutionVariableContext()
+        );
+
+        assertEquals(events, List.of(
+                "timer:9",
+                "request:inside simple",
+                "timer:9",
+                "request:inside simple"
+        ));
+    }
+
+    @Test
+    public void shouldExecuteOnceOnlyControllerOnceForSharedVirtualUserState() {
+        PerformanceTestPlanNode groupNode = threadGroupNode();
+        PerformanceTestPlanNode loopNode = loopNode(3);
+        PerformanceTestPlanNode onceOnlyNode = new PerformanceTestPlanNode(
+                new PerformanceTreeNode("once only", NodeType.ONCE_ONLY)
+        );
+        onceOnlyNode.add(requestNode("login", RequestItemProtocolEnum.HTTP));
+        loopNode.add(onceOnlyNode);
+        groupNode.add(loopNode);
+
+        List<String> events = new ArrayList<>();
+        PerformancePlanExecutor executor = newExecutor(
+                () -> true,
+                events,
+                false,
+                delayMs -> events.add("timer:" + delayMs)
+        );
+        java.util.Set<String> firstVirtualUserState = java.util.concurrent.ConcurrentHashMap.newKeySet();
+        ExecutionVariableContext firstIteration = new ExecutionVariableContext();
+        firstIteration.attachOnceOnlyState(firstVirtualUserState);
+        ExecutionVariableContext secondIteration = new ExecutionVariableContext();
+        secondIteration.attachOnceOnlyState(firstVirtualUserState);
+        ExecutionVariableContext anotherVirtualUser = new ExecutionVariableContext();
+        anotherVirtualUser.attachOnceOnlyState(java.util.concurrent.ConcurrentHashMap.newKeySet());
+
+        PerformanceThreadGroupPlan groupPlan = compile(groupNode).getThreadGroups().get(0);
+        executor.executeIteration(groupPlan, firstIteration);
+        executor.executeIteration(groupPlan, secondIteration);
+        executor.executeIteration(groupPlan, anotherVirtualUser);
+
+        assertEquals(events, List.of(
+                "request:login",
+                "request:login"
+        ));
+    }
+
+    @Test
+    public void shouldExecuteWhileChildrenWhileExpressionUsesExecutionVariables() {
+        PerformanceTestPlanNode groupNode = threadGroupNode();
+        WhileData whileData = new WhileData();
+        whileData.expression = "{{retryCount}} < 3";
+        whileData.intervalMs = 25;
+        whileData.maxIterations = 5;
+        PerformanceTestPlanNode whileNode = new PerformanceTestPlanNode(
+                new PerformanceTreeNode("while", NodeType.WHILE, whileData)
+        );
+        whileNode.add(requestNode("retry request", RequestItemProtocolEnum.HTTP));
+        groupNode.add(whileNode);
+
+        List<String> events = new ArrayList<>();
+        PerformancePlanExecutor executor = newExecutor(
+                () -> true,
+                events,
+                false,
+                delayMs -> events.add("sleep:" + delayMs),
+                (requestItem, context) -> {
+                    int retryCount = Integer.parseInt(context.getVariables().getOrDefault("retryCount", "0"));
+                    context.getVariables().put("retryCount", Integer.toString(retryCount + 1));
+                }
+        );
+        ExecutionVariableContext iterationContext = new ExecutionVariableContext();
+        iterationContext.getVariables().put("retryCount", "0");
+
+        executor.executeIteration(
+                compile(groupNode).getThreadGroups().get(0),
+                iterationContext
+        );
+
+        assertEquals(events, List.of(
+                "request:retry request",
+                "sleep:25",
+                "request:retry request",
+                "sleep:25",
+                "request:retry request"
+        ));
+    }
+
+    @Test
     public void shouldRunHttpRequestChildTimersBeforeSamplerButSkipThemForWebSocket() {
         PerformanceTestPlanNode groupNode = threadGroupNode();
         PerformanceTestPlanNode httpRequest = requestNode("http request", RequestItemProtocolEnum.HTTP);
@@ -173,6 +286,31 @@ public class PerformancePlanExecutorTest {
         assertEquals(contexts.get(0).getIterationData().get("name"), "alice");
     }
 
+    @Test
+    public void iterationContextFactoryShouldShareOnceOnlyStateWithinVirtualUserAndResetBetweenRuns() {
+        PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
+        PerformanceIterationContextFactory factory = new PerformanceIterationContextFactory(virtualUsers);
+        List<ExecutionVariableContext> contexts = new ArrayList<>();
+
+        virtualUsers.newThread("test-vu", (active, total) -> {
+        }, 1, () -> {
+            contexts.add(factory.create(null, 2));
+            contexts.add(factory.create(null, 2));
+        }).run();
+
+        assertEquals(contexts.size(), 2);
+        assertEquals(contexts.get(0).markOnceOnlyExecuted("node"), true);
+        assertEquals(contexts.get(1).markOnceOnlyExecuted("node"), false);
+
+        factory.resetControlState();
+        virtualUsers.resetVirtualUsers();
+        contexts.clear();
+        virtualUsers.newThread("test-vu", (active, total) -> {
+        }, 1, () -> contexts.add(factory.create(null, 1))).run();
+
+        assertEquals(contexts.get(0).markOnceOnlyExecuted("node"), true);
+    }
+
     private static PerformancePlanExecutor newExecutor(AtomicBoolean running,
                                                        List<String> events,
                                                        boolean webSocketByName,
@@ -184,6 +322,15 @@ public class PerformancePlanExecutorTest {
                                                        List<String> events,
                                                        boolean webSocketByName,
                                                        PerformancePlanExecutor.TimerSleeper timerSleeper) {
+        return newExecutor(running, events, webSocketByName, timerSleeper, (requestItem, context) -> {
+        });
+    }
+
+    private static PerformancePlanExecutor newExecutor(java.util.function.BooleanSupplier running,
+                                                       List<String> events,
+                                                       boolean webSocketByName,
+                                                       PerformancePlanExecutor.TimerSleeper timerSleeper,
+                                                       BiConsumer<HttpRequestItem, ExecutionVariableContext> afterRequestAction) {
         PerformanceRequestExecutor requestExecutor = new PerformanceRequestExecutor(
                 running,
                 throwable -> false,
@@ -195,6 +342,7 @@ public class PerformancePlanExecutorTest {
                                                              ExecutionVariableContext iterationContext) {
                 HttpRequestItem requestItem = requestSampler.getHttpRequestItem();
                 events.add("request:" + requestItem.getName());
+                afterRequestAction.accept(requestItem, iterationContext);
                 HttpResponse response = new HttpResponse();
                 response.costMs = 1;
                 response.endTime = System.currentTimeMillis();

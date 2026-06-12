@@ -15,6 +15,7 @@ import com.laker.postman.performance.core.plan.PerformanceCorePlanNode;
 import com.laker.postman.performance.core.plan.PerformanceLoopController;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
 import com.laker.postman.performance.core.plan.PerformanceSampler;
+import com.laker.postman.performance.core.plan.PerformanceSimpleController;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceTimerElement;
 import com.laker.postman.performance.core.request.PerformanceRequestKeyValue;
@@ -55,6 +56,18 @@ public class PerformancePlanContractsTest {
         PerformanceController controller = new PerformanceLoopController("loop", loopData, List.of());
 
         assertEquals(controller.getIterationCount(), LoopData.MIN_ITERATIONS);
+    }
+
+    @Test
+    public void simpleShouldExposeSingleIterationControllerContract() {
+        PerformanceTimerElement timer = timerElement("timer", 100);
+
+        PerformanceController controller = new PerformanceSimpleController("simple", List.of(timer));
+
+        assertEquals(controller.getName(), "simple");
+        assertEquals(controller.getType(), NodeType.SIMPLE);
+        assertEquals(controller.getIterationCount(), 1);
+        assertEquals(controller.getElements(), List.of(timer));
     }
 
     @Test

@@ -5,7 +5,9 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
@@ -57,6 +59,8 @@ public class PerformanceTreeSnapshot {
         copy.threadGroupData = JsonUtil.deepCopy(source.threadGroupData, ThreadGroupData.class);
         copy.csvDataSetData = JsonUtil.deepCopy(source.csvDataSetData, CsvDataSetData.class);
         copy.loopData = JsonUtil.deepCopy(source.loopData, LoopData.class);
+        copy.conditionData = JsonUtil.deepCopy(source.conditionData, ConditionData.class);
+        copy.whileData = JsonUtil.deepCopy(source.whileData, WhileData.class);
         copy.httpRequestItem = JsonUtil.deepCopy(source.httpRequestItem, HttpRequestItem.class);
         copy.requestSnapshot = copyRequestSnapshot(source.requestSnapshot);
         String pastedRequestId = regenerateRequestIds && (copy.httpRequestItem != null || copy.requestSnapshot != null)

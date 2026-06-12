@@ -8,11 +8,17 @@ import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataRuntimeSupport;
 
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 public final class PerformanceIterationContextFactory {
 
     private final PerformanceIterationDataProvider iterationDataProvider;
     private final PerformanceVirtualUserCoordinator virtualUsers;
+    private final AtomicLong controlStateGeneration = new AtomicLong();
+    private final ThreadLocal<ScopedOnceOnlyState> onceOnlyState = new ThreadLocal<>();
 
     public PerformanceIterationContextFactory(PerformanceVirtualUserCoordinator virtualUsers) {
         this(new CsvDataSetPerformanceIterationDataProvider(), virtualUsers);
@@ -37,11 +43,31 @@ public final class PerformanceIterationContextFactory {
         iterationContext.replaceIterationData(
                 IterationDataRuntimeSupport.prepare(resolveIterationDataForCurrentThread(groupPlan))
         );
+        iterationContext.attachOnceOnlyState(resolveOnceOnlyState());
         return iterationContext;
+    }
+
+    public void resetControlState() {
+        controlStateGeneration.incrementAndGet();
+        onceOnlyState.remove();
     }
 
     private Map<String, String> resolveIterationDataForCurrentThread(PerformanceThreadGroupPlan groupPlan) {
         Integer virtualUserIndex = virtualUsers.currentVirtualUserIndex();
         return iterationDataProvider.dataForVirtualUser(groupPlan, virtualUserIndex == null ? 0 : virtualUserIndex);
+    }
+
+    private Set<String> resolveOnceOnlyState() {
+        String scope = virtualUsers.currentVirtualUserScope();
+        long generation = controlStateGeneration.get();
+        ScopedOnceOnlyState current = onceOnlyState.get();
+        if (current == null || current.generation != generation || !Objects.equals(current.scope, scope)) {
+            current = new ScopedOnceOnlyState(scope, generation, ConcurrentHashMap.newKeySet());
+            onceOnlyState.set(current);
+        }
+        return current.keys;
+    }
+
+    private record ScopedOnceOnlyState(String scope, long generation, Set<String> keys) {
     }
 }

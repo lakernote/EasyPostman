@@ -5,7 +5,9 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
@@ -30,6 +32,14 @@ public class PerformancePlanDataCopies {
 
     public LoopData copyLoopData(LoopData source) {
         return JsonUtil.deepCopy(source, LoopData.class);
+    }
+
+    public ConditionData copyConditionData(ConditionData source) {
+        return JsonUtil.deepCopy(source, ConditionData.class);
+    }
+
+    public WhileData copyWhileData(WhileData source) {
+        return JsonUtil.deepCopy(source, WhileData.class);
     }
 
     public TimerData copyTimerData(TimerData source) {

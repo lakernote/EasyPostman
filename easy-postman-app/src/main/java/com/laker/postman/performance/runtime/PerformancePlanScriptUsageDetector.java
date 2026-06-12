@@ -2,8 +2,8 @@ package com.laker.postman.performance.runtime;
 
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
-import com.laker.postman.performance.core.plan.PerformanceController;
 import com.laker.postman.performance.core.plan.PerformanceCoreRequestSampler;
+import com.laker.postman.performance.core.plan.PerformanceElementContainer;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 import com.laker.postman.performance.core.plan.PerformanceSampler;
@@ -52,8 +52,8 @@ class PerformancePlanScriptUsageDetector {
             return webSocketUsesScripts(protocolStage.getWebSocketPerformanceData())
                     || elementsUseScripts(protocolStage.getElements());
         }
-        if (element instanceof PerformanceController controller) {
-            return elementsUseScripts(controller.getElements());
+        if (element instanceof PerformanceElementContainer container) {
+            return elementsUseScripts(container.getElements());
         }
         if (element instanceof PerformanceSampler sampler) {
             return childrenUseScripts(sampler);

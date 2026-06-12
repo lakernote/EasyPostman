@@ -4,7 +4,9 @@ package com.laker.postman.panel.performance;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.performance.assertion.AssertionPropertyPanel;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
+import com.laker.postman.panel.performance.controller.ConditionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
+import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
@@ -24,6 +26,8 @@ final class PerformancePropertyPanelSupport {
     private final ThreadGroupPropertyPanel threadGroupPanel;
     private final CsvDataSetPropertyPanel csvDataSetPanel;
     private final LoopPropertyPanel loopPanel;
+    private final ConditionPropertyPanel conditionPanel;
+    private final WhilePropertyPanel whilePanel;
     private final AssertionPropertyPanel assertionPanel;
     private final ExtractorPropertyPanel extractorPanel;
     private final TimerPropertyPanel timerPanel;
@@ -42,6 +46,8 @@ final class PerformancePropertyPanelSupport {
     void forceCommitAllSpinners() {
         threadGroupPanel.forceCommitAllSpinners();
         loopPanel.forceCommitAllSpinners();
+        conditionPanel.forceCommitAllSpinners();
+        whilePanel.forceCommitAllSpinners();
         extractorPanel.forceCommitAllSpinners();
         timerPanel.forceCommitAllSpinners();
         sseConnectPanel.forceCommitAllSpinners();
@@ -65,6 +71,8 @@ final class PerformancePropertyPanelSupport {
                 }
             }
             case LOOP -> loopPanel.saveLoopData();
+            case CONDITION -> conditionPanel.saveConditionData();
+            case WHILE -> whilePanel.saveWhileData();
             case REQUEST -> {
                 if (requestEditSubPanelSupplier.get() != null && currentRequestNodeSupplier.get() != null) {
                     saveRequestNodeAction.accept(currentRequestNodeSupplier.get());

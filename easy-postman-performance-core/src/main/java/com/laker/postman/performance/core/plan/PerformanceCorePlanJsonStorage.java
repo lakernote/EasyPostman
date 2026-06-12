@@ -2,7 +2,9 @@ package com.laker.postman.performance.core.plan;
 
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
@@ -102,7 +104,13 @@ public class PerformanceCorePlanJsonStorage {
                     serializeThreadGroupData(planNode.getThreadGroupData()));
             case CSV_DATA_SET -> putIfNotNull(jsonNode, "csvDataSetData",
                     serializeCsvDataSetData(planNode.getCsvDataSetData()));
+            case SIMPLE -> {
+            }
             case LOOP -> putIfNotNull(jsonNode, "loopData", serializeLoopData(planNode.getLoopData()));
+            case CONDITION -> putIfNotNull(jsonNode, "conditionData", serializeConditionData(planNode.getConditionData()));
+            case WHILE -> putIfNotNull(jsonNode, "whileData", serializeWhileData(planNode.getWhileData()));
+            case ONCE_ONLY -> {
+            }
             case REQUEST -> {
                 PerformanceRequestSnapshot requestSnapshot = planNode.getRequestSnapshot();
                 if (requestSnapshot != null) {
@@ -247,6 +255,31 @@ public class PerformanceCorePlanJsonStorage {
         return json;
     }
 
+    private Map<String, Object> serializeConditionData(ConditionData source) {
+        ConditionData data = PerformancePlanCoreDataCopies.copyConditionData(source);
+        if (data == null) {
+            return null;
+        }
+        data.normalize();
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("expression", data.expression);
+        return json;
+    }
+
+    private Map<String, Object> serializeWhileData(WhileData source) {
+        WhileData data = PerformancePlanCoreDataCopies.copyWhileData(source);
+        if (data == null) {
+            return null;
+        }
+        data.normalize();
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("expression", data.expression);
+        json.put("intervalMs", data.intervalMs);
+        json.put("timeoutMs", data.timeoutMs);
+        json.put("maxIterations", data.maxIterations);
+        return json;
+    }
+
     private Map<String, Object> serializeCsvDataSetData(CsvDataSetData data) {
         if (data == null) {
             return null;
@@ -367,7 +400,13 @@ public class PerformanceCorePlanJsonStorage {
         switch (nodeType) {
             case THREAD_GROUP -> builder.threadGroupData(deserializeThreadGroupData(objectMap(jsonNode.get("threadGroupData"))));
             case CSV_DATA_SET -> builder.csvDataSetData(deserializeCsvDataSetData(objectMap(jsonNode.get("csvDataSetData"))));
+            case SIMPLE -> {
+            }
             case LOOP -> builder.loopData(deserializeLoopData(objectMap(jsonNode.get("loopData"))));
+            case CONDITION -> builder.conditionData(deserializeConditionData(objectMap(jsonNode.get("conditionData"))));
+            case WHILE -> builder.whileData(deserializeWhileData(objectMap(jsonNode.get("whileData"))));
+            case ONCE_ONLY -> {
+            }
             case REQUEST -> {
                 builder.requestSnapshot(deserializeRequestSnapshot(objectMap(jsonNode.get("requestSnapshot"))));
                 builder.requestInheritanceSnapshot(booleanValue(jsonNode, "requestInheritanceSnapshot", false));
@@ -524,6 +563,29 @@ public class PerformanceCorePlanJsonStorage {
         }
         LoopData data = new LoopData();
         data.iterations = intValue(json, "iterations", data.iterations);
+        data.normalize();
+        return data;
+    }
+
+    private ConditionData deserializeConditionData(Map<String, Object> json) {
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+        ConditionData data = new ConditionData();
+        data.expression = stringValue(json, "expression", data.expression);
+        data.normalize();
+        return data;
+    }
+
+    private WhileData deserializeWhileData(Map<String, Object> json) {
+        if (json == null || json.isEmpty()) {
+            return null;
+        }
+        WhileData data = new WhileData();
+        data.expression = stringValue(json, "expression", data.expression);
+        data.intervalMs = intValue(json, "intervalMs", data.intervalMs);
+        data.timeoutMs = intValue(json, "timeoutMs", data.timeoutMs);
+        data.maxIterations = intValue(json, "maxIterations", data.maxIterations);
         data.normalize();
         return data;
     }

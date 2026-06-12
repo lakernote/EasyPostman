@@ -1,6 +1,8 @@
 package com.laker.postman.performance.core.plan;
 
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.ConditionData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.request.PerformanceRequestKeyValue;
@@ -34,11 +36,39 @@ public class PerformanceCorePlanDocumentCompilerTest {
                 .type(NodeType.REQUEST)
                 .requestSnapshot(snapshot)
                 .build();
+        ConditionData conditionData = new ConditionData();
+        conditionData.expression = "{{status}} == 200";
+        WhileData whileData = new WhileData();
+        whileData.expression = "{{retryCount}} < 3";
+        whileData.intervalMs = 250;
+        whileData.maxIterations = 12;
+        PerformanceCorePlanNode condition = PerformanceCorePlanNode.builder()
+                .name("condition")
+                .type(NodeType.CONDITION)
+                .conditionData(conditionData)
+                .children(List.of(request))
+                .build();
+        PerformanceCorePlanNode whileNode = PerformanceCorePlanNode.builder()
+                .name("while")
+                .type(NodeType.WHILE)
+                .whileData(whileData)
+                .children(List.of(condition))
+                .build();
+        PerformanceCorePlanNode onceOnly = PerformanceCorePlanNode.builder()
+                .name("once only")
+                .type(NodeType.ONCE_ONLY)
+                .children(List.of(whileNode))
+                .build();
+        PerformanceCorePlanNode simple = PerformanceCorePlanNode.builder()
+                .name("simple")
+                .type(NodeType.SIMPLE)
+                .children(List.of(onceOnly))
+                .build();
         PerformanceCorePlanNode loop = PerformanceCorePlanNode.builder()
                 .name("loop")
                 .type(NodeType.LOOP)
                 .loopData(loopData)
-                .children(List.of(request))
+                .children(List.of(simple))
                 .build();
         PerformanceCorePlanNode disabledGroup = PerformanceCorePlanNode.builder()
                 .name("disabled")
@@ -68,9 +98,24 @@ public class PerformanceCorePlanDocumentCompilerTest {
         assertTrue(group.getElements().get(0) instanceof PerformanceLoopController);
         PerformanceLoopController loopController = (PerformanceLoopController) group.getElements().get(0);
         assertEquals(loopController.getIterationCount(), 2);
-        assertTrue(loopController.getElements().get(0) instanceof PerformanceCoreRequestSampler);
+        assertTrue(loopController.getElements().get(0) instanceof PerformanceSimpleController);
+        PerformanceSimpleController simpleController = (PerformanceSimpleController) loopController.getElements().get(0);
+        assertEquals(simpleController.getName(), "simple");
+        assertEquals(simpleController.getIterationCount(), 1);
+        assertTrue(simpleController.getElements().get(0) instanceof PerformanceOnceOnlyController);
+        PerformanceOnceOnlyController onceOnlyController = (PerformanceOnceOnlyController) simpleController.getElements().get(0);
+        assertEquals(onceOnlyController.getName(), "once only");
+        assertTrue(onceOnlyController.getElements().get(0) instanceof PerformanceWhileController);
+        PerformanceWhileController whileController = (PerformanceWhileController) onceOnlyController.getElements().get(0);
+        assertEquals(whileController.getWhileData().expression, "{{retryCount}} < 3");
+        assertEquals(whileController.getWhileData().intervalMs, 250);
+        assertEquals(whileController.getWhileData().maxIterations, 12);
+        assertTrue(whileController.getElements().get(0) instanceof PerformanceConditionController);
+        PerformanceConditionController conditionController = (PerformanceConditionController) whileController.getElements().get(0);
+        assertEquals(conditionController.getConditionData().expression, "{{status}} == 200");
+        assertTrue(conditionController.getElements().get(0) instanceof PerformanceCoreRequestSampler);
 
-        PerformanceCoreRequestSampler sampler = (PerformanceCoreRequestSampler) loopController.getElements().get(0);
+        PerformanceCoreRequestSampler sampler = (PerformanceCoreRequestSampler) conditionController.getElements().get(0);
         assertEquals(sampler.getRequestSnapshot().getUrl(), "wss://example.test/ws");
         assertTrue(sampler.executesChildrenInSamplerOrder());
         assertNotSame(sampler.getRequestSnapshot(), snapshot);
@@ -88,6 +133,26 @@ public class PerformanceCorePlanDocumentCompilerTest {
         assertEquals(sampler.getName(), "request");
         assertFalse(sampler.executesChildrenInSamplerOrder());
         assertEquals(sampler.getChildren(), List.of());
+    }
+
+    @Test
+    public void requestNodeNameShouldOverrideStaleSnapshotName() {
+        PerformanceRequestSnapshot staleSnapshot = PerformanceRequestSnapshot.builder()
+                .id("request-1")
+                .name("213")
+                .url("https://example.test")
+                .protocol(PerformanceProtocol.HTTP)
+                .build();
+        PerformanceCorePlanNode request = PerformanceCorePlanNode.builder()
+                .name("111")
+                .type(NodeType.REQUEST)
+                .requestSnapshot(staleSnapshot)
+                .build();
+
+        PerformanceCoreRequestSampler sampler = PerformanceCorePlanDocumentCompiler.compileRequestSampler(request);
+
+        assertEquals(sampler.getName(), "111");
+        assertEquals(sampler.getRequestSnapshot().getName(), "111");
     }
 
     private static ThreadGroupData threadGroupData() {

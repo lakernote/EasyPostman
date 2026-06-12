@@ -16,6 +16,7 @@ import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.runtime.PerformanceRunError;
 import com.laker.postman.performance.core.runtime.PerformanceRunHandle;
 import com.laker.postman.performance.core.runtime.PerformanceRunSummary;
+import com.laker.postman.performance.core.threadgroup.PerformanceRequestEstimate;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -53,6 +54,8 @@ final class PerformanceRunControlSupport {
     private final Runnable clearCachedPerformanceResultsAction;
     private final AtomicBoolean stopping = new AtomicBoolean(false);
     private volatile long expectedTrendEndTimeMs;
+    private volatile JLabel currentRunLimitLabel;
+    private volatile RunLimitDisplay currentRunLimitDisplay;
     private Timer runStatusTimer;
 
     Thread startRun(DefaultMutableTreeNode rootNode,
@@ -73,8 +76,9 @@ final class PerformanceRunControlSupport {
                 PerformanceSwingTreePlanAdapter.toDocument(executionRootNode)
         );
 
-        long estimatedRequests = executionEngine.estimateTotalRequests(executionPlan);
-        RunLimitDisplay runLimitDisplay = runLimitDisplay(executionPlan, estimatedRequests);
+        PerformanceRequestEstimate requestEstimate = executionEngine.estimateRequestCount(executionPlan);
+        long estimatedRequests = requestEstimate.estimatedRequests();
+        RunLimitDisplay runLimitDisplay = runLimitDisplay(executionPlan, requestEstimate);
         final int highConcurrencyThreshold = 5000;
         if (estimatedRequests >= highConcurrencyThreshold && !efficientMode) {
             String message = I18nUtil.getMessage(
@@ -164,6 +168,7 @@ final class PerformanceRunControlSupport {
 
         flushPendingAndCharts("完成时", true);
         statisticsCoordinator.updateFinalReportWithStatsSync();
+        refreshFinalRunStatus();
 
         long totalTime = System.currentTimeMillis() - startTimeSupplier.getAsLong();
         PerformanceStatsSnapshot statsSnapshot = statsCollector.snapshot();
@@ -191,14 +196,19 @@ final class PerformanceRunControlSupport {
         stopRunStatusTimer();
         timerManager.stopAll();
         flushUiAfterStop();
+        refreshFinalRunStatus();
     }
 
     private void startRunStatusTimer(JLabel limitLabel,
                                      RunLimitDisplay runLimitDisplay) {
         if (limitLabel == null) {
+            currentRunLimitLabel = null;
+            currentRunLimitDisplay = null;
             return;
         }
         stopRunStatusTimer();
+        currentRunLimitLabel = limitLabel;
+        currentRunLimitDisplay = runLimitDisplay;
         updateRunStatusLabels(limitLabel, runLimitDisplay);
         runStatusTimer = new Timer(1000, e -> updateRunStatusLabels(
                 limitLabel,
@@ -223,6 +233,14 @@ final class PerformanceRunControlSupport {
         if (runStatusTimer != null) {
             runStatusTimer.stop();
             runStatusTimer = null;
+        }
+    }
+
+    private void refreshFinalRunStatus() {
+        JLabel limitLabel = currentRunLimitLabel;
+        RunLimitDisplay runLimitDisplay = currentRunLimitDisplay;
+        if (limitLabel != null && runLimitDisplay != null) {
+            updateRunStatusLabels(limitLabel, runLimitDisplay);
         }
     }
 
@@ -291,12 +309,15 @@ final class PerformanceRunControlSupport {
         };
     }
 
-    private RunLimitDisplay runLimitDisplay(PerformanceTestPlan plan, long estimatedRequests) {
+    private RunLimitDisplay runLimitDisplay(PerformanceTestPlan plan, PerformanceRequestEstimate requestEstimate) {
         long expectedDurationMs = expectedTrendDurationMs(plan);
         if (expectedDurationMs > 0L) {
             return RunLimitDisplay.duration(expectedDurationMs);
         }
-        return RunLimitDisplay.requests(estimatedRequests);
+        PerformanceRequestEstimate estimate = requestEstimate == null
+                ? PerformanceRequestEstimate.fixed(0L)
+                : requestEstimate;
+        return RunLimitDisplay.requests(estimate.estimatedRequests(), estimate.dynamic());
     }
 
     private RunStatusText runStatusText(RunLimitDisplay display, long nowMs) {
@@ -308,6 +329,10 @@ final class PerformanceRunControlSupport {
             return RunStatusText.eta(formatRunDuration(remainingMs));
         }
         long completed = Math.max(0L, statsCollector.progressSnapshot().totalRequests());
+        if (display.dynamicRequests()) {
+            return RunStatusText.request(formatCount(completed) + "/"
+                    + I18nUtil.getMessage(MessageKeys.PERFORMANCE_RUN_STATUS_DYNAMIC));
+        }
         String text = display.estimatedRequests() == Long.MAX_VALUE
                 ? formatCount(completed) + "/max"
                 : formatCount(completed) + "/" + formatCount(display.estimatedRequests());
@@ -331,13 +356,14 @@ final class PerformanceRunControlSupport {
 
     private record RunLimitDisplay(boolean durationMode,
                                    long durationMs,
-                                   long estimatedRequests) {
+                                   long estimatedRequests,
+                                   boolean dynamicRequests) {
         private static RunLimitDisplay duration(long durationMs) {
-            return new RunLimitDisplay(true, Math.max(0L, durationMs), 0L);
+            return new RunLimitDisplay(true, Math.max(0L, durationMs), 0L, false);
         }
 
-        private static RunLimitDisplay requests(long estimatedRequests) {
-            return new RunLimitDisplay(false, 0L, Math.max(0L, estimatedRequests));
+        private static RunLimitDisplay requests(long estimatedRequests, boolean dynamicRequests) {
+            return new RunLimitDisplay(false, 0L, Math.max(0L, estimatedRequests), dynamicRequests);
         }
     }
 

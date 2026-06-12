@@ -2,7 +2,9 @@ package com.laker.postman.performance.core.plan;
 
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
@@ -25,6 +27,8 @@ public class PerformanceCorePlanNode {
     ThreadGroupData threadGroupData;
     CsvDataSetData csvDataSetData;
     LoopData loopData;
+    ConditionData conditionData;
+    WhileData whileData;
     PerformanceRequestSnapshot requestSnapshot;
     AssertionData assertionData;
     ExtractorData extractorData;
@@ -41,6 +45,8 @@ public class PerformanceCorePlanNode {
                                    ThreadGroupData threadGroupData,
                                    CsvDataSetData csvDataSetData,
                                    LoopData loopData,
+                                   ConditionData conditionData,
+                                   WhileData whileData,
                                    PerformanceRequestSnapshot requestSnapshot,
                                    AssertionData assertionData,
                                    ExtractorData extractorData,
@@ -55,7 +61,9 @@ public class PerformanceCorePlanNode {
         this.threadGroupData = PerformancePlanCoreDataCopies.copyThreadGroupData(threadGroupData);
         this.csvDataSetData = PerformancePlanCoreDataCopies.copyCsvDataSetData(csvDataSetData);
         this.loopData = PerformancePlanCoreDataCopies.copyLoopData(loopData);
-        this.requestSnapshot = copyRequestSnapshot(requestSnapshot);
+        this.conditionData = PerformancePlanCoreDataCopies.copyConditionData(conditionData);
+        this.whileData = PerformancePlanCoreDataCopies.copyWhileData(whileData);
+        this.requestSnapshot = canonicalRequestSnapshot(name, type, requestSnapshot);
         this.assertionData = PerformancePlanCoreDataCopies.copyAssertionData(assertionData);
         this.extractorData = PerformancePlanCoreDataCopies.copyExtractorData(extractorData);
         this.timerData = PerformancePlanCoreDataCopies.copyTimerData(timerData);
@@ -71,5 +79,19 @@ public class PerformanceCorePlanNode {
 
     private static PerformanceRequestSnapshot copyRequestSnapshot(PerformanceRequestSnapshot source) {
         return source == null ? null : source.toBuilder().build();
+    }
+
+    private static PerformanceRequestSnapshot canonicalRequestSnapshot(String nodeName,
+                                                                       NodeType type,
+                                                                       PerformanceRequestSnapshot source) {
+        if (type != NodeType.REQUEST || source == null) {
+            return copyRequestSnapshot(source);
+        }
+        if (nodeName == null || nodeName.trim().isEmpty()) {
+            return copyRequestSnapshot(source);
+        }
+        return source.toBuilder()
+                .name(nodeName.trim())
+                .build();
     }
 }

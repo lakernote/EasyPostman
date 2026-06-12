@@ -45,23 +45,50 @@ public final class PerformanceTreeRules {
                     || isNodeType(parentNode, NodeType.SSE_READ)
                     || isNodeType(parentNode, NodeType.WS_READ);
             case TIMER -> isNodeType(parentNode, NodeType.REQUEST)
-                    || isRequestContainerLoop(parentNode)
+                    || isRequestContainerController(parentNode)
                     || isWebSocketStepContainerTarget(parentNode);
             case SSE_CONNECT, SSE_READ -> isSseStageContainerTarget(parentNode);
             case WS_CONNECT -> isWebSocketRequestTarget(parentNode);
             case WS_SEND, WS_READ, WS_CLOSE -> isWebSocketStepContainerTarget(parentNode);
+            case SIMPLE -> canAcceptSimple(parentNode, childNode);
             case LOOP -> canAcceptLoop(parentNode, childNode);
+            case CONDITION -> canAcceptCondition(parentNode, childNode);
+            case WHILE -> canAcceptWhile(parentNode, childNode);
+            case ONCE_ONLY -> canAcceptOnceOnly(parentNode, childNode);
             case ROOT -> false;
         };
     }
 
     public static boolean canAcceptLoop(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode loopNode) {
-        if (containsNodeType(loopNode, NodeType.WS_CONNECT)) {
+        return canAcceptController(parentNode, loopNode);
+    }
+
+    public static boolean canAcceptSimple(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode simpleNode) {
+        return canAcceptController(parentNode, simpleNode);
+    }
+
+    public static boolean canAcceptCondition(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode conditionNode) {
+        return canAcceptController(parentNode, conditionNode);
+    }
+
+    public static boolean canAcceptWhile(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode whileNode) {
+        return canAcceptController(parentNode, whileNode);
+    }
+
+    public static boolean canAcceptOnceOnly(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode onceOnlyNode) {
+        if (containsWebSocketScenarioNodeOutsideRequest(onceOnlyNode)) {
             return false;
         }
-        boolean hasRequest = containsNodeType(loopNode, NodeType.REQUEST);
+        return isRequestContainerTarget(parentNode);
+    }
+
+    private static boolean canAcceptController(DefaultMutableTreeNode parentNode, DefaultMutableTreeNode controllerNode) {
+        if (containsNodeType(controllerNode, NodeType.WS_CONNECT)) {
+            return false;
+        }
+        boolean hasRequest = containsNodeType(controllerNode, NodeType.REQUEST);
         boolean hasWebSocketStep = containsAnyNodeType(
-                loopNode,
+                controllerNode,
                 NodeType.WS_SEND,
                 NodeType.WS_READ,
                 NodeType.WS_CLOSE
@@ -79,11 +106,40 @@ public final class PerformanceTreeRules {
     }
 
     public static boolean isRequestContainerTarget(DefaultMutableTreeNode node) {
-        return isNodeType(node, NodeType.THREAD_GROUP) || isRequestContainerLoop(node);
+        return isNodeType(node, NodeType.THREAD_GROUP) || isRequestContainerController(node);
     }
 
     public static boolean isRequestContainerLoop(DefaultMutableTreeNode node) {
-        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData) || nodeData.type != NodeType.LOOP) {
+        return isRequestContainerNodeType(node, NodeType.LOOP);
+    }
+
+    public static boolean isRequestContainerSimple(DefaultMutableTreeNode node) {
+        return isRequestContainerNodeType(node, NodeType.SIMPLE);
+    }
+
+    public static boolean isRequestContainerCondition(DefaultMutableTreeNode node) {
+        return isRequestContainerNodeType(node, NodeType.CONDITION);
+    }
+
+    public static boolean isRequestContainerWhile(DefaultMutableTreeNode node) {
+        return isRequestContainerNodeType(node, NodeType.WHILE);
+    }
+
+    public static boolean isRequestContainerOnceOnly(DefaultMutableTreeNode node) {
+        return isRequestContainerNodeType(node, NodeType.ONCE_ONLY);
+    }
+
+    public static boolean isRequestContainerController(DefaultMutableTreeNode node) {
+        return isRequestContainerLoop(node)
+                || isRequestContainerSimple(node)
+                || isRequestContainerCondition(node)
+                || isRequestContainerWhile(node)
+                || isRequestContainerOnceOnly(node);
+    }
+
+    private static boolean isRequestContainerNodeType(DefaultMutableTreeNode node, NodeType type) {
+        if (node == null || !(node.getUserObject() instanceof PerformanceTreeNode nodeData)
+                || nodeData.type != type) {
             return false;
         }
         return getParentRequestNode(node) == null;
@@ -110,7 +166,9 @@ public final class PerformanceTreeRules {
         if (nodeData.type == NodeType.REQUEST) {
             return isWebSocketRequestTarget(node);
         }
-        return nodeData.type == NodeType.LOOP && getParentWebSocketRequestNode(node) != null;
+        return (nodeData.type == NodeType.LOOP || nodeData.type == NodeType.SIMPLE || nodeData.type == NodeType.CONDITION
+                || nodeData.type == NodeType.WHILE)
+                && getParentWebSocketRequestNode(node) != null;
     }
 
     private static boolean isHttpRequestPostProcessorTarget(DefaultMutableTreeNode node) {
@@ -164,6 +222,29 @@ public final class PerformanceTreeRules {
         }
         for (int i = 0; i < node.getChildCount(); i++) {
             if (containsNodeType((DefaultMutableTreeNode) node.getChildAt(i), type)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean containsWebSocketScenarioNodeOutsideRequest(DefaultMutableTreeNode node) {
+        if (node == null) {
+            return false;
+        }
+        if (node.getUserObject() instanceof PerformanceTreeNode nodeData) {
+            if (nodeData.type == NodeType.REQUEST) {
+                return false;
+            }
+            if (nodeData.type == NodeType.WS_CONNECT
+                    || nodeData.type == NodeType.WS_SEND
+                    || nodeData.type == NodeType.WS_READ
+                    || nodeData.type == NodeType.WS_CLOSE) {
+                return true;
+            }
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            if (containsWebSocketScenarioNodeOutsideRequest((DefaultMutableTreeNode) node.getChildAt(i))) {
                 return true;
             }
         }

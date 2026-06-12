@@ -45,6 +45,8 @@ public class PerformanceSwingTreePlanAdapter {
                 .threadGroupData(data.threadGroupData)
                 .csvDataSetData(data.csvDataSetData)
                 .loopData(data.loopData)
+                .conditionData(data.conditionData)
+                .whileData(data.whileData)
                 .httpRequestItem(resolveEffectiveRequestItem(data))
                 .requestSnapshot(resolveRequestSnapshot(data))
                 .assertionData(data.assertionData)
@@ -93,6 +95,8 @@ public class PerformanceSwingTreePlanAdapter {
         data.threadGroupData = PerformancePlanDataCopies.copyThreadGroupData(node.getThreadGroupData());
         data.csvDataSetData = PerformancePlanDataCopies.copyCsvDataSetData(node.getCsvDataSetData());
         data.loopData = PerformancePlanDataCopies.copyLoopData(node.getLoopData());
+        data.conditionData = PerformancePlanDataCopies.copyConditionData(node.getConditionData());
+        data.whileData = PerformancePlanDataCopies.copyWhileData(node.getWhileData());
         data.httpRequestItem = PerformancePlanDataCopies.copyHttpRequestItem(node.getHttpRequestItem());
         data.requestSnapshot = PerformanceRequestSnapshotMapper.copyRequestSnapshot(node.getRequestSnapshot());
         data.assertionData = PerformancePlanDataCopies.copyAssertionData(node.getAssertionData());

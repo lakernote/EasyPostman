@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public final class PerformanceProtocolStageElement implements PerformancePlanElement {
+public final class PerformanceProtocolStageElement implements PerformanceElementContainer {
     private final String name;
     private final NodeType type;
     private final SsePerformanceData ssePerformanceData;
@@ -45,6 +45,7 @@ public final class PerformanceProtocolStageElement implements PerformancePlanEle
         return PerformancePlanCoreDataCopies.copyWebSocketPerformanceData(webSocketPerformanceData);
     }
 
+    @Override
     public List<PerformancePlanElement> getElements() {
         return elements;
     }

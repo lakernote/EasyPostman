@@ -1,6 +1,7 @@
 package com.laker.postman.service.variable;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -13,6 +14,7 @@ public class ExecutionVariableContext {
 
     private final Map<String, String> variables;
     private final Map<String, String> iterationData;
+    private Set<String> onceOnlyState = ConcurrentHashMap.newKeySet();
     private int iterationIndex;
     private int iterationCount = 1;
 
@@ -51,5 +53,16 @@ public class ExecutionVariableContext {
         if (values != null && !values.isEmpty()) {
             iterationData.putAll(values);
         }
+    }
+
+    public void attachOnceOnlyState(Set<String> onceOnlyState) {
+        this.onceOnlyState = onceOnlyState == null ? ConcurrentHashMap.newKeySet() : onceOnlyState;
+    }
+
+    public boolean markOnceOnlyExecuted(String key) {
+        if (key == null || key.isBlank()) {
+            return false;
+        }
+        return onceOnlyState.add(key);
     }
 }

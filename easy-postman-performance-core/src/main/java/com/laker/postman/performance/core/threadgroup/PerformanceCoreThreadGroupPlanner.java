@@ -1,7 +1,12 @@
 package com.laker.postman.performance.core.threadgroup;
 
+import com.laker.postman.performance.core.controller.WhileData;
+import com.laker.postman.performance.core.plan.PerformanceConditionController;
 import com.laker.postman.performance.core.plan.PerformanceController;
+import com.laker.postman.performance.core.plan.PerformanceElementContainer;
+import com.laker.postman.performance.core.plan.PerformanceOnceOnlyController;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceWhileController;
 import com.laker.postman.performance.core.plan.PerformanceSampler;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
@@ -18,25 +23,36 @@ public final class PerformanceCoreThreadGroupPlanner {
             return total;
         }
         for (PerformanceThreadGroupPlan groupPlan : plan.getThreadGroups()) {
+            if (groupPlan == null) {
+                continue;
+            }
             total = saturatingAddInt(total, maxThreadCount(resolveThreadGroupData(groupPlan)));
         }
         return total;
     }
 
     public long estimateTotalRequests(PerformanceTestPlan plan) {
+        return estimateRequestCount(plan).estimatedRequests();
+    }
+
+    public PerformanceRequestEstimate estimateRequestCount(PerformanceTestPlan plan) {
         long total = 0;
+        boolean dynamic = false;
         if (plan == null) {
-            return total;
+            return PerformanceRequestEstimate.fixed(total);
         }
         for (PerformanceThreadGroupPlan groupPlan : plan.getThreadGroups()) {
-            long enabledRequests = countEnabledRequestExecutions(groupPlan.getElements());
-            if (enabledRequests == 0) {
+            if (groupPlan == null) {
                 continue;
             }
-
-            total = saturatingAdd(total, estimateThreadGroupRequests(resolveThreadGroupData(groupPlan), enabledRequests));
+            ElementRequestCounts requestCounts = countEnabledRequestExecutions(groupPlan.getElements());
+            ThreadGroupData threadGroupData = resolveThreadGroupData(groupPlan);
+            long regularRequests = estimateThreadGroupRequests(threadGroupData, requestCounts.perIterationRequests());
+            long onceOnlyRequests = saturatingMultiply(maxThreadCount(threadGroupData), requestCounts.oncePerVirtualUserRequests());
+            total = saturatingAdd(total, saturatingAdd(regularRequests, onceOnlyRequests));
+            dynamic |= requestCounts.dynamic();
         }
-        return total;
+        return dynamic ? PerformanceRequestEstimate.dynamic(total) : PerformanceRequestEstimate.fixed(total);
     }
 
     private static ThreadGroupData resolveThreadGroupData(PerformanceThreadGroupPlan groupPlan) {
@@ -89,24 +105,90 @@ public final class PerformanceCoreThreadGroupPlanner {
         return saturatedDouble((double) threadCount * durationSeconds * requestsPerSecondPerThread * enabledRequests);
     }
 
-    private static long countEnabledRequestExecutions(List<PerformancePlanElement> elements) {
-        long total = 0;
+    private static ElementRequestCounts countEnabledRequestExecutions(List<PerformancePlanElement> elements) {
+        ElementRequestCounts total = ElementRequestCounts.zero();
+        if (elements == null) {
+            return total;
+        }
         for (PerformancePlanElement element : elements) {
-            if (element instanceof PerformanceSampler) {
-                total++;
-                continue;
-            }
-            if (element instanceof PerformanceController controller) {
-                total = saturatingAdd(
-                        total,
-                        saturatingMultiply(
-                                controller.getIterationCount(),
-                                countEnabledRequestExecutions(controller.getElements())
-                        )
-                );
-            }
+            total = total.add(countEnabledRequestExecutions(element));
         }
         return total;
+    }
+
+    private static ElementRequestCounts countEnabledRequestExecutions(PerformancePlanElement element) {
+        if (element == null) {
+            return ElementRequestCounts.zero();
+        }
+        if (element instanceof PerformanceSampler) {
+            return ElementRequestCounts.perIteration(1L);
+        }
+        if (element instanceof PerformanceConditionController conditionController) {
+            return countEnabledRequestExecutions(conditionController.getElements()).asDynamic();
+        }
+        if (element instanceof PerformanceWhileController whileController) {
+            WhileData whileData = whileController.getWhileData();
+            if (whileData == null) {
+                whileData = new WhileData();
+            }
+            whileData.normalize();
+            return countEnabledRequestExecutions(whileController.getElements())
+                    .repeat(whileData.maxIterations)
+                    .asDynamic();
+        }
+        if (element instanceof PerformanceOnceOnlyController onceOnlyController) {
+            return countEnabledRequestExecutions(onceOnlyController.getElements()).oncePerVirtualUser();
+        }
+        if (element instanceof PerformanceController controller) {
+            return countEnabledRequestExecutions(controller.getElements()).repeat(controller.getIterationCount());
+        }
+        if (element instanceof PerformanceElementContainer container) {
+            return countEnabledRequestExecutions(container.getElements());
+        }
+        return ElementRequestCounts.zero();
+    }
+
+    private record ElementRequestCounts(long perIterationRequests,
+                                        long oncePerVirtualUserRequests,
+                                        boolean dynamic) {
+        private static ElementRequestCounts zero() {
+            return new ElementRequestCounts(0L, 0L, false);
+        }
+
+        private static ElementRequestCounts perIteration(long requests) {
+            return new ElementRequestCounts(Math.max(0L, requests), 0L, false);
+        }
+
+        private ElementRequestCounts add(ElementRequestCounts other) {
+            if (other == null) {
+                return this;
+            }
+            return new ElementRequestCounts(
+                    saturatingAdd(perIterationRequests, other.perIterationRequests),
+                    saturatingAdd(oncePerVirtualUserRequests, other.oncePerVirtualUserRequests),
+                    dynamic || other.dynamic
+            );
+        }
+
+        private ElementRequestCounts repeat(int iterations) {
+            return new ElementRequestCounts(
+                    saturatingMultiply(Math.max(0, iterations), perIterationRequests),
+                    oncePerVirtualUserRequests,
+                    dynamic
+            );
+        }
+
+        private ElementRequestCounts asDynamic() {
+            return new ElementRequestCounts(perIterationRequests, oncePerVirtualUserRequests, true);
+        }
+
+        private ElementRequestCounts oncePerVirtualUser() {
+            return new ElementRequestCounts(
+                    0L,
+                    saturatingAdd(perIterationRequests, oncePerVirtualUserRequests),
+                    dynamic
+            );
+        }
     }
 
     private static long saturatingAdd(long left, long right) {

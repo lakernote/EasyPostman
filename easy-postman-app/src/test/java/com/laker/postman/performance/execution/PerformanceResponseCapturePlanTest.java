@@ -2,10 +2,12 @@ package com.laker.postman.performance.execution;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.performance.core.assertion.AssertionData;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
+import com.laker.postman.performance.core.plan.PerformanceConditionController;
 import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
@@ -161,6 +163,38 @@ public class PerformanceResponseCapturePlanTest {
     }
 
     @Test
+    public void shouldRetainWebSocketReadPayloadForConditionReadFiltering() {
+        WebSocketPerformanceData readCfg = new WebSocketPerformanceData();
+        readCfg.completionMode = WebSocketPerformanceData.CompletionMode.UNTIL_MATCH;
+        readCfg.messageFilter = "ack";
+        PerformanceProtocolStageElement readStep = new PerformanceProtocolStageElement(
+                "read",
+                NodeType.WS_READ,
+                null,
+                readCfg,
+                List.of()
+        );
+        ConditionData conditionData = new ConditionData();
+        conditionData.expression = "true";
+        PerformanceConditionController condition = new PerformanceConditionController(
+                "condition",
+                conditionData,
+                List.of(readStep)
+        );
+
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of(condition)),
+                false,
+                true,
+                ""
+        );
+
+        assertTrue(plan.retainWebSocketReadPayloads());
+        assertFalse(plan.retainStreamResponseBody());
+    }
+
+    @Test
     public void shouldRetainWebSocketResponseBodyForReadBodyAssertion() {
         AssertionData data = new AssertionData();
         data.type = "Contains";
@@ -214,6 +248,24 @@ public class PerformanceResponseCapturePlanTest {
         PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
                 true,
                 sampler(List.of(new PerformanceExtractorElement("trace", data))),
+                false,
+                false,
+                ""
+        );
+
+        assertEquals(plan.httpResponseBodyMode(), PreparedRequest.ResponseBodyMode.METADATA_ONLY);
+    }
+
+    @Test
+    public void shouldKeepHttpMetadataOnlyForResponseFieldExtractorInEfficientMode() {
+        ExtractorData data = new ExtractorData();
+        data.type = "Response Field";
+        data.expression = "Status Code";
+        data.variableName = "statusCode";
+
+        PerformanceResponseCapturePlan plan = PerformanceResponseCapturePlan.resolve(
+                true,
+                sampler(List.of(new PerformanceExtractorElement("status", data))),
                 false,
                 false,
                 ""

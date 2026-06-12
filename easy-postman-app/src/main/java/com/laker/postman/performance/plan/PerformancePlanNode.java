@@ -5,7 +5,9 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.SsePerformanceData;
@@ -31,6 +33,8 @@ public class PerformancePlanNode {
     ThreadGroupData threadGroupData;
     CsvDataSetData csvDataSetData;
     LoopData loopData;
+    ConditionData conditionData;
+    WhileData whileData;
     PerformanceRequestSnapshot requestSnapshot;
     AssertionData assertionData;
     ExtractorData extractorData;
@@ -48,6 +52,8 @@ public class PerformancePlanNode {
                                ThreadGroupData threadGroupData,
                                CsvDataSetData csvDataSetData,
                                LoopData loopData,
+                               ConditionData conditionData,
+                               WhileData whileData,
                                HttpRequestItem httpRequestItem,
                                PerformanceRequestSnapshot requestSnapshot,
                                AssertionData assertionData,
@@ -64,7 +70,15 @@ public class PerformancePlanNode {
         this.threadGroupData = PerformancePlanDataCopies.copyThreadGroupData(threadGroupData);
         this.csvDataSetData = PerformancePlanDataCopies.copyCsvDataSetData(csvDataSetData);
         this.loopData = PerformancePlanDataCopies.copyLoopData(loopData);
-        PerformanceRequestSnapshot canonicalSnapshot = canonicalRequestSnapshot(type, requestSnapshot, httpRequestItem, requestExecutionScope);
+        this.conditionData = PerformancePlanDataCopies.copyConditionData(conditionData);
+        this.whileData = PerformancePlanDataCopies.copyWhileData(whileData);
+        PerformanceRequestSnapshot canonicalSnapshot = canonicalRequestSnapshot(
+                name,
+                type,
+                requestSnapshot,
+                httpRequestItem,
+                requestExecutionScope
+        );
         this.requestSnapshot = PerformanceRequestSnapshotMapper.copyRequestSnapshot(canonicalSnapshot);
         this.assertionData = PerformancePlanDataCopies.copyAssertionData(assertionData);
         this.extractorData = PerformancePlanDataCopies.copyExtractorData(extractorData);
@@ -90,17 +104,19 @@ public class PerformancePlanNode {
         return PerformancePlanDataCopies.copyRequestExecutionScope(requestExecutionScope);
     }
 
-    private static PerformanceRequestSnapshot canonicalRequestSnapshot(NodeType type,
+    private static PerformanceRequestSnapshot canonicalRequestSnapshot(String nodeName,
+                                                                       NodeType type,
                                                                        PerformanceRequestSnapshot requestSnapshot,
                                                                        HttpRequestItem httpRequestItem,
                                                                        RequestExecutionScope requestExecutionScope) {
         if (type != NodeType.REQUEST) {
             return null;
         }
-        if (requestSnapshot != null) {
-            return requestSnapshot;
+        PerformanceRequestSnapshot snapshot = requestSnapshot;
+        if (snapshot == null) {
+            snapshot = PerformanceRequestSnapshotMapper.fromHttpRequestItem(httpRequestItem, requestExecutionScope);
         }
-        return PerformanceRequestSnapshotMapper.fromHttpRequestItem(httpRequestItem, requestExecutionScope);
+        return withNodeDisplayName(snapshot, nodeName);
     }
 
     private static RequestExecutionScope canonicalRequestExecutionScope(NodeType type,
@@ -113,5 +129,14 @@ public class PerformancePlanNode {
             return requestExecutionScope;
         }
         return PerformanceRequestSnapshotMapper.toRequestExecutionScope(requestSnapshot);
+    }
+
+    private static PerformanceRequestSnapshot withNodeDisplayName(PerformanceRequestSnapshot snapshot, String nodeName) {
+        if (snapshot == null || nodeName == null || nodeName.trim().isEmpty()) {
+            return snapshot;
+        }
+        return snapshot.toBuilder()
+                .name(nodeName.trim())
+                .build();
     }
 }

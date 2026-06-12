@@ -31,7 +31,11 @@ public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
             switch (nodeData.type) {
                 case THREAD_GROUP -> label.setIcon(IconUtil.createThemed("icons/user-group.svg", SIZE, SIZE));
                 case CSV_DATA_SET -> label.setIcon(IconUtil.createThemed("icons/csv.svg", SIZE, SIZE));
+                case SIMPLE -> label.setIcon(IconUtil.createThemed("icons/performance-simple-controller.svg", SIZE, SIZE));
                 case LOOP -> label.setIcon(IconUtil.createThemed("icons/refresh.svg", SIZE, SIZE));
+                case CONDITION -> label.setIcon(IconUtil.createThemed("icons/performance-condition-controller.svg", SIZE, SIZE));
+                case WHILE -> label.setIcon(IconUtil.createThemed("icons/performance-condition-controller.svg", SIZE, SIZE));
+                case ONCE_ONLY -> label.setIcon(IconUtil.createThemed("icons/performance-once-only-controller.svg", SIZE, SIZE));
                 case REQUEST -> label.setIcon(resolveRequestIcon(nodeData.httpRequestItem));
                 case ASSERTION -> label.setIcon(IconUtil.createThemed("icons/warning.svg", SIZE, SIZE));
                 case EXTRACTOR -> label.setIcon(IconUtil.createThemed("icons/global-variables.svg", SIZE, SIZE));

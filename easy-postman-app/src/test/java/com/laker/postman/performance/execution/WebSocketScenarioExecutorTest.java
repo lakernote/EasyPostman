@@ -9,11 +9,14 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.assertion.AssertionData;
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.performance.core.plan.PerformanceController;
+import com.laker.postman.performance.core.plan.PerformanceConditionController;
 import com.laker.postman.performance.core.plan.PerformanceLoopController;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
@@ -269,6 +272,32 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
+    public void stepSupportShouldDetectReadStepInsideCondition() {
+        PerformanceProtocolStageElement readStep = new PerformanceProtocolStageElement(
+                "read",
+                NodeType.WS_READ,
+                null,
+                new WebSocketPerformanceData(),
+                List.of()
+        );
+        ConditionData conditionData = new ConditionData();
+        conditionData.expression = "true";
+        PerformanceConditionController condition = new PerformanceConditionController(
+                "condition",
+                conditionData,
+                List.of(readStep)
+        );
+        PerformanceRequestSampler sampler = new PerformanceRequestSampler(
+                "request",
+                null,
+                null,
+                List.of(condition)
+        );
+
+        assertTrue(WebSocketScenarioStepSupport.hasEnabledReadStep(sampler));
+    }
+
+    @Test
     public void stepSupportShouldUseStageConfigBeforeRequestDefault() {
         WebSocketPerformanceData requestCfg = new WebSocketPerformanceData();
         requestCfg.sendCount = 1;
@@ -338,6 +367,24 @@ public class WebSocketScenarioExecutorTest {
     }
 
     @Test
+    public void shouldWalkWebSocketScenarioSimpleControllerSteps() {
+        PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(new PerformanceTreeNode("request", NodeType.REQUEST));
+        PerformanceTestPlanNode simpleNode = new PerformanceTestPlanNode(
+                new PerformanceTreeNode("simple", NodeType.SIMPLE)
+        );
+        simpleNode.add(new PerformanceTestPlanNode(new PerformanceTreeNode("send", NodeType.WS_SEND)));
+        simpleNode.add(new PerformanceTestPlanNode(new PerformanceTreeNode("read", NodeType.WS_READ)));
+        requestNode.add(simpleNode);
+
+        PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
+        WebSocketScenarioPlanStepCursor cursor = new WebSocketScenarioPlanStepCursor(requestSampler, () -> true);
+
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
+        assertNextStep(cursor, NodeType.WS_READ, "read");
+        assertEquals(cursor.next(), null);
+    }
+
+    @Test
     public void shouldWalkWebSocketScenarioControllerContractSteps() {
         PerformanceProtocolStageElement sendStep = new PerformanceProtocolStageElement(
                 "send",
@@ -353,6 +400,50 @@ public class WebSocketScenarioExecutorTest {
                 null,
                 List.of(controller)
         );
+        WebSocketScenarioPlanStepCursor cursor = new WebSocketScenarioPlanStepCursor(requestSampler, () -> true);
+
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
+        assertNextStep(cursor, NodeType.WS_SEND, "send");
+        assertEquals(cursor.next(), null);
+    }
+
+    @Test
+    public void shouldWalkWebSocketScenarioConditionSteps() {
+        PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(new PerformanceTreeNode("request", NodeType.REQUEST));
+        PerformanceTreeNode skippedConditionData = new PerformanceTreeNode("skip condition", NodeType.CONDITION);
+        skippedConditionData.conditionData = new ConditionData();
+        skippedConditionData.conditionData.expression = "false";
+        PerformanceTestPlanNode skippedCondition = new PerformanceTestPlanNode(skippedConditionData);
+        skippedCondition.add(new PerformanceTestPlanNode(new PerformanceTreeNode("skipped send", NodeType.WS_SEND)));
+
+        PerformanceTreeNode conditionData = new PerformanceTreeNode("run condition", NodeType.CONDITION);
+        conditionData.conditionData = new ConditionData();
+        conditionData.conditionData.expression = "true";
+        PerformanceTestPlanNode condition = new PerformanceTestPlanNode(conditionData);
+        condition.add(new PerformanceTestPlanNode(new PerformanceTreeNode("read", NodeType.WS_READ)));
+        requestNode.add(skippedCondition);
+        requestNode.add(condition);
+
+        PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
+        WebSocketScenarioPlanStepCursor cursor = new WebSocketScenarioPlanStepCursor(requestSampler, () -> true);
+
+        assertNextStep(cursor, NodeType.WS_READ, "read");
+        assertEquals(cursor.next(), null);
+    }
+
+    @Test
+    public void shouldWalkWebSocketScenarioWhileSteps() {
+        PerformanceTestPlanNode requestNode = new PerformanceTestPlanNode(new PerformanceTreeNode("request", NodeType.REQUEST));
+        PerformanceTreeNode whileData = new PerformanceTreeNode("while", NodeType.WHILE);
+        whileData.whileData = new WhileData();
+        whileData.whileData.expression = "true";
+        whileData.whileData.intervalMs = 0;
+        whileData.whileData.maxIterations = 2;
+        PerformanceTestPlanNode whileNode = new PerformanceTestPlanNode(whileData);
+        whileNode.add(new PerformanceTestPlanNode(new PerformanceTreeNode("send", NodeType.WS_SEND)));
+        requestNode.add(whileNode);
+
+        PerformanceRequestSampler requestSampler = PerformanceTestPlanCompiler.compileRequestSampler(requestNode);
         WebSocketScenarioPlanStepCursor cursor = new WebSocketScenarioPlanStepCursor(requestSampler, () -> true);
 
         assertNextStep(cursor, NodeType.WS_SEND, "send");

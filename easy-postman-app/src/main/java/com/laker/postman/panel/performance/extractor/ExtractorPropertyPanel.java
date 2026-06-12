@@ -2,8 +2,7 @@ package com.laker.postman.panel.performance.extractor;
 
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.extractor.ExtractorType;
-
-
+import com.laker.postman.performance.core.extractor.ResponseField;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.performance.PerformanceStagePropertyLayout;
@@ -21,6 +20,7 @@ import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
+import java.awt.CardLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -31,11 +31,15 @@ import java.awt.Insets;
 public class ExtractorPropertyPanel extends JPanel {
     private final JComboBox<ExtractorType> typeCombo;
     private final JTextField expressionField;
+    private final JComboBox<ResponseField> responseFieldCombo;
+    private final CardLayout expressionCardLayout;
+    private final JPanel expressionInputPanel;
     private final JTextField variableNameField;
     private final JTextField defaultValueField;
     private final JSpinner matchIndexSpinner;
     private final JSpinner groupIndexSpinner;
     private final JLabel expressionLabel;
+    private final JLabel matchIndexLabel;
     private final JLabel groupIndexLabel;
     private PerformanceTreeNode currentNode;
 
@@ -48,19 +52,28 @@ public class ExtractorPropertyPanel extends JPanel {
         typeCombo = new JComboBox<>(ExtractorType.values());
         typeCombo.setRenderer(new ExtractorTypeRenderer());
         expressionField = new JTextField();
+        responseFieldCombo = new JComboBox<>(ResponseField.values());
+        responseFieldCombo.setRenderer(new ResponseFieldRenderer());
+        responseFieldCombo.setPrototypeDisplayValue(ResponseField.RESPONSE_TIME_MS);
+        expressionCardLayout = new CardLayout();
+        expressionInputPanel = new JPanel(expressionCardLayout);
+        expressionInputPanel.setOpaque(false);
+        expressionInputPanel.add(expressionField, "text");
+        expressionInputPanel.add(responseFieldCombo, "responseField");
         variableNameField = new JTextField();
         defaultValueField = new JTextField();
         matchIndexSpinner = new JSpinner(new SpinnerNumberModel(1, 1, 9999, 1));
         groupIndexSpinner = new JSpinner(new SpinnerNumberModel(1, 0, 99, 1));
         expressionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_EXPRESSION));
+        matchIndexLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_MATCH_INDEX));
         groupIndexLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_GROUP_INDEX));
 
         int row = 0;
         addRow(row++, I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_TYPE_LABEL), typeCombo);
         addRow(row++, I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_VARIABLE_NAME), variableNameField);
-        addRow(row++, expressionLabel, expressionField);
+        addRow(row++, expressionLabel, expressionInputPanel);
         addRow(row++, I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_DEFAULT_VALUE), defaultValueField);
-        addRow(row, I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_MATCH_INDEX), matchIndexSpinner);
+        addRow(row, matchIndexLabel, matchIndexSpinner);
         addAt(row, 2, groupIndexLabel);
         addAt(row, 3, groupIndexSpinner);
 
@@ -72,6 +85,7 @@ public class ExtractorPropertyPanel extends JPanel {
         add(helpLabel, helpGbc);
 
         typeCombo.addActionListener(e -> updateTypeState());
+        responseFieldCombo.addActionListener(e -> applyResponseFieldDefaultVariableName());
         updateTypeState();
     }
 
@@ -84,6 +98,7 @@ public class ExtractorPropertyPanel extends JPanel {
         }
         typeCombo.setSelectedItem(ExtractorType.fromStorageValue(data.type));
         expressionField.setText(data.expression);
+        responseFieldCombo.setSelectedItem(ResponseField.fromStorageValue(data.expression));
         variableNameField.setText(data.variableName);
         defaultValueField.setText(data.defaultValue);
         matchIndexSpinner.setValue(Math.max(1, data.matchIndex));
@@ -103,7 +118,9 @@ public class ExtractorPropertyPanel extends JPanel {
         ExtractorType type = (ExtractorType) typeCombo.getSelectedItem();
         type = type == null ? ExtractorType.JSON_PATH : type;
         data.type = type.getStorageValue();
-        data.expression = expressionField.getText();
+        data.expression = type == ExtractorType.RESPONSE_FIELD
+                ? selectedResponseField().getStorageValue()
+                : expressionField.getText();
         data.variableName = variableNameField.getText();
         data.defaultValue = defaultValueField.getText();
         data.matchIndex = ((Number) matchIndexSpinner.getValue()).intValue();
@@ -128,12 +145,14 @@ public class ExtractorPropertyPanel extends JPanel {
             case REGEX -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_REGEX);
             case HEADER -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_HEADER_NAME);
             case COOKIE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_COOKIE_NAME);
+            case RESPONSE_FIELD -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_RESPONSE_FIELD);
         });
         expressionField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, switch (type) {
             case JSON_PATH -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_PLACEHOLDER_JSONPATH);
             case REGEX -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_PLACEHOLDER_REGEX);
             case HEADER -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_PLACEHOLDER_HEADER);
             case COOKIE -> I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_PLACEHOLDER_COOKIE);
+            case RESPONSE_FIELD -> "";
         });
         variableNameField.putClientProperty(
                 FlatClientProperties.PLACEHOLDER_TEXT,
@@ -144,8 +163,42 @@ public class ExtractorPropertyPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_PLACEHOLDER_DEFAULT)
         );
         boolean regex = type == ExtractorType.REGEX;
-        groupIndexLabel.setEnabled(regex);
-        groupIndexSpinner.setEnabled(regex);
+        matchIndexLabel.setVisible(regex);
+        matchIndexSpinner.setVisible(regex);
+        groupIndexLabel.setVisible(regex);
+        groupIndexSpinner.setVisible(regex);
+        expressionCardLayout.show(expressionInputPanel, type == ExtractorType.RESPONSE_FIELD ? "responseField" : "text");
+        if (type == ExtractorType.RESPONSE_FIELD) {
+            applyResponseFieldDefaultVariableName();
+        }
+        revalidate();
+        repaint();
+    }
+
+    private void applyResponseFieldDefaultVariableName() {
+        ExtractorType type = (ExtractorType) typeCombo.getSelectedItem();
+        if (type != ExtractorType.RESPONSE_FIELD) {
+            return;
+        }
+        String current = variableNameField.getText();
+        if (current != null && !current.isBlank() && !isResponseFieldDefaultVariableName(current.trim())) {
+            return;
+        }
+        variableNameField.setText(selectedResponseField().getDefaultVariableName());
+    }
+
+    private ResponseField selectedResponseField() {
+        Object selected = responseFieldCombo.getSelectedItem();
+        return selected instanceof ResponseField field ? field : ResponseField.STATUS_CODE;
+    }
+
+    private boolean isResponseFieldDefaultVariableName(String value) {
+        for (ResponseField field : ResponseField.values()) {
+            if (field.getDefaultVariableName().equals(value)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void addRow(int row, String labelText, Component component) {
@@ -184,6 +237,21 @@ public class ExtractorPropertyPanel extends JPanel {
             Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             if (value instanceof ExtractorType extractorType) {
                 setText(I18nUtil.getMessage(extractorType.getMessageKey()));
+            }
+            return component;
+        }
+    }
+
+    private static final class ResponseFieldRenderer extends DefaultListCellRenderer {
+        @Override
+        public Component getListCellRendererComponent(JList<?> list,
+                                                      Object value,
+                                                      int index,
+                                                      boolean isSelected,
+                                                      boolean cellHasFocus) {
+            Component component = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+            if (value instanceof ResponseField field) {
+                setText(I18nUtil.getMessage(field.getMessageKey()));
             }
             return component;
         }

@@ -10,7 +10,8 @@ public enum ExtractorType {
     JSON_PATH("JSONPath", MessageKeys.PERFORMANCE_EXTRACTOR_TYPE_JSON_PATH, true),
     REGEX("Regex", MessageKeys.PERFORMANCE_EXTRACTOR_TYPE_REGEX, true),
     HEADER("Header", MessageKeys.PERFORMANCE_EXTRACTOR_TYPE_HEADER, false),
-    COOKIE("Cookie", MessageKeys.PERFORMANCE_EXTRACTOR_TYPE_COOKIE, false);
+    COOKIE("Cookie", MessageKeys.PERFORMANCE_EXTRACTOR_TYPE_COOKIE, false),
+    RESPONSE_FIELD("Response Field", MessageKeys.PERFORMANCE_EXTRACTOR_TYPE_RESPONSE_FIELD, false);
 
     private final String storageValue;
     private final String messageKey;

@@ -1,9 +1,12 @@
 package com.laker.postman.panel.performance.tree;
 
 import com.laker.postman.performance.core.config.CsvDataSetData;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.controller.LoopData;
+import com.laker.postman.performance.core.controller.WhileData;
 import com.laker.postman.performance.core.extractor.ExtractorData;
 import com.laker.postman.performance.core.extractor.ExtractorType;
+import com.laker.postman.performance.core.extractor.ResponseField;
 import com.laker.postman.performance.core.model.SsePerformanceData;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 
@@ -66,13 +69,46 @@ public class PerformanceTreeNodeTitleFormatter {
                 + " [" + normalizedData.iterations + "x]";
     }
 
+    public String simpleTitle() {
+        return I18nUtil.getMessage(MessageKeys.PERFORMANCE_SIMPLE_NODE);
+    }
+
+    public String conditionTitle(ConditionData data) {
+        String base = I18nUtil.getMessage(MessageKeys.PERFORMANCE_CONDITION_NODE);
+        if (data == null || CharSequenceUtil.isBlank(data.expression)) {
+            return base;
+        }
+        String expression = data.expression.trim();
+        if (expression.length() > 48) {
+            expression = expression.substring(0, 48) + "...";
+        }
+        return base + " [" + expression + "]";
+    }
+
+    public String whileTitle(WhileData data) {
+        String base = I18nUtil.getMessage(MessageKeys.PERFORMANCE_WHILE_NODE);
+        WhileData normalizedData = data != null ? data : new WhileData();
+        normalizedData.normalize();
+        StringJoiner joiner = new StringJoiner(" | ", base + " [", "]");
+        if (CharSequenceUtil.isNotBlank(normalizedData.expression)) {
+            joiner.add(ellipsis(normalizedData.expression.trim(), 48));
+        }
+        joiner.add(formatDuration(normalizedData.intervalMs));
+        joiner.add(normalizedData.maxIterations + "x");
+        return joiner.toString();
+    }
+
+    public String onceOnlyTitle() {
+        return I18nUtil.getMessage(MessageKeys.PERFORMANCE_ONCE_ONLY_NODE);
+    }
+
     public String extractorTitle(ExtractorData data) {
         if (data == null) {
             return I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_NODE);
         }
         ExtractorType type = ExtractorType.fromStorageValue(data.type);
         String variableName = CharSequenceUtil.blankToDefault(data.variableName, "?");
-        String expression = CharSequenceUtil.blankToDefault(data.expression, "");
+        String expression = extractorExpressionTitle(type, data.expression);
         StringJoiner joiner = new StringJoiner(
                 " | ",
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_EXTRACTOR_NODE) + " [",
@@ -84,6 +120,13 @@ public class PerformanceTreeNodeTitleFormatter {
             joiner.add(expression.trim());
         }
         return joiner.toString();
+    }
+
+    private String extractorExpressionTitle(ExtractorType type, String expression) {
+        if (type == ExtractorType.RESPONSE_FIELD) {
+            return I18nUtil.getMessage(ResponseField.fromStorageValue(expression).getMessageKey());
+        }
+        return CharSequenceUtil.blankToDefault(expression, "");
     }
 
     public String webSocketSendTitle(WebSocketPerformanceData data) {
@@ -154,6 +197,13 @@ public class PerformanceTreeNodeTitleFormatter {
             return (durationMs / 1000) + "s";
         }
         return durationMs + "ms";
+    }
+
+    private String ellipsis(String text, int maxLength) {
+        if (text == null || text.length() <= maxLength) {
+            return text;
+        }
+        return text.substring(0, maxLength) + "...";
     }
 
     private String sseCompletionModeLabel(SsePerformanceData.CompletionMode mode) {

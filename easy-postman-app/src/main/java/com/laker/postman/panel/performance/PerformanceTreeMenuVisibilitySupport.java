@@ -31,6 +31,10 @@ final class PerformanceTreeMenuVisibilitySupport {
         items.addCsvDataSet().setVisible(commands.contains(PerformanceTreeCommand.ADD_CSV_DATA_SET));
         items.addRequest().setVisible(commands.contains(PerformanceTreeCommand.ADD_REQUEST));
         items.addLoop().setVisible(commands.contains(PerformanceTreeCommand.ADD_LOOP));
+        items.addSimple().setVisible(commands.contains(PerformanceTreeCommand.ADD_SIMPLE));
+        items.addCondition().setVisible(commands.contains(PerformanceTreeCommand.ADD_CONDITION));
+        items.addWhile().setVisible(commands.contains(PerformanceTreeCommand.ADD_WHILE));
+        items.addOnceOnly().setVisible(commands.contains(PerformanceTreeCommand.ADD_ONCE_ONLY));
         items.addSseConnect().setVisible(commands.contains(PerformanceTreeCommand.ADD_SSE_CONNECT));
         items.addSseRead().setVisible(commands.contains(PerformanceTreeCommand.ADD_SSE_READ));
         items.addWsConnect().setVisible(commands.contains(PerformanceTreeCommand.ADD_WS_CONNECT));

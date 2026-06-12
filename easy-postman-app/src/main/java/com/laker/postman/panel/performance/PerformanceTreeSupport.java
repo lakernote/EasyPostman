@@ -86,6 +86,22 @@ final class PerformanceTreeSupport {
         structureSupport.addLoopNode(performanceTree, saveConfigAction);
     }
 
+    void addSimpleNode(JTree performanceTree, Runnable saveConfigAction) {
+        structureSupport.addSimpleNode(performanceTree, saveConfigAction);
+    }
+
+    void addConditionNode(JTree performanceTree, Runnable saveConfigAction) {
+        structureSupport.addConditionNode(performanceTree, saveConfigAction);
+    }
+
+    void addWhileNode(JTree performanceTree, Runnable saveConfigAction) {
+        structureSupport.addWhileNode(performanceTree, saveConfigAction);
+    }
+
+    void addOnceOnlyNode(JTree performanceTree, Runnable saveConfigAction) {
+        structureSupport.addOnceOnlyNode(performanceTree, saveConfigAction);
+    }
+
     void addCsvDataSetNode(JTree performanceTree, Runnable saveConfigAction) {
         structureSupport.addCsvDataSetNode(performanceTree, saveConfigAction);
     }
@@ -100,6 +116,10 @@ final class PerformanceTreeSupport {
 
     boolean isRequestContainerLoop(DefaultMutableTreeNode node) {
         return structureSupport.isRequestContainerLoop(node);
+    }
+
+    boolean isRequestContainerController(DefaultMutableTreeNode node) {
+        return structureSupport.isRequestContainerController(node);
     }
 
     boolean hasCopyableNodes(TreePath[] selectedPaths) {

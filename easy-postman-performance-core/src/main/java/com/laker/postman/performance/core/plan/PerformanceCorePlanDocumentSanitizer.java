@@ -26,6 +26,8 @@ public class PerformanceCorePlanDocumentSanitizer {
                 .threadGroupData(node.getThreadGroupData())
                 .csvDataSetData(node.getCsvDataSetData())
                 .loopData(node.getLoopData())
+                .conditionData(node.getConditionData())
+                .whileData(node.getWhileData())
                 .requestSnapshot(sanitizeRequest(node.getRequestSnapshot()))
                 .assertionData(node.getAssertionData())
                 .extractorData(node.getExtractorData())

@@ -75,7 +75,7 @@ final class PerformanceTreeNodeCommandSupport {
         }
         Object userObj = node.getUserObject();
         if (!(userObj instanceof PerformanceTreeNode nodeData)
-                || (nodeData.type != NodeType.THREAD_GROUP && !treeSupport.isRequestContainerLoop(node))) {
+                || (nodeData.type != NodeType.THREAD_GROUP && !treeSupport.isRequestContainerController(node))) {
             JOptionPane.showMessageDialog(
                     parentComponent,
                     I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SELECT_THREAD_GROUP),

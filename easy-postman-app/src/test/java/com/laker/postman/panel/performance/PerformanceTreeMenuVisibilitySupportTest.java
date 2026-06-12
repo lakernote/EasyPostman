@@ -53,6 +53,9 @@ public class PerformanceTreeMenuVisibilitySupportTest {
         assertFalse(items.addThreadGroup().isVisible());
         assertTrue(items.addRequest().isVisible());
         assertTrue(items.addLoop().isVisible());
+        assertTrue(items.addSimple().isVisible());
+        assertTrue(items.addCondition().isVisible());
+        assertTrue(items.addOnceOnly().isVisible());
         assertTrue(items.copyNode().isVisible());
         assertTrue(items.renameNode().isVisible());
         assertTrue(items.deleteNode().isVisible());
@@ -79,6 +82,9 @@ public class PerformanceTreeMenuVisibilitySupportTest {
 
         assertFalse(items.addRequest().isVisible());
         assertFalse(items.addLoop().isVisible());
+        assertFalse(items.addSimple().isVisible());
+        assertFalse(items.addCondition().isVisible());
+        assertFalse(items.addOnceOnly().isVisible());
         assertFalse(items.pasteNode().isVisible());
         assertFalse(items.renameNode().isVisible());
         assertTrue(items.copyNode().isVisible());
@@ -102,6 +108,9 @@ public class PerformanceTreeMenuVisibilitySupportTest {
         support.configureSingleSelectionMenu(wsConnect, items);
 
         assertTrue(items.addLoop().isVisible());
+        assertTrue(items.addSimple().isVisible());
+        assertTrue(items.addCondition().isVisible());
+        assertFalse(items.addOnceOnly().isVisible());
         assertTrue(items.addWsConnect().isVisible());
         assertTrue(items.addWsSend().isVisible());
         assertTrue(items.addWsRead().isVisible());
@@ -154,6 +163,10 @@ public class PerformanceTreeMenuVisibilitySupportTest {
                 new JMenuItem("addCsvDataSet"),
                 new JMenuItem("addRequest"),
                 new JMenuItem("addLoop"),
+                new JMenuItem("addSimple"),
+                new JMenuItem("addCondition"),
+                new JMenuItem("addWhile"),
+                new JMenuItem("addOnceOnly"),
                 new JMenuItem("addSseConnect"),
                 new JMenuItem("addSseRead"),
                 new JMenuItem("addWsConnect"),

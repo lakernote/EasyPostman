@@ -47,6 +47,9 @@ public class PerformanceTreeCommandPolicyTest {
         assertTrue(commands.contains(PerformanceTreeCommand.ADD_WS_READ));
         assertTrue(commands.contains(PerformanceTreeCommand.ADD_WS_CLOSE));
         assertTrue(commands.contains(PerformanceTreeCommand.ADD_LOOP));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_SIMPLE));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_CONDITION));
+        assertFalse(commands.contains(PerformanceTreeCommand.ADD_ONCE_ONLY));
         assertTrue(commands.contains(PerformanceTreeCommand.ADD_TIMER));
         assertTrue(commands.contains(PerformanceTreeCommand.COPY));
         assertTrue(commands.contains(PerformanceTreeCommand.DELETE));
@@ -56,6 +59,20 @@ public class PerformanceTreeCommandPolicyTest {
         assertTrue(policy.canSetEnabled(wsConnect, true));
         assertFalse(policy.canSetEnabled(wsConnect, false));
         assertFalse(policy.canRename(wsConnect));
+    }
+
+    @Test
+    public void threadGroupSelectionShouldExposeRequestContainerControllerActions() {
+        TreeFixture fixture = new TreeFixture(RequestItemProtocolEnum.HTTP);
+        PerformanceTreeCommandPolicy policy = new PerformanceTreeCommandPolicy(fixture.treeSupport);
+
+        EnumSet<PerformanceTreeCommand> commands = policy.commandsForSingleSelection(fixture.threadGroup, List.of());
+
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_REQUEST));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_LOOP));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_SIMPLE));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_CONDITION));
+        assertTrue(commands.contains(PerformanceTreeCommand.ADD_ONCE_ONLY));
     }
 
     @Test

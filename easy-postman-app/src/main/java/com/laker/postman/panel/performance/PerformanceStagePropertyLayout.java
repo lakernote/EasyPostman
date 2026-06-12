@@ -2,6 +2,8 @@ package com.laker.postman.panel.performance;
 
 
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.util.FontsUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -52,6 +54,46 @@ public final class PerformanceStagePropertyLayout {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.CENTER;
         target.add(rowPanel, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridwidth = 1;
+        gbc.weightx = 0;
+        gbc.fill = previousFill;
+        gbc.anchor = previousAnchor;
+    }
+
+    public static JTextArea createHintArea(String text, int rows, int columns) {
+        JTextArea area = new JTextArea(text == null ? "" : text, rows, columns);
+        area.setEditable(false);
+        area.setFocusable(false);
+        area.setOpaque(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        area.setForeground(ModernColors.getTextSecondary());
+        area.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
+        return area;
+    }
+
+    public static void addCenteredHintArea(JPanel target,
+                                           GridBagConstraints gbc,
+                                           String text,
+                                           int rows,
+                                           int columns) {
+        int previousFill = gbc.fill;
+        int previousAnchor = gbc.anchor;
+
+        JPanel wrapper = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+        wrapper.setOpaque(false);
+        wrapper.add(createHintArea(text, rows, columns));
+
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.CENTER;
+        target.add(wrapper, gbc);
 
         gbc.gridx = 0;
         gbc.gridy++;

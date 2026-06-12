@@ -5,6 +5,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.core.controller.ConditionData;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
@@ -108,5 +109,22 @@ public class PerformanceTreeSnapshotTest {
 
         assertNotSame(pastedData.requestSnapshot, requestSnapshot);
         assertNotEquals(pastedData.requestSnapshot.getId(), "original-id");
+    }
+
+    @Test(description = "执行快照应深拷贝条件控制器配置")
+    public void shouldDeepCopyConditionData() {
+        ConditionData conditionData = new ConditionData();
+        conditionData.expression = "{{enabled}} == true";
+        PerformanceTreeNode conditionNodeData = new PerformanceTreeNode("Condition", NodeType.CONDITION);
+        conditionNodeData.conditionData = conditionData;
+        DefaultMutableTreeNode source = new DefaultMutableTreeNode(conditionNodeData);
+
+        DefaultMutableTreeNode copiedNode = PerformanceTreeSnapshot.copy(source);
+        PerformanceTreeNode copiedData = (PerformanceTreeNode) copiedNode.getUserObject();
+
+        conditionData.expression = "false";
+
+        assertNotSame(copiedData.conditionData, conditionData);
+        assertEquals(copiedData.conditionData.expression, "{{enabled}} == true");
     }
 }

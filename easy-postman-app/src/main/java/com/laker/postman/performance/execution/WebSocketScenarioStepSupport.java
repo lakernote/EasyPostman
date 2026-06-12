@@ -2,7 +2,7 @@ package com.laker.postman.performance.execution;
 
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
-import com.laker.postman.performance.core.plan.PerformanceController;
+import com.laker.postman.performance.core.plan.PerformanceElementContainer;
 import com.laker.postman.performance.core.plan.PerformancePlanElement;
 import com.laker.postman.performance.core.plan.PerformanceProtocolStageElement;
 
@@ -116,8 +116,8 @@ class WebSocketScenarioStepSupport {
             if (element.getType() == NodeType.WS_READ) {
                 return true;
             }
-            if (element instanceof PerformanceController controller
-                    && hasEnabledReadStep(controller.getElements())) {
+            if (element instanceof PerformanceElementContainer container
+                    && hasEnabledReadStep(container.getElements())) {
                 return true;
             }
         }
@@ -133,8 +133,8 @@ class WebSocketScenarioStepSupport {
                     return true;
                 }
             }
-            if (element instanceof PerformanceController controller
-                    && hasReadStepRequiringPayload(controller.getElements(), requestConfig)) {
+            if (element instanceof PerformanceElementContainer container
+                    && hasReadStepRequiringPayload(container.getElements(), requestConfig)) {
                 return true;
             }
         }
@@ -148,8 +148,8 @@ class WebSocketScenarioStepSupport {
                     && hasResponseBodyNode(stage)) {
                 return true;
             }
-            if (element instanceof PerformanceController controller
-                    && hasReadStepWithResponseBodyNode(controller.getElements())) {
+            if (element instanceof PerformanceElementContainer container
+                    && hasReadStepWithResponseBodyNode(container.getElements())) {
                 return true;
             }
         }
@@ -164,8 +164,8 @@ class WebSocketScenarioStepSupport {
                 WebSocketPerformanceData cfg = webSocketData(stage, requestConfig);
                 max = Math.max(max, bufferedMessagesNeededForRead(cfg));
             }
-            if (element instanceof PerformanceController controller) {
-                max = Math.max(max, maxBufferedMessagesNeededForRead(controller.getElements(), requestConfig));
+            if (element instanceof PerformanceElementContainer container) {
+                max = Math.max(max, maxBufferedMessagesNeededForRead(container.getElements(), requestConfig));
             }
         }
         return max;

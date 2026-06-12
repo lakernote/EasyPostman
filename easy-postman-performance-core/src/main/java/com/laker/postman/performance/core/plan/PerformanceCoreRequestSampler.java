@@ -19,7 +19,7 @@ public final class PerformanceCoreRequestSampler implements PerformanceSampler {
                                          WebSocketPerformanceData webSocketPerformanceData,
                                          List<PerformancePlanElement> children) {
         this.name = name;
-        this.requestSnapshot = copyRequestSnapshot(requestSnapshot);
+        this.requestSnapshot = withSamplerDisplayName(requestSnapshot, name);
         this.webSocketPerformanceData = PerformancePlanCoreDataCopies.copyWebSocketPerformanceData(webSocketPerformanceData);
         this.children = Collections.unmodifiableList(new ArrayList<>(children == null ? List.of() : children));
     }
@@ -54,5 +54,14 @@ public final class PerformanceCoreRequestSampler implements PerformanceSampler {
 
     private static PerformanceRequestSnapshot copyRequestSnapshot(PerformanceRequestSnapshot source) {
         return source == null ? null : source.toBuilder().build();
+    }
+
+    private static PerformanceRequestSnapshot withSamplerDisplayName(PerformanceRequestSnapshot source, String samplerName) {
+        if (source == null || samplerName == null || samplerName.trim().isEmpty()) {
+            return copyRequestSnapshot(source);
+        }
+        return source.toBuilder()
+                .name(samplerName.trim())
+                .build();
     }
 }

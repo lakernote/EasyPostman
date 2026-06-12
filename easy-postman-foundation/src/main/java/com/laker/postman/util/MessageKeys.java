@@ -1757,6 +1757,11 @@ public final class MessageKeys {
     public static final String WEBSOCKET_TYPE_WARNING = "websocket.type.warning";
     public static final String WEBSOCKET_TYPE_INFO = "websocket.type.info";
     public static final String WEBSOCKET_TYPE_BINARY = "websocket.type.binary";
+    public static final String STREAM_ASSERTION_TOOLTIP = "stream.assertion.tooltip";
+    public static final String STREAM_ASSERTION_DETAILS_TITLE = "stream.assertion.details.title";
+    public static final String STREAM_ASSERTION_DETAILS_META = "stream.assertion.details.meta";
+    public static final String STREAM_ASSERTION_COLUMN_MESSAGE = "stream.assertion.column.message";
+    public static final String STREAM_LOG_DROPPED_COUNT = "stream.log.dropped.count";
     public static final String BUTTON_COPY = "button.copy";
     public static final String BUTTON_DETAIL = "button.detail";
     public static final String BUTTON_FORMAT = "button.format";

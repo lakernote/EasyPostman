@@ -1,1 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="1" y="5" width="22" height="14" rx="3" fill="#3771e1"/><rect x="1" y="5" width="22" height="14" rx="3" stroke="rgba(255,255,255,0.2)"/><path d="M5 9.5h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="m13 7.5 2.5 2-2.5 2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 14.5H9" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="m11 16.5-2.5-2 2.5-2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+  <rect x="2" y="5" width="20" height="14" rx="4" fill="#3771e1"/>
+  <rect x="2.5" y="5.5" width="19" height="13" rx="3.5" stroke="#fff" stroke-opacity=".28"/>
+  <path d="M6 9.5h8.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <path d="m13 7.5 2.5 2-2.5 2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18 14.5H9.5" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+  <path d="m11 16.5-2.5-2 2.5-2" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

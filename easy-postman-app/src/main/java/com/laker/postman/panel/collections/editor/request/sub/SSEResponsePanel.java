@@ -1,19 +1,14 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import cn.hutool.core.collection.CollUtil;
 import cn.hutool.json.JSONUtil;
-import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
-import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.frame.MainFrame;
 import com.laker.postman.stream.MessageType;
 import com.laker.postman.panel.collections.editor.request.StreamMessageUiMetadata;
 import com.laker.postman.script.model.TestResult;
-import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.IconUtil;
+import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
@@ -22,26 +17,34 @@ import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * SSE响应体面板，展示事件时间线以及 event/id/retry 等元信息。
  */
 public class SSEResponsePanel extends JPanel {
     private final JTable table;
-    private final DefaultTableModel tableModel;
+    private final StreamMessageTableModel<MessageRow> tableModel;
     private final JComboBox<String> typeFilterBox;
     private final SearchTextField searchField;
     private final ClearButton clearButton;
-    private final List<MessageRow> allRows = new ArrayList<>();
-    private final List<MessageRow> visibleRows = new ArrayList<>();
+    private final JLabel retentionLabel;
+    private final StreamMessageLogBuffer<MessageRow> logBuffer;
+    private final ConcurrentLinkedQueue<MessageRow> pendingRows = new ConcurrentLinkedQueue<>();
+    private final AtomicBoolean pendingFlushQueued = new AtomicBoolean();
+    private final JScrollPane tableScrollPane;
+    private final JSplitPane assertionSplitPane;
+    private final StreamAssertionDetailsPanel assertionDetailsPanel;
+    private boolean refreshQueued;
 
     private static final int COLUMN_TYPE = 0;
     private static final int COLUMN_TIME = 1;
@@ -71,6 +74,11 @@ public class SSEResponsePanel extends JPanel {
     };
 
     public SSEResponsePanel() {
+        this(StreamMessageLogBuffer.DEFAULT_MAX_ROWS);
+    }
+
+    SSEResponsePanel(int maxRows) {
+        logBuffer = new StreamMessageLogBuffer<>(maxRows);
         setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -80,27 +88,27 @@ public class SSEResponsePanel extends JPanel {
         typeFilterBox = new JComboBox<>(TYPE_FILTERS);
         searchField = new SearchTextField();
         clearButton = new ClearButton();
+        retentionLabel = new JLabel();
+        retentionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        retentionLabel.setForeground(ModernColors.getTextSecondary());
+        retentionLabel.setVisible(false);
         toolBar.add(typeFilterBox);
         toolBar.add(searchField);
         toolBar.add(clearButton);
+        toolBar.add(retentionLabel);
         add(toolBar, BorderLayout.NORTH);
 
-        tableModel = new DefaultTableModel(COLUMN_NAMES, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
-        };
+        tableModel = new StreamMessageTableModel<>(COLUMN_NAMES, this::messageValueAt);
 
         table = new JTable(tableModel);
         table.setRowHeight(26);
         table.setCellSelectionEnabled(true);
         table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        table.getColumnModel().getColumn(COLUMN_TYPE).setMinWidth(60);
-        table.getColumnModel().getColumn(COLUMN_TYPE).setPreferredWidth(70);
-        table.getColumnModel().getColumn(COLUMN_TYPE).setMaxWidth(85);
-        table.getColumnModel().getColumn(COLUMN_TYPE).setCellRenderer(new IconCellRenderer());
+        table.getColumnModel().getColumn(COLUMN_TYPE).setMinWidth(100);
+        table.getColumnModel().getColumn(COLUMN_TYPE).setPreferredWidth(118);
+        table.getColumnModel().getColumn(COLUMN_TYPE).setMaxWidth(150);
+        table.getColumnModel().getColumn(COLUMN_TYPE).setCellRenderer(new StreamMessageTypeCellRenderer());
 
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
@@ -128,7 +136,7 @@ public class SSEResponsePanel extends JPanel {
         table.getColumnModel().getColumn(COLUMN_ASSERTION).setMinWidth(90);
         table.getColumnModel().getColumn(COLUMN_ASSERTION).setPreferredWidth(100);
         table.getColumnModel().getColumn(COLUMN_ASSERTION).setMaxWidth(120);
-        table.getColumnModel().getColumn(COLUMN_ASSERTION).setCellRenderer(new IconCellRenderer());
+        table.getColumnModel().getColumn(COLUMN_ASSERTION).setCellRenderer(new StreamAssertionSummaryCellRenderer());
 
         table.addMouseListener(new MouseAdapter() {
             @Override
@@ -142,20 +150,31 @@ public class SSEResponsePanel extends JPanel {
             }
 
             @Override
+            public void mouseExited(MouseEvent e) {
+                table.setCursor(Cursor.getDefaultCursor());
+            }
+
+            @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() != 2) {
+                int row = table.rowAtPoint(e.getPoint());
+                int viewCol = table.columnAtPoint(e.getPoint());
+                if (row < 0 || viewCol < 0) {
                     return;
                 }
-                int row = table.rowAtPoint(e.getPoint());
-                int col = table.columnAtPoint(e.getPoint());
+                int col = table.convertColumnIndexToModel(viewCol);
                 MessageRow messageRow = getVisibleRow(row);
                 if (messageRow == null) {
                     return;
                 }
-                if (col >= COLUMN_EVENT_ID && col <= COLUMN_CONTENT) {
+                if (col == COLUMN_ASSERTION && e.getClickCount() == 1) {
+                    if (!(table.getValueAt(row, viewCol) instanceof StreamAssertionSummary)) {
+                        return;
+                    }
+                    table.setRowSelectionInterval(row, row);
+                    table.setColumnSelectionInterval(viewCol, viewCol);
+                    showAssertionDetails(messageRow);
+                } else if (e.getClickCount() == 2 && col >= COLUMN_EVENT_ID && col <= COLUMN_CONTENT) {
                     showContentDialog(messageRow);
-                } else if (col == COLUMN_ASSERTION) {
-                    showAssertionDialog(messageRow.testResults);
                 }
             }
 
@@ -164,8 +183,12 @@ public class SSEResponsePanel extends JPanel {
                     return;
                 }
                 int row = table.rowAtPoint(e.getPoint());
-                int col = table.columnAtPoint(e.getPoint());
-                if (row < 0 || col < COLUMN_EVENT_ID || col > COLUMN_CONTENT) {
+                int viewCol = table.columnAtPoint(e.getPoint());
+                if (row < 0 || viewCol < 0) {
+                    return;
+                }
+                int col = table.convertColumnIndexToModel(viewCol);
+                if (col < COLUMN_EVENT_ID || col > COLUMN_CONTENT) {
                     return;
                 }
                 MessageRow messageRow = getVisibleRow(row);
@@ -187,11 +210,25 @@ public class SSEResponsePanel extends JPanel {
                 popupMenu.show(e.getComponent(), e.getX(), e.getY());
             }
         });
+        table.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                updateTableCursor(e.getPoint());
+            }
+        });
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-        add(scrollPane, BorderLayout.CENTER);
+        tableScrollPane = new JScrollPane(table);
+        ToolWindowSurfaceStyle.applyTableScrollPaneCard(tableScrollPane, table);
+        tableScrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
+        assertionDetailsPanel = new StreamAssertionDetailsPanel();
+        assertionDetailsPanel.setVisibilityChangeListener(this::updateAssertionSplitPane);
+        assertionSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tableScrollPane, assertionDetailsPanel);
+        assertionSplitPane.setResizeWeight(1.0);
+        assertionSplitPane.setContinuousLayout(true);
+        assertionSplitPane.setBorder(BorderFactory.createEmptyBorder());
+        assertionSplitPane.setDividerSize(0);
+        assertionSplitPane.setOpaque(false);
+        add(assertionSplitPane, BorderLayout.CENTER);
 
         JTableHeader header = table.getTableHeader();
         header.setFont(header.getFont().deriveFont(Font.BOLD));
@@ -213,20 +250,20 @@ public class SSEResponsePanel extends JPanel {
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
-                filterAndShow();
+                requestFilterAndShow();
             }
 
             @Override
             public void removeUpdate(DocumentEvent e) {
-                filterAndShow();
+                requestFilterAndShow();
             }
 
             @Override
             public void changedUpdate(DocumentEvent e) {
-                filterAndShow();
+                requestFilterAndShow();
             }
         });
-        typeFilterBox.addActionListener(e -> filterAndShow());
+        typeFilterBox.addActionListener(e -> requestFilterAndShow());
     }
 
     public void addMessage(MessageType messageType, String time, String content, List<TestResult> testResults) {
@@ -235,22 +272,71 @@ public class SSEResponsePanel extends JPanel {
 
     public void addMessage(MessageType messageType, String time, String eventId, String eventType, Long retryMs,
                            String content, List<TestResult> testResults) {
-        allRows.add(new MessageRow(messageType, time, eventId, eventType, retryMs, content, testResults));
-        SwingUtilities.invokeLater(this::filterAndShow);
+        MessageRow row = new MessageRow(messageType, time, eventId, eventType, retryMs, content, testResults);
+        pendingRows.add(row);
+        requestPendingRowsFlush();
+    }
+
+    private void requestPendingRowsFlush() {
+        if (SwingUtilities.isEventDispatchThread()) {
+            flushPendingRows();
+            return;
+        }
+        if (pendingFlushQueued.compareAndSet(false, true)) {
+            SwingUtilities.invokeLater(this::flushPendingRows);
+        }
+    }
+
+    private void flushPendingRows() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::flushPendingRows);
+            return;
+        }
+        List<MessageRow> rowsToAppend = new ArrayList<>();
+        MessageRow row;
+        while ((row = pendingRows.poll()) != null) {
+            rowsToAppend.add(row);
+        }
+        pendingFlushQueued.set(false);
+        if (rowsToAppend.isEmpty()) {
+            return;
+        }
+        appendRows(rowsToAppend);
+        if (!pendingRows.isEmpty() && pendingFlushQueued.compareAndSet(false, true)) {
+            SwingUtilities.invokeLater(this::flushPendingRows);
+        }
+    }
+
+    private void appendRows(List<MessageRow> rows) {
+        boolean shouldScrollToBottom = isScrolledNearBottom();
+        String search = currentSearchText();
+        String typeFilter = currentTypeFilter();
+        List<MessageRow> droppedRows = logBuffer.appendAndTrim(rows);
+        if (droppedRows.isEmpty()) {
+            List<MessageRow> visibleRowsToAppend = rows.stream()
+                    .filter(row -> matchesFilter(row, search, typeFilter))
+                    .toList();
+            tableModel.appendRows(visibleRowsToAppend);
+        } else {
+            tableModel.setRows(logBuffer.filtered(row -> matchesFilter(row, search, typeFilter)));
+        }
+        searchField.setNoResult(!search.isEmpty() && tableModel.getRowCount() == 0);
+        updateRetentionLabel();
+        if (shouldScrollToBottom && tableModel.getRowCount() > 0) {
+            SwingUtilities.invokeLater(this::scrollToBottom);
+        }
     }
 
     public void clearMessages() {
-        allRows.clear();
-        visibleRows.clear();
-        SwingUtilities.invokeLater(this::filterAndShow);
-    }
-
-    private static Icon getSummaryIcon(List<TestResult> testResults) {
-        if (CollUtil.isEmpty(testResults)) {
-            return null;
-        }
-        boolean hasFail = testResults.stream().anyMatch(tr -> !tr.passed);
-        return hasFail ? IconUtil.create("icons/fail.svg", 16, 16) : IconUtil.create("icons/pass.svg", 16, 16);
+        runOnEdt(() -> {
+            pendingRows.clear();
+            logBuffer.clear();
+            tableModel.clear();
+            assertionDetailsPanel.hideDetails();
+            updateAssertionSplitPane();
+            searchField.setNoResult(false);
+            updateRetentionLabel();
+        });
     }
 
     private void filterAndShow() {
@@ -258,39 +344,81 @@ public class SSEResponsePanel extends JPanel {
             SwingUtilities.invokeLater(this::filterAndShow);
             return;
         }
-        String search = searchField.getText().trim().toLowerCase();
-        String typeFilter = (String) typeFilterBox.getSelectedItem();
-        List<MessageRow> filtered = allRows.stream()
-                .filter(row -> I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL).equals(typeFilter)
-                        || StreamMessageUiMetadata.display(row.messageType).equals(typeFilter))
-                .filter(row -> search.isEmpty()
-                        || safeLower(row.content).contains(search)
-                        || safeLower(row.eventId).contains(search)
-                        || safeLower(row.eventType).contains(search))
-                .toList();
+        String search = currentSearchText();
+        String typeFilter = currentTypeFilter();
+        boolean shouldScrollToBottom = isScrolledNearBottom();
+        List<MessageRow> filtered = logBuffer.filtered(row -> matchesFilter(row, search, typeFilter));
 
-        visibleRows.clear();
-        visibleRows.addAll(filtered);
-        tableModel.setRowCount(0);
-        for (MessageRow row : filtered) {
-            tableModel.addRow(new Object[]{
-                    StreamMessageUiMetadata.icon(row.messageType),
-                    row.time,
-                    blankToDash(row.eventId),
-                    blankToDash(row.eventType),
-                    row.retryMs != null ? row.retryMs : blankToDash(null),
-                    row.content,
-                    getSummaryIcon(row.testResults)
-            });
+        tableModel.setRows(filtered);
+        searchField.setNoResult(!search.isEmpty() && tableModel.getRowCount() == 0);
+        updateRetentionLabel();
+        if (shouldScrollToBottom && tableModel.getRowCount() > 0) {
+            SwingUtilities.invokeLater(this::scrollToBottom);
         }
-        searchField.setNoResult(!search.isEmpty() && filtered.isEmpty());
     }
 
-    private MessageRow getVisibleRow(int row) {
-        if (row < 0 || row >= visibleRows.size()) {
+    private Object messageValueAt(MessageRow row, int column) {
+        return switch (column) {
+            case COLUMN_TYPE -> row.messageType;
+            case COLUMN_TIME -> row.time;
+            case COLUMN_EVENT_ID -> blankToDash(row.eventId);
+            case COLUMN_EVENT_TYPE -> blankToDash(row.eventType);
+            case COLUMN_RETRY -> row.retryMs != null ? row.retryMs : blankToDash(null);
+            case COLUMN_CONTENT -> row.content;
+            case COLUMN_ASSERTION -> StreamAssertionSummary.from(row.testResults);
+            default -> null;
+        };
+    }
+
+    private boolean matchesFilter(MessageRow row, String search, String typeFilter) {
+        return (I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL).equals(typeFilter)
+                || StreamMessageUiMetadata.display(row.messageType).equals(typeFilter))
+                && (search.isEmpty()
+                || safeLower(row.content).contains(search)
+                || safeLower(row.eventId).contains(search)
+                || safeLower(row.eventType).contains(search));
+    }
+
+    private String currentSearchText() {
+        return searchField.getText().trim().toLowerCase();
+    }
+
+    private String currentTypeFilter() {
+        return (String) typeFilterBox.getSelectedItem();
+    }
+
+    private void requestFilterAndShow() {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            SwingUtilities.invokeLater(this::requestFilterAndShow);
+            return;
+        }
+        if (refreshQueued) {
+            return;
+        }
+        refreshQueued = true;
+        SwingUtilities.invokeLater(() -> {
+            refreshQueued = false;
+            filterAndShow();
+        });
+    }
+
+    private void runOnEdt(Runnable task) {
+        if (SwingUtilities.isEventDispatchThread()) {
+            task.run();
+        } else {
+            SwingUtilities.invokeLater(task);
+        }
+    }
+
+    private MessageRow getVisibleRow(int viewRow) {
+        if (viewRow < 0) {
             return null;
         }
-        return visibleRows.get(row);
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        if (modelRow < 0 || modelRow >= tableModel.getRowCount()) {
+            return null;
+        }
+        return tableModel.getRow(modelRow);
     }
 
     public static class MessageRow {
@@ -314,94 +442,89 @@ public class SSEResponsePanel extends JPanel {
         }
     }
 
-    private static class IconCellRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value,
-                                                       boolean isSelected, boolean hasFocus, int row, int column) {
-            if (value instanceof Icon icon) {
-                setIcon(icon);
-            } else {
-                setIcon(null);
-            }
-            setText("");
-            setHorizontalAlignment(CENTER);
-            return this;
+    private void updateTableCursor(Point point) {
+        int row = table.rowAtPoint(point);
+        int col = table.columnAtPoint(point);
+        boolean clickableAssertion = row >= 0 && col >= 0
+                && table.convertColumnIndexToModel(col) == COLUMN_ASSERTION
+                && table.getValueAt(row, col) instanceof StreamAssertionSummary;
+        table.setCursor(Cursor.getPredefinedCursor(clickableAssertion ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+    }
+
+    private boolean isScrolledNearBottom() {
+        JScrollBar verticalBar = tableScrollPane.getVerticalScrollBar();
+        int bottom = verticalBar.getValue() + verticalBar.getVisibleAmount();
+        return bottom >= verticalBar.getMaximum() - Math.max(table.getRowHeight() * 2, 24);
+    }
+
+    private void scrollToBottom() {
+        int lastRow = tableModel.getRowCount() - 1;
+        if (lastRow < 0) {
+            return;
         }
+        Rectangle rect = table.getCellRect(lastRow, COLUMN_TYPE, true);
+        table.scrollRectToVisible(rect);
+        JScrollBar verticalBar = tableScrollPane.getVerticalScrollBar();
+        verticalBar.setValue(verticalBar.getMaximum());
+    }
+
+    private void updateRetentionLabel() {
+        long droppedCount = logBuffer.droppedCount();
+        boolean visible = droppedCount > 0;
+        boolean visibilityChanged = retentionLabel.isVisible() != visible;
+        retentionLabel.setVisible(visible);
+        if (droppedCount > 0) {
+            retentionLabel.setText(I18nUtil.getMessage(MessageKeys.STREAM_LOG_DROPPED_COUNT, droppedCount));
+        } else {
+            retentionLabel.setText("");
+        }
+        if (visibilityChanged && retentionLabel.getParent() != null) {
+            retentionLabel.getParent().revalidate();
+            retentionLabel.getParent().repaint();
+        }
+    }
+
+    private void updateAssertionSplitPane() {
+        if (assertionDetailsPanel.isVisible()) {
+            assertionSplitPane.setDividerSize(6);
+            SwingUtilities.invokeLater(() -> {
+                int height = assertionSplitPane.getHeight();
+                if (height <= 0) {
+                    return;
+                }
+                int targetLocation = Math.max(120, height - assertionDetailsPanel.getPreferredSize().height);
+                if (assertionSplitPane.getDividerLocation() > targetLocation || assertionSplitPane.getDividerLocation() <= 0) {
+                    assertionSplitPane.setDividerLocation(targetLocation);
+                }
+            });
+        } else {
+            assertionSplitPane.setDividerSize(0);
+            assertionSplitPane.setDividerLocation(1.0);
+        }
+        assertionSplitPane.revalidate();
+        assertionSplitPane.repaint();
     }
 
     private void showContentDialog(MessageRow row) {
-        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this),
-                I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TITLE), Dialog.ModalityType.APPLICATION_MODAL);
-        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
-        dialog.setSize(600, 400);
-        dialog.setLocationRelativeTo(this);
-
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        ToolWindowSurfaceStyle.applyDialogSurface(panel);
-        JTextArea textArea = new JTextArea();
-        textArea.setEditable(false);
-        textArea.setLineWrap(true);
-        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(textArea);
-        JScrollPane scrollPane = new JScrollPane(textArea);
-        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
-        panel.add(scrollPane, BorderLayout.CENTER);
-
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        ToolWindowSurfaceStyle.applyDialogFooter(btnPanel);
-        JButton copyBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY), false);
-        JButton formatBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_FORMAT), false);
-        JButton rawBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_RAW), false);
-        JButton cancelBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL), false);
-        btnPanel.add(copyBtn);
-        btnPanel.add(formatBtn);
-        btnPanel.add(rawBtn);
-        btnPanel.add(cancelBtn);
-        panel.add(btnPanel, BorderLayout.SOUTH);
-        dialog.setContentPane(panel);
-
         String rawContent = buildDetailContent(row);
-        textArea.setText(rawContent);
-
         boolean isJson = JSONUtil.isTypeJSON(row.content);
-        formatBtn.setEnabled(isJson);
-        rawBtn.setEnabled(false);
-        formatBtn.addActionListener(e -> {
-            textArea.setText(buildFormattedDetailContent(row));
-            formatBtn.setEnabled(false);
-            rawBtn.setEnabled(true);
-        });
-        rawBtn.addActionListener(e -> {
-            textArea.setText(rawContent);
-            formatBtn.setEnabled(isJson);
-            rawBtn.setEnabled(false);
-        });
-        copyBtn.addActionListener(e -> {
-            textArea.selectAll();
-            textArea.copy();
-        });
-        cancelBtn.addActionListener(e -> dialog.dispose());
-
-        dialog.getRootPane().registerKeyboardAction(e -> dialog.dispose(),
-                KeyStroke.getKeyStroke("ESCAPE"),
-                JComponent.WHEN_IN_FOCUSED_WINDOW);
-        dialog.getRootPane().setDefaultButton(cancelBtn);
-        cancelBtn.requestFocusInWindow();
-        dialog.setVisible(true);
+        StreamMessageContentDialog.show(
+                this,
+                I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TITLE),
+                rawContent,
+                isJson,
+                () -> buildFormattedDetailContent(row)
+        );
     }
 
-    private void showAssertionDialog(List<TestResult> testResults) {
-        if (CollUtil.isEmpty(testResults)) {
-            return;
-        }
-        String html = HttpHtmlRenderer.renderTestResults(testResults);
-        JEditorPane editorPane = new JEditorPane();
-        editorPane.setContentType("text/html");
-        editorPane.setText(html);
-        editorPane.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(editorPane);
-        scrollPane.setPreferredSize(new Dimension(600, 400));
-        JOptionPane.showMessageDialog(UiSingletonFactory.getInstance(MainFrame.class),
-                scrollPane, I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION), JOptionPane.PLAIN_MESSAGE);
+    private void showAssertionDetails(MessageRow row) {
+        assertionDetailsPanel.showResults(
+                row.testResults,
+                StreamAssertionSummary.from(row.testResults),
+                StreamMessageUiMetadata.display(row.messageType),
+                row.time
+        );
+        updateAssertionSplitPane();
     }
 
     private String buildDetailContent(MessageRow row) {

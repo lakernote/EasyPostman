@@ -20,17 +20,18 @@ import java.awt.Dimension;
 class TopMenuAboutDialog {
 
     void show(Component parent) {
-        JEditorPane editorPane = createAboutEditorPane(createAboutHtml(parent), parent);
+        Component dialogOwner = TopMenuDialogOwner.resolve(parent);
+        JEditorPane editorPane = createAboutEditorPane(createAboutHtml(), dialogOwner);
         JOptionPane.showMessageDialog(
-                parent,
+                dialogOwner,
                 editorPane,
                 I18nUtil.getMessage(MessageKeys.MENU_ABOUT_EASYPOSTMAN),
                 JOptionPane.PLAIN_MESSAGE
         );
     }
 
-    private String createAboutHtml(Component parent) {
-        String iconUrl = parent.getClass().getResource("/icons/icon.png") + "";
+    private String createAboutHtml() {
+        String iconUrl = TopMenuAboutDialog.class.getResource("/icons/icon.png") + "";
         return "<html>"
                 + "<head>"
                 + "<div style='border-radius:16px; border:1px solid " + getThemeBorderColor() + "; padding:20px 28px; min-width:340px; max-width:420px;'>"

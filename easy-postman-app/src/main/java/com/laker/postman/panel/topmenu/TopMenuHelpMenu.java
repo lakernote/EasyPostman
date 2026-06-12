@@ -65,7 +65,7 @@ class TopMenuHelpMenu {
     }
 
     private void showFeedbackDialog(Component parent) {
-        JOptionPane.showMessageDialog(parent,
+        JOptionPane.showMessageDialog(TopMenuDialogOwner.resolve(parent),
                 I18nUtil.getMessage(MessageKeys.FEEDBACK_MESSAGE),
                 I18nUtil.getMessage(MessageKeys.FEEDBACK_TITLE),
                 JOptionPane.INFORMATION_MESSAGE);

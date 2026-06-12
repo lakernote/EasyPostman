@@ -148,11 +148,11 @@ public class HttpUrlUtil {
             String pair = pairs[idx];
             int eqIdx = pair.indexOf('=');
             if (eqIdx >= 0) {
-                decodedQuery.append(decodeComponent(pair.substring(0, eqIdx)))
+                decodedQuery.append(decodeComponentForDisplay(pair.substring(0, eqIdx)))
                         .append("=")
-                        .append(decodeComponent(pair.substring(eqIdx + 1)));
+                        .append(decodeComponentForDisplay(pair.substring(eqIdx + 1)));
             } else {
-                decodedQuery.append(decodeComponent(pair));
+                decodedQuery.append(decodeComponentForDisplay(pair));
             }
             if (idx < pairs.length - 1) {
                 decodedQuery.append("&");
@@ -160,6 +160,63 @@ public class HttpUrlUtil {
         }
 
         return prefix + decodedQuery + suffix;
+    }
+
+    private static String decodeComponentForDisplay(String value) {
+        if (value == null || !value.contains("%")) {
+            return value;
+        }
+
+        StringBuilder decoded = new StringBuilder();
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        int i = 0;
+        while (i < value.length()) {
+            char c = value.charAt(i);
+            if (c == '%' && i + 2 < value.length()
+                    && isHexChar(value.charAt(i + 1))
+                    && isHexChar(value.charAt(i + 2))) {
+                bytes.reset();
+                int encodedStart = i;
+                while (i + 2 < value.length() && value.charAt(i) == '%'
+                        && isHexChar(value.charAt(i + 1))
+                        && isHexChar(value.charAt(i + 2))) {
+                    bytes.write(Integer.parseInt(value.substring(i + 1, i + 3), 16));
+                    i += 3;
+                }
+                String decodedChunk = bytes.toString(StandardCharsets.UTF_8);
+                if (containsQueryReservedChar(decodedChunk)) {
+                    decoded.append(value, encodedStart, i);
+                } else {
+                    decoded.append(decodedChunk);
+                }
+            } else {
+                decoded.append(c);
+                i++;
+            }
+        }
+        return decoded.toString();
+    }
+
+    private static boolean containsQueryReservedChar(String value) {
+        if (value == null || value.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < value.length(); ) {
+            int codePoint = value.codePointAt(i);
+            if (isQueryReservedChar(codePoint)) {
+                return true;
+            }
+            i += Character.charCount(codePoint);
+        }
+        return false;
+    }
+
+    private static boolean isQueryReservedChar(int codePoint) {
+        return switch (codePoint) {
+            case ':', '/', '?', '#', '[', ']', '@',
+                 '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '=', '%' -> true;
+            default -> false;
+        };
     }
 
     public static List<HttpParam> parseQueryParams(String url) {

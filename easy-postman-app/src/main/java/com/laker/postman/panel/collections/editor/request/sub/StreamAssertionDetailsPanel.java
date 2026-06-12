@@ -32,10 +32,7 @@ final class StreamAssertionDetailsPanel extends JPanel {
     StreamAssertionDetailsPanel() {
         super(new BorderLayout(0, 6));
         ToolWindowSurfaceStyle.applySectionCard(this);
-        setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getBorderLightColor()),
-                BorderFactory.createEmptyBorder(8, 10, 8, 10)
-        ));
+        setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
         setPreferredSize(new Dimension(0, 220));
         setVisible(false);
 

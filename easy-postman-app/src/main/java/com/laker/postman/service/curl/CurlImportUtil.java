@@ -2,6 +2,7 @@ package com.laker.postman.service.curl;
 
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 
 import cn.hutool.core.collection.CollUtil;
@@ -66,10 +67,22 @@ public class CurlImportUtil {
 
         if (CollUtil.isNotEmpty(curlRequest.formDataList)) {
             item.setFormDataList(curlRequest.formDataList);
+            item.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_DATA);
         }
 
         if (CollUtil.isNotEmpty(curlRequest.urlencodedList)) {
             item.setUrlencodedList(curlRequest.urlencodedList);
+            item.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_URLENCODED);
+        }
+
+        if (curlRequest.body != null && !curlRequest.body.isEmpty()
+                && CollUtil.isEmpty(curlRequest.formDataList)
+                && CollUtil.isEmpty(curlRequest.urlencodedList)) {
+            item.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);
+        }
+
+        if (curlRequest.followRedirects) {
+            item.setFollowRedirects(Boolean.TRUE);
         }
 
         if (AuthType.DIGEST.getConstant().equals(curlRequest.authType)

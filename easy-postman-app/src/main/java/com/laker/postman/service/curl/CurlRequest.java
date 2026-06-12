@@ -24,4 +24,5 @@ public class CurlRequest {
     public String authType;
     public String authUsername;
     public String authPassword;
+    public List<CurlParseWarning> warnings;
 }

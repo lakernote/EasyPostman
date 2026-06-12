@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import cn.hutool.json.JSONUtil;
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
@@ -204,12 +205,9 @@ public class WebSocketResponsePanel extends JPanel {
         tableScrollPane.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
         assertionDetailsPanel = new StreamAssertionDetailsPanel();
         assertionDetailsPanel.setVisibilityChangeListener(this::updateAssertionSplitPane);
-        assertionSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tableScrollPane, assertionDetailsPanel);
+        assertionSplitPane = AppToolWindowChrome.createVerticalInnerSplitPane(tableScrollPane, assertionDetailsPanel, 0);
         assertionSplitPane.setResizeWeight(1.0);
-        assertionSplitPane.setContinuousLayout(true);
-        assertionSplitPane.setBorder(BorderFactory.createEmptyBorder());
         assertionSplitPane.setDividerSize(0);
-        assertionSplitPane.setOpaque(false);
         add(assertionSplitPane, BorderLayout.CENTER);
 
         // 美化表格

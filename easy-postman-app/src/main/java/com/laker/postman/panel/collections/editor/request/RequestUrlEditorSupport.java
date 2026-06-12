@@ -5,7 +5,9 @@ import com.laker.postman.request.util.HttpUrlUtil;
 import lombok.experimental.UtilityClass;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @UtilityClass
@@ -36,6 +38,41 @@ class RequestUrlEditorSupport {
             return currentUrl;
         }
         return HttpUrlUtil.buildUrl(baseUrl, params);
+    }
+
+    static List<HttpParam> mergePathVariablesFromUrl(String url, List<HttpParam> currentPathVariables) {
+        List<HttpParam> urlPathVariables = HttpUrlUtil.extractPathVariables(url);
+        if (urlPathVariables.isEmpty()) {
+            return currentPathVariables == null || currentPathVariables.isEmpty()
+                    ? currentPathVariables
+                    : new ArrayList<>();
+        }
+
+        Map<String, HttpParam> currentByKey = new LinkedHashMap<>();
+        if (currentPathVariables != null) {
+            for (HttpParam current : currentPathVariables) {
+                if (current != null && current.getKey() != null && !current.getKey().isBlank()) {
+                    currentByKey.putIfAbsent(current.getKey(), current);
+                }
+            }
+        }
+
+        List<HttpParam> merged = new ArrayList<>();
+        for (HttpParam urlPathVariable : urlPathVariables) {
+            HttpParam current = currentByKey.get(urlPathVariable.getKey());
+            if (current == null) {
+                merged.add(urlPathVariable);
+            } else {
+                merged.add(new HttpParam(
+                        current.isEnabled(),
+                        current.getKey(),
+                        current.getValue(),
+                        current.getDescription()
+                ));
+            }
+        }
+
+        return paramsListEquals(merged, currentPathVariables) ? currentPathVariables : merged;
     }
 
     static String prependProtocolIfNeeded(String url, boolean webSocketProtocol, String defaultProtocol) {

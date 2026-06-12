@@ -56,6 +56,8 @@ public class PreparedRequestFinalizer {
             replaceVariablesInUrlencodedList(request.urlencodedList);
 
             request.url = VariableResolver.resolve(request.url);
+            replaceVariablesInParamsList(request.pathVariablesList);
+            request.url = HttpUrlUtil.replacePathVariables(request.url, request.pathVariablesList);
             replaceVariablesInParamsList(request.paramsList);
             request.url = HttpUrlUtil.buildEncodedUrl(request.url, request.paramsList);
             request.body = VariableResolver.resolve(request.body);

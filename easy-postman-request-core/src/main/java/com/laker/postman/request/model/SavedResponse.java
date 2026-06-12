@@ -44,6 +44,7 @@ public class SavedResponse implements Serializable {
         private String method; // 请求方法
         private String url; // 请求URL
         private List<HttpHeader> headers = new ArrayList<>(); // 请求头
+        private List<HttpParam> pathVariables = new ArrayList<>(); // Path Variables
         private List<HttpParam> params = new ArrayList<>(); // Query 参数
         private String bodyType; // 请求体类型
         private String body; // 请求体内容

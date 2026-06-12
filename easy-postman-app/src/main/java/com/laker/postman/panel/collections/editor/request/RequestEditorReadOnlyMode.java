@@ -13,6 +13,7 @@ class RequestEditorReadOnlyMode {
     static void apply(RequestViewComponents components) {
         components.requestLinePanel.setReadOnlySnapshotMode();
         components.descriptionEditor.setEditable(false);
+        components.pathVariablesPanel.setEditable(false);
         components.paramsPanel.setEditable(false);
         components.authTabPanel.setEditable(false);
         components.headersPanel.setEditable(false);

@@ -25,6 +25,8 @@ public class HttpRequestEditorDraft {
     @Builder.Default
     List<HttpHeader> headers = Collections.emptyList();
     @Builder.Default
+    List<HttpParam> pathVariables = Collections.emptyList();
+    @Builder.Default
     List<HttpParam> params = Collections.emptyList();
     String bodyType;
     String body;

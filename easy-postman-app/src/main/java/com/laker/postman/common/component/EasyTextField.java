@@ -7,8 +7,6 @@ import com.laker.postman.variable.VariableSegment;
 import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.variable.VariableType;
 import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
 import com.laker.postman.variable.VariableParser;
 import lombok.extern.slf4j.Slf4j;
 
@@ -645,10 +643,10 @@ public class EasyTextField extends FlatTextField {
 
                     if (varType != null && varValue != null) {
                         // 变量已定义
-                        return buildTooltip(varName, varValue, varType);
+                        return VariableTooltipHtmlBuilder.variableTooltip(varName, varValue, varType);
                     } else {
                         // 变量未定义
-                        return buildTooltip(varName, "Variable not defined", null);
+                        return VariableTooltipHtmlBuilder.undefinedVariableTooltip(varName);
                     }
                 }
                 x += varWidth;
@@ -660,90 +658,4 @@ public class EasyTextField extends FlatTextField {
         return super.getToolTipText(event);
     }
 
-    /**
-     * 构建美观的工具提示HTML
-     *
-     * @param varName 变量名
-     * @param content 变量值或描述
-     * @param varType 变量类型（如果为null表示未定义）
-     * @return HTML格式的工具提示
-     */
-    private String buildTooltip(String varName, String content, VariableType varType) {
-        StringBuilder tooltip = new StringBuilder();
-        tooltip.append("<html><body style='padding: 8px; font-family: Arial, sans-serif;'>");
-
-        boolean isDefined = varType != null;
-        String titleColor;
-        String typeLabel;
-        String typeIcon;
-
-        if (isDefined) {
-            // 使用枚举中的颜色
-            titleColor = ModernColors.toHtmlColor(varType.getColor());
-            typeLabel = varType.getDisplayName();
-            typeIcon = varType.getIconSymbol();
-        } else {
-            // 未定义变量
-            titleColor = ModernColors.toHtmlColor(ModernColors.getError());
-            typeLabel = I18nUtil.getMessage(MessageKeys.VARIABLE_TYPE_UNDEFINED);
-            typeIcon = "✗";
-        }
-
-        // 标题部分 - 变量类型
-        tooltip.append("<div style='margin-bottom: 6px;'>");
-        tooltip.append("<span style='font-size: 10px; color: ").append(titleColor).append(";'>");
-        tooltip.append(typeIcon).append(" ").append(typeLabel);
-        tooltip.append("</span></div>");
-
-        // 变量名 - 粗体显示
-        tooltip.append("<div style='margin-bottom: 1px;'>");
-        tooltip.append("<b style='font-size: 10px; color: ").append(titleColor).append(";'>");
-        tooltip.append(escapeHtml(varName));
-        tooltip.append("</b></div>");
-
-        // 分隔线
-        tooltip.append("<hr style='border: none; border-top: 1px solid ")
-                .append(ModernColors.toHtmlColor(ModernColors.getBorderLightColor()))
-                .append("; margin: 1px 0;'/>");
-
-        // 内容部分 - 变量值或描述
-        tooltip.append("<div style='margin-top: 1px; color: ")
-                .append(ModernColors.toHtmlColor(ModernColors.getTextPrimary()))
-                .append("; font-size: 10px;'>");
-
-        if (isDefined && varType == VariableType.BUILT_IN) {
-            // 内置函数描述
-            tooltip.append("<span style='color: ")
-                    .append(ModernColors.toHtmlColor(ModernColors.getTextHint()))
-                    .append("; font-style: italic;'>");
-            tooltip.append(escapeHtml(content));
-            tooltip.append("</span>");
-        } else if (isDefined) {
-            // 其他类型变量值
-            tooltip.append("<span style='color: ")
-                    .append(ModernColors.toHtmlColor(ModernColors.getTextHint()))
-                    .append(";'>Value:</span><br/>");
-            tooltip.append("<span style='font-family: Consolas, monospace; background-color: ")
-                    .append(ModernColors.toHtmlColor(ModernColors.getInputBackgroundColor()))
-                    .append("; ");
-            tooltip.append("padding: 4px 6px; border-radius: 3px; display: inline-block; margin-top: 1px;'>");
-
-            // 限制显示长度，超过150字符截断
-            String displayContent = content.length() > 150 ? content.substring(0, 150) + "..." : content;
-            tooltip.append(escapeHtml(displayContent));
-            tooltip.append("</span>");
-        } else {
-            // 未定义变量警告
-            tooltip.append("<span style='color: ")
-                    .append(ModernColors.toHtmlColor(ModernColors.getError()))
-                    .append("; font-weight: bold;'>⚠ ");
-            tooltip.append(escapeHtml(content));
-            tooltip.append("</span>");
-        }
-
-        tooltip.append("</div>");
-        tooltip.append("</body></html>");
-
-        return tooltip.toString();
-    }
 }

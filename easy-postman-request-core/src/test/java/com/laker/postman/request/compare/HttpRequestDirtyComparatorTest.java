@@ -158,6 +158,19 @@ public class HttpRequestDirtyComparatorTest {
     }
 
     @Test
+    public void shouldTreatChangedPathVariableAsModified() {
+        HttpRequestItem original = baseRequest();
+        original.setUrl("https://api.example.com/users/:userId");
+        original.setPathVariablesList(List.of(new HttpParam(true, "userId", "42")));
+
+        HttpRequestItem current = baseRequest();
+        current.setUrl("https://api.example.com/users/:userId");
+        current.setPathVariablesList(List.of(new HttpParam(true, "userId", "43")));
+
+        assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
+    }
+
+    @Test
     public void shouldTreatChangedFormDataDescriptionAsModified() {
         HttpRequestItem original = baseRequest();
         original.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_DATA);

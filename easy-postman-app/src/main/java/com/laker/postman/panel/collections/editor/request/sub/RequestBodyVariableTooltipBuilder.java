@@ -1,12 +1,9 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
-import com.laker.postman.util.I18nUtil;
-import com.laker.postman.util.MessageKeys;
+import com.laker.postman.common.component.VariableTooltipHtmlBuilder;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.variable.VariableType;
 import lombok.experimental.UtilityClass;
-
-import java.awt.*;
 
 /**
  * 请求体变量提示内容构建器。
@@ -34,101 +31,19 @@ class RequestBodyVariableTooltipBuilder {
     }
 
     static String variableTooltip(String varName, String content, VariableType varType) {
-        StringBuilder tooltip = new StringBuilder();
-        tooltip.append("<html><body style='padding: 8px; font-family: Arial, sans-serif; color: ")
-                .append(toHex(RequestBodyTheme.tooltipText()))
-                .append(";'>");
+        return VariableTooltipHtmlBuilder.variableTooltip(varName, content, varType);
+    }
 
-        boolean defined = varType != null;
-        String titleColor;
-        String typeLabel;
-        String typeIcon;
-
-        if (defined) {
-            titleColor = ModernColors.toHtmlColor(varType.getColor());
-            typeLabel = varType.getDisplayName();
-            typeIcon = varType.getIconSymbol();
-        } else {
-            titleColor = ModernColors.toHtmlColor(ModernColors.getError());
-            typeLabel = I18nUtil.getMessage(MessageKeys.VARIABLE_TYPE_UNDEFINED);
-            typeIcon = "x";
-        }
-
-        tooltip.append("<div style='margin-bottom: 6px;'>");
-        tooltip.append("<span style='font-size: 10px; color: ").append(titleColor).append(";'>");
-        tooltip.append(typeIcon).append(" ").append(typeLabel);
-        tooltip.append("</span></div>");
-
-        tooltip.append("<div style='margin-bottom: 1px;'>");
-        tooltip.append("<b style='font-size: 10px; color: ").append(titleColor).append(";'>");
-        tooltip.append(escapeHtml(varName));
-        tooltip.append("</b></div>");
-
-        tooltip.append("<hr style='border: none; border-top: 1px solid ")
-                .append(toHex(RequestBodyTheme.tooltipDivider()))
-                .append("; margin: 1px 0;'/>");
-
-        tooltip.append("<div style='margin-top: 1px; color: ")
-                .append(toHex(RequestBodyTheme.tooltipText()))
-                .append("; font-size: 10px;'>");
-
-        appendContent(tooltip, content, varType, defined);
-        tooltip.append("</div>");
-        tooltip.append("</body></html>");
-        return tooltip.toString();
+    static String pathVariableTooltip(String varName, String content) {
+        return VariableTooltipHtmlBuilder.pathVariableTooltip(varName, content);
     }
 
     static String undefinedVariableTooltip(String varName) {
-        return variableTooltip(varName, I18nUtil.getMessage(MessageKeys.VARIABLE_TYPE_UNDEFINED), null);
+        return VariableTooltipHtmlBuilder.undefinedVariableTooltip(varName);
     }
 
     static String escapeHtml(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text.replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;")
-                .replace("\"", "&quot;")
-                .replace("'", "&#x27;");
-    }
-
-    private static void appendContent(StringBuilder tooltip, String content, VariableType varType, boolean defined) {
-        if (defined && varType == VariableType.BUILT_IN) {
-            tooltip.append("<span style='color: ")
-                    .append(toHex(RequestBodyTheme.tooltipMutedText()))
-                    .append("; font-style: italic;'>");
-            tooltip.append(escapeHtml(content));
-            tooltip.append("</span>");
-            return;
-        }
-
-        if (defined) {
-            appendValueContent(tooltip, content);
-            return;
-        }
-
-        tooltip.append("<span style='color: ")
-                .append(ModernColors.toHtmlColor(ModernColors.getError()))
-                .append("; font-weight: bold;'>");
-        tooltip.append(escapeHtml(content));
-        tooltip.append("</span>");
-    }
-
-    private static void appendValueContent(StringBuilder tooltip, String content) {
-        tooltip.append("<span style='color: ")
-                .append(toHex(RequestBodyTheme.tooltipMutedText()))
-                .append(";'>Value:</span><br/>");
-        tooltip.append("<span style='font-family: Consolas, monospace; background-color: ")
-                .append(toHex(RequestBodyTheme.tooltipCodeBackground()))
-                .append("; color: ")
-                .append(toHex(RequestBodyTheme.tooltipText()))
-                .append("; ");
-        tooltip.append("padding: 4px 6px; border-radius: 3px; display: inline-block; margin-top: 1px;'>");
-
-        String displayContent = content.length() > 150 ? content.substring(0, 150) + "..." : content;
-        tooltip.append(escapeHtml(displayContent));
-        tooltip.append("</span>");
+        return VariableTooltipHtmlBuilder.escapeHtml(text);
     }
 
     private static String formatLongText(String text) {
@@ -149,7 +64,4 @@ class RequestBodyVariableTooltipBuilder {
         return formatted.toString();
     }
 
-    private static String toHex(Color color) {
-        return String.format("#%02X%02X%02X", color.getRed(), color.getGreen(), color.getBlue());
-    }
 }

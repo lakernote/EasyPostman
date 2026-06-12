@@ -25,10 +25,29 @@ import java.util.List;
 public class EasyRequestParamsPanel extends JPanel {
     private ParamsTablePanel tablePanel;
     private EditButton bulkEditButton;
+    private JPanel headerPanel;
+    private final String titleKey;
+    private final String bulkEditTitleKey;
+    private final boolean generatedFromUrl;
 
     public EasyRequestParamsPanel() {
+        this(MessageKeys.REQUEST_PARAMS_TITLE, MessageKeys.BULK_EDIT_PARAMS, false);
+    }
+
+    private EasyRequestParamsPanel(String titleKey, String bulkEditTitleKey, boolean generatedFromUrl) {
+        this.titleKey = titleKey;
+        this.bulkEditTitleKey = bulkEditTitleKey;
+        this.generatedFromUrl = generatedFromUrl;
         initializeComponents();
         setupLayout();
+    }
+
+    public static EasyRequestParamsPanel queryParamsPanel() {
+        return new EasyRequestParamsPanel(MessageKeys.REQUEST_QUERY_PARAMS_TITLE, MessageKeys.BULK_EDIT_PARAMS, false);
+    }
+
+    public static EasyRequestParamsPanel pathVariablesPanel() {
+        return new EasyRequestParamsPanel(MessageKeys.REQUEST_PATH_VARIABLES_TITLE, MessageKeys.BULK_EDIT_PATH_VARIABLES, true);
     }
 
     private void initializeComponents() {
@@ -38,27 +57,28 @@ public class EasyRequestParamsPanel extends JPanel {
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
         // Create header panel
-        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
+        headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 1, 0));
         ToolWindowSurfaceStyle.applyCard(headerPanel);
-        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_PARAMS_TITLE));
+        JLabel label = new JLabel(I18nUtil.getMessage(titleKey));
 
         // Create Bulk Edit button
         bulkEditButton = new EditButton();
         bulkEditButton.setToolTipText(I18nUtil.getMessage(MessageKeys.BULK_EDIT));
         bulkEditButton.addActionListener(e -> showBulkEditDialog());
+        bulkEditButton.setVisible(!generatedFromUrl);
 
         headerPanel.add(label);
         headerPanel.add(Box.createHorizontalStrut(5)); // 添加间距
         headerPanel.add(bulkEditButton);
 
         // Create table panel
-        tablePanel = new ParamsTablePanel();
+        tablePanel = generatedFromUrl ? ParamsTablePanel.pathVariablesPanel() : new ParamsTablePanel();
 
         add(headerPanel, BorderLayout.NORTH);
     }
 
     private void setupLayout() {
-        // tablePanel 已经内部包含了 JScrollPane，直接添加即可
+        // Params 表格由外层 Params tab 统一负责滚动，避免表格嵌套滚动抢占滚轮事件。
         add(tablePanel, BorderLayout.CENTER);
     }
 
@@ -130,7 +150,7 @@ public class EasyRequestParamsPanel extends JPanel {
 
         // 6. 创建自定义对话框
         Window window = SwingUtilities.getWindowAncestor(this);
-        JDialog dialog = new JDialog(window, I18nUtil.getMessage(MessageKeys.BULK_EDIT_PARAMS), Dialog.ModalityType.APPLICATION_MODAL);
+        JDialog dialog = new JDialog(window, I18nUtil.getMessage(bulkEditTitleKey), Dialog.ModalityType.APPLICATION_MODAL);
         ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setLayout(new BorderLayout());
         dialog.add(contentPanel, BorderLayout.CENTER);
@@ -249,8 +269,14 @@ public class EasyRequestParamsPanel extends JPanel {
     public void setEditable(boolean editable) {
         tablePanel.setEditable(editable);
         if (bulkEditButton != null) {
-            bulkEditButton.setVisible(editable);
-            bulkEditButton.setEnabled(editable);
+            bulkEditButton.setVisible(editable && !generatedFromUrl);
+            bulkEditButton.setEnabled(editable && !generatedFromUrl);
         }
+    }
+
+    int getPreferredSectionHeight() {
+        Insets insets = getInsets();
+        int headerHeight = headerPanel == null ? 0 : headerPanel.getPreferredSize().height;
+        return insets.top + headerHeight + tablePanel.getPreferredTableHeight() + insets.bottom;
     }
 }

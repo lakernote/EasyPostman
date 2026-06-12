@@ -14,6 +14,8 @@ final class RequestViewComponents {
     final JTextField urlField;
     final JTabbedPane reqTabs;
     final MarkdownEditorPanel descriptionEditor;
+    final RequestParamsPanel paramsTabPanel;
+    final EasyRequestParamsPanel pathVariablesPanel;
     final EasyRequestParamsPanel paramsPanel;
     final IndicatorTabComponent paramsTabIndicator;
     final AuthTabPanel authTabPanel;

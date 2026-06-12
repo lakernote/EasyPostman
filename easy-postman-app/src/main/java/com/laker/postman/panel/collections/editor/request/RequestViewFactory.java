@@ -37,7 +37,9 @@ class RequestViewFactory {
         configureRequestTabs(reqTabs);
 
         MarkdownEditorPanel descriptionEditor = new MarkdownEditorPanel();
-        EasyRequestParamsPanel paramsPanel = new EasyRequestParamsPanel();
+        EasyRequestParamsPanel pathVariablesPanel = EasyRequestParamsPanel.pathVariablesPanel();
+        EasyRequestParamsPanel paramsPanel = EasyRequestParamsPanel.queryParamsPanel();
+        RequestParamsPanel paramsTabPanel = new RequestParamsPanel(pathVariablesPanel, paramsPanel);
         IndicatorTabComponent paramsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_PARAMS));
         AuthTabPanel authTabPanel = new AuthTabPanel();
         IndicatorTabComponent authTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_AUTHORIZATION));
@@ -72,6 +74,8 @@ class RequestViewFactory {
                 urlField,
                 reqTabs,
                 descriptionEditor,
+                paramsTabPanel,
+                pathVariablesPanel,
                 paramsPanel,
                 paramsTabIndicator,
                 authTabPanel,
@@ -121,7 +125,7 @@ class RequestViewFactory {
         addTabIfVisible(
                 tabs,
                 I18nUtil.getMessage(MessageKeys.TAB_PARAMS),
-                components.paramsPanel,
+                components.paramsTabPanel,
                 components.paramsTabIndicator,
                 SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_PARAMS)
         );
@@ -165,7 +169,7 @@ class RequestViewFactory {
             addTabIfVisible(
                     tabs,
                     I18nUtil.getMessage(MessageKeys.TAB_PARAMS),
-                    components.paramsPanel,
+                    components.paramsTabPanel,
                     components.paramsTabIndicator,
                     true
             );

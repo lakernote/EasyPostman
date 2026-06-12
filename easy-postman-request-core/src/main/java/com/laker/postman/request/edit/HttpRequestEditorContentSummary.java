@@ -27,7 +27,7 @@ public class HttpRequestEditorContentSummary {
             return empty();
         }
         return new HttpRequestEditorContentSummary(
-                hasParams(draft.getParams()),
+                hasParams(draft.getPathVariables()) || hasParams(draft.getParams()),
                 hasAuth(draft.getAuthType()),
                 hasHeaders(draft.getHeaders()),
                 hasBody(draft),

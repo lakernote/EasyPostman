@@ -8,8 +8,10 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @UtilityClass
@@ -202,6 +204,90 @@ public class HttpUrlUtil {
         return urlParams;
     }
 
+    public static List<HttpParam> extractPathVariables(String url) {
+        List<PathVariableSegment> segments = extractPathVariableSegments(url);
+        if (segments.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<HttpParam> pathVariables = new ArrayList<>();
+        Set<String> seenNames = new LinkedHashSet<>();
+        for (PathVariableSegment segment : segments) {
+            if (seenNames.add(segment.name())) {
+                pathVariables.add(new HttpParam(true, segment.name(), ""));
+            }
+        }
+
+        return pathVariables;
+    }
+
+    public static List<PathVariableSegment> extractPathVariableSegments(String url) {
+        if (url == null || url.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        int[] range = pathScanRange(url);
+        if (range[0] < 0 || range[0] >= range[1]) {
+            return Collections.emptyList();
+        }
+
+        List<PathVariableSegment> segments = new ArrayList<>();
+        int i = range[0];
+        while (i < range[1]) {
+            PathVariableSegment segment = readPathVariableSegment(url, i, range[1]);
+            if (segment == null) {
+                i++;
+                continue;
+            }
+            segments.add(segment);
+            i = segment.endIndex();
+        }
+        return segments;
+    }
+
+    public static String replacePathVariables(String url, List<HttpParam> pathVariables) {
+        if (url == null || url.isEmpty() || pathVariables == null || pathVariables.isEmpty()) {
+            return url;
+        }
+
+        int[] range = pathScanRange(url);
+        if (range[0] < 0 || range[0] >= range[1]) {
+            return url;
+        }
+
+        Map<String, HttpParam> variablesByName = new LinkedHashMap<>();
+        for (HttpParam pathVariable : pathVariables) {
+            if (pathVariable == null || pathVariable.getKey() == null || pathVariable.getKey().isBlank()) {
+                continue;
+            }
+            variablesByName.putIfAbsent(pathVariable.getKey(), pathVariable);
+        }
+        if (variablesByName.isEmpty()) {
+            return url;
+        }
+
+        StringBuilder resolved = new StringBuilder(url.length());
+        resolved.append(url, 0, range[0]);
+        int i = range[0];
+        while (i < range[1]) {
+            PathVariableSegment token = readPathVariableSegment(url, i, range[1]);
+            if (token == null) {
+                resolved.append(url.charAt(i));
+                i++;
+                continue;
+            }
+
+            HttpParam variable = variablesByName.get(token.name());
+            if (variable == null || !variable.isEnabled()) {
+                resolved.append(url, token.startIndex(), token.endIndex());
+            } else {
+                resolved.append(variable.getValue() == null ? "" : variable.getValue());
+            }
+            i = token.endIndex();
+        }
+        resolved.append(url, range[1], url.length());
+        return resolved.toString();
+    }
+
     public static String baseUrlWithoutQuery(String url) {
         if (url == null || url.trim().isEmpty()) {
             return null;
@@ -232,6 +318,82 @@ public class HttpUrlUtil {
             }
         }
         return urlBuilder.toString();
+    }
+
+    private static int[] pathScanRange(String url) {
+        int end = firstIndexOf(url, 0, '?', '#');
+        if (end < 0) {
+            end = url.length();
+        }
+
+        int start = 0;
+        int schemeAuthorityIndex = url.indexOf("://");
+        if (schemeAuthorityIndex >= 0) {
+            int authorityStart = schemeAuthorityIndex + 3;
+            int pathStart = url.indexOf('/', authorityStart);
+            if (pathStart < 0 || pathStart >= end) {
+                return new int[]{-1, -1};
+            }
+            start = pathStart;
+        } else if (url.startsWith("//")) {
+            int pathStart = url.indexOf('/', 2);
+            if (pathStart < 0 || pathStart >= end) {
+                return new int[]{-1, -1};
+            }
+            start = pathStart;
+        } else {
+            int firstSlash = url.indexOf('/');
+            int firstColon = url.indexOf(':');
+            if (firstSlash > 0 && firstColon >= 0 && firstColon < firstSlash) {
+                start = firstSlash;
+            }
+        }
+
+        if (start >= end) {
+            return new int[]{-1, -1};
+        }
+        return new int[]{start, end};
+    }
+
+    private static int firstIndexOf(String value, int fromIndex, char first, char second) {
+        int firstIndex = value.indexOf(first, fromIndex);
+        int secondIndex = value.indexOf(second, fromIndex);
+        if (firstIndex < 0) {
+            return secondIndex;
+        }
+        if (secondIndex < 0) {
+            return firstIndex;
+        }
+        return Math.min(firstIndex, secondIndex);
+    }
+
+    private static PathVariableSegment readPathVariableSegment(String url, int startIndex, int pathEndIndex) {
+        if (url.charAt(startIndex) != ':' || startIndex + 1 >= pathEndIndex) {
+            return null;
+        }
+
+        char firstNameChar = url.charAt(startIndex + 1);
+        if (!isPathVariableNameStart(firstNameChar)) {
+            return null;
+        }
+
+        int endIndex = startIndex + 2;
+        while (endIndex < pathEndIndex && isPathVariableNamePart(url.charAt(endIndex))) {
+            endIndex++;
+        }
+        return new PathVariableSegment(startIndex, endIndex, url.substring(startIndex + 1, endIndex));
+    }
+
+    private static boolean isPathVariableNameStart(char c) {
+        return (c >= 'A' && c <= 'Z')
+                || (c >= 'a' && c <= 'z')
+                || c == '_';
+    }
+
+    private static boolean isPathVariableNamePart(char c) {
+        return isPathVariableNameStart(c)
+                || (c >= '0' && c <= '9')
+                || c == '-';
     }
 
     private static String encodeExistingQueryString(String url) {
@@ -299,5 +461,8 @@ public class HttpUrlUtil {
 
     private static boolean isNotBlank(String value) {
         return value != null && !value.trim().isEmpty();
+    }
+
+    public record PathVariableSegment(int startIndex, int endIndex, String name) {
     }
 }

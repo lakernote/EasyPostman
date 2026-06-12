@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.panel.collections.editor.request.sub.EasyRequestParamsPanel;
+import com.laker.postman.panel.collections.editor.request.sub.RequestParamsPanel;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 final class RequestUrlParamsSynchronizer {
     private final JTextField urlField;
+    private final RequestParamsPanel paramsTabPanel;
     private final EasyRequestParamsPanel paramsPanel;
     private boolean updatingFromUrl;
     private boolean updatingFromParams;
@@ -26,6 +28,16 @@ final class RequestUrlParamsSynchronizer {
             List<HttpParam> mergedParams = RequestUrlEditorSupport.mergeUrlParamsWithDisabledParams(urlField.getText(), currentParams);
             if (mergedParams != currentParams) {
                 paramsPanel.setParamsList(mergedParams);
+            }
+            List<HttpParam> currentPathVariables = paramsTabPanel.getPathVariablesListFromModel();
+            List<HttpParam> mergedPathVariables = RequestUrlEditorSupport.mergePathVariablesFromUrl(
+                    urlField.getText(),
+                    currentPathVariables
+            );
+            if (mergedPathVariables != currentPathVariables) {
+                paramsTabPanel.setPathVariablesList(mergedPathVariables);
+            } else {
+                paramsTabPanel.refreshPathVariablesVisibility();
             }
         } finally {
             updatingFromUrl = false;

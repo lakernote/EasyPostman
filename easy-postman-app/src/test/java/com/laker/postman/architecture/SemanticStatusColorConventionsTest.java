@@ -27,6 +27,7 @@ public class SemanticStatusColorConventionsTest {
     );
     private static final List<String> HTML_COLOR_COMPONENTS = List.of(
             "easy-postman-app/src/main/java/com/laker/postman/common/component/EasyTextField.java",
+            "easy-postman-app/src/main/java/com/laker/postman/common/component/VariableTooltipHtmlBuilder.java",
             "easy-postman-app/src/main/java/com/laker/postman/common/component/RequestMethodUiMetadata.java",
             "easy-postman-app/src/main/java/com/laker/postman/common/component/dialog/WorkspaceSelectionDialog.java",
             "easy-postman-app/src/main/java/com/laker/postman/common/component/tree/RequestTreeCellRenderer.java",

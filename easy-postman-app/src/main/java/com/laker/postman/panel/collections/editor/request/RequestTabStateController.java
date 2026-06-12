@@ -27,6 +27,7 @@ final class RequestTabStateController {
         view.methodBox.addActionListener(e -> dirtyAction.run());
         view.descriptionEditor.addDocumentListener(createDocumentListener(dirtyAction));
         view.headersPanel.addTableModelListener(e -> dirtyAction.run());
+        view.pathVariablesPanel.addTableModelListener(e -> dirtyAction.run());
         view.paramsPanel.addTableModelListener(e -> dirtyAction.run());
         view.authTabPanel.addDirtyListener(dirtyAction);
         view.requestSettingsPanel.addDirtyListener(dirtyAction);
@@ -48,6 +49,7 @@ final class RequestTabStateController {
 
         view.scriptPanel.addDirtyListeners(dirtyAction);
 
+        view.pathVariablesPanel.addTableModelListener(e -> updateTabIndicators());
         view.paramsPanel.addTableModelListener(e -> updateTabIndicators());
         view.authTabPanel.addDirtyListener(this::updateTabIndicators);
         view.headersPanel.addTableModelListener(e -> updateTabIndicators());
@@ -84,6 +86,7 @@ final class RequestTabStateController {
         HttpRequestSettingsDraft settings = view.requestSettingsPanel.collectSettings();
         return HttpRequestEditorDraft.builder()
                 .protocol(protocol)
+                .pathVariables(view.pathVariablesPanel.getParamsListFromModel())
                 .params(view.paramsPanel.getParamsListFromModel())
                 .headers(view.headersPanel.getHeadersListFromModel())
                 .bodyType(view.requestBodyPanel.getBodyType())

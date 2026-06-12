@@ -254,6 +254,31 @@ public class PostmanCollectionParser {
         return paramsList;
     }
 
+    private static List<HttpParam> parseUrlVariables(JSONArray variableArr) {
+        if (variableArr == null || variableArr.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        List<HttpParam> pathVariables = new ArrayList<>();
+        for (Object variable : variableArr) {
+            if (!(variable instanceof JSONObject variableObj)) {
+                continue;
+            }
+            String key = variableObj.getStr("key", "");
+            if (key.isBlank()) {
+                continue;
+            }
+            boolean enabled = !variableObj.getBool(KEY_DISABLED, false);
+            pathVariables.add(new HttpParam(
+                    enabled,
+                    key,
+                    variableObj.getStr(KEY_VALUE, ""),
+                    variableObj.getStr("description", "")
+            ));
+        }
+        return pathVariables;
+    }
+
     /**
      * 解析Postman的header数组
      */
@@ -401,6 +426,10 @@ public class PostmanCollectionParser {
             Object urlObj = request.get("url");
             if (urlObj instanceof JSONObject urlJson) {
                 req.setUrl(buildRawUrl(urlJson));
+                List<HttpParam> pathVariables = parseUrlVariables(urlJson.getJSONArray("variable"));
+                if (!pathVariables.isEmpty()) {
+                    req.setPathVariablesList(pathVariables);
+                }
                 // 解析query参数
                 JSONArray queryArr = urlJson.getJSONArray("query");
                 List<HttpParam> params = parseQueryParams(queryArr);
@@ -584,7 +613,13 @@ public class PostmanCollectionParser {
             for (Object segment : pathArray) {
                 url.append("/");
                 if (segment instanceof JSONObject pathVar) {
-                    url.append(pathVar.getStr("value", ""));
+                    String key = pathVar.getStr("key", "");
+                    String type = pathVar.getStr("type", "");
+                    if ("param".equals(type) && !key.isBlank()) {
+                        url.append(":").append(key);
+                    } else {
+                        url.append(pathVar.getStr("value", ""));
+                    }
                 } else {
                     url.append(String.valueOf(segment));
                 }
@@ -652,6 +687,11 @@ public class PostmanCollectionParser {
             Object urlObj = originalRequest.get("url");
             if (urlObj instanceof JSONObject urlJson) {
                 origReq.setUrl(urlJson.getStr("raw", ""));
+
+                List<HttpParam> pathVariables = parseUrlVariables(urlJson.getJSONArray("variable"));
+                if (!pathVariables.isEmpty()) {
+                    origReq.setPathVariables(pathVariables);
+                }
 
                 // 解析 query 参数
                 List<HttpParam> params = parseQueryParams(urlJson.getJSONArray("query"));

@@ -31,6 +31,7 @@ public class HttpRequestEditorDraftMapperTest {
                 .method("POST")
                 .protocol(RequestItemProtocolEnum.HTTP)
                 .headers(List.of(new HttpHeader(true, "Content-Type", "application/json")))
+                .pathVariables(List.of(new HttpParam(true, "userId", "42", "User id")))
                 .params(List.of(new HttpParam(true, "verbose", "true")))
                 .bodyType(RequestBodyTypes.BODY_TYPE_RAW)
                 .body("{\"name\":\"easy\"}")
@@ -55,6 +56,8 @@ public class HttpRequestEditorDraftMapperTest {
         assertEquals(item.getMethod(), "POST");
         assertEquals(item.getProtocol(), RequestItemProtocolEnum.HTTP);
         assertEquals(item.getHeadersList().size(), 1);
+        assertEquals(item.getPathVariablesList().size(), 1);
+        assertEquals(item.getPathVariablesList().get(0).getKey(), "userId");
         assertEquals(item.getParamsList().size(), 1);
         assertEquals(item.getBodyType(), RequestBodyTypes.BODY_TYPE_RAW);
         assertEquals(item.getBody(), "{\"name\":\"easy\"}");
@@ -110,6 +113,7 @@ public class HttpRequestEditorDraftMapperTest {
         item.setName("Submit Form");
         item.setUrl("https://api.example.com/search?q=easy&page=1");
         item.setMethod("POST");
+        item.setPathVariablesList(List.of(new HttpParam(true, "userId", "42")));
         item.setProxyPolicy(HttpRequestProxyPolicy.USE_PROXY);
         item.setBody("name=easy");
         item.setHeadersList(List.of(new HttpHeader(true, "Content-Type", "application/x-www-form-urlencoded")));
@@ -118,6 +122,8 @@ public class HttpRequestEditorDraftMapperTest {
 
         assertEquals(draft.getId(), "request-2");
         assertEquals(draft.getProxyPolicy(), HttpRequestProxyPolicy.USE_PROXY);
+        assertEquals(draft.getPathVariables().size(), 1);
+        assertEquals(draft.getPathVariables().get(0).getKey(), "userId");
         assertEquals(draft.getParams().size(), 2);
         assertEquals(draft.getBodyType(), RequestBodyTypes.BODY_TYPE_FORM_URLENCODED);
         assertTrue(item.getParamsList().isEmpty(), "Opening a request must not materialize URL params into the source item");

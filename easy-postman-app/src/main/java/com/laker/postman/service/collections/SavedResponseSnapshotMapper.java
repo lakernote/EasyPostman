@@ -66,6 +66,7 @@ public class SavedResponseSnapshotMapper {
         originalRequest.setMethod(request.method);
         originalRequest.setUrl(request.url);
         originalRequest.setHeaders(request.headersList != null ? new ArrayList<>(request.headersList) : new ArrayList<>());
+        originalRequest.setPathVariables(request.pathVariablesList != null ? new ArrayList<>(request.pathVariablesList) : new ArrayList<>());
         originalRequest.setParams(request.paramsList != null ? new ArrayList<>(request.paramsList) : new ArrayList<>());
         originalRequest.setBodyType(request.bodyType);
         originalRequest.setBody(request.body);

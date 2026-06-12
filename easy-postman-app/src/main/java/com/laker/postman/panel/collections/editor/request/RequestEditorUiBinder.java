@@ -63,19 +63,19 @@ final class RequestEditorUiBinder {
     static void applyInitialProtocolUi(RequestItemProtocolEnum protocol,
                                        JTabbedPane reqTabs,
                                        RequestBodyPanel requestBodyPanel,
-                                       EasyRequestParamsPanel paramsPanel,
+                                       JComponent paramsTabPanel,
                                        AuthTabPanel authTabPanel,
                                        ActionListener wsSendAction) {
         if (protocol.isWebSocketProtocol()) {
             requestBodyPanel.setWsSendActionListener(wsSendAction);
             RequestTabSelector.removeIfPresent(reqTabs, authTabPanel);
-            RequestTabSelector.selectFirstVisible(reqTabs, requestBodyPanel, paramsPanel);
+            RequestTabSelector.selectFirstVisible(reqTabs, requestBodyPanel, paramsTabPanel);
             requestBodyPanel.setWebSocketConnected(false);
         } else if (protocol.isSseProtocol()) {
             RequestTabSelector.removeIfPresent(reqTabs, authTabPanel);
-            RequestTabSelector.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
+            RequestTabSelector.selectFirstVisible(reqTabs, paramsTabPanel, requestBodyPanel);
         } else {
-            RequestTabSelector.selectFirstVisible(reqTabs, paramsPanel, requestBodyPanel);
+            RequestTabSelector.selectFirstVisible(reqTabs, paramsTabPanel, requestBodyPanel);
         }
     }
 

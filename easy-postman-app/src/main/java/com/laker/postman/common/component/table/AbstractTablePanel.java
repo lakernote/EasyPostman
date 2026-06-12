@@ -209,11 +209,25 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         // Create table
         table = new JTable(tableModel);
 
-        // Wrap table in JScrollPane to show headers
-        JScrollPane scrollPane = new JScrollPane(table);
-        ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, table);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        add(scrollPane, BorderLayout.CENTER);
+        if (useTableScrollPane()) {
+            // Wrap table in JScrollPane to show headers
+            JScrollPane scrollPane = new JScrollPane(table);
+            ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, table);
+            scrollPane.setBorder(BorderFactory.createEmptyBorder());
+            configureTableScrollPane(scrollPane);
+            add(scrollPane, BorderLayout.CENTER);
+        } else {
+            add(table.getTableHeader(), BorderLayout.NORTH);
+            add(table, BorderLayout.CENTER);
+        }
+    }
+
+    protected void configureTableScrollPane(JScrollPane scrollPane) {
+        // Default scroll behavior remains owned by Swing/FlatLaf.
+    }
+
+    protected boolean useTableScrollPane() {
+        return true;
     }
 
     @Override
@@ -783,7 +797,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
             }
 
             private void showPopupMenu(MouseEvent e) {
-                if (!editable) {
+                if (!editable || !isContextMenuEnabled()) {
                     return;
                 }
 
@@ -820,6 +834,10 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         menu.add(removeItem);
 
         return menu;
+    }
+
+    protected boolean isContextMenuEnabled() {
+        return true;
     }
 
     /**

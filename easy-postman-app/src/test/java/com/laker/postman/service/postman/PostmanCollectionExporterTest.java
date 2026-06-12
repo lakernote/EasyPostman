@@ -6,6 +6,7 @@ import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
@@ -68,6 +69,27 @@ public class PostmanCollectionExporterTest {
         JSONArray query = url.getJSONArray("query");
         assertNotNull(query);
         assertEquals(query.size(), 2);
+    }
+
+    @Test
+    public void testToPostmanItem_WithPathVariables() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setName("Get User");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/users/:userId");
+        item.setPathVariablesList(List.of(new HttpParam(true, "userId", "42", "User id")));
+
+        JSONObject postmanItem = PostmanCollectionExporter.toPostmanItem(item);
+
+        JSONObject url = postmanItem.getJSONObject("request").getJSONObject("url");
+        assertEquals(url.getStr("raw"), "https://api.example.com/users/:userId");
+        JSONArray variables = url.getJSONArray("variable");
+        assertNotNull(variables);
+        assertEquals(variables.size(), 1);
+        JSONObject variable = variables.getJSONObject(0);
+        assertEquals(variable.getStr("key"), "userId");
+        assertEquals(variable.getStr("value"), "42");
+        assertEquals(variable.getStr("description"), "User id");
     }
 
     @Test

@@ -28,6 +28,7 @@ public class HttpRequestItem implements Serializable {
     private List<HttpHeader> headersList = new ArrayList<>();
     private String bodyType = ""; // 请求体类型
     private String body = ""; // 请求体内容（如JSON、表单数据等）
+    private List<HttpParam> pathVariablesList = new ArrayList<>();
     private List<HttpParam> paramsList = new ArrayList<>();
     private List<HttpFormData> formDataList = new ArrayList<>();
     private List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();

@@ -233,7 +233,8 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void createEditorCollaborators() {
-        requestUrlParamsSynchronizer = new RequestUrlParamsSynchronizer(view.urlField, view.paramsPanel);
+        requestUrlParamsSynchronizer = new RequestUrlParamsSynchronizer(view.urlField, view.paramsTabPanel, view.paramsPanel);
+        view.requestLinePanel.setPathVariablesSupplier(view.paramsTabPanel::getPathVariablesListFromModel);
         requestEditorBinder = new RequestEditorBinder(view);
         requestEditorDefaultTabSelector = new RequestEditorDefaultTabSelector(view);
         dataController.bindEditor(
@@ -279,7 +280,7 @@ public class RequestEditSubPanel extends JPanel {
                 protocol,
                 view.reqTabs,
                 view.requestBodyPanel,
-                view.paramsPanel,
+                view.paramsTabPanel,
                 view.authTabPanel,
                 e -> sendWebSocketMessage()
         );

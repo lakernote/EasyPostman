@@ -21,6 +21,7 @@ public class HttpRequestEditorContentSummaryTest {
     @Test
     public void shouldDetectParamsHeadersAuthSettingsAndScripts() {
         HttpRequestEditorDraft draft = HttpRequestEditorDraft.builder()
+                .pathVariables(List.of(new HttpParam(true, "userId", "42")))
                 .params(List.of(new HttpParam(true, "q", "easy")))
                 .headers(List.of(new HttpHeader(true, "Accept", "*/*")))
                 .authType(AuthType.BEARER.getConstant())
@@ -35,6 +36,17 @@ public class HttpRequestEditorContentSummaryTest {
         assertTrue(summary.isHasAuth());
         assertTrue(summary.isHasSettings());
         assertTrue(summary.isHasScripts());
+    }
+
+    @Test
+    public void shouldDetectPathVariablesAsParamsContent() {
+        HttpRequestEditorDraft draft = HttpRequestEditorDraft.builder()
+                .pathVariables(List.of(new HttpParam(true, "userId", "42")))
+                .build();
+
+        HttpRequestEditorContentSummary summary = HttpRequestEditorContentSummary.from(draft);
+
+        assertTrue(summary.isHasParams());
     }
 
     @Test

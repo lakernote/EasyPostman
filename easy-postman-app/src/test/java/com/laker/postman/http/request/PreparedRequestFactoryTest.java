@@ -5,6 +5,7 @@ import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.TransportAuth;
@@ -169,6 +170,23 @@ public class PreparedRequestFactoryTest {
 
         assertNull(req.transportAuth, "Explicit Authorization should suppress Digest transport auth");
         assertEquals(findHeaderValue(req.headersList, "Authorization"), "Custom Auth Value");
+    }
+
+    @Test
+    public void testPathVariablesAreResolvedBeforeSending() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId("test-path-vars");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/users/:userId/orders/:orderId?expand=items");
+        item.setPathVariablesList(List.of(
+                new HttpParam(true, "userId", "42"),
+                new HttpParam(true, "orderId", "A-100")
+        ));
+
+        PreparedRequest req = PreparedRequestFactory.build(item);
+        PreparedRequestFinalizer.finalizeForSend(req, item);
+
+        assertEquals(req.url, "https://api.example.com/users/42/orders/A-100?expand=items");
     }
 
     @Test

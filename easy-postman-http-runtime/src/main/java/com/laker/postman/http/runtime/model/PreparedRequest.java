@@ -30,6 +30,7 @@ public class PreparedRequest {
     public List<HttpHeader> headersList;
     public List<HttpFormData> formDataList;
     public List<HttpFormUrlencoded> urlencodedList;
+    public List<HttpParam> pathVariablesList;
     public List<HttpParam> paramsList;
 
     public boolean isMultipart;
@@ -102,6 +103,7 @@ public class PreparedRequest {
         copy.headersList = this.headersList == null ? null : new ArrayList<>(this.headersList);
         copy.formDataList = this.formDataList == null ? null : new ArrayList<>(this.formDataList);
         copy.urlencodedList = this.urlencodedList == null ? null : new ArrayList<>(this.urlencodedList);
+        copy.pathVariablesList = this.pathVariablesList == null ? null : new ArrayList<>(this.pathVariablesList);
         copy.paramsList = this.paramsList == null ? null : new ArrayList<>(this.paramsList);
         return copy;
     }
@@ -109,7 +111,8 @@ public class PreparedRequest {
     /**
      * 简化对象，将渲染时不需要的字段置为 null，减少内存占用
      * 保留的字段：url, method, sentHeadersList, formDataList, urlencodedList, sentRequestBody
-     * 置为 null 的字段：id, name, body, bodyType, transportAuth, headersList, paramsList, exchangeEventInfo
+     * 置为 null 的字段：id, name, body, bodyType, transportAuth, headersList,
+     * pathVariablesList, paramsList, exchangeEventInfo
      */
     public void simplify() {
         this.id = null;
@@ -118,6 +121,7 @@ public class PreparedRequest {
         this.bodyType = null;
         this.transportAuth = null;
         this.headersList = null;  // 渲染用的是 sentHeadersList
+        this.pathVariablesList = null;
         this.paramsList = null;   // 渲染时不显示
         this.exchangeEventInfo = null;
         // isMultipart, followRedirects 和采集开关是基本类型，不占主要内存

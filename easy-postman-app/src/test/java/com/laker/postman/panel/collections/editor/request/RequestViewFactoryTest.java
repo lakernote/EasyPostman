@@ -62,8 +62,19 @@ public class RequestViewFactoryTest extends AbstractSwingUiTest {
             RequestViewComponents components = createView(RequestItemProtocolEnum.HTTP);
 
             assertEquals(components.reqTabs.getTabCount(), 1);
-            assertSame(components.reqTabs.getComponentAt(0), components.paramsPanel);
+            assertSame(components.reqTabs.getComponentAt(0), components.paramsTabPanel);
             assertTrue(hasTab(components.reqTabs, I18nUtil.getMessage(MessageKeys.TAB_PARAMS)));
+        });
+    }
+
+    @Test
+    public void paramsTabShouldShowQueryParamsBeforePathVariables() throws Exception {
+        withHiddenRequestEditorTabs(List.of(), () -> {
+            RequestViewComponents components = createView(RequestItemProtocolEnum.HTTP);
+            JPanel paramsContent = paramsScrollContent(components);
+
+            assertSame(paramsContent.getComponent(0), components.paramsPanel);
+            assertSame(paramsContent.getComponent(2), components.pathVariablesPanel);
         });
     }
 
@@ -184,6 +195,14 @@ public class RequestViewFactoryTest extends AbstractSwingUiTest {
             }
         }
         return false;
+    }
+
+    private JPanel paramsScrollContent(RequestViewComponents components) {
+        assertTrue(components.paramsTabPanel.getComponent(0) instanceof JScrollPane);
+        JScrollPane scrollPane = (JScrollPane) components.paramsTabPanel.getComponent(0);
+        assertTrue(scrollPane.isWheelScrollingEnabled());
+        assertTrue(scrollPane.getViewport().getView() instanceof JPanel);
+        return (JPanel) scrollPane.getViewport().getView();
     }
 
     private void withHiddenRequestEditorTabs(List<String> hiddenTabs, CheckedRunnable runnable) throws Exception {

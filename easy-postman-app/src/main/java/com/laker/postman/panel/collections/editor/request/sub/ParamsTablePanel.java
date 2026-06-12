@@ -11,6 +11,7 @@ import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 
+import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,7 +29,13 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
     private static final int COL_DESCRIPTION = 3;
     private static final int COL_DELETE = 4;
 
+    private final boolean generatedFromUrl;
+
     public ParamsTablePanel() {
+        this(false);
+    }
+
+    private ParamsTablePanel(boolean generatedFromUrl) {
         super(new String[]{
                 "",
                 I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY),
@@ -36,14 +43,21 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
                 I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION),
                 ""
         });
+        this.generatedFromUrl = generatedFromUrl;
         initializeComponents();
         initializeTableUI();
         setupCellRenderersAndEditors();
         setupTableListeners();
-        addAutoAppendRowFeature();
+        if (!generatedFromUrl) {
+            addAutoAppendRowFeature();
 
-        // Add initial empty row
-        addRow();
+            // Add initial empty row
+            addRow();
+        }
+    }
+
+    static ParamsTablePanel pathVariablesPanel() {
+        return new ParamsTablePanel(true);
     }
 
     // ========== 实现抽象方法 ==========
@@ -60,7 +74,7 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
 
     @Override
     protected int getFirstEditableColumnIndex() {
-        return COL_KEY;
+        return generatedFromUrl ? COL_VALUE : COL_KEY;
     }
 
     @Override
@@ -70,13 +84,31 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
 
     @Override
     protected int getEnterTargetColumnIndex() {
-        return COL_VALUE;
+        return generatedFromUrl ? COL_DESCRIPTION : COL_VALUE;
     }
 
     @Override
     protected boolean isCellEditableForNavigation(int row, int column) {
-        // Enable 和 Delete 列不可编辑，其余输入列可编辑。
+        if (generatedFromUrl) {
+            return column == COL_VALUE || column == COL_DESCRIPTION;
+        }
         return column == COL_KEY || column == COL_VALUE || column == COL_DESCRIPTION;
+    }
+
+    @Override
+    protected boolean isCellEditable(int row, int column) {
+        if (generatedFromUrl && (column == COL_ENABLED || column == COL_KEY || column == COL_DELETE)) {
+            return false;
+        }
+        return super.isCellEditable(row, column);
+    }
+
+    @Override
+    protected Class<?> getColumnClass(int columnIndex) {
+        if (generatedFromUrl && columnIndex == COL_ENABLED) {
+            return Object.class;
+        }
+        return super.getColumnClass(columnIndex);
     }
 
     @Override
@@ -94,11 +126,20 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
         super.initializeTableUI();
 
         // 设置列宽
-        setEnabledColumnWidth(40);
-        setDeleteColumnWidth();
+        if (generatedFromUrl) {
+            setGeneratedFromUrlColumnWidths();
+        } else {
+            setEnabledColumnWidth(40);
+            setDeleteColumnWidth();
+        }
 
         // Setup Tab key navigation to move between columns in the same row
         setupTabKeyNavigation();
+    }
+
+    @Override
+    protected boolean useTableScrollPane() {
+        return false;
     }
 
     private void setupCellRenderersAndEditors() {
@@ -111,7 +152,35 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
         setColumnRenderer(COL_DESCRIPTION, new EasyTextFieldCellRenderer());
 
         // Set custom renderer for delete column
-        setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
+        if (!generatedFromUrl) {
+            setColumnRenderer(COL_DELETE, new DeleteButtonRenderer());
+        }
+    }
+
+    @Override
+    protected boolean isDeletableRow(int modelRow) {
+        return !generatedFromUrl;
+    }
+
+    @Override
+    protected boolean isContextMenuEnabled() {
+        return !generatedFromUrl;
+    }
+
+    @Override
+    public void clear() {
+        if (!generatedFromUrl) {
+            super.clear();
+            return;
+        }
+
+        stopCellEditing();
+        suppressAutoAppendRow = true;
+        try {
+            tableModel.setRowCount(0);
+        } finally {
+            suppressAutoAppendRow = false;
+        }
     }
 
     /**
@@ -167,16 +236,35 @@ public class ParamsTablePanel extends AbstractTablePanel<HttpParam> {
             tableModel.setRowCount(0);
             if (paramsList != null) {
                 for (HttpParam param : paramsList) {
-                    tableModel.addRow(new Object[]{param.isEnabled(), param.getKey(), param.getValue(), param.getDescription(), ""});
+                    tableModel.addRow(createRow(param));
                 }
             }
 
             // Ensure there's always an empty row at the end
-            if (tableModel.getRowCount() == 0 || hasContentInLastRow()) {
+            if (!generatedFromUrl && (tableModel.getRowCount() == 0 || hasContentInLastRow())) {
                 tableModel.addRow(createEmptyRow());
             }
         } finally {
             suppressAutoAppendRow = false;
         }
+    }
+
+    int getPreferredTableHeight() {
+        int visibleRows = Math.max(1, tableModel.getRowCount());
+        int headerHeight = table.getTableHeader().getPreferredSize().height;
+        Insets insets = getInsets();
+        return insets.top + headerHeight + visibleRows * table.getRowHeight() + insets.bottom + 4;
+    }
+
+    private Object[] createRow(HttpParam param) {
+        if (generatedFromUrl) {
+            return new Object[]{"", param.getKey(), param.getValue(), param.getDescription(), ""};
+        }
+        return new Object[]{param.isEnabled(), param.getKey(), param.getValue(), param.getDescription(), ""};
+    }
+
+    private void setGeneratedFromUrlColumnWidths() {
+        setEnabledColumnWidth(40);
+        setDeleteColumnWidth();
     }
 }

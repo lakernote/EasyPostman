@@ -234,6 +234,45 @@ public class PostmanCollectionParserTest {
     }
 
     @Test
+    public void testParsePostmanCollection_WithPathVariables() {
+        String json = """
+                {
+                    "info": {
+                        "name": "Path Variable Test"
+                    },
+                    "item": [
+                        {
+                            "name": "Get User",
+                            "request": {
+                                "method": "GET",
+                                "url": {
+                                    "raw": "https://api.example.com/users/:userId/orders/:orderId",
+                                    "host": ["api", "example", "com"],
+                                    "path": ["users", ":userId", "orders", ":orderId"],
+                                    "variable": [
+                                        {"key": "userId", "value": "42", "description": "User id"},
+                                        {"key": "orderId", "value": "A-100"}
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+                """;
+
+        CollectionParseResult result = PostmanCollectionParser.parsePostmanCollection(json);
+
+        assertNotNull(result);
+        HttpRequestItem req = result.getChildren().get(0).asRequest();
+        assertEquals(req.getUrl(), "https://api.example.com/users/:userId/orders/:orderId");
+        assertEquals(req.getPathVariablesList().size(), 2);
+        assertEquals(req.getPathVariablesList().get(0).getKey(), "userId");
+        assertEquals(req.getPathVariablesList().get(0).getValue(), "42");
+        assertEquals(req.getPathVariablesList().get(0).getDescription(), "User id");
+        assertEquals(req.getPathVariablesList().get(1).getKey(), "orderId");
+    }
+
+    @Test
     public void testParsePostmanCollection_WithHeaders() {
         // 准备测试数据 - 带请求头的请求
         String json = """

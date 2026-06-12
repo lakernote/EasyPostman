@@ -10,6 +10,7 @@ import com.laker.postman.request.edit.HttpRequestEditorDraftMapper;
 import com.laker.postman.request.edit.HttpRequestSettingsDraft;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
+import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
@@ -37,6 +38,7 @@ final class RequestEditorBinder {
         view.urlField.setText(url);
         view.urlField.setCaretPosition(0);
 
+        view.paramsTabPanel.setPathVariablesList(resolveEditablePathVariables(url, draft.getPathVariables()));
         if (draft.getParams() != null && !draft.getParams().isEmpty()) {
             view.paramsPanel.setParamsList(copyList(draft.getParams()));
         } else {
@@ -92,6 +94,7 @@ final class RequestEditorBinder {
                 .method((String) view.methodBox.getSelectedItem())
                 .protocol(currentProtocol)
                 .headers(fromModel ? view.headersPanel.getHeadersListFromModel() : view.headersPanel.getHeadersList())
+                .pathVariables(fromModel ? view.paramsTabPanel.getPathVariablesListFromModel() : view.paramsTabPanel.getPathVariablesList())
                 .params(fromModel ? view.paramsPanel.getParamsListFromModel() : view.paramsPanel.getParamsList())
                 .bodyType(bodyType)
                 .body(readBodyText(bodyType))
@@ -110,6 +113,15 @@ final class RequestEditorBinder {
                 .postscript(view.scriptPanel.getPostscript())
                 .responses(responses)
                 .build();
+    }
+
+    private List<HttpParam> resolveEditablePathVariables(
+            String url,
+            List<HttpParam> pathVariables) {
+        if (pathVariables != null && !pathVariables.isEmpty()) {
+            return copyList(pathVariables);
+        }
+        return RequestUrlEditorSupport.mergePathVariablesFromUrl(url, new ArrayList<>());
     }
 
     private HttpRequestSettingsDraft settingsFromDraft(HttpRequestEditorDraft draft) {

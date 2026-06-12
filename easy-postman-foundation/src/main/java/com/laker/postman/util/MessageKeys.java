@@ -154,6 +154,10 @@ public final class MessageKeys {
     public static final String REQUEST_TABLE_COLUMN_TYPE = "request.table.column.type";
     public static final String REQUEST_TABLE_COLUMN_DESCRIPTION = "request.table.column.description";
     public static final String REQUEST_PARAMS_TITLE = "request.params.title";
+    public static final String REQUEST_QUERY_PARAMS_TITLE = "request.query_params.title";
+    public static final String REQUEST_PATH_VARIABLES_TITLE = "request.path_variables.title";
+    public static final String REQUEST_PATH_VARIABLE_TOOLTIP_TYPE = "request.path_variable.tooltip.type";
+    public static final String REQUEST_PATH_VARIABLE_EMPTY_VALUE = "request.path_variable.empty_value";
 
     // ============ 插件管理 ============
     public static final String PLUGIN_MANAGER_TITLE = "plugin.manager.title";
@@ -358,6 +362,7 @@ public final class MessageKeys {
     public static final String BULK_EDIT = "bulk.edit";
     public static final String BULK_EDIT_HEADERS = "bulk.edit.headers";
     public static final String BULK_EDIT_PARAMS = "bulk.edit.params";
+    public static final String BULK_EDIT_PATH_VARIABLES = "bulk.edit.path_variables";
     public static final String BULK_EDIT_VARIABLES = "bulk.edit.variables";
     public static final String BULK_EDIT_HINT = "bulk.edit.hint";
     public static final String BULK_EDIT_SUPPORTED_FORMATS = "bulk.edit.supported.formats";

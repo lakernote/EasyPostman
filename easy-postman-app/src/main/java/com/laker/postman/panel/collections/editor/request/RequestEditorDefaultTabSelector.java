@@ -23,7 +23,7 @@ final class RequestEditorDefaultTabSelector {
                 item.getBodyType(),
                 item.getBody(),
                 CollUtil.isNotEmpty(item.getFormDataList()) || CollUtil.isNotEmpty(item.getUrlencodedList()),
-                CollUtil.isNotEmpty(item.getParamsList())
+                CollUtil.isNotEmpty(item.getPathVariablesList()) || CollUtil.isNotEmpty(item.getParamsList())
         );
     }
 
@@ -40,7 +40,7 @@ final class RequestEditorDefaultTabSelector {
                 originalRequest.getBody(),
                 CollUtil.isNotEmpty(originalRequest.getFormDataList())
                         || CollUtil.isNotEmpty(originalRequest.getUrlencodedList()),
-                CollUtil.isNotEmpty(originalRequest.getParams())
+                CollUtil.isNotEmpty(originalRequest.getPathVariables()) || CollUtil.isNotEmpty(originalRequest.getParams())
         );
     }
 
@@ -49,31 +49,31 @@ final class RequestEditorDefaultTabSelector {
                                   String bodyType,
                                   String body,
                                   boolean hasFormData,
-        boolean hasParams) {
+                                  boolean hasParams) {
         if (effectiveProtocol != null && effectiveProtocol.isWebSocketProtocol()) {
-            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsTabPanel);
             return;
         }
         if (effectiveProtocol != null && effectiveProtocol.isSseProtocol()) {
-            RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsTabPanel, view.requestBodyPanel);
             return;
         }
         if (CharSequenceUtil.isNotBlank(body) && !RequestBodyPanel.BODY_TYPE_NONE.equals(bodyType)) {
-            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsTabPanel);
             return;
         }
         if (hasFormData) {
-            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsTabPanel);
             return;
         }
         if ("POST".equals(method) || "PUT".equals(method) || "PATCH".equals(method)) {
             if (hasParams) {
-                RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
+                RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsTabPanel, view.requestBodyPanel);
             } else {
-                RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsPanel);
+                RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsTabPanel);
             }
             return;
         }
-        RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsPanel, view.requestBodyPanel);
+        RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsTabPanel, view.requestBodyPanel);
     }
 }

@@ -27,6 +27,7 @@ public class HttpRequestEditorDraftMapper {
                 .method(item.getMethod())
                 .protocol(item.getProtocol())
                 .headers(copyList(item.getHeadersList()))
+                .pathVariables(copyList(item.getPathVariablesList()))
                 .params(resolveEditableParams(item))
                 .bodyType(HttpRequestBodyTypeResolver.resolveEditableBodyType(item))
                 .body(item.getBody())
@@ -56,6 +57,7 @@ public class HttpRequestEditorDraftMapper {
                 .url(HttpUrlUtil.decodeQueryForDisplay(originalRequest.getUrl()))
                 .method(originalRequest.getMethod())
                 .headers(copyList(originalRequest.getHeaders()))
+                .pathVariables(copyList(originalRequest.getPathVariables()))
                 .params(copyList(originalRequest.getParams()))
                 .bodyType(originalRequest.getBodyType())
                 .body(originalRequest.getBody())
@@ -77,6 +79,7 @@ public class HttpRequestEditorDraftMapper {
         item.setMethod(string(draft.getMethod()));
         item.setProtocol(draft.getProtocol() == null ? RequestItemProtocolEnum.HTTP : draft.getProtocol());
         item.setHeadersList(copyList(draft.getHeaders()));
+        item.setPathVariablesList(copyList(draft.getPathVariables()));
         item.setParamsList(copyList(draft.getParams()));
 
         String bodyType = normalizeBodyType(draft.getBodyType());

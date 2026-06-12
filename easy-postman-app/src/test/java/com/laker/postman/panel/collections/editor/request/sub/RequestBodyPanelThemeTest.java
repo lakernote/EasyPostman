@@ -1,6 +1,8 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.common.constants.ThemeColors;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.variable.VariableType;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -12,6 +14,8 @@ import java.util.Map;
 import static com.laker.postman.test.ThemeTokenTestSupport.remember;
 import static com.laker.postman.test.ThemeTokenTestSupport.restore;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class RequestBodyPanelThemeTest {
     private Map<String, Object> previousThemeTokens;
@@ -55,5 +59,37 @@ public class RequestBodyPanelThemeTest {
         assertEquals(RequestBodyTheme.tooltipText(), text);
         assertEquals(RequestBodyTheme.tooltipMutedText(), muted);
         assertEquals(RequestBodyTheme.tooltipCodeBackground(), codeBackground);
+    }
+
+    @Test
+    public void pathVariableTooltipShouldUseCompactVariableTooltipStyle() {
+        String tooltip = RequestBodyVariableTooltipBuilder.pathVariableTooltip("id", "123");
+
+        assertTrue(tooltip.contains("id"));
+        assertTrue(tooltip.contains("123"));
+        assertFalse(tooltip.contains("<hr"));
+        assertFalse(tooltip.contains("bgcolor="));
+        assertFalse(tooltip.contains("border: 1px"));
+    }
+
+    @Test
+    public void variableTooltipsShouldUseBalancedMinimumWidthLayout() {
+        String pathTooltip = RequestBodyVariableTooltipBuilder.pathVariableTooltip("id", "");
+        String requestTooltip = RequestBodyVariableTooltipBuilder.variableTooltip("test", "123", VariableType.GROUP);
+
+        assertTrue(pathTooltip.contains("<table width='210'"));
+        assertTrue(requestTooltip.contains("<table width='210'"));
+        assertFalse(pathTooltip.contains("<br/>"));
+        assertFalse(requestTooltip.contains("<br/>"));
+    }
+
+    @Test
+    public void variableTooltipsShouldUseCompactFontSizes() {
+        String tooltip = RequestBodyVariableTooltipBuilder.variableTooltip("test", "123", VariableType.GROUP);
+        int largeTooltipFontSize = Math.max(10, FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1).getSize());
+        int compactTooltipFontSize = Math.max(10, FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2).getSize());
+
+        assertTrue(tooltip.contains("font-size: " + compactTooltipFontSize + "px"));
+        assertFalse(tooltip.contains("font-size: " + largeTooltipFontSize + "px"));
     }
 }

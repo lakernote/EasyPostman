@@ -44,6 +44,7 @@ public class PreparedRequestMapper {
         req.headersList = cloneHeaders(buildHeadersListWithResolvedAuth(effectiveItem, variableResolver));
         req.formDataList = cloneFormData(effectiveItem.getFormDataList());
         req.urlencodedList = cloneUrlencoded(effectiveItem.getUrlencodedList());
+        req.pathVariablesList = cloneParams(effectiveItem.getPathVariablesList());
         req.paramsList = cloneParams(effectiveItem.getParamsList());
         req.prescript = effectiveItem.getPrescript();
         req.postscript = effectiveItem.getPostscript();

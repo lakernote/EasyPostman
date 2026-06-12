@@ -17,6 +17,7 @@ import lombok.experimental.UtilityClass;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
@@ -264,6 +265,7 @@ public class PostmanCollectionExporter {
             }
             url.put("query", queryArr);
         }
+        addPathVariables(url, item.getPathVariablesList());
         request.put("url", url);
         // headers
         if (item.getHeadersList() != null && !item.getHeadersList().isEmpty()) {
@@ -473,6 +475,7 @@ public class PostmanCollectionExporter {
                 }
                 url.put("query", queryArray);
             }
+            addPathVariables(url, origReq.getPathVariables());
 
             originalRequest.put("url", url);
 
@@ -537,5 +540,29 @@ public class PostmanCollectionExporter {
         }
 
         return respJson;
+    }
+
+    private static void addPathVariables(JSONObject url, List<HttpParam> pathVariables) {
+        if (pathVariables == null || pathVariables.isEmpty()) {
+            return;
+        }
+
+        JSONArray variableArray = new JSONArray();
+        for (HttpParam pathVariable : pathVariables) {
+            if (pathVariable == null || pathVariable.getKey() == null || pathVariable.getKey().isBlank()) {
+                continue;
+            }
+            JSONObject variable = new JSONObject();
+            variable.put("key", pathVariable.getKey());
+            variable.put("value", pathVariable.getValue() == null ? "" : pathVariable.getValue());
+            putDescription(variable, pathVariable.getDescription());
+            if (!pathVariable.isEnabled()) {
+                variable.put("disabled", true);
+            }
+            variableArray.add(variable);
+        }
+        if (!variableArray.isEmpty()) {
+            url.put("variable", variableArray);
+        }
     }
 }

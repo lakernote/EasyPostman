@@ -1,8 +1,8 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.common.UiSingletonFactory;
-import com.laker.postman.common.component.EasyTextField;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.SecondaryButton;
@@ -18,6 +18,8 @@ import lombok.Getter;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * 顶部请求行面板 - 现代化设计
@@ -97,7 +99,7 @@ public class RequestLinePanel extends JPanel {
      * 创建 URL 输入框
      */
     private JTextField createUrlField() {
-        JTextField field = new EasyTextField(
+        JTextField field = new RequestUrlField(
                 null,
                 30,
                 I18nUtil.getMessage(MessageKeys.REQUEST_URL_PLACEHOLDER)
@@ -111,6 +113,12 @@ public class RequestLinePanel extends JPanel {
         field.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
         return field;
+    }
+
+    public void setPathVariablesSupplier(Supplier<List<HttpParam>> pathVariablesSupplier) {
+        if (urlField instanceof RequestUrlField requestUrlField) {
+            requestUrlField.setPathVariablesSupplier(pathVariablesSupplier);
+        }
     }
 
     /**

@@ -124,6 +124,17 @@ public class VariableResolverTest {
                 "$randomTF should resolve to T or F, but was: " + result);
     }
 
+    @Test
+    public void testBuiltInVariableDescriptionsShouldHaveI18nMessages() {
+        Map<String, String> descriptions = BuiltInFunctionService.getInstance().getAll();
+
+        descriptions.forEach((name, description) -> {
+            assertNotNull(description, name + " should have a description");
+            assertFalse(description.startsWith("!builtin.var."), name + " is missing an i18n description: " + description);
+            assertFalse(description.startsWith("Built-in function:"), name + " should not use fallback description");
+        });
+    }
+
     /**
      * 测试多个嵌套变量在同一字符串中
      */

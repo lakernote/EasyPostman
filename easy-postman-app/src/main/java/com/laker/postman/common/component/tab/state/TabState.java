@@ -33,7 +33,6 @@ public class TabState {
     
     public static TabState getBeforeTextState(String title){
     	TabState state = new TabState(title);
-    	state.setIndicator(TabIndicatorType.GREEN_DOT);
     	state.setIndicatorPosition(IndicatorPosition.BEFORE_TEXT);
     	return state;
     }

@@ -46,14 +46,14 @@ public class IndicatorTabComponent extends JPanel {
     private static final int INDICATOR_DIAMETER = 6;
 
     /**
-     * 数字角标的绘制区域尺寸（像素）
-     * 适用于 NUMBER 类型指示器
+     * 数字角标的左右内边距总和（像素）
+     * 每边 2px，共 4px
      */
-    private static final int NUMBER_SIZE = 14;
+    private static final int NUMBER_HORIZONTAL_PADDING = 4;
 
     /**
      * 指示器与文字之间的水平间距（像素）
-     * 对“文字前指示器”和“文字后指示器”均生效
+     * 对"文字前指示器"和"文字后指示器"均生效
      */
     private static final int INDICATOR_SPACING = 7;
 
@@ -127,7 +127,7 @@ public class IndicatorTabComponent extends JPanel {
     public void setShowIndicator(boolean show) {
         if (show) {
             if (state.getIndicatorType() == TabIndicatorType.NONE) {
-                state.setIndicator(TabIndicatorType.GREEN_DOT);
+                state.setIndicator(TabIndicatorType.DEFAULT_DOT);
             }
         } else {
             state.clearIndicator();
@@ -169,7 +169,7 @@ public class IndicatorTabComponent extends JPanel {
 
 
         if (state.getIndicatorType() != TabIndicatorType.NONE) {
-            width += indicatorWidth() + INDICATOR_SPACING;
+            width += indicatorWidth(fm) + INDICATOR_SPACING;
         }
 
         int height = fm.getHeight() + LABEL_VERTICAL_PADDING * 2;
@@ -179,17 +179,36 @@ public class IndicatorTabComponent extends JPanel {
         revalidate();
     }
 
+
     /**
      * 返回当前指示器本身的宽度（像素），不含间距
      *
+     * @param fm FontMetrics，用于动态计算数字角标宽度；传 null 时使用默认值
      * @return 指示器宽度
      */
-    private int indicatorWidth() {
+    private int indicatorWidth(FontMetrics fm) {
         return switch (state.getIndicatorType()) {
-            case GREEN_DOT, BLUE_DOT, RED_DOT -> INDICATOR_DIAMETER;
-            case NUMBER -> NUMBER_SIZE;
+            case DEFAULT_DOT, GREEN_DOT, BLUE_DOT, RED_DOT -> INDICATOR_DIAMETER;
+            case NUMBER -> {
+                // 动态计算：取显示文本宽度+内边距和字体高度的较大值
+                String displayText = getDisplayText(state.getNumber());
+                int textWidth = fm.stringWidth(displayText);
+                int textHeight = fm.getHeight();
+                yield Math.max(textWidth + NUMBER_HORIZONTAL_PADDING, textHeight);
+            }
             default -> 0;
         };
+    }
+
+    /**
+     * 获取数字角标的显示文本
+     * 超过99显示".."，否则显示实际数字
+     *
+     * @param number 原始数字
+     * @return 显示文本
+     */
+    private String getDisplayText(int number) {
+        return number > 99 ? "··" : String.valueOf(number);
     }
 
     /**
@@ -205,12 +224,13 @@ public class IndicatorTabComponent extends JPanel {
 
         // 获取父容器的 insets
         if (getParent() != null) {
-            margin = Math.max(margin, getParent().getInsets().right);
+            margin = Math.max(margin, Math.max(getParent().getInsets().left, getParent().getInsets().right));
         }
 
         // 获取组件自身的边框 insets
         if (getBorder() != null) {
-            margin = Math.max(margin, getBorder().getBorderInsets(this).right);
+            margin = Math.max(margin, Math.max(getBorder().getBorderInsets(this).left, 
+                                                getBorder().getBorderInsets(this).right));
         }
 
         return margin;
@@ -234,31 +254,34 @@ public class IndicatorTabComponent extends JPanel {
             FontMetrics fm = g2.getFontMetrics();
             int textHeight = fm.getAscent();
             int totalHeight = getHeight();
+            
+            // 安全边距，与 updatePreferredSize() 保持一致
+            int safeMargin = getSafeMargin();
 
             int textX;
             int textY = (totalHeight - fm.getHeight()) / 2 + textHeight;
 
             if (state.getIndicatorType() == TabIndicatorType.NONE) {
-                textX = LABEL_HORIZONTAL_PADDING;
+                textX = LABEL_HORIZONTAL_PADDING + safeMargin;
                 g2.drawString(state.getTitle(), textX, textY);
                 return;
             }
 
             int textWidth = fm.stringWidth(state.getTitle());
 
-            int indicatorWidth = indicatorWidth();
+            int indicatorWidth = indicatorWidth(fm);
             int indicatorY = (totalHeight - INDICATOR_DIAMETER) / 2;
 
             if (state.getIndicatorPosition() == IndicatorPosition.AFTER_TEXT) {
                 // 文字 → 指示器
-                textX = LABEL_HORIZONTAL_PADDING;
+                textX = LABEL_HORIZONTAL_PADDING + safeMargin;
                 int indicatorX = textX + textWidth + INDICATOR_SPACING;
                 g2.drawString(state.getTitle(), textX, textY);
                 drawIndicator(g2, indicatorX, indicatorY, state);
 
             } else {
                 // 指示器 → 文字
-                int indicatorX = LABEL_HORIZONTAL_PADDING;
+                int indicatorX = LABEL_HORIZONTAL_PADDING + safeMargin;
                 textX = indicatorX + indicatorWidth + INDICATOR_SPACING;
                 drawIndicator(g2, indicatorX, indicatorY, state);
                 g2.drawString(state.getTitle(), textX, textY);
@@ -274,7 +297,8 @@ public class IndicatorTabComponent extends JPanel {
      */
     private void drawIndicator(Graphics2D g2, int x, int y, TabState state) {
         switch (state.getIndicatorType()) {
-            case GREEN_DOT -> drawDot(g2, x, y, Color.GREEN);
+        	case DEFAULT_DOT -> drawDot(g2, x, y,IndicatorTabTheme.indicator());
+            case GREEN_DOT -> drawDot(g2, x, y,Color.GREEN);
             case RED_DOT -> drawDot(g2, x, y, Color.RED);
             case BLUE_DOT -> drawDot(g2, x, y, Color.BLUE);
             case NUMBER -> drawNumber(g2, x, state.getNumber());
@@ -295,12 +319,33 @@ public class IndicatorTabComponent extends JPanel {
     }
 
     /**
-     * 绘制数字角标
+     * 绘制数字角标（圆形）
      */
     private void drawNumber(Graphics2D g2, int x, int number) {
+        String displayText = getDisplayText(number);
+        FontMetrics fm = g2.getFontMetrics();
+        int textWidth = fm.stringWidth(displayText);
+        int textHeight = fm.getHeight();
+        
+        // 圆形直径：与 indicatorWidth() 保持一致
+        int diameter = Math.max(textWidth + NUMBER_HORIZONTAL_PADDING, textHeight);
+        int radius = diameter / 2;
+        
+        // 计算垂直居中位置
+        int centerY = getHeight() / 2;
+        int circleY = centerY - radius;
+        
+        // 绘制圆形背景
+        g2.setColor(IndicatorTabTheme.indicator());
+        g2.fillOval(x, circleY, diameter, diameter);
+        g2.setColor(IndicatorTabTheme.indicatorBorder());
+        g2.drawOval(x, circleY, diameter, diameter);
+        
+        // 文字居中绘制
+        int textX = x + (diameter - textWidth) / 2;
+        int textY = circleY + (diameter - fm.getHeight()) / 2 + fm.getAscent();
+       
         g2.setColor(Color.WHITE);
-        g2.fillRoundRect(x, 2, NUMBER_SIZE, getHeight() - 4, 6, 6);
-        g2.setColor(Color.DARK_GRAY);
-        g2.drawString(String.valueOf(number), x + 4, getHeight() - 6);
+        g2.drawString(displayText, textX, textY);
     }
 }

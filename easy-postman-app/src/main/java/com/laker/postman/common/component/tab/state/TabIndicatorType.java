@@ -5,6 +5,7 @@ package com.laker.postman.common.component.tab.state;
  */
 public enum TabIndicatorType {
     NONE,
+    DEFAULT_DOT,
     GREEN_DOT,
     BLUE_DOT,
     RED_DOT,

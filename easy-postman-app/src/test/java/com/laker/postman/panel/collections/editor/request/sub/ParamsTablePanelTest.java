@@ -6,6 +6,7 @@ import org.testng.annotations.Test;
 
 import javax.swing.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -67,6 +68,24 @@ public class ParamsTablePanelTest extends AbstractSwingUiTest {
             panel.setParamsList(List.of());
 
             assertEquals(panel.getTable().getRowCount(), 0);
+        });
+    }
+
+    @Test
+    public void committingSameCellValueShouldNotFireTableModelChange() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            ParamsTablePanel panel = new ParamsTablePanel();
+            panel.setParamsList(List.of(new HttpParam(true, "tenant", "{{tenantId}}")));
+
+            AtomicInteger changes = new AtomicInteger();
+            panel.addTableModelListener(e -> changes.incrementAndGet());
+
+            JTable table = panel.getTable();
+            table.setValueAt("{{tenantId}}", 0, 2);
+            assertEquals(changes.get(), 0);
+
+            table.setValueAt("team-alpha", 0, 2);
+            assertEquals(changes.get(), 1);
         });
     }
 

@@ -15,6 +15,7 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Objects;
 
 /**
  * 所有 EasyPostman 表格面板的抽象基类
@@ -203,6 +204,15 @@ public abstract class AbstractTablePanel<T> extends JPanel {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return AbstractTablePanel.this.isCellEditable(row, column);
+            }
+
+            @Override
+            public void setValueAt(Object aValue, int row, int column) {
+                Object oldValue = getValueAt(row, column);
+                if (Objects.equals(oldValue, aValue)) {
+                    return;
+                }
+                super.setValueAt(aValue, row, column);
             }
         };
 

@@ -4,8 +4,8 @@
 
 # EasyPostman
 
-**An open-source API debugging & performance testing desktop app**  
-*Inspired by Postman · Powered by Java · Built for developers*
+**An open-source Postman-style API client + JMeter-style load testing desktop app**<br>
+*Postman-like debugging · JMeter-style performance testing · Java desktop · Local-first*
 
 [![GitHub license](https://img.shields.io/github/license/lakernote/easy-postman?style=flat-square)](https://github.com/lakernote/easy-postman/blob/main/LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/lakernote/easy-postman?style=flat-square&color=brightgreen)](https://github.com/lakernote/easy-postman/releases)
@@ -16,7 +16,7 @@
 [![GitHub](https://img.shields.io/badge/GitHub-lakernote-0969DA?style=flat-square&logo=github&logoColor=white)](https://github.com/lakernote)
 [![Gitee](https://img.shields.io/badge/Gitee-lakernote-C71D23?style=flat-square&logo=gitee)](https://gitee.com/lakernote)
 
-[简体中文](README_zh.md) · [English](README.md) · [📦 Download](https://github.com/lakernote/easy-postman/releases) · [📖 Docs](docs/FEATURES.md) · [💬 Discuss](https://github.com/lakernote/easy-postman/discussions)
+[简体中文](README_zh.md) · [English](README.md) · [📦 Download](https://github.com/lakernote/easy-postman/releases) · [📖 Docs](docs/FEATURES.md) · [💬 Discuss](https://github.com/lakernote/easy-postman/discussions) · WeChat: `lakernote`
 
 </div>
 
@@ -25,9 +25,13 @@
 ## 📖 Table of Contents
 
 - [💡 About](#-about)
+- [🖼️ Visual Tour](#️-visual-tour)
+- [🧭 Example Workflows](#-example-workflows)
 - [✨ Features](#-features)
 - [📦 Download](#-download)
 - [🚀 Quick Start](#-quick-start)
+- [🏗️ Project Structure](#️-project-structure)
+- [🛠️ Development](#️-development)
 - [🖼️ Screenshots](#️-screenshots)
 - [🤝 Contributing](#-contributing)
 - [🎨 Third-Party Assets](#-third-party-assets)
@@ -39,43 +43,73 @@
 
 ## 💡 About
 
-EasyPostman provides developers with a **local, privacy-first** API debugging experience comparable to Postman, plus performance testing. Built with Java Swing for cross-platform support, it works completely offline and includes built-in Git workspace support for team collaboration and version control.
+EasyPostman combines a **Postman-style API debugging workspace** with **JMeter-style performance testing** in one local-first desktop app. It is built with Java 17, Swing, and FlatLaf, stores data locally by default, and uses Git workspaces when teams need sync, review, and version control without a hosted cloud service.
 
-| 🎯 Focus on Core | 🔒 Privacy First | 🚀 Performance |
+| 🎯 Postman-style Debugging | ⚡ JMeter-style Load Testing | 🔒 Local-first Desktop |
 |:---:|:---:|:---:|
-| Simple yet powerful, rich features without bloat | 100% local storage, no cloud sync, your data stays private | Native Java app, fast startup, smooth experience |
+| Collections, environments, auth, scripts, imports, history, and response inspection | Thread groups, timers, extractors, assertions, realtime metrics, reports, and distributed runs | Your API and test data stay on disk unless you choose a Git workspace |
+
+---
+
+## 🖼️ Visual Tour
+
+EasyPostman is a GUI-first tool, and the project value is easier to judge when both halves are visible: Postman-style API work and JMeter-style load testing. These screenshots are from the current desktop app.
+
+<div align="center">
+
+| Postman-style API Debugging | JMeter-style Load Testing |
+|:----------------------------:|:-------------------------:|
+| ![API workspace with collections and response viewer](docs/collections.png) | ![Performance trend dashboard](docs/performance-trend.png) |
+
+| Scripts & Assertions | Git Workspace Collaboration |
+|:--------------------:|:---------------------------:|
+| ![Script snippets and editor support](docs/script-snippets.png) | ![Git workspace management](docs/workspaces-gitcommit.png) |
+
+</div>
+
+📸 **[View the full screenshot gallery →](docs/SCREENSHOTS.md)**
+
+---
+
+## 🧭 Example Workflows
+
+| Workflow | What it looks like in practice |
+|----------|--------------------------------|
+| **Debug a REST API like Postman** | Create or import a collection, choose an environment, send a request, inspect formatted response bodies, headers, cookies, timing, and the network event log. |
+| **Chain requests with scripts** | Use pre-request scripts and test scripts to read variables, create signatures, extract response data, assert results, and pass values into the next request. |
+| **Share API work through Git** | Keep workspace data local, then use Git workspace operations to commit, pull, push, and review collection/environment changes with your team. |
+| **Run load tests like JMeter** | Build a performance plan visually, export `plan.json`, run it headlessly, or distribute it with master/worker mode while preserving global user and CSV sharding. |
 
 ---
 
 ## ✨ Features
 
 ### 🏢 Workspace & Collaboration
-- **Local Workspace** - Personal projects with local storage
-- **Git Workspace** - Version control and team collaboration
-- **Multi-device Sync** - Share API data via Git repositories
-- **Project Isolation** - Each workspace manages its own collections and environments
+- **Local workspaces** - Keep personal API projects fully on disk
+- **Git workspaces** - Commit, pull, push, and share collections or environments through your own Git repository
+- **Workspace isolation** - Each workspace keeps its own collections, environments, settings, and history
+- **Portable mode** - Run with data beside the app when the portable marker or system property is enabled
 
-### 🔌 API Testing
-- **HTTP/HTTPS** - Full REST API support (GET, POST, PUT, DELETE, etc.)
-- **WebSocket & SSE** - Real-time protocol support
-- **Multiple Body Types** - Form Data, JSON, XML, Binary
-- **File Upload/Download** - Drag & drop support
-- **Environment Variables** - Multi-environment management with dynamic variables
+### 🔌 Postman-style API Testing
+- **HTTP/HTTPS** - REST requests with headers, params, cookies, auth, redirects, and body editors
+- **SSE & WebSocket** - Stream and realtime protocol workflows
+- **Multiple body types** - Form Data, x-www-form-urlencoded, JSON, XML, text, and binary payloads
+- **Variables** - Environment, global, request, and iteration data support for repeatable runs
+- **Import/Export** - Postman v2.1 and cURL support, with HAR and OpenAPI/Swagger paths under active development
 
-### ⚡ Performance Testing
-- **Thread Group Modes** - Fixed, Ramp-up, Stair-step, Spike
-- **Real-time Monitoring** - TPS, response time, error rate
-- **Visual Reports** - Performance trend charts and result trees
-- **Headless & Distributed Runs** - Export `plan.json` from the GUI, then run it on servers with CLI or master/worker mode
-- **Global User Sharding** - GUI virtual users are total concurrency; workers split continuous ranges and CSV rows follow the same ranges to avoid duplicates
+### ⚡ JMeter-style Performance Testing
+- **Scenario design in the GUI** - Thread groups, timers, extractors, assertions, and result views
+- **Thread group modes** - Fixed, ramp-up, stair-step, and spike load profiles
+- **Realtime monitoring** - TPS/QPS, response time, error rate, trend charts, and result trees
+- **Headless & distributed runs** - Export `plan.json` from the GUI, then run it with CLI or master/worker mode
+- **Global user sharding** - GUI virtual users represent total concurrency; workers split continuous ranges and CSV rows follow the same ranges to avoid duplicates
 
-### 📝 Advanced Features
-- **Pre-request Scripts** - JavaScript execution before requests with Redis/Kafka/Elasticsearch/InfluxDB access
-- **Test Scripts** - Assertions for HTTP responses and external data-store query/write results
-- **Data Store Script APIs** - Read, write, and validate Redis, Kafka, Elasticsearch, and InfluxDB directly in scripts
-- **Request Chaining** - Extract data and pass to next request
-- **Network Event Log** - Detailed request/response analysis
-- **Import/Export** - Postman v2.1, cURL, HAR (in progress)
+### 🧩 Scripts, Assertions & Plugins
+- **Pre-request and test scripts** - Postman-style `pm` APIs, assertions, variables, and request chaining
+- **Bundled JS helpers** - `crypto-js`, `lodash`, and `moment`
+- **Script extension points** - Plugins can register script APIs, completions, snippets, toolbox panels, and services
+- **Official plugins** - Plugin manager, client certificates, capture proxy, Redis, Kafka, and Java decompiler
+- **Network event log** - Detailed request/response and stream diagnostics
 
 ### 🎨 User Experience
 - **Light & Dark Mode** - Comfortable viewing in any lighting
@@ -153,11 +187,12 @@ If you're not sure which Linux package to use, run `uname -m` first:
 ```bash
 git clone https://github.com/lakernote/easy-postman.git
 cd easy-postman
-mvn clean package
-java -jar target/easy-postman-*.jar
+mvn -pl easy-postman-app -am -DskipTests clean package
+java -jar easy-postman-app/target/easy-postman-*.jar
 ```
 
-📖 **[Build Guide →](docs/BUILD.md)**
+📖 **[Build Guide →](docs/BUILD.md)**<br>
+🔌 **[Plugin Architecture & Installation (Chinese) →](docs/PLUGINS_zh.md)**
 
 ### First Steps
 
@@ -168,21 +203,71 @@ java -jar target/easy-postman-*.jar
 
 ---
 
+## 🏗️ Project Structure
+
+EasyPostman is a Maven multi-module Java 17 project. The entry point is `com.laker.postman.App`; GUI startup initializes theme/font settings, the custom IOC container, plugin runtime, and `MainFrame`, while performance CLI commands run through a headless branch.
+
+```text
+easy-postman-parent
+├── easy-postman-foundation
+├── easy-postman-request-core
+├── easy-postman-http-runtime
+├── easy-postman-collection-core
+├── easy-postman-plugin-api
+├── easy-postman-platform
+├── easy-postman-performance-core
+├── easy-postman-ui
+├── easy-postman-plugin-runtime
+├── easy-postman-plugins/
+└── easy-postman-app
+```
+
+| Module | Responsibility |
+|--------|----------------|
+| `easy-postman-foundation` | Lowest non-UI layer: constants, paths, JSON, system utilities, user preferences, i18n, and shared models |
+| `easy-postman-request-core` | Headless request specification models such as requests, headers, params, body rows, cookies, auth, redirects, and saved responses |
+| `easy-postman-http-runtime` | UI-neutral HTTP transport runtime: prepared requests, responses, OkHttp adapters, SSL, SSE, cookies, redirects, runtime settings, and observation ports |
+| `easy-postman-collection-core` | Collection domain models and neutral Postman collection parsing |
+| `easy-postman-plugin-api` | Stable plugin SPI and service contracts used by host and plugins |
+| `easy-postman-platform` | Host platform framework, currently custom IOC and update discovery core |
+| `easy-postman-performance-core` | Headless performance plan, runtime contracts, stats, worker assignment, and report snapshots |
+| `easy-postman-ui` | Shared Swing design system: fonts, icons, semantic colors, reusable controls, editor theme helpers, and UI singleton base classes |
+| `easy-postman-plugin-runtime` | Plugin scanning, classloading, descriptor parsing, registry, lifecycle, and disabled/uninstall state |
+| `easy-postman-plugins/*` | Official plugin JARs: manager, client certificate, capture, Redis, Kafka, and decompiler |
+| `easy-postman-app` | Host application composition: entry point, main frame, concrete panels, menus, startup wiring, settings/update UX, and app-side adapters |
+
+For detailed module ownership rules, see [Module Boundaries](docs/ARCHITECTURE_MODULES_zh.md).
+
+---
+
+## 🛠️ Development
+
+### Common Commands
+
+| Task | Command |
+|------|---------|
+| Full package, skip tests | `mvn clean package -DskipTests` |
+| Fast host app package | `mvn -pl easy-postman-app -am -DskipTests clean package` |
+| Quick compile check | `mvn -q -pl easy-postman-app -am -DskipTests compile` |
+| Build app plus one plugin | `mvn -pl easy-postman-app,easy-postman-plugins/plugin-redis -am clean package -DskipTests` |
+| Run one test class headlessly | `mvn -q -pl easy-postman-app -am -Dtest=<TestClass> -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test` |
+
+The host JAR is written to `easy-postman-app/target/easy-postman-{version}.jar`. Native packaging scripts live under `build/` and produce platform installers with `jpackage`.
+
+### Architecture Notes
+
+- EasyPostman uses its own IOC annotations in `com.laker.postman.ioc`; do not add Spring annotations.
+- Shared non-UI utilities belong in `foundation`; request DTOs in `request-core`; transport execution in `http-runtime`; reusable Swing components in `ui`; plugin contracts in `plugin-api`; plugin loading in `plugin-runtime`; concrete host screens and composition in `app`.
+- User-facing text should go through the relevant i18n bundle instead of being hard-coded.
+- Official plugins must depend on plugin API/shared modules, not `easy-postman-app`.
+
+---
+
 ## 🖼️ Screenshots
 
-<div align="center">
+The visual tour above highlights the core surfaces. The full gallery includes home, workspaces, collections, environments, functional testing, scripts, history, network log, light/dark modes, and multiple performance testing views.
 
-| Home | Workspaces |
-|:----:|:----------:|
-| ![Home](docs/home-en.png) | ![Workspaces](docs/workspaces.png) |
-
-| Collections & API Testing | Performance Testing |
-|:-------------------------:|:-------------------:|
-| ![Collections](docs/collections.png) | ![Performance](docs/performance.png) |
-
-</div>
-
-📸 **[View All Screenshots →](docs/SCREENSHOTS.md)**
+📸 **[View all screenshots →](docs/SCREENSHOTS.md)**
 
 ---
 
@@ -215,8 +300,10 @@ SVG icons are sourced from [Lucide](https://lucide.dev/) / [lucide-icons/lucide]
 |-----|-------------|
 | 📖 [Features](docs/FEATURES.md) | Comprehensive feature documentation |
 | 🏗️ [Architecture](docs/ARCHITECTURE.md) | Technical stack and design |
+| 🧱 [Module Boundaries](docs/ARCHITECTURE_MODULES_zh.md) | Canonical Maven module ownership rules (Chinese) |
 | 🚀 [Build Guide](docs/BUILD.md) | Build from source & generate installers |
 | ⚡ [Distributed Performance Testing](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI remote mode, CLI master/worker, CSV sharding, realtime refresh, and result details |
+| 🔌 [Plugin Architecture](docs/PLUGINS_zh.md) | Plugin modules, development flow, and online/offline installation (Chinese) |
 | 🖼️ [Screenshots](docs/SCREENSHOTS.md) | All application screenshots |
 | 📝 [Script API Reference](docs/SCRIPT_API_REFERENCE_zh.md) | Pre-request & test script API, including Redis/Kafka/ES/InfluxDB |
 | 📝 [Script Snippets](docs/SCRIPT_SNIPPETS_QUICK_REFERENCE.md) | Built-in snippets, including data-store read/write/assert examples |
@@ -278,6 +365,7 @@ If EasyPostman helps you, consider:
 - 📢 **Share with friends** — spread the word
 - 💬 **WeChat group** — add **lakernote** for direct communication
 - 💬 **GitHub Discussions** — [ask questions & share ideas](https://github.com/lakernote/easy-postman/discussions)
+- 📮 **Contact** — WeChat: `lakernote`
 
 ---
 
@@ -306,7 +394,7 @@ Thanks to these awesome open-source projects:
 
 <div align="center">
 
-**Make API debugging easier. Make performance testing more intuitive.**
+**Postman-style API debugging. JMeter-style load testing. Local-first desktop workflow.**
 
 [![GitHub](https://img.shields.io/badge/GitHub-lakernote-0969DA?style=flat-square&logo=github&logoColor=white)](https://github.com/lakernote)
 [![Gitee](https://img.shields.io/badge/Gitee-lakernote-C71D23?style=flat-square&logo=gitee)](https://gitee.com/lakernote)

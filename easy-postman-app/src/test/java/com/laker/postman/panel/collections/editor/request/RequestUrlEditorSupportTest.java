@@ -82,4 +82,49 @@ public class RequestUrlEditorSupportTest {
         assertEquals(merged.get(1).getDescription(), "Local debug switch");
         assertEquals(merged.get(1).isEnabled(), false);
     }
+
+    @Test
+    public void shouldKeepDisabledQueryParamAtCurrentRowPositionWhenUrlIsReparsed() {
+        List<HttpParam> merged = RequestUrlEditorSupport.mergeUrlParamsWithCurrentTableMetadata(
+                "https://example.com/search?queryEnd=456&groupIds=789",
+                List.of(
+                        new HttpParam(false, "queryStart", "123", "Start time"),
+                        new HttpParam(true, "queryEnd", "old-end", "End time"),
+                        new HttpParam(true, "groupIds", "old-group", "Group ids")
+                )
+        );
+
+        assertEquals(merged.size(), 3);
+        assertEquals(merged.get(0).getKey(), "queryStart");
+        assertEquals(merged.get(0).getValue(), "123");
+        assertEquals(merged.get(0).getDescription(), "Start time");
+        assertEquals(merged.get(0).isEnabled(), false);
+        assertEquals(merged.get(1).getKey(), "queryEnd");
+        assertEquals(merged.get(1).getValue(), "456");
+        assertEquals(merged.get(1).getDescription(), "End time");
+        assertEquals(merged.get(2).getKey(), "groupIds");
+        assertEquals(merged.get(2).getValue(), "789");
+        assertEquals(merged.get(2).getDescription(), "Group ids");
+    }
+
+    @Test
+    public void shouldKeepExistingQueryParamRowsStableWhenUrlOrderChanges() {
+        List<HttpParam> merged = RequestUrlEditorSupport.mergeUrlParamsWithCurrentTableMetadata(
+                "https://example.com/search?groupIds=789&queryEnd=456&pageSize=20",
+                List.of(
+                        new HttpParam(true, "queryEnd", "old-end", "End time"),
+                        new HttpParam(true, "groupIds", "old-group", "Group ids")
+                )
+        );
+
+        assertEquals(merged.size(), 3);
+        assertEquals(merged.get(0).getKey(), "queryEnd");
+        assertEquals(merged.get(0).getValue(), "456");
+        assertEquals(merged.get(0).getDescription(), "End time");
+        assertEquals(merged.get(1).getKey(), "groupIds");
+        assertEquals(merged.get(1).getValue(), "789");
+        assertEquals(merged.get(1).getDescription(), "Group ids");
+        assertEquals(merged.get(2).getKey(), "pageSize");
+        assertEquals(merged.get(2).getValue(), "20");
+    }
 }

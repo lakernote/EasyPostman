@@ -24,12 +24,21 @@ class RequestUrlEditorSupport {
             return currentParams;
         }
 
-        QueryParamTableMetadata currentMetadata = QueryParamTableMetadata.from(safeCurrentParams);
-        List<HttpParam> mergedParams = new ArrayList<>(urlParams.size() + currentMetadata.disabledParams().size());
-        for (HttpParam urlParam : urlParams) {
-            mergedParams.add(currentMetadata.copyUrlParamWithPreservedMetadata(urlParam));
+        // Keep existing table rows stable; URL text only refreshes enabled row values and adds new query params.
+        UrlQueryParams urlQueryParams = UrlQueryParams.from(urlParams);
+        List<HttpParam> mergedParams = new ArrayList<>(safeCurrentParams.size() + urlParams.size());
+        for (HttpParam currentParam : safeCurrentParams) {
+            if (!currentParam.isEnabled()) {
+                mergedParams.add(currentParam);
+                continue;
+            }
+
+            HttpParam urlParam = urlQueryParams.takeNextByKey(currentParam.getKey());
+            if (urlParam != null) {
+                mergedParams.add(copyUrlParamWithPreservedTableMetadata(urlParam, currentParam));
+            }
         }
-        mergedParams.addAll(currentMetadata.disabledParams());
+        urlQueryParams.addRemainingTo(mergedParams);
         return mergedParams;
     }
 
@@ -123,46 +132,75 @@ class RequestUrlEditorSupport {
                 .toList();
     }
 
-    private static final class QueryParamTableMetadata {
-        private final Map<String, Deque<HttpParam>> enabledParamsByKey;
-        private final List<HttpParam> disabledParams;
+    private static HttpParam copyUrlParamWithPreservedTableMetadata(HttpParam urlParam, HttpParam currentParam) {
+        return new HttpParam(
+                currentParam.isEnabled(),
+                urlParam.getKey(),
+                urlParam.getValue(),
+                currentParam.getDescription()
+        );
+    }
 
-        private QueryParamTableMetadata(Map<String, Deque<HttpParam>> enabledParamsByKey,
-                                        List<HttpParam> disabledParams) {
-            this.enabledParamsByKey = enabledParamsByKey;
-            this.disabledParams = disabledParams;
+    private static final class UrlQueryParams {
+        private final List<UrlParamSlot> slots;
+        private final Map<String, Deque<UrlParamSlot>> slotsByKey;
+
+        private UrlQueryParams(List<UrlParamSlot> slots, Map<String, Deque<UrlParamSlot>> slotsByKey) {
+            this.slots = slots;
+            this.slotsByKey = slotsByKey;
         }
 
-        private static QueryParamTableMetadata from(List<HttpParam> params) {
-            Map<String, Deque<HttpParam>> enabledParamsByKey = new LinkedHashMap<>();
-            List<HttpParam> disabledParams = new ArrayList<>();
+        private static UrlQueryParams from(List<HttpParam> params) {
+            List<UrlParamSlot> slots = new ArrayList<>(params.size());
+            Map<String, Deque<UrlParamSlot>> slotsByKey = new LinkedHashMap<>();
             for (HttpParam param : params) {
-                if (param.isEnabled()) {
-                    enabledParamsByKey
-                            .computeIfAbsent(param.getKey(), key -> new ArrayDeque<>())
-                            .addLast(param);
-                } else {
-                    disabledParams.add(param);
+                UrlParamSlot slot = new UrlParamSlot(param);
+                slots.add(slot);
+                slotsByKey.computeIfAbsent(param.getKey(), key -> new ArrayDeque<>()).addLast(slot);
+            }
+            return new UrlQueryParams(slots, slotsByKey);
+        }
+
+        private HttpParam takeNextByKey(String key) {
+            Deque<UrlParamSlot> matchingSlots = slotsByKey.get(key);
+            if (matchingSlots == null) {
+                return null;
+            }
+            UrlParamSlot slot = matchingSlots.pollFirst();
+            if (slot == null) {
+                return null;
+            }
+            slot.markConsumed();
+            return slot.param();
+        }
+
+        private void addRemainingTo(List<HttpParam> mergedParams) {
+            for (UrlParamSlot slot : slots) {
+                if (!slot.isConsumed()) {
+                    mergedParams.add(slot.param());
                 }
             }
-            return new QueryParamTableMetadata(enabledParamsByKey, disabledParams);
+        }
+    }
+
+    private static final class UrlParamSlot {
+        private final HttpParam param;
+        private boolean consumed;
+
+        private UrlParamSlot(HttpParam param) {
+            this.param = param;
         }
 
-        private HttpParam copyUrlParamWithPreservedMetadata(HttpParam urlParam) {
-            HttpParam currentParam = takeNextEnabledParam(urlParam.getKey());
-            if (currentParam == null) {
-                return urlParam;
-            }
-            return new HttpParam(true, urlParam.getKey(), urlParam.getValue(), currentParam.getDescription());
+        private HttpParam param() {
+            return param;
         }
 
-        private HttpParam takeNextEnabledParam(String key) {
-            Deque<HttpParam> params = enabledParamsByKey.get(key);
-            return params == null ? null : params.pollFirst();
+        private boolean isConsumed() {
+            return consumed;
         }
 
-        private List<HttpParam> disabledParams() {
-            return disabledParams;
+        private void markConsumed() {
+            consumed = true;
         }
     }
 }

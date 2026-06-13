@@ -96,6 +96,13 @@ public class PerformancePlanStorage {
         }
     }
 
+    public PerformancePlanWorkspace loadWorkspaceFromJson(String jsonString) {
+        if (jsonString == null || jsonString.trim().isEmpty()) {
+            return null;
+        }
+        return deserializeWorkspace(JSONUtil.parseObj(jsonString));
+    }
+
     public void clear(Path configPath) {
         if (configPath == null) {
             return;

@@ -12,6 +12,7 @@ import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.button.EditButton;
 import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.HelpButton;
+import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
@@ -227,7 +228,8 @@ final class PerformancePanelViewFactory {
         );
     }
 
-    ToolbarSection createToolbarSection(Runnable exportRunPlanAction,
+    ToolbarSection createToolbarSection(Runnable importPlanAction,
+                                        Runnable exportRunPlanAction,
                                         Runnable usageHelpAction,
                                         Runnable refreshRequestsAction,
                                         boolean remoteExecutionEnabled,
@@ -246,6 +248,10 @@ final class PerformancePanelViewFactory {
         StopButton stopBtn = new StopButton();
         stopBtn.setEnabled(false);
 
+        ImportButton importBtn = new ImportButton();
+        importBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_IMPORT_TOOLTIP));
+        importBtn.addActionListener(e -> importPlanAction.run());
+
         ExportButton exportBtn = new ExportButton();
         exportBtn.addActionListener(e -> exportRunPlanAction.run());
 
@@ -256,7 +262,7 @@ final class PerformancePanelViewFactory {
         usageHelpBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_USAGE_HELP_TOOLTIP));
         usageHelpBtn.addActionListener(e -> usageHelpAction.run());
 
-        JPanel btnPanel = ToolWindowActionToolbar.inlineLeft(runBtn, stopBtn, exportBtn, refreshBtn, usageHelpBtn);
+        JPanel btnPanel = ToolWindowActionToolbar.inlineLeft(runBtn, stopBtn, importBtn, exportBtn, refreshBtn, usageHelpBtn);
         topPanel.add(btnPanel);
         topPanel.add(createToolbarSeparator());
 
@@ -331,6 +337,7 @@ final class PerformancePanelViewFactory {
                 topPanel,
                 runBtn,
                 stopBtn,
+                importBtn,
                 exportBtn,
                 refreshBtn,
                 usageHelpBtn,
@@ -720,6 +727,7 @@ final class PerformancePanelViewFactory {
     record ToolbarSection(JPanel topPanel,
                           StartButton runBtn,
                           StopButton stopBtn,
+                          ImportButton importBtn,
                           ExportButton exportBtn,
                           RefreshButton refreshBtn,
                           HelpButton usageHelpBtn,

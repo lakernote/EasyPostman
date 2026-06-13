@@ -13,12 +13,15 @@ import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummaryMapper;
 import com.laker.postman.performance.core.run.PerformanceRunPlan;
 import com.laker.postman.performance.core.run.PerformanceRunPlanJsonStorage;
+import com.laker.postman.performance.core.worker.PerformanceWorkerHealthResponse;
+import com.laker.postman.performance.core.worker.PerformanceWorkerProtocol;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
 import com.laker.postman.performance.worker.PerformanceWorkerOptions;
 import com.laker.postman.performance.worker.PerformanceWorkerServer;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -27,12 +30,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class PerformanceMasterRunCommandTest {
 
@@ -70,40 +72,34 @@ public class PerformanceMasterRunCommandTest {
 
     @Test
     public void shouldStopSubmittedWorkersWhenLaterSubmitFails() throws Exception {
-        CountDownLatch started = new CountDownLatch(1);
-        CountDownLatch stopSeen = new CountDownLatch(1);
-        try (PerformanceWorkerServer workerA = new PerformanceWorkerServer(
-                PerformanceWorkerOptions.builder().host("127.0.0.1").port(0).build(),
-                (request, control) -> {
-                    started.countDown();
-                    while (control.isRunning()) {
-                        Thread.sleep(10);
-                    }
-                    stopSeen.countDown();
-                    return workerReport("worker-a", request, new AtomicInteger());
-                }
-        )) {
-            workerA.start();
-            Path tempDir = Files.createTempDirectory("ep-master-run-failed-submit");
-            Path planPath = tempDir.resolve("plan.json");
-            new PerformanceRunPlanJsonStorage().save(planPath, emptyPlan());
-            ByteArrayOutputStream stdout = new ByteArrayOutputStream();
-            ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        Path tempDir = Files.createTempDirectory("ep-master-run-failed-submit");
+        Path planPath = tempDir.resolve("plan.json");
+        new PerformanceRunPlanJsonStorage().save(planPath, emptyPlan());
+        RecordingWorkerHttpClient workerClient = new RecordingWorkerHttpClient();
+        workerClient.failSubmitAt = 2;
 
-            int exitCode = new PerformanceMasterRunCommand().run(new String[]{
-                            "performance", "master", "run",
-                            "--plan", planPath.toString(),
-                            "--workers", "127.0.0.1:" + workerA.getPort() + ",127.0.0.1:1"
-                    },
-                    new PrintStream(stdout, true, StandardCharsets.UTF_8),
-                    new PrintStream(stderr, true, StandardCharsets.UTF_8));
-
-            String stderrText = stderr.toString(StandardCharsets.UTF_8);
-            assertEquals(exitCode, 1, stdout.toString(StandardCharsets.UTF_8));
-            assertTrue(stderrText.contains("ConnectException"), stderrText);
-            assertTrue(started.await(1, TimeUnit.SECONDS));
-            assertTrue(stopSeen.await(1, TimeUnit.SECONDS), stderrText);
+        try {
+            new PerformanceMasterRunExecutor(
+                    new com.laker.postman.performance.core.worker.PerformanceWorkerAssignmentPlanner(),
+                    workerClient
+            ).execute(PerformanceMasterOptions.builder()
+                    .planPath(planPath)
+                    .workers(List.of(
+                            new com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint("127.0.0.1", 19090),
+                            new com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint("127.0.0.1", 19091)
+                    ))
+                    .timeoutMs(1_000L)
+                    .pollIntervalMs(50L)
+                    .build());
+            fail("Expected submit failure");
+        } catch (IOException ex) {
+            assertTrue(ex.getMessage().contains("submit boom"), ex.getMessage());
         }
+
+        assertEquals(workerClient.healthRequests.get(), 2);
+        assertEquals(workerClient.submitRequests.get(), 2);
+        assertEquals(workerClient.stopRequests.get(), 1);
+        assertEquals(workerClient.stoppedEndpoints.get(0).getPort(), 19090);
     }
 
     @Test
@@ -174,6 +170,35 @@ public class PerformanceMasterRunCommandTest {
         assertTrue(workerClient.statusReportRequests.get() > 0);
     }
 
+    @Test
+    public void shouldRejectIncompatibleWorkerProtocolBeforeSubmit() throws Exception {
+        Path tempDir = Files.createTempDirectory("ep-master-run-protocol");
+        Path planPath = tempDir.resolve("plan.json");
+        new PerformanceRunPlanJsonStorage().save(planPath, emptyPlan());
+        RecordingWorkerHttpClient workerClient = new RecordingWorkerHttpClient();
+        workerClient.workerProtocolVersion = "legacy";
+
+        try {
+            new PerformanceMasterRunExecutor(
+                    new com.laker.postman.performance.core.worker.PerformanceWorkerAssignmentPlanner(),
+                    workerClient
+            ).execute(PerformanceMasterOptions.builder()
+                    .planPath(planPath)
+                    .workers(List.of(new com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint("127.0.0.1", 19090)))
+                    .timeoutMs(1_000L)
+                    .pollIntervalMs(50L)
+                    .build());
+            fail("Expected incompatible worker protocol rejection");
+        } catch (IllegalStateException ex) {
+            assertTrue(ex.getMessage().contains("127.0.0.1:19090"), ex.getMessage());
+            assertTrue(ex.getMessage().contains(PerformanceWorkerProtocol.CURRENT_VERSION), ex.getMessage());
+            assertTrue(ex.getMessage().contains("legacy"), ex.getMessage());
+        }
+
+        assertEquals(workerClient.healthRequests.get(), 1);
+        assertEquals(workerClient.submitRequests.get(), 0);
+    }
+
 
     private static PerformanceWorkerServer workerServer(String workerId, AtomicInteger calls) {
         return new PerformanceWorkerServer(
@@ -227,13 +252,46 @@ public class PerformanceMasterRunCommandTest {
         private PerformanceWorkerRunRequest request;
         private boolean failResult;
         private boolean omitResultReport;
+        private String workerProtocolVersion = PerformanceWorkerProtocol.CURRENT_VERSION;
+        private int failSubmitAt = -1;
+        private final List<com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint> stoppedEndpoints = new ArrayList<>();
+        private final AtomicInteger healthRequests = new AtomicInteger();
+        private final AtomicInteger submitRequests = new AtomicInteger();
+        private final AtomicInteger stopRequests = new AtomicInteger();
         private final AtomicInteger statusReportRequests = new AtomicInteger();
+
+        @Override
+        public PerformanceWorkerHealthResponse health(com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint endpoint,
+                                                       Duration timeout) {
+            healthRequests.incrementAndGet();
+            timeouts.add(timeout);
+            return PerformanceWorkerHealthResponse.builder()
+                    .status("UP")
+                    .workerId("worker-a")
+                    .host(endpoint.getHost())
+                    .port(endpoint.getPort())
+                    .workerProtocolVersion(workerProtocolVersion)
+                    .build();
+        }
 
         @Override
         public void submitRun(com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint endpoint,
                               PerformanceWorkerRunRequest request,
-                              Duration timeout) {
+                              Duration timeout) throws IOException {
+            submitRequests.incrementAndGet();
+            if (failSubmitAt > 0 && submitRequests.get() == failSubmitAt) {
+                throw new IOException("submit boom");
+            }
             this.request = request;
+            timeouts.add(timeout);
+        }
+
+        @Override
+        public void stop(com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint endpoint,
+                         String runId,
+                         Duration timeout) {
+            stopRequests.incrementAndGet();
+            stoppedEndpoints.add(endpoint);
             timeouts.add(timeout);
         }
 

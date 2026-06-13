@@ -4,6 +4,7 @@ import com.laker.postman.common.component.MemoryLabel;
 import com.laker.postman.common.component.placeholder.PerformanceTrendPlaceholderPanel;
 import com.laker.postman.common.component.button.ExportButton;
 import com.laker.postman.common.component.button.HelpButton;
+import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.performance.result.LazyPerformanceTrendPanel;
 import com.laker.postman.test.AbstractSwingUiTest;
@@ -144,13 +145,15 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void topToolbarShouldExposeRunRefreshAndExportControls() {
+    public void topToolbarShouldExposeRunRefreshImportAndExportControls() {
         PerformancePanelViewFactory viewFactory = new PerformancePanelViewFactory();
+        AtomicInteger importCount = new AtomicInteger();
         AtomicInteger exportCount = new AtomicInteger();
         AtomicInteger usageHelpCount = new AtomicInteger();
         AtomicInteger remoteToggleCount = new AtomicInteger();
 
         PerformancePanelViewFactory.ToolbarSection toolbarSection = viewFactory.createToolbarSection(
+                importCount::incrementAndGet,
                 exportCount::incrementAndGet,
                 usageHelpCount::incrementAndGet,
                 () -> {
@@ -165,6 +168,7 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         assertEquals(countTextFields(toolbarSection.topPanel()), 1);
         assertNotNull(toolbarSection.runBtn());
         assertNotNull(toolbarSection.stopBtn());
+        assertNotNull(toolbarSection.importBtn());
         assertNotNull(toolbarSection.refreshBtn());
         assertNotNull(toolbarSection.exportBtn());
         assertNotNull(toolbarSection.usageHelpBtn());
@@ -185,11 +189,14 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         assertFalse(memoryLabel.getText().contains(" / "));
         assertFalse(memoryLabel.getText().matches(".*\\d+\\.\\d{2,}(MB|GB).*"));
         memoryLabel.stopAutoRefresh();
+        assertTrue(hasComponent(toolbarSection.topPanel(), ImportButton.class));
         assertTrue(hasComponent(toolbarSection.topPanel(), ExportButton.class));
         assertTrue(hasComponent(toolbarSection.topPanel(), HelpButton.class));
         assertFalse(toolbarSection.remoteModeCheckBox().isSelected());
         assertEquals(toolbarSection.workerEndpointsField().getText(), "127.0.0.1:19090");
 
+        toolbarSection.importBtn().doClick();
+        assertEquals(importCount.get(), 1);
         toolbarSection.exportBtn().doClick();
         assertEquals(exportCount.get(), 1);
         toolbarSection.usageHelpBtn().doClick();

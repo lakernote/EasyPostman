@@ -9,8 +9,14 @@ import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.plan.PerformancePlanConfiguration;
+import com.laker.postman.performance.plan.PerformancePlanDocument;
+import com.laker.postman.performance.plan.PerformancePlanImportCandidate;
+import com.laker.postman.performance.plan.PerformancePlanImportResult;
+import com.laker.postman.performance.plan.PerformancePlanNode;
 import com.laker.postman.performance.plan.PerformancePlanWorkspace;
 import com.laker.postman.performance.plan.PerformanceRemoteWorkerSettings;
+import com.laker.postman.performance.plan.PerformanceSavedPlan;
 import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.performance.core.model.NodeType;
@@ -32,6 +38,8 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -152,6 +160,29 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         });
     }
 
+    @Test(description = "导入的压测计划应追加到当前工作区计划列表并选中第一个新计划")
+    @SuppressWarnings("unchecked")
+    public void importedPlansShouldAppendWithUniqueNamesAndSelectFirstImportedPlan() throws Exception {
+        runOnEdtAndWait(() -> {
+            PerformancePanel panel = newPanelWithoutInit();
+            PerformanceSavedPlan existingPlan = savedPlan("existing", "Imported Run Plan");
+            setField(panel, "savedPlans", new ArrayList<>(List.of(existingPlan)));
+            setField(panel, "activePlanId", existingPlan.getId());
+
+            int importedCount = panel.appendImportedPlans(new PerformancePlanImportResult(List.of(
+                    importCandidate("Imported Run Plan"),
+                    importCandidate("Other Plan")
+            )));
+
+            List<PerformanceSavedPlan> savedPlans = (List<PerformanceSavedPlan>) getField(panel, "savedPlans");
+            assertEquals(importedCount, 2);
+            assertEquals(savedPlans.size(), 3);
+            assertEquals(savedPlans.get(1).getName(), "Imported Run Plan 2");
+            assertEquals(savedPlans.get(2).getName(), "Other Plan");
+            assertEquals(getField(panel, "activePlanId"), savedPlans.get(1).getId());
+        });
+    }
+
     private static PerformancePanel newPanelWithoutInit() {
         UiSingletonPanel.setFactoryCreationAllowed(true);
         try {
@@ -159,6 +190,27 @@ public class PerformancePanelSaveTest extends AbstractSwingUiTest {
         } finally {
             UiSingletonPanel.setFactoryCreationAllowed(false);
         }
+    }
+
+    private static PerformancePlanImportCandidate importCandidate(String name) {
+        return new PerformancePlanImportCandidate(name, PerformancePlanConfiguration.builder()
+                .planDocument(planDocument(name))
+                .build());
+    }
+
+    private static PerformanceSavedPlan savedPlan(String id, String name) {
+        return PerformanceSavedPlan.builder()
+                .id(id)
+                .name(name)
+                .planDocument(planDocument(name))
+                .build();
+    }
+
+    private static PerformancePlanDocument planDocument(String rootName) {
+        return new PerformancePlanDocument(PerformancePlanNode.builder()
+                .name(rootName)
+                .type(NodeType.ROOT)
+                .build());
     }
 
     private static PerformancePropertyPanelSupport createPropertyPanelSupport(JTree performanceTree,

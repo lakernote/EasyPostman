@@ -17,6 +17,7 @@ import com.laker.postman.common.DebouncedSaveSupport;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ExportButton;
+import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
@@ -42,6 +43,8 @@ import com.laker.postman.performance.model.PerformanceTrendWindowCollectorListen
 import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.performance.plan.PerformancePlanConfiguration;
 import com.laker.postman.performance.plan.PerformancePlanDocument;
+import com.laker.postman.performance.plan.PerformancePlanImportResult;
+import com.laker.postman.performance.plan.PerformancePlanImportService;
 import com.laker.postman.performance.plan.PerformancePlanWorkspace;
 import com.laker.postman.performance.plan.PerformanceRemoteWorkerSettings;
 import com.laker.postman.performance.plan.PerformanceRunPlanFactory;
@@ -130,6 +133,7 @@ public class PerformancePanel extends UiSingletonPanel {
     private transient Thread runThread;
     private StartButton runBtn;
     private StopButton stopBtn;
+    private ImportButton importBtn;
     private ExportButton exportBtn;
     private RefreshButton refreshBtn;
     private JComboBox<String> planSelector;
@@ -179,6 +183,7 @@ public class PerformancePanel extends UiSingletonPanel {
     private transient PerformanceRunControlSupport runControlSupport;
     private transient PerformanceRemoteRunControlSupport remoteRunControlSupport;
     private transient PerformanceRequestEditorSupport requestEditorSupport;
+    private transient PerformancePlanImportService planImportService = new PerformancePlanImportService();
     private final transient PerformanceSaveShortcutSupport saveShortcutSupport = new PerformanceSaveShortcutSupport();
     private final transient DebouncedSaveSupport autoSaveSupport = new DebouncedSaveSupport(500, this::saveConfigAsync);
 
@@ -281,7 +286,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 value -> efficientMode = value,
                 this::applyTrendEnabled,
                 this::applyReportRealtimeEnabled,
-                this::refreshReportSnapshot,
+                this::refreshReportSnapshotIfAllowed,
                 this::saveAllPropertyPanelData,
                 this::saveConfig
         );
@@ -314,6 +319,7 @@ public class PerformancePanel extends UiSingletonPanel {
         timerManager.setReportRefreshCallback(statisticsCoordinator::refreshReport);
 
         PerformancePanelViewFactory.ToolbarSection toolbarSection = viewFactory.createToolbarSection(
+                this::importPerformancePlan,
                 this::exportRunPlan,
                 this::showUsageGuide,
                 this::refreshRequestsFromCollections,
@@ -325,6 +331,7 @@ public class PerformancePanel extends UiSingletonPanel {
         topPanel = toolbarSection.topPanel();
         runBtn = toolbarSection.runBtn();
         stopBtn = toolbarSection.stopBtn();
+        importBtn = toolbarSection.importBtn();
         exportBtn = toolbarSection.exportBtn();
         refreshBtn = toolbarSection.refreshBtn();
         planSelector = toolbarSection.planSelector();
@@ -381,6 +388,7 @@ public class PerformancePanel extends UiSingletonPanel {
                         workerEndpointsField,
                         planSelector,
                         addPlanButton,
+                        importBtn,
                         duplicatePlanButton,
                         renamePlanButton,
                         deletePlanButton
@@ -993,6 +1001,83 @@ public class PerformancePanel extends UiSingletonPanel {
         PerformanceUsageGuideDialog.show(this);
     }
 
+    private void importPerformancePlan() {
+        if (running) {
+            return;
+        }
+        autoSaveSupport.cancel();
+        propertyPanelSupport.forceCommitAllSpinners();
+        saveAllPropertyPanelData();
+
+        SystemFileChooser fileChooser = FileChooserUtil.createOpenFileChooser(
+                "performance.plan.import",
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_IMPORT_TITLE)
+        );
+        fileChooser.setFileFilter(FileChooserUtil.extensionFilter(
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_IMPORT_FILE_FILTER),
+                "json"
+        ));
+        int result = fileChooser.showOpenDialog(this);
+        if (result != SystemFileChooser.APPROVE_OPTION) {
+            return;
+        }
+        File selectedFile = fileChooser.getSelectedFile();
+        if (selectedFile == null) {
+            return;
+        }
+
+        try {
+            saveCurrentPlanIntoMemory();
+            PerformancePlanImportResult importResult = planImportService.importPlans(selectedFile.toPath());
+            int importedCount = appendImportedPlans(importResult);
+            if (importedCount <= 0) {
+                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_IMPORT_EMPTY));
+                return;
+            }
+            loadActivePlanIntoUi();
+            persistCurrentWorkspaceSync();
+            NotificationUtil.showSuccess(I18nUtil.getMessage(
+                    MessageKeys.PERFORMANCE_PLAN_IMPORT_SUCCESS,
+                    importedCount
+            ));
+        } catch (Exception ex) {
+            log.error("Failed to import performance plan", ex);
+            NotificationUtil.showError(I18nUtil.getMessage(
+                    MessageKeys.PERFORMANCE_PLAN_IMPORT_FAIL,
+                    ex.getMessage()
+            ));
+        }
+    }
+
+    int appendImportedPlans(PerformancePlanImportResult importResult) {
+        if (importResult == null || importResult.isEmpty()) {
+            return 0;
+        }
+        String firstImportedPlanId = null;
+        int importedCount = 0;
+        for (var candidate : importResult.getPlans()) {
+            if (candidate == null) {
+                continue;
+            }
+            String planId = UUID.randomUUID().toString();
+            String planName = nextPlanName(candidate.getName());
+            PerformanceSavedPlan importedPlan = PerformanceSavedPlan.fromConfiguration(
+                    planId,
+                    planName,
+                    candidate.getConfiguration()
+            );
+            savedPlans.add(importedPlan);
+            if (firstImportedPlanId == null) {
+                firstImportedPlanId = importedPlan.getId();
+            }
+            importedCount++;
+        }
+        if (firstImportedPlanId != null) {
+            activePlanId = firstImportedPlanId;
+        }
+        return importedCount;
+    }
+
     private void exportRunPlan() {
         autoSaveSupport.cancel();
         propertyPanelSupport.forceCommitAllSpinners();
@@ -1288,6 +1373,17 @@ public class PerformancePanel extends UiSingletonPanel {
         if (timerManager != null) {
             timerManager.setReportRefreshEnabled(enabled);
         }
+    }
+
+    private void refreshReportSnapshotIfAllowed() {
+        if (!shouldRefreshReportSnapshotNow()) {
+            return;
+        }
+        refreshReportSnapshot();
+    }
+
+    boolean shouldRefreshReportSnapshotNow() {
+        return !running || reportRealtimeEnabled;
     }
 
     private void refreshReportSnapshot() {

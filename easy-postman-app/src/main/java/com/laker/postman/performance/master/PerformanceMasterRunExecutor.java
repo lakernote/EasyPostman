@@ -9,6 +9,8 @@ import com.laker.postman.performance.core.run.PerformanceRunStatus;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignment;
 import com.laker.postman.performance.core.worker.PerformanceWorkerAssignmentPlanner;
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
+import com.laker.postman.performance.core.worker.PerformanceWorkerHealthResponse;
+import com.laker.postman.performance.core.worker.PerformanceWorkerProtocol;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse;
 import com.laker.postman.performance.master.PerformanceWorkerReportCollector.PerformanceWorkerReportResult;
@@ -48,6 +50,7 @@ public class PerformanceMasterRunExecutor {
         PerformanceRunPlan runPlan = new PerformanceRunPlanJsonStorage().load(options.getPlanPath());
         String runId = "run-" + System.currentTimeMillis();
         long deadline = System.currentTimeMillis() + options.getTimeoutMs();
+        validateWorkerProtocols(options.getWorkers(), deadline);
         List<PerformanceWorkerAssignment> assignments = assignmentPlanner.plan(runPlan, options.getWorkers(), runId);
         List<PerformanceWorkerEndpoint> submittedWorkers = new ArrayList<>();
         try {
@@ -114,6 +117,20 @@ public class PerformanceMasterRunExecutor {
         return PerformanceRunStatus.isTerminal(status);
     }
 
+    private void validateWorkerProtocols(List<PerformanceWorkerEndpoint> workers, long deadline) throws Exception {
+        for (PerformanceWorkerEndpoint worker : workers) {
+            PerformanceWorkerHealthResponse health = workerClient.health(worker, timeoutUntil(deadline));
+            if (health == null || !health.usesCurrentProtocol()) {
+                String actualVersion = health == null || health.getWorkerProtocolVersion().isBlank()
+                        ? "legacy"
+                        : health.getWorkerProtocolVersion();
+                throw new IllegalStateException("Worker " + endpointLabel(worker)
+                        + " protocol mismatch: expected " + PerformanceWorkerProtocol.CURRENT_VERSION
+                        + ", actual " + actualVersion);
+            }
+        }
+    }
+
     private PerformanceJsonReport workerErrorReport(PerformanceWorkerEndpoint endpoint,
                                                     String runId,
                                                     PerformanceWorkerReportResult response) {
@@ -126,6 +143,10 @@ public class PerformanceMasterRunExecutor {
                         .build())
                 .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
                 .build();
+    }
+
+    private String endpointLabel(PerformanceWorkerEndpoint endpoint) {
+        return endpoint == null ? "" : endpoint.getHost() + ":" + endpoint.getPort();
     }
 
     private void stopSubmittedWorkers(List<PerformanceWorkerEndpoint> submittedWorkers,

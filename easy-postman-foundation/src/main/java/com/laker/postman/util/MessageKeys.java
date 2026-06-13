@@ -684,6 +684,12 @@ public final class MessageKeys {
     public static final String PERFORMANCE_REMOTE_WORKER_PROTOCOL_MISMATCH = "performance.remote.worker.protocol_mismatch";
     public static final String PERFORMANCE_PLAN_LABEL = "performance.plan.label";
     public static final String PERFORMANCE_PLAN_ADD_TOOLTIP = "performance.plan.add.tooltip";
+    public static final String PERFORMANCE_PLAN_IMPORT_TOOLTIP = "performance.plan.import.tooltip";
+    public static final String PERFORMANCE_PLAN_IMPORT_TITLE = "performance.plan.import.title";
+    public static final String PERFORMANCE_PLAN_IMPORT_FILE_FILTER = "performance.plan.import.file_filter";
+    public static final String PERFORMANCE_PLAN_IMPORT_SUCCESS = "performance.plan.import.success";
+    public static final String PERFORMANCE_PLAN_IMPORT_EMPTY = "performance.plan.import.empty";
+    public static final String PERFORMANCE_PLAN_IMPORT_FAIL = "performance.plan.import.fail";
     public static final String PERFORMANCE_PLAN_DUPLICATE_TOOLTIP = "performance.plan.duplicate.tooltip";
     public static final String PERFORMANCE_PLAN_RENAME_TOOLTIP = "performance.plan.rename.tooltip";
     public static final String PERFORMANCE_PLAN_DELETE_TOOLTIP = "performance.plan.delete.tooltip";

@@ -25,7 +25,7 @@ final class RequestUrlParamsSynchronizer {
         updatingFromUrl = true;
         try {
             List<HttpParam> currentParams = paramsPanel.getParamsList();
-            List<HttpParam> mergedParams = RequestUrlEditorSupport.mergeUrlParamsWithDisabledParams(urlField.getText(), currentParams);
+            List<HttpParam> mergedParams = RequestUrlEditorSupport.mergeUrlParamsWithCurrentTableMetadata(urlField.getText(), currentParams);
             if (mergedParams != currentParams) {
                 paramsPanel.setParamsList(mergedParams);
             }

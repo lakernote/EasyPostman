@@ -55,19 +55,24 @@ EasyPostman 的核心亮点是把**高仿 Postman 的接口调试体验**和**JM
 
 EasyPostman 是 GUI 优先的桌面工具，项目价值要同时展示两条主线：高仿 Postman 的接口调试，以及 JMeter 风格的压测编排。下面截图均来自当前桌面应用。
 
-<p align="center">
-  <a href="docs/collections.png"><img src="docs/collections.png" alt="接口集合和响应查看器" width="49%"></a>
-  <a href="docs/performance-trend.png"><img src="docs/performance-trend.png" alt="性能趋势面板" width="49%"></a>
-  <br>
-  <sub><b>Postman 风格接口调试</b> · <b>JMeter 风格性能测试</b></sub>
-</p>
-
-<p align="center">
-  <a href="docs/script-snippets.png"><img src="docs/script-snippets.png" alt="脚本代码片段和编辑器支持" width="49%"></a>
-  <a href="docs/workspaces-gitcommit.png"><img src="docs/workspaces-gitcommit.png" alt="Git 工作区管理" width="49%"></a>
-  <br>
-  <sub><b>脚本、断言 & 代码片段</b> · <b>Git 工作区协作</b></sub>
-</p>
+<table>
+  <tr>
+    <th width="50%">Postman 风格接口调试</th>
+    <th width="50%">JMeter 风格性能测试</th>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/collections.png"><img src="docs/collections.png" alt="接口集合和响应查看器" width="100%"></a></td>
+    <td width="50%"><a href="docs/performance-trend.png"><img src="docs/performance-trend.png" alt="性能趋势面板" width="100%"></a></td>
+  </tr>
+  <tr>
+    <th width="50%">脚本、断言 & 代码片段</th>
+    <th width="50%">Git 工作区协作</th>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/script-snippets.png"><img src="docs/script-snippets.png" alt="脚本代码片段和编辑器支持" width="100%"></a></td>
+    <td width="50%"><a href="docs/workspaces-gitcommit.png"><img src="docs/workspaces-gitcommit.png" alt="Git 工作区管理" width="100%"></a></td>
+  </tr>
+</table>
 
 📸 **[查看完整截图集 →](docs/SCREENSHOTS_zh.md)**
 

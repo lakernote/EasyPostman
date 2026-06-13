@@ -55,19 +55,24 @@ EasyPostman combines a **Postman-style API debugging workspace** with **JMeter-s
 
 EasyPostman is a GUI-first tool, and the project value is easier to judge when both halves are visible: Postman-style API work and JMeter-style load testing. These screenshots are from the current desktop app.
 
-<p align="center">
-  <a href="docs/collections.png"><img src="docs/collections.png" alt="API workspace with collections and response viewer" width="49%"></a>
-  <a href="docs/performance-trend.png"><img src="docs/performance-trend.png" alt="Performance trend dashboard" width="49%"></a>
-  <br>
-  <sub><b>Postman-style API Debugging</b> · <b>JMeter-style Load Testing</b></sub>
-</p>
-
-<p align="center">
-  <a href="docs/script-snippets.png"><img src="docs/script-snippets.png" alt="Script snippets and editor support" width="49%"></a>
-  <a href="docs/workspaces-gitcommit.png"><img src="docs/workspaces-gitcommit.png" alt="Git workspace management" width="49%"></a>
-  <br>
-  <sub><b>Scripts & Assertions</b> · <b>Git Workspace Collaboration</b></sub>
-</p>
+<table>
+  <tr>
+    <th width="50%">Postman-style API Debugging</th>
+    <th width="50%">JMeter-style Load Testing</th>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/collections.png"><img src="docs/collections.png" alt="API workspace with collections and response viewer" width="100%"></a></td>
+    <td width="50%"><a href="docs/performance-trend.png"><img src="docs/performance-trend.png" alt="Performance trend dashboard" width="100%"></a></td>
+  </tr>
+  <tr>
+    <th width="50%">Scripts & Assertions</th>
+    <th width="50%">Git Workspace Collaboration</th>
+  </tr>
+  <tr>
+    <td width="50%"><a href="docs/script-snippets.png"><img src="docs/script-snippets.png" alt="Script snippets and editor support" width="100%"></a></td>
+    <td width="50%"><a href="docs/workspaces-gitcommit.png"><img src="docs/workspaces-gitcommit.png" alt="Git workspace management" width="100%"></a></td>
+  </tr>
+</table>
 
 📸 **[View the full screenshot gallery →](docs/SCREENSHOTS.md)**
 

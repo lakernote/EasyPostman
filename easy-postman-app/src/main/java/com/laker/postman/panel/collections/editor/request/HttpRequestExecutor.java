@@ -1,8 +1,8 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.http.runtime.error.DownloadCancelledException;
-import com.laker.postman.http.runtime.error.HttpFailureResponseFactory;
 import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.transport.HttpExchangeTerminalResponseFactory;
 import com.laker.postman.stream.MessageType;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.script.model.TestResult;
@@ -39,6 +39,7 @@ final class HttpRequestExecutor {
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline, int maxRedirectCount) {
         return new SwingWorker<>() {
             HttpResponse resp;
+            boolean userCanceled;
             final boolean expectedSse = HttpRequestProtocol.isSse(req);
             final StringBuilder sseBodyBuilder = new StringBuilder();
             final long requestStartMs = System.currentTimeMillis();
@@ -121,13 +122,18 @@ final class HttpRequestExecutor {
                                         I18nUtil.getMessage(MessageKeys.SSE_STREAM_FAILED, errorMsg), null);
                             });
                         }
-                    });
+                    }, executionState);
                 } catch (DownloadCancelledException ex) {
                     log.info("User canceled download for request: {} {}", req.method, req.url);
+                    userCanceled = true;
+                    resp = HttpExchangeTerminalResponseFactory.fromCancellation(req, requestStartMs, System.currentTimeMillis());
                 } catch (InterruptedIOException ex) {
                     log.warn("Request interrupted: {} {} - {}", req.method, req.url, ex.getMessage());
-                    if (!isCancelled()) {
-                        resp = HttpFailureResponseFactory.fromException(req, ex, requestStartMs, System.currentTimeMillis());
+                    if (isCancelled()) {
+                        userCanceled = true;
+                        resp = HttpExchangeTerminalResponseFactory.fromCancellation(req, requestStartMs, System.currentTimeMillis());
+                    } else {
+                        resp = HttpExchangeTerminalResponseFactory.fromFailure(req, ex, requestStartMs, System.currentTimeMillis());
                         String userMessage = toInterruptedRequestUserMessage(ex, resp);
                         ConsolePanel.appendLog("[Error] " + userMessage, ConsolePanel.LogType.ERROR);
                         if (!executionState.isDisposed()) {
@@ -136,7 +142,12 @@ final class HttpRequestExecutor {
                     }
                 } catch (Exception ex) {
                     log.error("Error executing HTTP request: {} {} - {}", req.method, req.url, ex.getMessage(), ex);
-                    resp = HttpFailureResponseFactory.fromException(req, ex, requestStartMs, System.currentTimeMillis());
+                    if (isCancelled()) {
+                        userCanceled = true;
+                        resp = HttpExchangeTerminalResponseFactory.fromCancellation(req, requestStartMs, System.currentTimeMillis());
+                        return null;
+                    }
+                    resp = HttpExchangeTerminalResponseFactory.fromFailure(req, ex, requestStartMs, System.currentTimeMillis());
                     String userFriendlyMessage = resolveResponseErrorMessage(resp, ex);
                     ConsolePanel.appendLog("[Error] " + userFriendlyMessage, ConsolePanel.LogType.ERROR);
                     if (!executionState.isDisposed()) {
@@ -175,11 +186,21 @@ final class HttpRequestExecutor {
                         executionState.clearAutoDetectedHttpSseOpen();
                         return;
                     }
+                    boolean workerCanceled = isCancelled();
+                    boolean missingResponseAfterCancel = resp == null && workerCanceled;
                     boolean keepSseView = (resp != null && resp.isSse)
-                            || (isCancelled() && executionState.isAutoDetectedHttpSseOpen());
+                            || (workerCanceled && executionState.isAutoDetectedHttpSseOpen());
                     responsePanel.switchTabButtonHttpOrSse(keepSseView ? "sse" : "http");
+                    resp = HttpRequestCancellationResponseSupport.resolveTerminalResponse(
+                            req, resp, workerCanceled, requestStartMs, System.currentTimeMillis());
+                    if (missingResponseAfterCancel && resp != null) {
+                        userCanceled = true;
+                    }
                     requestExecutionUiUpdater.updateUIForResponse(resp);
-                    if (resp != null && !resp.isSse) {
+                    if (resp != null && userCanceled) {
+                        responsePanel.setRequestDetails(req);
+                        responsePanel.setResponseDetails(resp);
+                    } else if (resp != null && !resp.isSse) {
                         requestResponseHandler.handleResponse(pipeline, req, resp);
                     } else if (resp != null) {
                         requestResponseHandler.recordExchange(req, resp);

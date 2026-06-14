@@ -54,6 +54,9 @@ final class RequestProtocolDispatcher {
             return;
         }
         // HTTP 执行层只发布 NetworkLogEvent；请求编辑器在这里把事件接回当前响应面板。
+        request.collectBasicInfo = true;
+        request.collectEventInfo = true;
+        request.enableNetworkLog = true;
         request.networkLogSink = event -> responsePanel.getNetworkLogPanel().appendLog(event);
         request.lifecycleLogSink = SwingHttpRuntimeInteractionAdapter.lifecycleLogSink();
     }

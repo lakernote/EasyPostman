@@ -81,6 +81,7 @@ final class RequestEditorCommandController {
         }
 
         executionState.clearCurrentWebSocketConnectionId();
+        executionState.cancelCurrentHttpCall();
 
         SwingWorker<Void, Void> currentWorker = executionState.currentWorker();
         if (currentWorker != null) {

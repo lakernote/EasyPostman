@@ -1,17 +1,20 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.http.runtime.transport.HttpCallTracker;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
+import okhttp3.Call;
 
 import javax.swing.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-final class RequestExecutionState {
+final class RequestExecutionState implements HttpCallTracker {
     private static final int WEBSOCKET_NORMAL_CLOSURE = 1000;
 
     private volatile SwingWorker<Void, Void> currentWorker;
     private volatile RealtimeConnectionHandle currentEventSource;
     private volatile RealtimeWebSocketConnection currentWebSocket;
+    private volatile Call currentHttpCall;
     private volatile String currentWebSocketConnectionId;
     private volatile boolean autoDetectedHttpSseOpen;
     private volatile boolean disposed;
@@ -27,6 +30,10 @@ final class RequestExecutionState {
 
     RealtimeWebSocketConnection currentWebSocket() {
         return currentWebSocket;
+    }
+
+    Call currentHttpCall() {
+        return currentHttpCall;
     }
 
     String currentWebSocketConnectionId() {
@@ -87,6 +94,25 @@ final class RequestExecutionState {
         currentWebSocket = null;
     }
 
+    void cancelCurrentHttpCall() {
+        Call call = currentHttpCall;
+        if (call != null) {
+            call.cancel();
+        }
+    }
+
+    @Override
+    public void onCallStarted(Call call) {
+        currentHttpCall = call;
+    }
+
+    @Override
+    public void onCallFinished(Call call) {
+        if (currentHttpCall == call) {
+            currentHttpCall = null;
+        }
+    }
+
     void clearCurrentWebSocketConnectionId() {
         currentWebSocketConnectionId = null;
     }
@@ -123,6 +149,8 @@ final class RequestExecutionState {
             worker.cancel(true);
             currentWorker = null;
         }
+        cancelCurrentHttpCall();
+        currentHttpCall = null;
 
         clearAutoDetectedHttpSseOpen();
     }

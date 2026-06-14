@@ -2,9 +2,15 @@ package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.Request;
+import okhttp3.Response;
+import okio.Timeout;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import java.io.IOException;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -79,6 +85,33 @@ public class RequestExecutionStateTest {
         assertFalse(state.isSseCancelled());
     }
 
+    @Test
+    public void shouldCancelActiveHttpCallWhenUserCancelsRequest() {
+        RequestExecutionState state = new RequestExecutionState();
+        FakeCall call = new FakeCall();
+
+        state.onCallStarted(call);
+        state.cancelCurrentHttpCall();
+
+        assertTrue(call.cancelled);
+        assertSame(state.currentHttpCall(), call);
+
+        state.onCallFinished(call);
+        assertNull(state.currentHttpCall());
+    }
+
+    @Test
+    public void shouldDisposeActiveHttpCall() {
+        RequestExecutionState state = new RequestExecutionState();
+        FakeCall call = new FakeCall();
+
+        state.onCallStarted(call);
+        state.disposeOpenConnections();
+
+        assertTrue(call.cancelled);
+        assertNull(state.currentHttpCall());
+    }
+
     private SwingWorker<Void, Void> newNoopWorker() {
         return new SwingWorker<>() {
             @Override
@@ -119,6 +152,49 @@ public class RequestExecutionStateTest {
         @Override
         public long queueSize() {
             return 0;
+        }
+    }
+
+    private static final class FakeCall implements Call {
+        private boolean cancelled;
+
+        @Override
+        public Request request() {
+            return new Request.Builder().url("https://example.test/cancel").build();
+        }
+
+        @Override
+        public Response execute() throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void enqueue(Callback responseCallback) {
+        }
+
+        @Override
+        public void cancel() {
+            cancelled = true;
+        }
+
+        @Override
+        public boolean isExecuted() {
+            return false;
+        }
+
+        @Override
+        public boolean isCanceled() {
+            return cancelled;
+        }
+
+        @Override
+        public Timeout timeout() {
+            return Timeout.NONE;
+        }
+
+        @Override
+        public Call clone() {
+            return new FakeCall();
         }
     }
 }

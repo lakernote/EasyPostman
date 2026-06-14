@@ -7,6 +7,7 @@ import com.laker.postman.request.model.RedirectInfo;
 
 
 import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
+import com.laker.postman.http.runtime.transport.HttpCallTracker;
 import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
 import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
@@ -36,6 +37,13 @@ public class HttpRedirectExecutor {
     }
 
     public HttpResponse executeWithRedirects(PreparedRequest req, int maxRedirects, SseResponseCallback callback) throws Exception {
+        return executeWithRedirects(req, maxRedirects, callback, HttpCallTracker.NOOP);
+    }
+
+    public HttpResponse executeWithRedirects(PreparedRequest req,
+                                             int maxRedirects,
+                                             SseResponseCallback callback,
+                                             HttpCallTracker callTracker) throws Exception {
         // 创建工作副本
         PreparedRequest workingReq = req.shallowCopy();
 
@@ -45,7 +53,7 @@ public class HttpRedirectExecutor {
         workingReq.enableNetworkLog = true;  // 启用网络日志面板输出
 
         if (!workingReq.followRedirects || maxRedirects <= 0) {
-            return executeAndSyncRequestMetadata(req, workingReq, callback);
+            return executeAndSyncRequestMetadata(req, workingReq, callback, callTracker);
         }
 
         // 重定向链由 HttpRedirectExecutor 统一处理，底层单次 OkHttp call 不能再自动跟随。
@@ -56,7 +64,7 @@ public class HttpRedirectExecutor {
         int redirectCount = 0;
 
         while (true) {
-            HttpResponse resp = executeAndSyncRequestMetadata(req, workingReq, callback);
+            HttpResponse resp = executeAndSyncRequestMetadata(req, workingReq, callback, callTracker);
 
             // 判断是否重定向
             RedirectInfo info = buildRedirectInfo(workingReq.url, resp);
@@ -82,11 +90,13 @@ public class HttpRedirectExecutor {
 
     private HttpResponse executeAndSyncRequestMetadata(PreparedRequest originalReq,
                                                        PreparedRequest workingReq,
-                                                       SseResponseCallback callback) throws Exception {
+                                                       SseResponseCallback callback,
+                                                       HttpCallTracker callTracker) throws Exception {
         HttpResponse resp = httpTransport.execute(
                 workingReq,
                 HttpExchangeOptions.builder()
                         .callback(callback)
+                        .callTracker(callTracker)
                         .build()
         );
 

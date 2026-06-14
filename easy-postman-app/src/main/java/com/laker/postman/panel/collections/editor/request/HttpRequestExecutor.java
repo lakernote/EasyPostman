@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.http.runtime.error.DownloadCancelledException;
+import com.laker.postman.http.runtime.error.HttpFailureResponseFactory;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.stream.MessageType;
 import com.laker.postman.http.runtime.model.PreparedRequest;
@@ -126,7 +127,7 @@ final class HttpRequestExecutor {
                 } catch (InterruptedIOException ex) {
                     log.warn("Request interrupted: {} {} - {}", req.method, req.url, ex.getMessage());
                     if (!isCancelled()) {
-                        resp = HttpRequestFailureResponseFactory.fromException(req, ex, requestStartMs, System.currentTimeMillis());
+                        resp = HttpFailureResponseFactory.fromException(req, ex, requestStartMs, System.currentTimeMillis());
                         String userMessage = toInterruptedRequestUserMessage(ex, resp);
                         ConsolePanel.appendLog("[Error] " + userMessage, ConsolePanel.LogType.ERROR);
                         if (!executionState.isDisposed()) {
@@ -135,7 +136,8 @@ final class HttpRequestExecutor {
                     }
                 } catch (Exception ex) {
                     log.error("Error executing HTTP request: {} {} - {}", req.method, req.url, ex.getMessage(), ex);
-                    String userFriendlyMessage = NetworkErrorMessageResolver.toUserFriendlyMessage(ex);
+                    resp = HttpFailureResponseFactory.fromException(req, ex, requestStartMs, System.currentTimeMillis());
+                    String userFriendlyMessage = resolveResponseErrorMessage(resp, ex);
                     ConsolePanel.appendLog("[Error] " + userFriendlyMessage, ConsolePanel.LogType.ERROR);
                     if (!executionState.isDisposed()) {
                         NotificationUtil.showError(userFriendlyMessage);
@@ -149,6 +151,15 @@ final class HttpRequestExecutor {
                 if (rawMessage != null && rawMessage.toLowerCase(Locale.ROOT).contains("timeout")) {
                     return I18nUtil.getMessage(MessageKeys.ERROR_NETWORK_TIMEOUT);
                 }
+                if (response != null && response.httpEventInfo != null
+                        && response.httpEventInfo.getErrorMessage() != null
+                        && !response.httpEventInfo.getErrorMessage().isBlank()) {
+                    return response.httpEventInfo.getErrorMessage();
+                }
+                return NetworkErrorMessageResolver.toUserFriendlyMessage(ex);
+            }
+
+            private String resolveResponseErrorMessage(HttpResponse response, Exception ex) {
                 if (response != null && response.httpEventInfo != null
                         && response.httpEventInfo.getErrorMessage() != null
                         && !response.httpEventInfo.getErrorMessage().isBlank()) {

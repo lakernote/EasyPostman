@@ -1,6 +1,5 @@
-package com.laker.postman.panel.collections.editor.request;
+package com.laker.postman.http.runtime.error;
 
-import com.laker.postman.http.runtime.error.NetworkErrorMessageResolver;
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
@@ -10,12 +9,12 @@ import com.laker.postman.http.runtime.transport.HttpExchangeTraceSupport;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
-class HttpRequestFailureResponseFactory {
+public class HttpFailureResponseFactory {
 
-    static HttpResponse fromException(PreparedRequest request,
-                                      Throwable throwable,
-                                      long requestStartMs,
-                                      long endTimeMs) {
+    public static HttpResponse fromException(PreparedRequest request,
+                                             Throwable throwable,
+                                             long requestStartMs,
+                                             long endTimeMs) {
         String errorMessage = resolveErrorMessage(throwable);
         HttpResponse response = new HttpResponse();
         response.code = 0;

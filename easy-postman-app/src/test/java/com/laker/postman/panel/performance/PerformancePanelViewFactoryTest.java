@@ -192,6 +192,7 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
 
         assertEquals(countCheckBoxes(toolbarSection.topPanel()), 1);
         assertEquals(countTextFields(toolbarSection.topPanel()), 1);
+        assertEquals(countVisibleTextFields(toolbarSection.topPanel()), 0);
         assertNotNull(toolbarSection.runBtn());
         assertNotNull(toolbarSection.stopBtn());
         assertNotNull(toolbarSection.importBtn());
@@ -207,8 +208,13 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         assertFalse(toolbarSection.limitLabel().isVisible());
         assertNotNull(toolbarSection.progressLabel().getIcon());
         assertNull(toolbarSection.limitLabel().getIcon());
+        assertFalse(toolbarSection.workerEndpointsField().isVisible());
         assertFalse(toolbarSection.workerEndpointsField().isEditable());
         assertEquals(toolbarSection.workerEndpointsField().getForeground(), ModernColors.getTextDisabled());
+        assertFalse(hasText(
+                toolbarSection.topPanel(),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_STATUS_LOCAL)
+        ));
         MemoryLabel memoryLabel = findFirst(toolbarSection.topPanel(), MemoryLabel.class);
         assertNotNull(memoryLabel);
         assertTrue(memoryLabel.getText().contains("/"));
@@ -229,6 +235,8 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         assertEquals(usageHelpCount.get(), 1);
         toolbarSection.remoteModeCheckBox().doClick();
         assertEquals(remoteToggleCount.get(), 1);
+        assertTrue(toolbarSection.workerEndpointsField().isVisible());
+        assertEquals(countVisibleTextFields(toolbarSection.topPanel()), 1);
         assertTrue(toolbarSection.workerEndpointsField().isEditable());
         assertEquals(toolbarSection.workerEndpointsField().getForeground(), ModernColors.getTextPrimary());
     }
@@ -253,6 +261,16 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         if (component instanceof Container container) {
             for (Component child : container.getComponents()) {
                 count += countTextFields(child);
+            }
+        }
+        return count;
+    }
+
+    private static int countVisibleTextFields(Component component) {
+        int count = component instanceof JTextField && component.isVisible() ? 1 : 0;
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                count += countVisibleTextFields(child);
             }
         }
         return count;

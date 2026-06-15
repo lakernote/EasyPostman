@@ -253,7 +253,7 @@ final class PerformancePanelViewFactory {
                                         Consumer<String> workerEndpointsAction) {
         JPanel topPanel = new JPanel(new MigLayout(
                 "insets 6 10 6 10, fillx, novisualpadding, gap 0",
-                "[]8[1!]10[]10[1!]10[280:380:520,fill]push[]",
+                "[]8[1!]10[]10[1!]10[pref!]push[]",
                 "[]"
         ));
         ToolWindowSurfaceStyle.applyCard(topPanel);
@@ -306,33 +306,34 @@ final class PerformancePanelViewFactory {
         topPanel.add(planPanel);
         topPanel.add(createToolbarSeparator());
 
-        JPanel remotePanel = createToolbarGroupPanel("[]6[160:260:360,fill]6[]");
+        JPanel remotePanel = createToolbarGroupPanel("[]6[220:300:380,fill]", ", hidemode 3");
         JCheckBox remoteModeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE));
         remoteModeCheckBox.setSelected(remoteExecutionEnabled);
         remoteModeCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE_TOOLTIP));
         JTextField workerEndpointsField = new JTextField(workerEndpoints == null ? "" : workerEndpoints);
-        workerEndpointsField.setPreferredSize(new Dimension(260, TOOLBAR_CONTROL_HEIGHT));
+        workerEndpointsField.setPreferredSize(new Dimension(300, TOOLBAR_CONTROL_HEIGHT));
         workerEndpointsField.putClientProperty(
                 FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_PLACEHOLDER)
         );
         workerEndpointsField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_TOOLTIP));
-        JLabel workerStatusLabel = createWorkerStatusLabel();
         remoteModeCheckBox.addActionListener(e -> {
             if (remoteExecutionEnabledAction != null) {
                 remoteExecutionEnabledAction.accept(remoteModeCheckBox.isSelected());
             }
-            syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField, workerStatusLabel);
+            syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField);
+            if (remoteModeCheckBox.isSelected()) {
+                SwingUtilities.invokeLater(workerEndpointsField::requestFocusInWindow);
+            }
         });
         addWorkerEndpointsListener(
                 workerEndpointsField,
                 workerEndpointsAction,
-                () -> syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField, workerStatusLabel)
+                () -> syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField)
         );
-        syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField, workerStatusLabel);
+        syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField);
         remotePanel.add(remoteModeCheckBox);
         remotePanel.add(workerEndpointsField);
-        remotePanel.add(workerStatusLabel);
         topPanel.add(remotePanel);
 
         JPanel progressPanel = createToolbarGroupPanel("[]5[]5[]", ", hidemode 3");
@@ -415,17 +416,11 @@ final class PerformancePanelViewFactory {
         return separator;
     }
 
-    private JLabel createWorkerStatusLabel() {
-        JLabel label = new JLabel();
-        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        label.setHorizontalAlignment(SwingConstants.LEFT);
-        return label;
-    }
-
     private void syncWorkerEndpointsState(JCheckBox remoteModeCheckBox,
-                                          JTextField workerEndpointsField,
-                                          JLabel workerStatusLabel) {
+                                          JTextField workerEndpointsField) {
         boolean remoteEnabled = remoteModeCheckBox.isSelected();
+        boolean visibilityChanged = workerEndpointsField.isVisible() != remoteEnabled;
+        workerEndpointsField.setVisible(remoteEnabled);
         workerEndpointsField.setEditable(remoteEnabled);
         workerEndpointsField.setForeground(remoteEnabled
                 ? ModernColors.getTextPrimary()
@@ -435,35 +430,38 @@ final class PerformancePanelViewFactory {
                 : ModernColors.getCardBackgroundColor());
         workerEndpointsField.putClientProperty(FlatClientProperties.OUTLINE, null);
         if (!remoteEnabled) {
-            workerStatusLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_STATUS_LOCAL));
-            workerStatusLabel.setForeground(ModernColors.getTextHint());
-            workerStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE_TOOLTIP));
             workerEndpointsField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_TOOLTIP));
+            revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged);
             return;
         }
 
         String text = workerEndpointsField.getText();
         if (text == null || text.isBlank()) {
-            workerStatusLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_STATUS_REQUIRED));
-            workerStatusLabel.setForeground(ModernColors.getWarning());
-            workerStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_REQUIRED));
             workerEndpointsField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_REQUIRED));
             workerEndpointsField.putClientProperty(FlatClientProperties.OUTLINE, FlatClientProperties.OUTLINE_WARNING);
+            revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged);
             return;
         }
 
         try {
-            int workerCount = PerformanceWorkerEndpointParser.parse(text).size();
-            workerStatusLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_STATUS_COUNT, workerCount));
-            workerStatusLabel.setForeground(ModernColors.getSuccess());
-            workerStatusLabel.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_TOOLTIP));
+            PerformanceWorkerEndpointParser.parse(text);
             workerEndpointsField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_TOOLTIP));
         } catch (IllegalArgumentException ex) {
-            workerStatusLabel.setText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_STATUS_INVALID));
-            workerStatusLabel.setForeground(ModernColors.getError());
-            workerStatusLabel.setToolTipText(ex.getMessage());
             workerEndpointsField.setToolTipText(ex.getMessage());
             workerEndpointsField.putClientProperty(FlatClientProperties.OUTLINE, FlatClientProperties.OUTLINE_ERROR);
+        }
+        revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged);
+    }
+
+    private void revalidateToolbarIfNeeded(Component component, boolean required) {
+        if (!required) {
+            return;
+        }
+        Container parent = component.getParent();
+        while (parent != null) {
+            parent.revalidate();
+            parent.repaint();
+            parent = parent.getParent();
         }
     }
 

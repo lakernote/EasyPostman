@@ -34,6 +34,8 @@ import com.laker.postman.collection.importer.postman.PostmanCollectionParser;
 import com.laker.postman.service.swagger.SwaggerParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
+import com.laker.postman.util.AsyncClipboardUtil;
+import com.laker.postman.util.ClipboardUtil;
 import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
@@ -48,14 +50,11 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreeNode;
 import javax.swing.tree.TreePath;
 import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.DataFlavor;
-import java.awt.datatransfer.StringSelection;
-import java.awt.datatransfer.Transferable;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static com.laker.postman.panel.collections.tree.CollectionTreePanel.*;
 
@@ -93,9 +92,16 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
      * 点击 + 按钮弹出菜单：新建集合 + 分隔线 + 各种导入
      */
     private void showPlusMenu() {
-        // 先检测剪贴板是否有 cURL
-        String clipboardText = getClipboardText();
-        if (containsCurlCommands(clipboardText)) {
+        readClipboardCurlTextAsync()
+                .thenAccept(curlText -> SwingUtilities.invokeLater(() -> showPlusMenu(curlText)));
+    }
+
+    CompletableFuture<String> readClipboardCurlTextAsync() {
+        return ClipboardUtil.getClipboardCurlTextAsync();
+    }
+
+    private void showPlusMenu(String clipboardText) {
+        if (clipboardText != null) {
             int result = JOptionPane.showConfirmDialog(
                     UiSingletonFactory.getInstance(MainFrame.class),
                     I18nUtil.getMessage(MessageKeys.COLLECTIONS_IMPORT_CURL_DETECTED),
@@ -178,18 +184,6 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
         menu.add(importCurl);
 
         return menu;
-    }
-
-    private String getClipboardText() {
-        try {
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-            Transferable t = clipboard.getContents(null);
-            if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                return (String) t.getTransferData(DataFlavor.stringFlavor);
-            }
-        } catch (Exception ignored) {
-        }
-        return null;
     }
 
     @Override
@@ -534,7 +528,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
 
             // 导入成功后清空剪贴板
             if (saved) {
-                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
+                AsyncClipboardUtil.clearStringAsync();
                 notifyCurlImportResult(importResult);
             }
         } catch (Exception ex) {

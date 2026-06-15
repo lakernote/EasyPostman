@@ -4,14 +4,13 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.service.curl.CurlImportUtil;
 import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.service.curl.CurlRequest;
+import com.laker.postman.util.AsyncClipboardUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.NotificationUtil;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.datatransfer.StringSelection;
 import java.util.function.Consumer;
 
 /**
@@ -48,7 +47,7 @@ final class RequestCurlImportController {
             }
 
             requestImporter.accept(item);
-            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(""), null);
+            AsyncClipboardUtil.clearStringAsync();
             NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PARSE_CURL_SUCCESS));
         } catch (Exception ignored) {
             // 用户可能还在输入半截 cURL，保持静默，避免输入过程中频繁弹错。

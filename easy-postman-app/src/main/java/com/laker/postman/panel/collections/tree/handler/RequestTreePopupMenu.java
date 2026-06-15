@@ -244,9 +244,9 @@ public class RequestTreePopupMenu {
      */
     private JMenuItem createMenuItem(String messageKey, String iconPath, java.awt.event.ActionListener listener) {
         // 彩色图标列表：这些图标本身有品牌色或渐变色，不应该跟随主题变化
-        // - postman.svg: Postman 品牌橙色渐变
+        // - postman.svg: Postman 品牌橙色
         // - group.svg: 蓝色文件夹 (#007AFF)
-        // - curl.svg: cURL 品牌渐变色（深蓝→浅蓝→绿色）
+        // - curl.svg: cURL 官方深蓝/绿色符号
         boolean isColoredIcon = iconPath.contains("postman.svg")
                              || iconPath.contains("group.svg")
                              || iconPath.contains("curl.svg");

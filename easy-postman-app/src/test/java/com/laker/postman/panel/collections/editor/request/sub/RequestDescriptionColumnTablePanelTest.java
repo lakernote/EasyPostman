@@ -17,10 +17,12 @@ import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
 import java.awt.Container;
+import java.lang.reflect.Method;
 import java.util.Locale;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 
 public class RequestDescriptionColumnTablePanelTest extends AbstractSwingUiTest {
@@ -33,6 +35,37 @@ public class RequestDescriptionColumnTablePanelTest extends AbstractSwingUiTest 
 
             assertDescriptionColumn(panel.getTable(), 3);
             assertEquals(panel.getParamsList().get(0).getDescription(), "pagination page");
+        });
+    }
+
+    @Test
+    public void bulkEditParamsShouldPreserveExistingDescriptionAndEnabledState() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            try {
+                EasyRequestParamsPanel panel = new EasyRequestParamsPanel();
+                panel.setParamsList(List.of(
+                        new HttpParam(false, "page", "1", "pagination page"),
+                        new HttpParam(true, "size", "20", "page size")
+                ));
+
+                invokeParseBulkText(panel, """
+                        page: 2
+                        size: 50
+                        sort: createdAt
+                        """);
+
+                List<HttpParam> params = panel.getParamsList();
+                assertEquals(params.size(), 3);
+                assertEquals(params.get(0).getKey(), "page");
+                assertEquals(params.get(0).getValue(), "2");
+                assertFalse(params.get(0).isEnabled());
+                assertEquals(params.get(0).getDescription(), "pagination page");
+                assertEquals(params.get(1).getDescription(), "page size");
+                assertEquals(params.get(2).getKey(), "sort");
+                assertEquals(params.get(2).getDescription(), "");
+            } catch (Exception ex) {
+                throw new AssertionError(ex);
+            }
         });
     }
 
@@ -173,5 +206,11 @@ public class RequestDescriptionColumnTablePanelTest extends AbstractSwingUiTest 
             }
         }
         return null;
+    }
+
+    private static void invokeParseBulkText(EasyRequestParamsPanel panel, String text) throws Exception {
+        Method method = EasyRequestParamsPanel.class.getDeclaredMethod("parseBulkText", String.class);
+        method.setAccessible(true);
+        method.invoke(panel, text);
     }
 }

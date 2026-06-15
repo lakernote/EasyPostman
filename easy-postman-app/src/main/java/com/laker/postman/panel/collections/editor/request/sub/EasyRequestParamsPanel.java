@@ -15,8 +15,12 @@ import javax.swing.*;
 import javax.swing.event.TableModelListener;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Params 面板包装器，提供批量编辑功能
@@ -192,6 +196,7 @@ public class EasyRequestParamsPanel extends JPanel {
      * - Key = Value
      * - Key=Value
      * 空行和注释会被忽略
+     * 已存在参数的 enabled 状态和 description 会被保留。
      */
     private void parseBulkText(String text) {
         if (text == null || text.trim().isEmpty()) {
@@ -200,8 +205,16 @@ public class EasyRequestParamsPanel extends JPanel {
             return;
         }
 
+        Map<String, Deque<HttpParam>> existingParamsByKey = new LinkedHashMap<>();
+        for (HttpParam existing : tablePanel.getParamsList()) {
+            String key = existing.getKey().trim();
+            if (!key.isEmpty()) {
+                existingParamsByKey.computeIfAbsent(key, ignored -> new ArrayDeque<>()).add(existing);
+            }
+        }
+
         List<HttpParam> params = new ArrayList<>();
-        String[] lines = text.split("\n");
+        String[] lines = text.split("\\r?\\n");
 
         for (String line : lines) {
             line = line.trim();
@@ -221,19 +234,30 @@ public class EasyRequestParamsPanel extends JPanel {
                 String key = parts[0].trim();
                 String value = parts[1].trim();
                 if (!key.isEmpty()) {
-                    params.add(new HttpParam(true, key, value));
+                    HttpParam existing = pollExistingParam(existingParamsByKey, key);
+                    boolean enabled = existing == null || existing.isEnabled();
+                    String description = existing == null ? "" : existing.getDescription();
+                    params.add(new HttpParam(enabled, key, value, description));
                 }
             } else if (line.contains(":") || line.contains("=")) {
                 // 如果包含分隔符但解析失败，可能是值为空的情况
                 String key = line.replaceAll("[=:].*", "").trim();
                 if (!key.isEmpty()) {
-                    params.add(new HttpParam(true, key, ""));
+                    HttpParam existing = pollExistingParam(existingParamsByKey, key);
+                    boolean enabled = existing == null || existing.isEnabled();
+                    String description = existing == null ? "" : existing.getDescription();
+                    params.add(new HttpParam(enabled, key, "", description));
                 }
             }
         }
 
         // 更新表格数据
         tablePanel.setParamsList(params);
+    }
+
+    private HttpParam pollExistingParam(Map<String, Deque<HttpParam>> existingParamsByKey, String key) {
+        Deque<HttpParam> params = existingParamsByKey.get(key);
+        return params == null ? null : params.pollFirst();
     }
 
     // ========== 代理方法，暴露给外部使用 ==========

@@ -361,10 +361,10 @@ public class PerformancePanel extends UiSingletonPanel {
         rightContentPanel.add(topPanel, BorderLayout.NORTH);
         rightContentPanel.add(verticalSplit, BorderLayout.CENTER);
 
-        treeSection.scrollPane().setMinimumSize(new Dimension(220, 150));
+        treeSection.sidebarPanel().setMinimumSize(new Dimension(220, 150));
         rightContentPanel.setMinimumSize(new Dimension(400, 300));
         JSplitPane mainSplit = AppToolWindowChrome.createHorizontalInnerSplitPane(
-                treeSection.scrollPane(),
+                treeSection.sidebarPanel(),
                 rightContentPanel,
                 AppToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
@@ -902,7 +902,7 @@ public class PerformancePanel extends UiSingletonPanel {
         super.updateUI();
         // 主题切换时保持工具栏使用无分隔线的卡片内边距。
         if (topPanel != null) {
-            topPanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+            PerformancePanelViewFactory.applyToolbarInsets(topPanel);
         }
     }
 

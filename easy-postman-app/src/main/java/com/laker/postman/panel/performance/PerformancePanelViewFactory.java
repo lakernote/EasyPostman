@@ -57,6 +57,8 @@ final class PerformancePanelViewFactory {
     static final int RESULT_TAB_REPORT = 1;
     static final int RESULT_TAB_TABLE = 2;
     private static final int TOOLBAR_CONTROL_HEIGHT = 28;
+    private static final Insets TREE_SIDEBAR_INSETS = new Insets(8, 8, 8, 8);
+    private static final Insets TOOLBAR_INSETS = new Insets(6, 10, 6, 10);
     private static final String RESULT_CONTEXT_TABLE = "table";
     private static final String RESULT_CONTEXT_REPORT = "report";
     private static final String RESULT_CONTEXT_TREND = "trend";
@@ -74,7 +76,20 @@ final class PerformancePanelViewFactory {
         JScrollPane treeScroll = new JScrollPane(performanceTree);
         treeScroll.setPreferredSize(new Dimension(260, 300));
         ToolWindowSurfaceStyle.applyTreeScrollPaneCard(treeScroll, performanceTree);
-        return new TreeSection(performanceTree, treeScroll);
+        return new TreeSection(performanceTree, treeScroll, createTreeSidebarPanel(treeScroll));
+    }
+
+    private JComponent createTreeSidebarPanel(JScrollPane treeScroll) {
+        JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(
+                TREE_SIDEBAR_INSETS.top,
+                TREE_SIDEBAR_INSETS.left,
+                TREE_SIDEBAR_INSETS.bottom,
+                TREE_SIDEBAR_INSETS.right
+        ));
+        panel.add(treeScroll, BorderLayout.CENTER);
+        return panel;
     }
 
     PropertySection createPropertySection(String emptyCard,
@@ -242,7 +257,7 @@ final class PerformancePanelViewFactory {
                 "[]"
         ));
         ToolWindowSurfaceStyle.applyCard(topPanel);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(6, 10, 6, 10));
+        applyToolbarInsets(topPanel);
 
         StartButton runBtn = new StartButton();
         StopButton stopBtn = new StopButton();
@@ -351,6 +366,15 @@ final class PerformancePanelViewFactory {
                 progressLabel,
                 limitLabel
         );
+    }
+
+    static void applyToolbarInsets(JComponent component) {
+        component.setBorder(BorderFactory.createEmptyBorder(
+                TOOLBAR_INSETS.top,
+                TOOLBAR_INSETS.left,
+                TOOLBAR_INSETS.bottom,
+                TOOLBAR_INSETS.right
+        ));
     }
 
     private JLabel createRunStatusLabel(String text, String iconPath) {
@@ -686,7 +710,7 @@ final class PerformancePanelViewFactory {
         return new RequestEditorSection(wrapper, requestEditorHost);
     }
 
-    record TreeSection(JTree tree, JScrollPane scrollPane) {
+    record TreeSection(JTree tree, JScrollPane scrollPane, JComponent sidebarPanel) {
     }
 
     record PropertySection(JPanel propertyPanel,

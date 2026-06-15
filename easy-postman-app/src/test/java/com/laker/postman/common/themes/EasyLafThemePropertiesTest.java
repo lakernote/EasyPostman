@@ -118,6 +118,15 @@ public class EasyLafThemePropertiesTest {
         assertEquals(UIManager.getColor("ToggleButton.toolbar.selectedForeground"), Color.WHITE);
     }
 
+    @Test
+    public void disabledButtonBackgroundShouldRemainVisibleBehindDisabledText() {
+        assertTrue(EasyLightLaf.setup());
+        assertReadableDisabledButtonContrast();
+
+        assertTrue(EasyDarkLaf.setup());
+        assertReadableDisabledButtonContrast();
+    }
+
     private void assertDefinesThemeColors(String resourcePath) throws Exception {
         Properties properties = loadProperties(resourcePath);
 
@@ -140,6 +149,7 @@ public class EasyLafThemePropertiesTest {
         }
         for (String key : List.of(
                 ThemeColors.TEXT_PRIMARY,
+                ThemeColors.TEXT_DISABLED,
                 ThemeColors.BACKGROUND,
                 ThemeColors.SURFACE,
                 ThemeColors.WINDOW_CHROME_BACKGROUND,
@@ -150,6 +160,7 @@ public class EasyLafThemePropertiesTest {
                 ThemeColors.TAB_SEPARATOR,
                 ThemeColors.PRIMARY,
                 ThemeColors.SELECTION_BACKGROUND,
+                ThemeColors.BUTTON_DISABLED_BACKGROUND,
                 ThemeColors.CONSOLE_SELECTION_BACKGROUND,
                 "Component.accentColor",
                 "Component.focusColor",
@@ -231,5 +242,33 @@ public class EasyLafThemePropertiesTest {
         assertEquals(UIManager.getColor("MenuBar.background"), expected);
         assertEquals(UIManager.getColor("TitlePane.background"), expected);
         assertEquals(UIManager.getColor("TitlePane.inactiveBackground"), expected);
+    }
+
+    private void assertReadableDisabledButtonContrast() {
+        Color background = UIManager.getColor(ThemeColors.BUTTON_DISABLED_BACKGROUND);
+        Color foreground = UIManager.getColor(ThemeColors.TEXT_DISABLED);
+
+        assertTrue(contrastRatio(background, foreground) >= 2.0,
+                "Disabled button background should not collapse into disabled text");
+    }
+
+    private double contrastRatio(Color first, Color second) {
+        double firstLuminance = relativeLuminance(first);
+        double secondLuminance = relativeLuminance(second);
+        double lighter = Math.max(firstLuminance, secondLuminance);
+        double darker = Math.min(firstLuminance, secondLuminance);
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    private double relativeLuminance(Color color) {
+        double red = linearRgb(color.getRed());
+        double green = linearRgb(color.getGreen());
+        double blue = linearRgb(color.getBlue());
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    }
+
+    private double linearRgb(int value) {
+        double channel = value / 255.0;
+        return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
     }
 }

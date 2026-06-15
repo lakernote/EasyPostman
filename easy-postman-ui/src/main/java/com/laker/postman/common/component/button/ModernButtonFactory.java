@@ -129,7 +129,7 @@ public final class ModernButtonFactory {
 
         if (primary) {
             if (!button.isEnabled()) {
-                return ModernColors.getTextDisabled();
+                return ModernColors.getButtonDisabledBackgroundColor();
             }
             if (model.isPressed()) {
                 return ModernColors.getPrimaryDarker();

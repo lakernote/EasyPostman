@@ -34,6 +34,8 @@ public class ModernColorsTest {
             ThemeColors.SPLASH_GRADIENT_END,
             ThemeColors.WINDOW_CHROME_BACKGROUND,
             ThemeColors.DIALOG_CHROME_BACKGROUND,
+            ThemeColors.TEXT_DISABLED,
+            ThemeColors.BUTTON_DISABLED_BACKGROUND,
             ThemeColors.TAB_BACKGROUND,
             ThemeColors.TAB_SELECTED_BACKGROUND,
             ThemeColors.TAB_HOVER_BACKGROUND,
@@ -182,6 +184,17 @@ public class ModernColorsTest {
     }
 
     @Test
+    public void buttonDisabledFallbackShouldNotCollapseIntoDisabledTextFallback() {
+        UIManager.getDefaults().remove(ThemeColors.TEXT_DISABLED);
+        UIManager.getDefaults().remove(ThemeColors.BUTTON_DISABLED_BACKGROUND);
+
+        assertEquals(contrastRatio(
+                ModernColors.getButtonDisabledBackgroundColor(),
+                ModernColors.getTextDisabled()
+        ) >= 2.0, true);
+    }
+
+    @Test
     public void shouldReadTableColorsFromFlatLafUiDefaults() {
         Color background = new Color(255, 255, 255);
         Color header = new Color(244, 246, 248);
@@ -199,5 +212,25 @@ public class ModernColorsTest {
         assertEquals(ModernColors.getTableGridColor(), grid);
         assertEquals(ModernColors.getTableSelectionBackgroundColor(), selection);
         assertEquals(ModernColors.getTableSelectionForegroundColor(), selectionText);
+    }
+
+    private double contrastRatio(Color first, Color second) {
+        double firstLuminance = relativeLuminance(first);
+        double secondLuminance = relativeLuminance(second);
+        double lighter = Math.max(firstLuminance, secondLuminance);
+        double darker = Math.min(firstLuminance, secondLuminance);
+        return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    private double relativeLuminance(Color color) {
+        double red = linearRgb(color.getRed());
+        double green = linearRgb(color.getGreen());
+        double blue = linearRgb(color.getBlue());
+        return 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+    }
+
+    private double linearRgb(int value) {
+        double channel = value / 255.0;
+        return channel <= 0.03928 ? channel / 12.92 : Math.pow((channel + 0.055) / 1.055, 2.4);
     }
 }

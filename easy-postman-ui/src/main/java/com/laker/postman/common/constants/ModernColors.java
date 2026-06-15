@@ -549,11 +549,11 @@ public final class ModernColors {
 
     /**
      * 获取按钮禁用状态背景 - 根据主题自适应
-     * 亮色主题：Slate-400 (148, 163, 184)
+     * 亮色主题：Slate-200 (226, 232, 240)
      * 暗色主题：深灰色 (60, 60, 65)
      */
     public static Color getButtonDisabledBackgroundColor() {
-        return color(ThemeColors.BUTTON_DISABLED_BACKGROUND, new Color(148, 163, 184), new Color(40, 42, 46));
+        return color(ThemeColors.BUTTON_DISABLED_BACKGROUND, new Color(226, 232, 240), new Color(40, 42, 46));
     }
 
     // ==================== 边框颜色（主题适配）====================

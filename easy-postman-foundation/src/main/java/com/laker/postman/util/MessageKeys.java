@@ -87,6 +87,10 @@ public final class MessageKeys {
     public static final String CHANGELOG_VIEW_ON_GITEE = "changelog.view_on_gitee";
     public static final String CHANGELOG_CLOSE = "changelog.close";
     public static final String CHANGELOG_REFRESH = "changelog.refresh";
+    public static final String CHANGELOG_VIEW_ON_GITHUB_TOOLTIP = "changelog.view_on_github.tooltip";
+    public static final String CHANGELOG_VIEW_ON_GITEE_TOOLTIP = "changelog.view_on_gitee.tooltip";
+    public static final String CHANGELOG_NO_NOTES = "changelog.no_notes";
+    public static final String CHANGELOG_UNKNOWN_DATE = "changelog.unknown_date";
 
     public static final String MEMORY_TUNING_TITLE = "memory_tuning.title";
     public static final String MEMORY_TUNING_CONTENT = "memory_tuning.content";

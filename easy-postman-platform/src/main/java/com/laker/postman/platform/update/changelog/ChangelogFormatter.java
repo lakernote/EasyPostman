@@ -82,26 +82,17 @@ public class ChangelogFormatter {
         String body = release.getStr("body");
         String date = getPublishDate(release);
 
-        // 标题分隔线
-        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
-
-        // 版本号
         String displayName = StrUtil.isNotBlank(name) ? name : tagName;
-        sb.append("📦 ").append(displayName).append("\n");
+        String displayDate = date.length() >= 10
+                ? date.substring(0, 10)
+                : I18nUtil.getMessage(MessageKeys.CHANGELOG_UNKNOWN_DATE);
+        sb.append(displayName).append("  ").append(displayDate).append("\n");
 
-        // 发布日期
-        String displayDate = date.length() >= 10 ? date.substring(0, 10) : "Unknown";
-        sb.append("📅 ").append(displayDate).append("\n");
-
-        sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n");
-
-        // 更新说明
         if (StrUtil.isNotBlank(body)) {
             sb.append(body.trim()).append("\n\n\n");
         } else {
-            String noNotes = I18nUtil.isChinese() ? "无更新说明" : "No release notes provided";
+            String noNotes = "- " + I18nUtil.getMessage(MessageKeys.CHANGELOG_NO_NOTES);
             sb.append(noNotes).append("\n\n\n");
         }
     }
 }
-

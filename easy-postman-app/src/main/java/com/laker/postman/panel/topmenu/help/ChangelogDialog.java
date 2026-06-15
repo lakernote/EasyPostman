@@ -47,7 +47,7 @@ public class ChangelogDialog extends JDialog {
         // 中间面板：更新日志内容
         contentArea = new JTextArea();
         contentArea.setEditable(false);
-        contentArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
+        contentArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         contentArea.setLineWrap(true);
         contentArea.setWrapStyleWord(true);
         contentArea.setText(I18nUtil.getMessage(MessageKeys.CHANGELOG_LOADING));
@@ -69,16 +69,18 @@ public class ChangelogDialog extends JDialog {
         bottomPanel.add(statusLabel, BorderLayout.WEST);
 
         // 按钮面板
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         ToolWindowSurfaceStyle.applyDialogSurface(buttonPanel);
 
         refreshButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_REFRESH), false);
         refreshButton.addActionListener(e -> loadChangelog());
 
         JButton githubButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_VIEW_ON_GITHUB), false);
+        githubButton.setToolTipText(I18nUtil.getMessage(MessageKeys.CHANGELOG_VIEW_ON_GITHUB_TOOLTIP));
         githubButton.addActionListener(e -> openGitHubWeb());
 
         JButton giteeButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_VIEW_ON_GITEE), false);
+        giteeButton.setToolTipText(I18nUtil.getMessage(MessageKeys.CHANGELOG_VIEW_ON_GITEE_TOOLTIP));
         giteeButton.addActionListener(e -> openGiteeWeb());
 
         JButton closeButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.CHANGELOG_CLOSE), true);
@@ -111,7 +113,7 @@ public class ChangelogDialog extends JDialog {
 
         String currentVersion = SystemUtil.getCurrentVersion();
         JLabel versionLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CHANGELOG_CURRENT_VERSION, currentVersion));
-        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2)); // 比标准字体大2号
+        versionLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
 
         panel.add(versionLabel, BorderLayout.WEST);
 

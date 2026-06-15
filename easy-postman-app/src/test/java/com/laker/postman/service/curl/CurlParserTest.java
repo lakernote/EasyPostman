@@ -1,6 +1,7 @@
 package com.laker.postman.service.curl;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
@@ -463,6 +464,145 @@ public class CurlParserTest {
 
         CurlRequest parsed = CurlParser.parse(curlCommand);
         assertEquals(parsed.body, preparedRequest.body);
+    }
+
+    @Test(description = "复制实际发送 cURL 应使用网络层请求快照")
+    public void testToActualCurlUsesSentSnapshot() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "POST";
+        preparedRequest.url = "https://api.example.com/final";
+        preparedRequest.headersList = new java.util.ArrayList<>();
+        preparedRequest.headersList.add(new HttpHeader(true, "Authorization", "Bearer configured"));
+        preparedRequest.body = "{\"configured\":true}";
+        preparedRequest.sentHeadersList = new java.util.ArrayList<>();
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Host", "api.example.com"));
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Authorization", "Bearer actual"));
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Cookie", "session=jar; theme=dark"));
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Content-Length", "17"));
+        preparedRequest.sentRequestBody = "{\"actual\":true}";
+        preparedRequest.sentRequestBodyReplayable = true;
+
+        String curlCommand = CurlParser.toActualCurl(preparedRequest);
+
+        assertTrue(curlCommand.contains("-H 'Authorization: Bearer actual'"));
+        assertTrue(curlCommand.contains("-H 'Cookie: session=jar; theme=dark'"));
+        assertTrue(curlCommand.contains("-H 'Content-Length: 17'"));
+        assertTrue(curlCommand.contains("'{\"actual\":true}'"));
+        assertFalse(curlCommand.contains("Bearer configured"));
+        assertFalse(curlCommand.contains("{\"configured\":true}"));
+    }
+
+    @Test(description = "复制实际发送 cURL 应保留网络层协议版本")
+    public void testToActualCurlIncludesNegotiatedProtocol() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "GET";
+        preparedRequest.url = "https://api.example.com/h2";
+        preparedRequest.sentHeadersList = new java.util.ArrayList<>();
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Host", "api.example.com"));
+        preparedRequest.exchangeEventInfo = new HttpEventInfo();
+        preparedRequest.exchangeEventInfo.setProtocol("h2");
+
+        String curlCommand = CurlParser.toActualCurl(preparedRequest);
+
+        assertTrue(curlCommand.contains(" --http2 "));
+        assertFalse(curlCommand.contains("-X GET"));
+    }
+
+    @Test(description = "复制实际发送 cURL 应优先使用网络层实际 URL 和方法")
+    public void testToActualCurlUsesSentUrlAndMethod() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "POST";
+        preparedRequest.url = "https://api.example.com/start";
+        preparedRequest.sentMethod = "GET";
+        preparedRequest.sentUrl = "https://api.example.com/target";
+        preparedRequest.sentHeadersList = new java.util.ArrayList<>();
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Host", "api.example.com"));
+
+        String curlCommand = CurlParser.toActualCurl(preparedRequest);
+
+        assertTrue(curlCommand.contains("'https://api.example.com/target'"));
+        assertFalse(curlCommand.contains("https://api.example.com/start"));
+        assertFalse(curlCommand.contains("-X POST"));
+    }
+
+    @Test(description = "复制实际发送 cURL 在 GET 有请求体快照时应显式保留 GET 方法")
+    public void testToActualCurlPreservesGetMethodWhenBodySnapshotExists() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "GET";
+        preparedRequest.url = "https://api.example.com/search";
+        preparedRequest.sentMethod = "GET";
+        preparedRequest.sentUrl = "https://api.example.com/search";
+        preparedRequest.sentHeadersList = new java.util.ArrayList<>();
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Host", "api.example.com"));
+        preparedRequest.sentRequestBody = "{\"query\":\"hello\"}";
+        preparedRequest.sentRequestBodyReplayable = true;
+
+        String curlCommand = CurlParser.toActualCurl(preparedRequest);
+
+        assertTrue(curlCommand.contains(" -X GET "));
+        assertTrue(curlCommand.contains("--data-raw '{\"query\":\"hello\"}'"));
+    }
+
+    @Test(description = "复制实际发送 cURL 不应把截断的诊断请求体当作真实 payload")
+    public void testToActualCurlOmitsTruncatedBodyPreview() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "POST";
+        preparedRequest.url = "https://api.example.com/upload";
+        preparedRequest.sentMethod = "POST";
+        preparedRequest.sentUrl = "https://api.example.com/upload";
+        preparedRequest.sentHeadersList = new java.util.ArrayList<>();
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        preparedRequest.sentRequestBody = "{\"partial\":true}\n\n[Truncated request body: 1048576 bytes, showing first 64KB]";
+        preparedRequest.sentRequestBodyReplayable = false;
+
+        String curlCommand = CurlParser.toActualCurl(preparedRequest);
+
+        assertFalse(curlCommand.contains("--data-raw"));
+        assertFalse(curlCommand.contains("Truncated request body"));
+        assertTrue(curlCommand.startsWith("# Request body omitted:"));
+        assertTrue(curlCommand.contains("-X POST"));
+    }
+
+    @Test(description = "复制实际发送 cURL 在省略不可复现请求体时不应保留请求体 framing 头")
+    public void testToActualCurlOmitsBodyFramingHeadersWhenBodyIsNotReplayable() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "POST";
+        preparedRequest.url = "https://api.example.com/upload";
+        preparedRequest.sentMethod = "POST";
+        preparedRequest.sentUrl = "https://api.example.com/upload";
+        preparedRequest.sentHeadersList = new java.util.ArrayList<>();
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Content-Type", "application/octet-stream"));
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Content-Length", "1048576"));
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Transfer-Encoding", "chunked"));
+        preparedRequest.sentRequestBody = "[binary/octet-stream]";
+        preparedRequest.sentRequestBodyReplayable = false;
+
+        String curlCommand = CurlParser.toActualCurl(preparedRequest);
+
+        assertFalse(curlCommand.contains("--data-raw"));
+        assertFalse(curlCommand.contains("Content-Length"));
+        assertFalse(curlCommand.contains("Transfer-Encoding"));
+        assertTrue(curlCommand.contains("-H 'Content-Type: application/octet-stream'"));
+        assertTrue(curlCommand.startsWith("# Request body omitted:"));
+    }
+
+    @Test(description = "复制实际发送 cURL 不应把 multipart 占位文本当作真实 payload")
+    public void testToActualCurlOmitsMultipartPlaceholderBodyPreview() {
+        PreparedRequest preparedRequest = new PreparedRequest();
+        preparedRequest.method = "POST";
+        preparedRequest.url = "https://api.example.com/form";
+        preparedRequest.sentMethod = "POST";
+        preparedRequest.sentUrl = "https://api.example.com/form";
+        preparedRequest.sentHeadersList = new java.util.ArrayList<>();
+        preparedRequest.sentHeadersList.add(new HttpHeader(true, "Content-Type", "multipart/form-data; boundary=abc"));
+        preparedRequest.sentRequestBody = "[multipart/form-data] (see form files)";
+        preparedRequest.sentRequestBodyReplayable = false;
+
+        String curlCommand = CurlParser.toActualCurl(preparedRequest);
+
+        assertFalse(curlCommand.contains("--data-raw"));
+        assertFalse(curlCommand.contains("[multipart/form-data]"));
+        assertTrue(curlCommand.startsWith("# Request body omitted:"));
     }
 
     @DataProvider(name = "getRequestFormats")

@@ -77,10 +77,11 @@ public class HttpRedirectExecutor {
                 boolean isCrossDomain = isCrossOrigin(prevUrl, nextUrl);
 
                 redirectCount++;
-                logRedirect(workingReq, info);
 
                 // 基于当前请求创建下一次重定向请求
-                workingReq = prepareRedirectRequest(workingReq, nextUrl.toString(), info.statusCode, isCrossDomain);
+                PreparedRequest redirectReq = prepareRedirectRequest(workingReq, nextUrl.toString(), info.statusCode, isCrossDomain);
+                logRedirect(workingReq, redirectReq, info, redirectCount, nextUrl.toString(), isCrossDomain);
+                workingReq = redirectReq;
                 prevUrl = nextUrl;
             } else {
                 return resp;
@@ -100,9 +101,13 @@ public class HttpRedirectExecutor {
                         .build()
         );
 
-        // 更新原始请求对象的 OkHttp 相关字段
+        // 更新原始请求对象的 OkHttp 相关字段，UI 和诊断导出需要看到最后一次实际发送快照。
+        originalReq.sentUrl = workingReq.sentUrl;
+        originalReq.sentMethod = workingReq.sentMethod;
         originalReq.sentHeadersList = workingReq.sentHeadersList;
         originalReq.sentRequestBody = workingReq.sentRequestBody;
+        originalReq.sentRequestBodyReplayable = workingReq.sentRequestBodyReplayable;
+        originalReq.exchangeEventInfo = workingReq.exchangeEventInfo;
         return resp;
     }
 
@@ -192,13 +197,28 @@ public class HttpRedirectExecutor {
     /**
      * 记录重定向日志
      */
-    private static void logRedirect(PreparedRequest request, RedirectInfo info) {
+    private static void logRedirect(PreparedRequest request,
+                                    PreparedRequest redirectRequest,
+                                    RedirectInfo info,
+                                    int redirectNumber,
+                                    String nextUrl,
+                                    boolean crossOrigin) {
         if (!NetworkLogSupport.isEnabled(request)) {
             return;
         }
-        String logMessage = String.format("Status: %d, URL: %s, Location: %s",
-                info.statusCode, info.url, info.location);
-        NetworkLogSupport.append(request, NetworkLogEventStage.REDIRECT, logMessage);
+        String currentMethod = request.method == null || request.method.isBlank() ? "HTTP" : request.method;
+        String nextMethod = redirectRequest.method == null || redirectRequest.method.isBlank()
+                ? currentMethod
+                : redirectRequest.method;
+        StringBuilder logMessage = new StringBuilder();
+        logMessage.append("Redirect #").append(redirectNumber).append("\n");
+        logMessage.append("Status: ").append(info.statusCode).append("\n");
+        logMessage.append("From: ").append(currentMethod).append(" ").append(info.url).append("\n");
+        logMessage.append("Location: ").append(info.location).append("\n");
+        logMessage.append("To: ").append(nextMethod).append(" ").append(nextUrl).append("\n");
+        logMessage.append("Cross-Origin: ").append(crossOrigin).append("\n");
+        logMessage.append("Method Changed: ").append(!currentMethod.equalsIgnoreCase(nextMethod));
+        NetworkLogSupport.append(request, NetworkLogEventStage.REDIRECT, logMessage.toString());
     }
 
     private static String extractLocationHeader(HttpResponse resp) {

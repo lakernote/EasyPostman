@@ -357,6 +357,10 @@ public final class MessageKeys {
     public static final String TAB_UNSAVED_CHANGES_TITLE = "tab.unsaved_changes.title";
     public static final String TAB_CLOSE_CURRENT = "tab.close_current";
     public static final String SAVED_RESPONSE_READONLY = "saved_response.readonly";
+    public static final String NETWORK_LOG_COPY_ACTUAL_CURL = "network_log.copy_actual_curl";
+    public static final String NETWORK_LOG_COPY_ACTUAL_CURL_TOOLTIP = "network_log.copy_actual_curl.tooltip";
+    public static final String NETWORK_LOG_COPY_ACTUAL_CURL_SUCCESS = "network_log.copy_actual_curl.success";
+    public static final String NETWORK_LOG_COPY_ACTUAL_CURL_FAIL = "network_log.copy_actual_curl.fail";
 
     // ============ Bulk Edit 相关 ============
     public static final String BULK_EDIT = "bulk.edit";
@@ -1855,12 +1859,15 @@ public final class MessageKeys {
     public static final String WATERFALL_CERTIFICATE_CN = "waterfall.certificate_cn";
     public static final String WATERFALL_ISSUER_CN = "waterfall.issuer_cn";
     public static final String WATERFALL_VALID_UNTIL = "waterfall.valid_until";
+    public static final String WATERFALL_STAGE_TOTAL_DURATION = "waterfall.stage_total_duration";
+    public static final String WATERFALL_CERT_WARNING = "waterfall.cert_warning";
     public static final String WATERFALL_STAGE_DNS = "waterfall.stage.dns";
     public static final String WATERFALL_STAGE_SOCKET = "waterfall.stage.socket";
     public static final String WATERFALL_STAGE_SSL = "waterfall.stage.ssl";
     public static final String WATERFALL_STAGE_REQUEST_SEND = "waterfall.stage.request_send";
     public static final String WATERFALL_STAGE_WAITING = "waterfall.stage.waiting";
     public static final String WATERFALL_STAGE_CONTENT_DOWNLOAD = "waterfall.stage.content_download";
+    public static final String WATERFALL_STAGE_DURATION = "waterfall.stage.duration";
     public static final String WATERFALL_STAGE_DESC_DNS = "waterfall.stage.desc.dns";
     public static final String WATERFALL_STAGE_DESC_SOCKET = "waterfall.stage.desc.socket";
     public static final String WATERFALL_STAGE_DESC_SSL = "waterfall.stage.desc.ssl";

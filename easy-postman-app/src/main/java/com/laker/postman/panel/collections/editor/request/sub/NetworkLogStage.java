@@ -22,26 +22,27 @@ public enum NetworkLogStage {
     CANCELED("Canceled", "🚫", ModernColors::getError, true),
 
     // ==================== 成功和完成（绿色系）====================
-    CALL_START("CallStart", "🚀", ModernColors::getSuccess, true),
-    CALL_END("CallEnd", "✅", ModernColors::getSuccess, true),
+    CALL_START("RequestStart", "🚀", ModernColors::getSuccess, true),
+    CALL_END("RequestEnd", "✅", ModernColors::getSuccess, true),
     CACHE_HIT("CacheHit", "💾", ModernColors::getSuccess, false),
     CACHE_MISS("CacheMiss", "❌", ModernColors::getInfo, false),
     CACHE_CONDITIONAL_HIT("CacheConditionalHit", "💾", ModernColors::getInfo, false),
     SATISFACTION_FAILURE("SatisfactionFailure", "⚠️", ModernColors::getWarning, false),
+    REQUEST_PREPARED("RequestPrepared", "🧾", ModernColors::getPrimary, false),
 
     // ==================== 安全连接（由主色和错误色派生的紫色系）====================
-    SECURE_CONNECT_START("SecureConnectStart", "🔐", NetworkLogStage::getSecureConnectColor, false),
-    SECURE_CONNECT_END("SecureConnectEnd", "🔒", NetworkLogStage::getSecureConnectColor, false),
+    SECURE_CONNECT_START("TLSHandshakeStart", "🔐", NetworkLogStage::getSecureConnectColor, false),
+    SECURE_CONNECT_END("TLSHandshakeEnd", "🔒", NetworkLogStage::getSecureConnectColor, false),
 
     // ==================== 连接相关（蓝色系）====================
     CONNECT_START("ConnectStart", "🔌", ModernColors::getPrimary, false),
     CONNECT_END("ConnectEnd", "✅", ModernColors::getPrimary, false),
-    CONNECTION_ACQUIRED("ConnectionAcquired", "🔗", ModernColors::getPrimary, false),
+    CONNECTION_ACQUIRED("ConnectionReady", "🔗", ModernColors::getPrimary, false),
     CONNECTION_RELEASED("ConnectionReleased", "🔓", ModernColors::getPrimary, false),
 
     // ==================== DNS（蓝色系）====================
-    DNS_START("DnsStart", "🔍", ModernColors::getPrimary, false),
-    DNS_END("DnsEnd", "📍", ModernColors::getPrimary, false),
+    DNS_START("DNSStart", "🔍", ModernColors::getPrimary, false),
+    DNS_END("DNSEnd", "📍", ModernColors::getPrimary, false),
 
     // ==================== 代理（蓝色系）====================
     PROXY_SELECT("ProxySelect", "🌐", ModernColors::getPrimary, false),

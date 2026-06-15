@@ -56,6 +56,17 @@ public class NetworkLogStageTest {
     }
 
     @Test
+    public void shouldUseReadableDiagnosticStageNames() {
+        assertEquals(NetworkLogStage.CALL_START.getStageName(), "RequestStart");
+        assertEquals(NetworkLogStage.CALL_END.getStageName(), "RequestEnd");
+        assertEquals(NetworkLogStage.DNS_START.getStageName(), "DNSStart");
+        assertEquals(NetworkLogStage.DNS_END.getStageName(), "DNSEnd");
+        assertEquals(NetworkLogStage.SECURE_CONNECT_START.getStageName(), "TLSHandshakeStart");
+        assertEquals(NetworkLogStage.SECURE_CONNECT_END.getStageName(), "TLSHandshakeEnd");
+        assertEquals(NetworkLogStage.CONNECTION_ACQUIRED.getStageName(), "ConnectionReady");
+    }
+
+    @Test
     public void shouldReadStageColorsFromThemeTokens() {
         Color error = new Color(20, 40, 60);
         Color success = new Color(1, 2, 3);

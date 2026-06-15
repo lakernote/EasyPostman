@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.http.execution.RequestPreparationResult;
+import com.laker.postman.http.execution.RequestPreparationNetworkLogPublisher;
 import com.laker.postman.http.request.HttpRequestProtocol;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.ssl.SSLConfigurationUtil;
@@ -27,6 +28,7 @@ final class RequestProtocolDispatcher {
         PreparedRequest request = result.getRequest();
         attachNetworkLogSink(request);
         attachHttpResponseInteraction(request);
+        RequestPreparationNetworkLogPublisher.publish(request);
         ScriptExecutionPipeline pipeline = result.getPipeline();
         boolean expectedHttpSse = protocol.isHttpProtocol() && HttpRequestProtocol.isSse(request);
 

@@ -3,6 +3,8 @@ package com.laker.postman.http.runtime.transport;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
 import com.laker.postman.http.runtime.observation.NetworkLogSupport;
+import com.laker.postman.http.runtime.okhttp.OkHttpRequestSnapshotCapture;
+import com.laker.postman.request.model.HttpHeader;
 import okhttp3.Response;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -13,6 +15,7 @@ import okhttp3.sse.EventSourceListener;
 final class SseNetworkLogEventSourceListener extends EventSourceListener {
     private final EventSourceListener delegate;
     private final PreparedRequest preparedRequest;
+    private boolean requestSnapshotLogged;
 
     SseNetworkLogEventSourceListener(EventSourceListener delegate, PreparedRequest preparedRequest) {
         this.delegate = delegate == null ? new EventSourceListener() {
@@ -51,8 +54,45 @@ final class SseNetworkLogEventSourceListener extends EventSourceListener {
         if (response == null) {
             return;
         }
+        logRequestSnapshot(response);
         log(NetworkLogEventStage.RESPONSE_HEADERS_END,
                 RealtimeHandshakeNetworkLogFormatter.formatResponseSnapshot(preparedRequest, response));
+    }
+
+    private void logRequestSnapshot(Response response) {
+        if (requestSnapshotLogged || response == null || response.request() == null) {
+            return;
+        }
+        requestSnapshotLogged = true;
+        if (preparedRequest == null || preparedRequest.sentHeadersList == null || preparedRequest.sentHeadersList.isEmpty()) {
+            OkHttpRequestSnapshotCapture.capture(preparedRequest, response.request(), false);
+        }
+        log(NetworkLogEventStage.REQUEST_HEADERS_END, formatRequestHeaders());
+        log(NetworkLogEventStage.REQUEST_BODY_START, formatRequestBody());
+    }
+
+    private String formatRequestHeaders() {
+        if (preparedRequest == null || preparedRequest.sentHeadersList == null || preparedRequest.sentHeadersList.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("\n");
+        for (HttpHeader header : preparedRequest.sentHeadersList) {
+            if (header == null || header.getKey() == null) {
+                continue;
+            }
+            sb.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private String formatRequestBody() {
+        if (preparedRequest == null || preparedRequest.sentRequestBody == null) {
+            return "No request body";
+        }
+        if (preparedRequest.sentRequestBody.isEmpty()) {
+            return "Request body is empty";
+        }
+        return "\n" + preparedRequest.sentRequestBody;
     }
 
     private void log(NetworkLogEventStage stage, String message) {

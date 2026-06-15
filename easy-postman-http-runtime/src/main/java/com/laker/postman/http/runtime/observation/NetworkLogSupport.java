@@ -26,11 +26,19 @@ public class NetworkLogSupport {
     }
 
     public static void append(PreparedRequest request, NetworkLogEventStage stage, String message, Long elapsedMs) {
+        append(request, stage, message, elapsedMs, null);
+    }
+
+    public static void append(PreparedRequest request,
+                              NetworkLogEventStage stage,
+                              String message,
+                              Long elapsedMs,
+                              Long durationMs) {
         if (!isEnabled(request)) {
             return;
         }
         try {
-            resolveSink(request).append(stage, message, elapsedMs);
+            resolveSink(request).append(stage, message, elapsedMs, durationMs);
         } catch (Throwable ignored) {
             // 网络日志是观察能力，异常不能影响真实请求、SSE 或 WebSocket。
         }

@@ -26,7 +26,7 @@ public class HttpExchangeTerminalResponseFactory {
         }
 
         NetworkLogSupport.append(request, NetworkLogEventStage.FAILED,
-                buildLogMessage(request, "failed", errorMessage), response.costMs);
+                buildFailureLogMessage(request, eventInfo, throwable, errorMessage), response.costMs);
         return response;
     }
 
@@ -94,5 +94,54 @@ public class HttpExchangeTerminalResponseFactory {
         String method = request.method == null || request.method.isBlank() ? "HTTP" : request.method;
         String url = request.url == null ? "" : request.url;
         return method + " " + url + " " + action + ": " + message;
+    }
+
+    private static String buildFailureLogMessage(PreparedRequest request,
+                                                 HttpEventInfo eventInfo,
+                                                 Throwable throwable,
+                                                 String userMessage) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(buildLogMessage(request, "failed", userMessage)).append("\n");
+        sb.append("FailedStage: ").append(resolveFailedStage(eventInfo)).append("\n");
+        sb.append("ErrorType: ").append(throwable == null ? "-" : throwable.getClass().getSimpleName()).append("\n");
+        sb.append("UserMessage: ").append(userMessage == null || userMessage.isBlank() ? "-" : userMessage).append("\n");
+        sb.append("RawException: ");
+        if (throwable == null) {
+            sb.append("-");
+        } else {
+            sb.append(throwable.getClass().getName());
+            if (throwable.getMessage() != null && !throwable.getMessage().isBlank()) {
+                sb.append(": ").append(throwable.getMessage());
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String resolveFailedStage(HttpEventInfo info) {
+        if (info == null) {
+            return "Request";
+        }
+        if (info.getResponseBodyStart() > 0 || info.getResponseHeadersEnd() > 0) {
+            return "ResponseBody";
+        }
+        if (info.getResponseHeadersStart() > 0) {
+            return "ResponseHeaders";
+        }
+        if (info.getRequestBodyStart() > 0 || info.getRequestHeadersStart() > 0) {
+            return "RequestSend";
+        }
+        if (info.getSecureConnectStart() > 0) {
+            return "TLSHandshake";
+        }
+        if (info.getConnectStart() > 0) {
+            return "Connect";
+        }
+        if (info.getDnsStart() > 0) {
+            return "DNS";
+        }
+        if (info.getCallStart() > 0) {
+            return "Call";
+        }
+        return "Request";
     }
 }

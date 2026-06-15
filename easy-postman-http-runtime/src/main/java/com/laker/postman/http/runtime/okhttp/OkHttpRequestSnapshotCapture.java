@@ -19,15 +19,20 @@ import java.util.List;
 
 @UtilityClass
 public class OkHttpRequestSnapshotCapture {
-    private static final long MAX_CAPTURE_BODY_BYTES = 2 * 1024;
+    private static final long MAX_CAPTURE_BODY_KB = 64;
+    private static final long MAX_CAPTURE_BODY_BYTES = MAX_CAPTURE_BODY_KB * 1024;
 
     public static void capture(PreparedRequest preparedRequest, Request request, boolean captureBody) {
         if (preparedRequest == null || request == null) {
             return;
         }
+        preparedRequest.sentUrl = request.url().toString();
+        preparedRequest.sentMethod = request.method();
         preparedRequest.sentHeadersList = toHttpHeaders(request);
         if (captureBody) {
-            preparedRequest.sentRequestBody = snapshotBody(request.body());
+            RequestBodySnapshot snapshot = snapshotBody(request.body());
+            preparedRequest.sentRequestBody = snapshot.text();
+            preparedRequest.sentRequestBodyReplayable = snapshot.replayable();
         }
     }
 
@@ -64,21 +69,21 @@ public class OkHttpRequestSnapshotCapture {
         return port == defaultPort ? host : host + ":" + port;
     }
 
-    private static String snapshotBody(RequestBody body) {
+    private static RequestBodySnapshot snapshotBody(RequestBody body) {
         if (body == null) {
-            return null;
+            return new RequestBodySnapshot(null, false);
         }
         MediaType contentType = body.contentType();
         String description = bodyDescription(contentType);
         if (description != null) {
-            return description;
+            return new RequestBodySnapshot(description, false);
         }
         // one-shot/duplex 请求体无法安全重复读取，避免日志预览破坏真实发送。
         if (body.isDuplex()) {
-            return "[duplex request body omitted]";
+            return new RequestBodySnapshot("[duplex request body omitted]", false);
         }
         if (body.isOneShot()) {
-            return "[one-shot request body omitted]";
+            return new RequestBodySnapshot("[one-shot request body omitted]", false);
         }
         long contentLength = safeContentLength(body);
         try {
@@ -88,11 +93,11 @@ public class OkHttpRequestSnapshotCapture {
                 body.writeTo(bufferedSink);
                 bufferedSink.flush();
             } catch (BodyPreviewLimitReachedException ignored) {
-                // 只预览前 2KB，避免大请求体为了日志被完整遍历。
+                // 只预览前缀，避免大请求体为了日志被完整遍历。
             }
             return sink.snapshot();
         } catch (Exception e) {
-            return "[读取请求体失败: " + e.getMessage() + "]";
+            return new RequestBodySnapshot("[读取请求体失败: " + e.getMessage() + "]", false);
         }
     }
 
@@ -165,13 +170,13 @@ public class OkHttpRequestSnapshotCapture {
         public void close() {
         }
 
-        private String snapshot() {
+        private RequestBodySnapshot snapshot() {
             String text = prefix.readUtf8();
             if (!isKnownOrPotentiallyTruncated() && totalBytes <= limitBytes) {
-                return text;
+                return new RequestBodySnapshot(text, true);
             }
-            return text + "\n\n[Truncated request body: " + describeTotalBytes()
-                    + " bytes, showing first " + (limitBytes / 1024) + "KB]";
+            return new RequestBodySnapshot(text + "\n\n[Truncated request body: " + describeTotalBytes()
+                    + " bytes, showing first " + MAX_CAPTURE_BODY_KB + "KB]", false);
         }
 
         private boolean isKnownOrPotentiallyTruncated() {
@@ -187,5 +192,8 @@ public class OkHttpRequestSnapshotCapture {
     }
 
     private static final class BodyPreviewLimitReachedException extends IOException {
+    }
+
+    private record RequestBodySnapshot(String text, boolean replayable) {
     }
 }

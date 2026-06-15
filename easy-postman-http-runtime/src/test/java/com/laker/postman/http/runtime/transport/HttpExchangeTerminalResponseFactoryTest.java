@@ -50,7 +50,10 @@ public class HttpExchangeTerminalResponseFactoryTest {
         assertEquals(eventInfo.getCanceled(), 0L);
         assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.FAILED
                 && event.message().contains("POST https://example.test/api")
-                && event.message().contains("unexpected end of stream")));
+                && event.message().contains("unexpected end of stream")
+                && event.message().contains("ErrorType: IOException")
+                && event.message().contains("FailedStage: Call")
+                && event.message().contains("RawException: java.io.IOException: unexpected end of stream")));
     }
 
     @Test

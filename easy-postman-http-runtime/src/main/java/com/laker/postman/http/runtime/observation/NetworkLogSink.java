@@ -20,4 +20,8 @@ public interface NetworkLogSink {
     default void append(NetworkLogEventStage stage, String message, Long elapsedMs) {
         append(new NetworkLogEvent(stage, message, elapsedMs));
     }
+
+    default void append(NetworkLogEventStage stage, String message, Long elapsedMs, Long durationMs) {
+        append(new NetworkLogEvent(stage, message, elapsedMs, durationMs));
+    }
 }

@@ -63,4 +63,18 @@ public class CurlParser {
     public static String toCurl(PreparedRequest preparedRequest) {
         return CurlRequestExporter.toCurl(preparedRequest);
     }
+
+    /**
+     * 将网络层实际发送的 PreparedRequest 快照转换为 cURL 命令字符串。
+     */
+    public static String toActualCurl(PreparedRequest preparedRequest) {
+        return CurlRequestExporter.toActualCurl(preparedRequest);
+    }
+
+    /**
+     * 判断 PreparedRequest 是否已有网络层实际发送快照。
+     */
+    public static boolean canExportActualCurl(PreparedRequest preparedRequest) {
+        return CurlRequestExporter.hasSentSnapshot(preparedRequest);
+    }
 }

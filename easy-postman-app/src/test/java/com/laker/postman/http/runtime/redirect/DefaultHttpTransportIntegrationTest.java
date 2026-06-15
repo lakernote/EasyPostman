@@ -10,6 +10,8 @@ import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionHandle;
 import com.laker.postman.http.runtime.transport.RealtimeConnectionOptions;
 import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
+import com.laker.postman.http.runtime.sse.SseStreamCallback;
+import com.laker.postman.http.runtime.sse.SseStreamEventListener;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpFormData;
@@ -23,6 +25,7 @@ import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.service.curl.CurlImportUtil;
+import com.laker.postman.service.curl.CurlParser;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import okhttp3.HttpUrl;
@@ -59,6 +62,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -140,6 +144,74 @@ public class DefaultHttpTransportIntegrationTest {
     }
 
     @Test
+    public void shouldPublishRequestSnapshotAfterRequestHeadersStartInNetworkLog() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Content-Type", "application/json; charset=utf-8")
+                .setBody("{\"ok\":true}"));
+
+        PreparedRequest request = createRequest("POST", serverUrl("/echo"));
+        request.body = "{\"chatId\":1,\"text\":\"hello\"}";
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json; charset=utf-8"));
+        request.headersList.add(new HttpHeader(true, "Accept", "application/json"));
+        request.enableNetworkLog = true;
+        List<NetworkLogEvent> events = Collections.synchronizedList(new ArrayList<>());
+        request.networkLogSink = events::add;
+
+        httpTransport.execute(request, HttpExchangeOptions.defaults());
+        RecordedRequest recordedRequest = takeRecordedRequest();
+
+        assertEquals(recordedRequest.getBody().readUtf8(), request.body);
+        int headersStart = firstEventIndex(events, NetworkLogEventStage.REQUEST_HEADERS_START);
+        int headersEnd = firstEventIndex(events, NetworkLogEventStage.REQUEST_HEADERS_END);
+        int bodyStart = firstEventIndex(events, NetworkLogEventStage.REQUEST_BODY_START);
+        int bodyEnd = firstEventIndex(events, NetworkLogEventStage.REQUEST_BODY_END);
+        assertTrue(headersStart >= 0, "Network log should include request headers start");
+        assertTrue(headersEnd > headersStart, eventSnapshot(events).toString());
+        assertTrue(bodyStart > headersEnd, eventSnapshot(events).toString());
+        assertTrue(bodyEnd > bodyStart, eventSnapshot(events).toString());
+        assertTrue(firstEventMessage(events, NetworkLogEventStage.REQUEST_HEADERS_END).contains("Content-Type"),
+                "Request headers end should include the actual sent headers");
+        assertTrue(firstEventMessage(events, NetworkLogEventStage.REQUEST_BODY_START).contains("\"chatId\""),
+                "Request body start should include the captured request body preview");
+        assertDurationRecorded(firstEvent(events, NetworkLogEventStage.REQUEST_HEADERS_END));
+        assertDurationRecorded(firstEvent(events, NetworkLogEventStage.REQUEST_BODY_END));
+    }
+
+    @Test
+    public void shouldMarkReusedConnectionInNetworkLog() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Content-Type", "text/plain; charset=utf-8")
+                .setBody("first"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Content-Type", "text/plain; charset=utf-8")
+                .setBody("second"));
+
+        PreparedRequest firstRequest = createRequest("GET", serverUrl("/first"));
+        httpTransport.execute(firstRequest, HttpExchangeOptions.defaults());
+        takeRecordedRequest();
+
+        PreparedRequest secondRequest = createRequest("GET", serverUrl("/second"));
+        secondRequest.collectEventInfo = true;
+        secondRequest.enableNetworkLog = true;
+        List<NetworkLogEvent> events = Collections.synchronizedList(new ArrayList<>());
+        secondRequest.networkLogSink = events::add;
+
+        httpTransport.execute(secondRequest, HttpExchangeOptions.defaults());
+        takeRecordedRequest();
+
+        assertTrue(events.stream().noneMatch(event -> event.stage() == NetworkLogEventStage.CONNECT_START),
+                "Second request should reuse the warm connection in this test: " + eventSnapshot(events));
+        String connectionAcquired = firstEventMessage(events, NetworkLogEventStage.CONNECTION_ACQUIRED);
+        assertTrue(connectionAcquired.contains("Connection reused"),
+                "Reused connection should be explicit in the network log: " + eventSnapshot(events));
+    }
+
+    @Test
     public void shouldPreserveExplicitJsonContentTypeWhenSendingRawBody() throws Exception {
         server = createServer();
         server.enqueue(new MockResponse()
@@ -204,12 +276,68 @@ public class DefaultHttpTransportIntegrationTest {
         assertEquals(findHeaderValue(request.sentHeadersList, "Host"), recordedRequest.getHeader("Host"));
         assertEquals(findHeaderValue(request.sentHeadersList, "Content-Length"),
                 String.valueOf(request.body.getBytes(StandardCharsets.UTF_8).length));
+        waitForNetworkLogStage(events, NetworkLogEventStage.REQUEST_HEADERS_END);
         assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.REQUEST_HEADERS_END),
-                "SSE network log should include actual sent headers");
+                "SSE network log should include actual sent headers: " + eventSnapshot(events));
         assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.REQUEST_BODY_START),
-                "SSE network log should include actual sent body snapshot");
+                "SSE network log should include actual sent body snapshot: " + eventSnapshot(events));
         assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.RESPONSE_HEADERS_END),
-                "SSE network log should include handshake response headers");
+                "SSE network log should include handshake response headers: " + eventSnapshot(events));
+    }
+
+    @Test
+    public void shouldExposeHttpFailureBodyForFailedSseRequest() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(403)
+                .addHeader("Content-Type", "application/json; charset=utf-8")
+                .setBody("{\"detail\":\"Unusual activity has been detected from your device. Try again later.\"}"));
+
+        PreparedRequest request = createRequest("POST", serverUrl("/stream-failure"));
+        request.body = "{\"stream\":true}";
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        request.headersList.add(new HttpHeader(true, "Accept", "text/event-stream"));
+        request.collectBasicInfo = true;
+        request.collectEventInfo = true;
+        request.enableNetworkLog = true;
+
+        HttpResponse response = new HttpResponse();
+        CountDownLatch failed = new CountDownLatch(1);
+        AtomicReference<String> errorMessage = new AtomicReference<>();
+        RealtimeConnectionHandle handle = httpTransport.openSse(
+                request,
+                new SseStreamEventListener(new SseStreamCallback() {
+                    @Override
+                    public void onOpen(HttpResponse response, String headersText) {
+                    }
+
+                    @Override
+                    public void onEvent(String id, String type, String data) {
+                    }
+
+                    @Override
+                    public void onClosed(HttpResponse response) {
+                    }
+
+                    @Override
+                    public void onFailure(String errorMsg, HttpResponse response) {
+                        errorMessage.set(errorMsg);
+                        failed.countDown();
+                    }
+                }, response, new StringBuilder(), System.currentTimeMillis(), () -> false, request),
+                RealtimeConnectionOptions.defaults()
+        );
+        try {
+            assertTrue(failed.await(2, TimeUnit.SECONDS), "SSE 403 should report failure");
+        } finally {
+            handle.cancel();
+        }
+
+        assertEquals(response.code, 403);
+        assertTrue(response.body.contains("Unusual activity has been detected"), response.body);
+        assertTrue(response.bodySize > 0, "SSE failure response body should be retained");
+        assertTrue(errorMessage.get().contains("HTTP 403"), errorMessage.get());
+        assertTrue(errorMessage.get().contains("Unusual activity has been detected"), errorMessage.get());
     }
 
     @Test
@@ -317,7 +445,7 @@ public class DefaultHttpTransportIntegrationTest {
                 .setBody("ok"));
 
         PreparedRequest request = createRequest("POST", serverUrl("/large"));
-        request.body = "x".repeat(3 * 1024);
+        request.body = "x".repeat(96 * 1024);
         request.headersList.add(new HttpHeader(true, "Content-Type", "text/plain"));
         request.collectBasicInfo = true;
         request.collectEventInfo = true;
@@ -980,7 +1108,9 @@ public class DefaultHttpTransportIntegrationTest {
                 .setBody("target"));
 
         List<NetworkLogEvent> events = new ArrayList<>();
-        PreparedRequest request = createRequest("GET", serverUrl("/start"));
+        PreparedRequest request = createRequest("POST", serverUrl("/start"));
+        request.body = "{\"hello\":\"world\"}";
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.followRedirects = true;
         request.networkLogSink = events::add;
 
@@ -990,13 +1120,59 @@ public class DefaultHttpTransportIntegrationTest {
 
         assertEquals(response.code, 200);
         assertEquals(startRequest.getPath(), "/start");
+        assertEquals(startRequest.getMethod(), "POST");
         assertEquals(targetRequest.getPath(), "/target");
+        assertEquals(targetRequest.getMethod(), "GET");
+        assertEquals(request.sentUrl, serverUrl("/target"));
+        assertEquals(request.sentMethod, "GET");
+        assertNotNull(request.exchangeEventInfo);
         assertEquals(server.getRequestCount(), 2,
                 "HttpRedirectExecutor should own the redirect loop instead of letting OkHttp follow internally");
         assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.REDIRECT),
                 "HttpRedirectExecutor should publish redirect events through the injected sink");
+        String redirectLog = firstEventMessage(events, NetworkLogEventStage.REDIRECT);
+        assertTrue(redirectLog.contains("Redirect #1"), redirectLog);
+        assertTrue(redirectLog.contains("Status: 302"), redirectLog);
+        assertTrue(redirectLog.contains("From: POST " + serverUrl("/start")), redirectLog);
+        assertTrue(redirectLog.contains("To: GET " + serverUrl("/target")), redirectLog);
+        assertTrue(redirectLog.contains("Cross-Origin: false"), redirectLog);
+        assertTrue(redirectLog.contains("Method Changed: true"), redirectLog);
         assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.CALL_START),
                 "OkHttp event listener should publish call events through the injected sink");
+    }
+
+    @Test
+    public void shouldPreserveReplayableRequestBodySnapshotAfter307Redirect() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(307)
+                .addHeader("Location", serverUrl("/target"))
+                .setBody("redirect"));
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("target"));
+
+        PreparedRequest request = createRequest("POST", serverUrl("/start"));
+        request.body = "{\"hello\":\"world\"}";
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json; charset=utf-8"));
+        request.followRedirects = true;
+        request.enableNetworkLog = true;
+
+        HttpResponse response = new HttpRedirectExecutor().executeWithRedirects(request, 10, null);
+        RecordedRequest startRequest = takeRecordedRequest();
+        RecordedRequest targetRequest = takeRecordedRequest();
+
+        assertEquals(response.code, 200);
+        assertEquals(startRequest.getMethod(), "POST");
+        assertEquals(targetRequest.getMethod(), "POST");
+        assertEquals(targetRequest.getBody().readUtf8(), request.body);
+        assertEquals(request.sentUrl, serverUrl("/target"));
+        assertEquals(request.sentMethod, "POST");
+        assertEquals(request.sentRequestBody, request.body);
+        assertTrue(request.sentRequestBodyReplayable,
+                "Final 307/308 body snapshot should remain exportable from the original request");
+        String actualCurl = CurlParser.toActualCurl(request);
+        assertTrue(actualCurl.contains("--data-raw '{\"hello\":\"world\"}'"), actualCurl);
     }
 
     @Test
@@ -1462,6 +1638,29 @@ public class DefaultHttpTransportIntegrationTest {
                 .map(NetworkLogEvent::message)
                 .findFirst()
                 .orElse("");
+    }
+
+    private NetworkLogEvent firstEvent(List<NetworkLogEvent> events, NetworkLogEventStage expectedStage) {
+        return eventSnapshot(events).stream()
+                .filter(event -> event.stage() == expectedStage)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Missing event " + expectedStage + ": " + eventSnapshot(events)));
+    }
+
+    private void assertDurationRecorded(NetworkLogEvent event) throws Exception {
+        Object duration = NetworkLogEvent.class.getMethod("durationMs").invoke(event);
+        assertTrue(duration instanceof Long && (Long) duration >= 0,
+                "Network log event should include phase duration: " + event);
+    }
+
+    private int firstEventIndex(List<NetworkLogEvent> events, NetworkLogEventStage expectedStage) {
+        List<NetworkLogEvent> snapshot = eventSnapshot(events);
+        for (int i = 0; i < snapshot.size(); i++) {
+            if (snapshot.get(i).stage() == expectedStage) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     private long countEvents(List<NetworkLogEvent> events, NetworkLogEventStage expectedStage) {

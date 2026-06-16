@@ -57,9 +57,9 @@ final class PerformancePanelViewFactory {
     static final int RESULT_TAB_REPORT = 1;
     static final int RESULT_TAB_TABLE = 2;
     private static final int TOOLBAR_CONTROL_HEIGHT = 28;
-    private static final int WORKER_ENDPOINT_FIELD_MIN_WIDTH = 360;
-    private static final int WORKER_ENDPOINT_FIELD_PREFERRED_WIDTH = 520;
-    private static final int WORKER_ENDPOINT_FIELD_MAX_WIDTH = 720;
+    private static final int WORKER_ENDPOINT_FIELD_MIN_WIDTH = 280;
+    private static final int WORKER_ENDPOINT_FIELD_PREFERRED_WIDTH = 420;
+    private static final int WORKER_ENDPOINT_FIELD_MAX_WIDTH = 520;
     private static final Insets TREE_SIDEBAR_INSETS = new Insets(8, 8, 8, 8);
     private static final Insets TOOLBAR_INSETS = new Insets(6, 10, 6, 10);
     private static final String RESULT_CONTEXT_TABLE = "table";

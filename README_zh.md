@@ -30,11 +30,8 @@
 - [✨ 功能特性](#-功能特性)
 - [📦 下载](#-下载)
 - [🚀 快速开始](#-快速开始)
-- [🏗️ 项目结构](#️-项目结构)
 - [🛠️ 开发指南](#️-开发指南)
-- [🖼️ 截图预览](#️-截图预览)
 - [🤝 贡献指南](#-贡献指南)
-- [🎨 第三方资源](#-第三方资源)
 - [📚 文档](#-文档)
 - [❓ 常见问题](#-常见问题)
 - [💖 支持项目](#-支持项目)
@@ -210,43 +207,6 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 
 ---
 
-## 🏗️ 项目结构
-
-EasyPostman 是 Java 17 + Maven 多模块项目。入口类是 `com.laker.postman.App`；GUI 启动分支会初始化主题/字体、自定义 IOC 容器、插件运行时和 `MainFrame`，性能测试 CLI 则走无头启动分支。
-
-```text
-easy-postman-parent
-├── easy-postman-foundation
-├── easy-postman-request-core
-├── easy-postman-http-runtime
-├── easy-postman-collection-core
-├── easy-postman-plugin-api
-├── easy-postman-platform
-├── easy-postman-performance-core
-├── easy-postman-ui
-├── easy-postman-plugin-runtime
-├── easy-postman-plugins/
-└── easy-postman-app
-```
-
-| 模块 | 职责 |
-|------|------|
-| `easy-postman-foundation` | 最底层非 UI 基础层：常量、路径、JSON、系统工具、用户偏好、国际化和共享模型 |
-| `easy-postman-request-core` | 无头请求规格模型：请求、headers、params、body rows、cookies、auth、redirects 和 saved responses |
-| `easy-postman-http-runtime` | UI 中立 HTTP 传输运行时：prepared request、response、OkHttp adapter、SSL、SSE、Cookie、redirect、运行设置和观测端口 |
-| `easy-postman-collection-core` | 集合领域模型和中立的 Postman collection 解析 |
-| `easy-postman-plugin-api` | 宿主和插件共享的稳定插件 SPI 与服务契约 |
-| `easy-postman-platform` | 宿主平台框架，当前包括自定义 IOC 和更新发现核心 |
-| `easy-postman-performance-core` | 无头压测计划、运行时契约、统计、worker assignment 和报告快照 |
-| `easy-postman-ui` | 共享 Swing 设计系统：字体、图标、语义色、通用控件、编辑器主题和 UI 单例基类 |
-| `easy-postman-plugin-runtime` | 插件扫描、类加载、descriptor 解析、registry、生命周期和禁用/卸载状态 |
-| `easy-postman-plugins/*` | 官方插件 JAR：manager、client certificate、capture、Redis、Kafka、decompiler |
-| `easy-postman-app` | 宿主应用组装层：入口、主框架、具体面板、菜单、启动 wiring、设置/更新 UX 和 app 侧适配器 |
-
-更完整的模块归属规则见 [模块边界规范](docs/ARCHITECTURE_MODULES_zh.md)。
-
----
-
 ## 🛠️ 开发指南
 
 ### 常用命令
@@ -260,21 +220,6 @@ easy-postman-parent
 | 无头运行指定测试类 | `mvn -q -pl easy-postman-app -am -Dtest=<TestClass> -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test` |
 
 宿主 JAR 输出到 `easy-postman-app/target/easy-postman-{版本号}.jar`。原生安装包脚本位于 `build/`，通过 `jpackage` 生成各平台安装包。
-
-### 架构约束
-
-- EasyPostman 使用 `com.laker.postman.ioc` 下的自定义 IOC 注解，不引入 Spring 注解。
-- 共享非 UI 工具放 `foundation`；请求 DTO 放 `request-core`；传输执行放 `http-runtime`；共享 Swing 组件放 `ui`；插件契约放 `plugin-api`；插件加载放 `plugin-runtime`；具体宿主页面和组装放 `app`。
-- 用户可见文案应走对应模块的 i18n bundle，不直接硬编码。
-- 官方普通插件依赖 plugin API 和共享模块，不反向依赖 `easy-postman-app`。
-
----
-
-## 🖼️ 截图预览
-
-上面的视觉导览展示了核心界面。完整截图集还包含首页、工作区、集合、环境、功能测试、脚本、历史、网络日志、亮暗主题和多种性能测试视图。
-
-📸 **[查看所有截图 →](docs/SCREENSHOTS_zh.md)**
 
 ---
 
@@ -295,27 +240,16 @@ easy-postman-parent
 
 ---
 
-## 🎨 第三方资源
-
-SVG 图标来自 [Lucide](https://lucide.dev/) / [lucide-icons/lucide](https://github.com/lucide-icons/lucide)，许可为 [ISC License](https://lucide.dev/license)。
-
----
-
 ## 📚 文档
 
 | 文档 | 说明 |
 |------|------|
 | 📖 [功能详细说明](docs/FEATURES_zh.md) | 全面的功能文档 |
-| 🏗️ [系统架构](docs/ARCHITECTURE_zh.md) | 技术栈和架构设计 |
-| 🧱 [模块边界规范](docs/ARCHITECTURE_MODULES_zh.md) | Maven 模块职责和代码归属规则 |
 | 🚀 [构建指南](docs/BUILD_zh.md) | 从源码构建和生成安装包 |
 | ⚡ [集群压测使用指南](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI 远程模式、CLI master/worker、CSV 分片、实时刷新和结果明细 |
 | 🔌 [插件架构与安装](docs/PLUGINS_zh.md) | 插件模块、开发流程、在线/离线安装 |
 | 🖼️ [截图展示](docs/SCREENSHOTS_zh.md) | 所有应用截图 |
-| 📝 [脚本 API 参考](docs/SCRIPT_API_REFERENCE_zh.md) | 请求前和测试脚本 API，含 Redis/Kafka/ES/InfluxDB |
-| 📝 [脚本代码片段速查](docs/SCRIPT_SNIPPETS_QUICK_REFERENCE.md) | 内置代码片段，含数据源读写和断言示例 |
-| 🔐 [客户端证书](docs/CLIENT_CERTIFICATES.md) | mTLS 配置 |
-| 🐧 [Linux 构建指南](docs/LINUX_BUILD.md) | 在 Linux 上构建 |
+| 📝 [脚本 API 参考](docs/SCRIPT_API_REFERENCE_zh.md) | 请求前和测试脚本 API |
 | ❓ [常见问题](docs/FQA.MD) | 常见问题解答 |
 
 ---
@@ -341,24 +275,6 @@ SVG 图标来自 [Lucide](https://lucide.dev/) / [lucide-icons/lucide](https://g
 - **macOS Gatekeeper**：未购买 Apple 开发者证书（$99/年）。→ 右键"打开"，或终端执行：`sudo xattr -rd com.apple.quarantine /Applications/EasyPostman.app`
 
 本项目**完全开源**，代码可在 GitHub 审查。
-</details>
-
-<details>
-<summary><b>Q: 支持团队协作吗？</b></summary>
-
-✅ 支持！使用 **Git 工作区**可以：共享接口集合和环境变量、版本控制跟踪变更（commit/push/pull）、跨多设备协作，无需任何云服务。
-</details>
-
-<details>
-<summary><b>Q: 工作区之间的数据会相互影响吗？</b></summary>
-
-不会。每个工作区完全独立，拥有自己的集合、环境变量和历史记录，切换时数据完全隔离。
-</details>
-
-<details>
-<summary><b>Q: Git 工作区支持哪些平台？</b></summary>
-
-支持所有标准 Git 平台：GitHub、Gitee、GitLab、Bitbucket 及自建 Git 服务器（HTTPS 或 SSH）。
 </details>
 
 ---

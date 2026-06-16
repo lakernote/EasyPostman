@@ -9,7 +9,10 @@ import javax.swing.JTextField;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertTrue;
@@ -71,14 +74,37 @@ public class PerformanceToolbarStructureTest extends AbstractSwingUiTest {
             layoutRecursively(topPanel);
 
             assertTrue(
-                    workerEndpointsField.getParent().getWidth() <= 800,
+                    workerEndpointsField.getParent().getWidth() <= 620,
                     "worker endpoint row should stay compact, actual width: "
                             + workerEndpointsField.getParent().getWidth()
             );
             assertTrue(
-                    workerEndpointsField.getWidth() <= 720,
+                    workerEndpointsField.getWidth() <= 520,
                     "worker endpoint field should stay compact, actual width: "
                             + workerEndpointsField.getWidth()
+            );
+        } finally {
+            MemoryLabel memoryLabel = findFirst(toolbarSection.topPanel(), MemoryLabel.class);
+            if (memoryLabel != null) {
+                memoryLabel.stopAutoRefresh();
+            }
+        }
+    }
+
+    @Test
+    public void workerEndpointChineseLabelShouldBeLocalizedAndShort() {
+        ResourceBundle zhMessages = ResourceBundle.getBundle("messages", Locale.SIMPLIFIED_CHINESE);
+
+        assertEquals(zhMessages.getString("performance.remote.workers.label"), "节点");
+    }
+
+    @Test
+    public void workerEndpointInputPreferredWidthShouldStayCompact() {
+        PerformancePanelViewFactory.ToolbarSection toolbarSection = toolbarSection();
+        try {
+            assertTrue(
+                    toolbarSection.workerEndpointsField().getPreferredSize().width <= 440,
+                    "worker endpoint preferred width should avoid an oversized error outline"
             );
         } finally {
             MemoryLabel memoryLabel = findFirst(toolbarSection.topPanel(), MemoryLabel.class);

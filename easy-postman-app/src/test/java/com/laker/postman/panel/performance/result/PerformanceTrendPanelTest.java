@@ -87,6 +87,47 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void shouldKeepTrendControlsInSingleCompactHeaderRow() throws Exception {
+        clearSingletonInstance(PerformanceTrendPanel.class);
+        PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.setSize(new Dimension(1500, 700));
+        layoutRecursively(panel);
+
+        JToggleButton httpButton = findToggleButton(panel, PerformanceProtocolLabels.displayName(PerformanceProtocol.HTTP));
+        JCheckBox virtualUsersCheckBox = findCheckBox(
+                panel,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_VIRTUAL_USERS)
+        );
+        JToggleButton separateButton = findToggleButton(
+                panel,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS)
+        );
+
+        Rectangle httpBounds = boundsIn(panel, httpButton);
+        Rectangle virtualUsersBounds = boundsIn(panel, virtualUsersCheckBox);
+        Rectangle separateBounds = boundsIn(panel, separateButton);
+
+        assertTrue(
+                Math.abs(centerY(httpBounds) - centerY(virtualUsersBounds)) <= 4,
+                "metric checkboxes should stay in the same header row as the protocol switcher"
+        );
+        assertTrue(
+                Math.abs(centerY(httpBounds) - centerY(separateBounds)) <= 4,
+                "view mode switcher should stay in the same header row as the protocol switcher"
+        );
+        assertTrue(virtualUsersBounds.x > httpBounds.x);
+        assertTrue(separateBounds.x > virtualUsersBounds.x);
+    }
+
+    @Test
+    public void chineseViewModeLabelsShouldStayCompact() {
+        ResourceBundle zh = ResourceBundle.getBundle("messages", Locale.CHINESE);
+
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS), "分离");
+        assertEquals(zh.getString(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART), "合并");
+    }
+
+    @Test
     public void shouldStretchSeparateChartGridWhenViewportIsTallerThanPreferredHeight() {
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
         JToggleButton separateButton = findToggleButton(
@@ -629,6 +670,15 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
         return false;
     }
 
+    private static JCheckBox findCheckBox(Component root, String text) {
+        for (JCheckBox checkBox : findAll(root, JCheckBox.class)) {
+            if (text.equals(checkBox.getText())) {
+                return checkBox;
+            }
+        }
+        throw new AssertionError("Checkbox not found: " + text);
+    }
+
     private static int countVisibleCharts(Component root) {
         int count = 0;
         for (ChartPanel chartPanel : findAll(root, ChartPanel.class)) {
@@ -685,5 +735,22 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
                 collect(child, type, matches);
             }
         }
+    }
+
+    private static void layoutRecursively(Container container) {
+        container.doLayout();
+        for (Component child : container.getComponents()) {
+            if (child instanceof Container childContainer) {
+                layoutRecursively(childContainer);
+            }
+        }
+    }
+
+    private static Rectangle boundsIn(Component root, Component component) {
+        return SwingUtilities.convertRectangle(component.getParent(), component.getBounds(), root);
+    }
+
+    private static int centerY(Rectangle rectangle) {
+        return rectangle.y + rectangle.height / 2;
     }
 }

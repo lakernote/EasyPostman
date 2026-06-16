@@ -30,11 +30,8 @@
 - [✨ Features](#-features)
 - [📦 Download](#-download)
 - [🚀 Quick Start](#-quick-start)
-- [🏗️ Project Structure](#️-project-structure)
 - [🛠️ Development](#️-development)
-- [🖼️ Screenshots](#️-screenshots)
 - [🤝 Contributing](#-contributing)
-- [🎨 Third-Party Assets](#-third-party-assets)
 - [📚 Documentation](#-documentation)
 - [❓ FAQ](#-faq)
 - [💖 Support](#-support)
@@ -210,43 +207,6 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 
 ---
 
-## 🏗️ Project Structure
-
-EasyPostman is a Maven multi-module Java 17 project. The entry point is `com.laker.postman.App`; GUI startup initializes theme/font settings, the custom IOC container, plugin runtime, and `MainFrame`, while performance CLI commands run through a headless branch.
-
-```text
-easy-postman-parent
-├── easy-postman-foundation
-├── easy-postman-request-core
-├── easy-postman-http-runtime
-├── easy-postman-collection-core
-├── easy-postman-plugin-api
-├── easy-postman-platform
-├── easy-postman-performance-core
-├── easy-postman-ui
-├── easy-postman-plugin-runtime
-├── easy-postman-plugins/
-└── easy-postman-app
-```
-
-| Module | Responsibility |
-|--------|----------------|
-| `easy-postman-foundation` | Lowest non-UI layer: constants, paths, JSON, system utilities, user preferences, i18n, and shared models |
-| `easy-postman-request-core` | Headless request specification models such as requests, headers, params, body rows, cookies, auth, redirects, and saved responses |
-| `easy-postman-http-runtime` | UI-neutral HTTP transport runtime: prepared requests, responses, OkHttp adapters, SSL, SSE, cookies, redirects, runtime settings, and observation ports |
-| `easy-postman-collection-core` | Collection domain models and neutral Postman collection parsing |
-| `easy-postman-plugin-api` | Stable plugin SPI and service contracts used by host and plugins |
-| `easy-postman-platform` | Host platform framework, currently custom IOC and update discovery core |
-| `easy-postman-performance-core` | Headless performance plan, runtime contracts, stats, worker assignment, and report snapshots |
-| `easy-postman-ui` | Shared Swing design system: fonts, icons, semantic colors, reusable controls, editor theme helpers, and UI singleton base classes |
-| `easy-postman-plugin-runtime` | Plugin scanning, classloading, descriptor parsing, registry, lifecycle, and disabled/uninstall state |
-| `easy-postman-plugins/*` | Official plugin JARs: manager, client certificate, capture, Redis, Kafka, and decompiler |
-| `easy-postman-app` | Host application composition: entry point, main frame, concrete panels, menus, startup wiring, settings/update UX, and app-side adapters |
-
-For detailed module ownership rules, see [Module Boundaries](docs/ARCHITECTURE_MODULES_zh.md).
-
----
-
 ## 🛠️ Development
 
 ### Common Commands
@@ -260,21 +220,6 @@ For detailed module ownership rules, see [Module Boundaries](docs/ARCHITECTURE_M
 | Run one test class headlessly | `mvn -q -pl easy-postman-app -am -Dtest=<TestClass> -Dsurefire.failIfNoSpecifiedTests=false -Djava.awt.headless=true test` |
 
 The host JAR is written to `easy-postman-app/target/easy-postman-{version}.jar`. Native packaging scripts live under `build/` and produce platform installers with `jpackage`.
-
-### Architecture Notes
-
-- EasyPostman uses its own IOC annotations in `com.laker.postman.ioc`; do not add Spring annotations.
-- Shared non-UI utilities belong in `foundation`; request DTOs in `request-core`; transport execution in `http-runtime`; reusable Swing components in `ui`; plugin contracts in `plugin-api`; plugin loading in `plugin-runtime`; concrete host screens and composition in `app`.
-- User-facing text should go through the relevant i18n bundle instead of being hard-coded.
-- Official plugins must depend on plugin API/shared modules, not `easy-postman-app`.
-
----
-
-## 🖼️ Screenshots
-
-The visual tour above highlights the core surfaces. The full gallery includes home, workspaces, collections, environments, functional testing, scripts, history, network log, light/dark modes, and multiple performance testing views.
-
-📸 **[View all screenshots →](docs/SCREENSHOTS.md)**
 
 ---
 
@@ -295,27 +240,16 @@ Every PR triggers automated checks: build, tests, code quality, and format valid
 
 ---
 
-## 🎨 Third-Party Assets
-
-SVG icons are sourced from [Lucide](https://lucide.dev/) / [lucide-icons/lucide](https://github.com/lucide-icons/lucide), licensed under the [ISC License](https://lucide.dev/license).
-
----
-
 ## 📚 Documentation
 
 | Doc | Description |
 |-----|-------------|
 | 📖 [Features](docs/FEATURES.md) | Comprehensive feature documentation |
-| 🏗️ [Architecture](docs/ARCHITECTURE.md) | Technical stack and design |
-| 🧱 [Module Boundaries](docs/ARCHITECTURE_MODULES_zh.md) | Canonical Maven module ownership rules (Chinese) |
 | 🚀 [Build Guide](docs/BUILD.md) | Build from source & generate installers |
 | ⚡ [Distributed Performance Testing](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI remote mode, CLI master/worker, CSV sharding, realtime refresh, and result details |
-| 🔌 [Plugin Architecture](docs/PLUGINS_zh.md) | Plugin modules, development flow, and online/offline installation (Chinese) |
+| 🔌 [Plugin Architecture](docs/PLUGINS_zh.md) | Plugin modules, development flow, and installation (Chinese) |
 | 🖼️ [Screenshots](docs/SCREENSHOTS.md) | All application screenshots |
-| 📝 [Script API Reference](docs/SCRIPT_API_REFERENCE_zh.md) | Pre-request & test script API, including Redis/Kafka/ES/InfluxDB |
-| 📝 [Script Snippets](docs/SCRIPT_SNIPPETS_QUICK_REFERENCE.md) | Built-in snippets, including data-store read/write/assert examples |
-| 🔐 [Client Certificates](docs/CLIENT_CERTIFICATES.md) | mTLS configuration |
-| 🐧 [Linux Build](docs/LINUX_BUILD.md) | Building on Linux |
+| 📝 [Script API Reference](docs/SCRIPT_API_REFERENCE_zh.md) | Pre-request & test script API |
 | ❓ [FAQ](docs/FQA.MD) | Frequently asked questions |
 
 ---
@@ -341,24 +275,6 @@ In the Collections view, click **Import** and select a Postman v2.1 JSON file. C
 - **macOS Gatekeeper**: No Apple Developer cert ($99/year). → Right-click → "Open", or run: `sudo xattr -rd com.apple.quarantine /Applications/EasyPostman.app`
 
 This project is **fully open-source** and auditable on GitHub.
-</details>
-
-<details>
-<summary><b>Q: Does it support team collaboration?</b></summary>
-
-✅ Yes — use **Git workspace** to share collections & environments, track changes (commit/push/pull), and collaborate across devices without any cloud service.
-</details>
-
-<details>
-<summary><b>Q: Are workspaces isolated?</b></summary>
-
-Yes. Each workspace has its own collections, environments, and history. Switching workspaces provides complete data isolation.
-</details>
-
-<details>
-<summary><b>Q: Which Git platforms are supported?</b></summary>
-
-All standard Git platforms: GitHub, Gitee, GitLab, Bitbucket, and self-hosted Git servers (HTTPS or SSH).
 </details>
 
 ---

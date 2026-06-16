@@ -14,13 +14,19 @@ import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.Point;
+import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertNotNull;
 
@@ -92,6 +98,36 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
 
         assertNotNull(countButton);
         assertNotNull(timeButton);
+    }
+
+    @Test
+    public void fixedExecutionModeChineseToggleLabelsShouldStayShort() {
+        ResourceBundle zhMessages = ResourceBundle.getBundle("messages", Locale.SIMPLIFIED_CHINESE);
+
+        assertEquals(zhMessages.getString(MessageKeys.THREADGROUP_FIXED_EXECUTION_COUNT), "次数");
+        assertEquals(zhMessages.getString(MessageKeys.THREADGROUP_FIXED_EXECUTION_TIME), "时间");
+    }
+
+    @Test
+    public void fixedExecutionModeGroupShouldKeepOuterCornersClean() {
+        ThreadGroupPropertyPanel panel = panel();
+        panel.setSize(new Dimension(1400, 320));
+        layoutRecursively(panel);
+        JToggleButton timeButton = findToggleButton(
+                panel,
+                I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_TIME)
+        );
+
+        assertNotNull(timeButton);
+        BufferedImage image = render(timeButton.getParent());
+
+        assertTrue(colorAt(image, 0, 0).getAlpha() < 16, "top-left corner should stay outside rounded chrome");
+        assertTrue(colorAt(image, image.getWidth() - 1, 0).getAlpha() < 16,
+                "top-right corner should stay outside rounded chrome");
+        assertTrue(colorAt(image, 0, image.getHeight() - 1).getAlpha() < 16,
+                "bottom-left corner should stay outside rounded chrome");
+        assertTrue(colorAt(image, image.getWidth() - 1, image.getHeight() - 1).getAlpha() < 16,
+                "bottom-right corner should stay outside rounded chrome");
     }
 
     @Test
@@ -200,8 +236,8 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
         JComponent group = (JComponent) timeButton.getParent();
         assertNotNull(group.getBorder());
         Insets insets = group.getBorder().getBorderInsets(group);
-        assertTrue(insets.left >= 2, "execution mode group should have horizontal chrome padding");
-        assertTrue(insets.top >= 2, "execution mode group should have vertical chrome padding");
+        assertTrue(insets.left >= 3, "execution mode group should keep selected segment clear of rounded corners");
+        assertTrue(insets.top >= 3, "execution mode group should keep selected segment clear of rounded corners");
         assertTrue(group.getPreferredSize().height <= 34,
                 "execution mode group should stay compact, preferred height: " + group.getPreferredSize().height);
     }
@@ -302,6 +338,25 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
             }
         }
         return null;
+    }
+
+    private static BufferedImage render(Component component) {
+        BufferedImage image = new BufferedImage(
+                component.getWidth(),
+                component.getHeight(),
+                BufferedImage.TYPE_INT_ARGB
+        );
+        Graphics2D graphics = image.createGraphics();
+        try {
+            component.paint(graphics);
+        } finally {
+            graphics.dispose();
+        }
+        return image;
+    }
+
+    private static Color colorAt(BufferedImage image, int x, int y) {
+        return new Color(image.getRGB(x, y), true);
     }
 
     private static <T> T fieldValue(Object instance, String fieldName, Class<T> type) throws Exception {

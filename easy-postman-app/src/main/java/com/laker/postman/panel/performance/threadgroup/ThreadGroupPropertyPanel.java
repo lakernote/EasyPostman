@@ -16,6 +16,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
+import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +31,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private static final int FIELD_PAIR_GAP = 14;
     private static final int FORM_ROW_GAP = 8;
     private static final int EXECUTION_SEGMENT_GAP = 1;
-    private static final int EXECUTION_SEGMENT_GROUP_PADDING = 2;
+    private static final int EXECUTION_SEGMENT_GROUP_PADDING = 3;
     private static final int EXECUTION_SEGMENT_GROUP_ARC = 10;
     private static final int EXECUTION_SEGMENT_GROUP_EXTRA_WIDTH = 0;
     private static final int EXECUTION_TOGGLE_HORIZONTAL_INSET = 6;
@@ -642,6 +643,16 @@ public class ThreadGroupPropertyPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
             super.paintComponent(g);
+            paintRoundedChrome(g, false);
+        }
+
+        @Override
+        public void paint(Graphics g) {
+            super.paint(g);
+            paintRoundedChrome(g, true);
+        }
+
+        private void paintRoundedChrome(Graphics g, boolean borderOnly) {
             int width = getWidth();
             int height = getHeight();
             if (width <= 1 || height <= 1) {
@@ -650,12 +661,19 @@ public class ThreadGroupPropertyPanel extends JPanel {
 
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setColor(ModernColors.getHoverBackgroundColor());
-            g2.fillRoundRect(0, 0, width - 1, height - 1,
+            RoundRectangle2D.Float chrome = new RoundRectangle2D.Float(
+                    0,
+                    0,
+                    width - 1,
+                    height - 1,
                     EXECUTION_SEGMENT_GROUP_ARC, EXECUTION_SEGMENT_GROUP_ARC);
-            g2.setColor(ModernColors.getBorderMediumColor());
-            g2.drawRoundRect(0, 0, width - 1, height - 1,
-                    EXECUTION_SEGMENT_GROUP_ARC, EXECUTION_SEGMENT_GROUP_ARC);
+            if (!borderOnly) {
+                g2.setColor(ModernColors.getHoverBackgroundColor());
+                g2.fill(chrome);
+            } else {
+                g2.setColor(ModernColors.getBorderMediumColor());
+                g2.draw(chrome);
+            }
             g2.dispose();
         }
     }

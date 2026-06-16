@@ -1250,6 +1250,8 @@ public final class MessageKeys {
     // 固定模式标签
     public static final String THREADGROUP_FIXED_USERS = "threadgroup.fixed.users";
     public static final String THREADGROUP_FIXED_EXECUTION_MODE = "threadgroup.fixed.execution_mode";
+    public static final String THREADGROUP_FIXED_EXECUTION_COUNT = "threadgroup.fixed.execution_count";
+    public static final String THREADGROUP_FIXED_EXECUTION_TIME = "threadgroup.fixed.execution_time";
     public static final String THREADGROUP_FIXED_USE_TIME = "threadgroup.fixed.use_time";
     public static final String THREADGROUP_FIXED_LOOPS = "threadgroup.fixed.loops";
     public static final String THREADGROUP_FIXED_DURATION = "threadgroup.fixed.duration";

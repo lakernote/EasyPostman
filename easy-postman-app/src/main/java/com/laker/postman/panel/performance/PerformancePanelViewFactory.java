@@ -57,6 +57,9 @@ final class PerformancePanelViewFactory {
     static final int RESULT_TAB_REPORT = 1;
     static final int RESULT_TAB_TABLE = 2;
     private static final int TOOLBAR_CONTROL_HEIGHT = 28;
+    private static final int WORKER_ENDPOINT_FIELD_MIN_WIDTH = 360;
+    private static final int WORKER_ENDPOINT_FIELD_PREFERRED_WIDTH = 520;
+    private static final int WORKER_ENDPOINT_FIELD_MAX_WIDTH = 720;
     private static final Insets TREE_SIDEBAR_INSETS = new Insets(8, 8, 8, 8);
     private static final Insets TOOLBAR_INSETS = new Insets(6, 10, 6, 10);
     private static final String RESULT_CONTEXT_TABLE = "table";
@@ -253,8 +256,8 @@ final class PerformancePanelViewFactory {
                                         Consumer<String> workerEndpointsAction) {
         JPanel topPanel = new JPanel(new MigLayout(
                 "insets 6 10 6 10, fillx, novisualpadding, gap 0",
-                "[]8[1!]10[]10[1!]10[pref!]push[]",
-                "[]"
+                "[pref!,left,shrink 100]push[pref!]",
+                "[]4[]"
         ));
         ToolWindowSurfaceStyle.applyCard(topPanel);
         applyToolbarInsets(topPanel);
@@ -277,9 +280,10 @@ final class PerformancePanelViewFactory {
         usageHelpBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_USAGE_HELP_TOOLTIP));
         usageHelpBtn.addActionListener(e -> usageHelpAction.run());
 
+        JPanel primaryPanel = createToolbarGroupPanel("[]8[1!]10[]10[1!]10[]");
         JPanel btnPanel = ToolWindowActionToolbar.inlineLeft(runBtn, stopBtn, importBtn, exportBtn, refreshBtn, usageHelpBtn);
-        topPanel.add(btnPanel);
-        topPanel.add(createToolbarSeparator());
+        primaryPanel.add(btnPanel);
+        primaryPanel.add(createToolbarSeparator());
 
         JPanel planPanel = createToolbarGroupPanel("[]4[140:160:180,fill]4[]2[]2[]2[]");
         JLabel planLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_LABEL));
@@ -303,15 +307,26 @@ final class PerformancePanelViewFactory {
         planPanel.add(duplicatePlanButton);
         planPanel.add(renamePlanButton);
         planPanel.add(deletePlanButton);
-        topPanel.add(planPanel);
-        topPanel.add(createToolbarSeparator());
+        primaryPanel.add(planPanel);
+        primaryPanel.add(createToolbarSeparator());
 
-        JPanel remotePanel = createToolbarGroupPanel("[]6[220:300:380,fill]", ", hidemode 3");
         JCheckBox remoteModeCheckBox = new JCheckBox(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE));
         remoteModeCheckBox.setSelected(remoteExecutionEnabled);
         remoteModeCheckBox.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MODE_TOOLTIP));
+        JPanel remoteTogglePanel = ToolWindowActionToolbar.inlineLeft(remoteModeCheckBox);
+        primaryPanel.add(remoteTogglePanel);
+
+        JPanel workerEndpointRow = createToolbarGroupPanel(
+                "[right,pref!]8[" + WORKER_ENDPOINT_FIELD_MIN_WIDTH
+                        + ":" + WORKER_ENDPOINT_FIELD_PREFERRED_WIDTH
+                        + ":" + WORKER_ENDPOINT_FIELD_MAX_WIDTH + ",fill]",
+                ", hidemode 3"
+        );
+        JLabel workerEndpointsLabel = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_LABEL));
+        workerEndpointsLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        workerEndpointsLabel.setForeground(ModernColors.getTextSecondary());
         JTextField workerEndpointsField = new JTextField(workerEndpoints == null ? "" : workerEndpoints);
-        workerEndpointsField.setPreferredSize(new Dimension(300, TOOLBAR_CONTROL_HEIGHT));
+        workerEndpointsField.setPreferredSize(new Dimension(WORKER_ENDPOINT_FIELD_PREFERRED_WIDTH, TOOLBAR_CONTROL_HEIGHT));
         workerEndpointsField.putClientProperty(
                 FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_PLACEHOLDER)
@@ -321,7 +336,7 @@ final class PerformancePanelViewFactory {
             if (remoteExecutionEnabledAction != null) {
                 remoteExecutionEnabledAction.accept(remoteModeCheckBox.isSelected());
             }
-            syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField);
+            syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField, workerEndpointRow);
             if (remoteModeCheckBox.isSelected()) {
                 SwingUtilities.invokeLater(workerEndpointsField::requestFocusInWindow);
             }
@@ -329,12 +344,16 @@ final class PerformancePanelViewFactory {
         addWorkerEndpointsListener(
                 workerEndpointsField,
                 workerEndpointsAction,
-                () -> syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField)
+                () -> syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField, workerEndpointRow)
         );
-        syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField);
-        remotePanel.add(remoteModeCheckBox);
-        remotePanel.add(workerEndpointsField);
-        topPanel.add(remotePanel);
+        workerEndpointRow.add(workerEndpointsLabel);
+        // Remote worker 地址是辅助配置，限制宽度避免焦点框横向铺满工具栏。
+        workerEndpointRow.add(workerEndpointsField, "w "
+                + WORKER_ENDPOINT_FIELD_MIN_WIDTH
+                + ":" + WORKER_ENDPOINT_FIELD_PREFERRED_WIDTH
+                + ":" + WORKER_ENDPOINT_FIELD_MAX_WIDTH
+                + ", h " + TOOLBAR_CONTROL_HEIGHT + "!");
+        syncWorkerEndpointsState(remoteModeCheckBox, workerEndpointsField, workerEndpointRow);
 
         JPanel progressPanel = createToolbarGroupPanel("[]5[]5[]", ", hidemode 3");
         JLabel progressLabel = createRunStatusLabel("0/0", "icons/users.svg");
@@ -347,7 +366,9 @@ final class PerformancePanelViewFactory {
         progressPanel.add(progressLabel);
         progressPanel.add(limitLabel);
         progressPanel.add(memoryLabel);
-        topPanel.add(progressPanel);
+        topPanel.add(primaryPanel, "wmin 0");
+        topPanel.add(progressPanel, "alignx right, shrink 0, wrap");
+        topPanel.add(workerEndpointRow, "span 2, left, hidemode 3");
 
         return new ToolbarSection(
                 topPanel,
@@ -417,9 +438,14 @@ final class PerformancePanelViewFactory {
     }
 
     private void syncWorkerEndpointsState(JCheckBox remoteModeCheckBox,
-                                          JTextField workerEndpointsField) {
+                                          JTextField workerEndpointsField,
+                                          JComponent workerEndpointRow) {
         boolean remoteEnabled = remoteModeCheckBox.isSelected();
         boolean visibilityChanged = workerEndpointsField.isVisible() != remoteEnabled;
+        boolean rowVisibilityChanged = workerEndpointRow != null && workerEndpointRow.isVisible() != remoteEnabled;
+        if (workerEndpointRow != null) {
+            workerEndpointRow.setVisible(remoteEnabled);
+        }
         workerEndpointsField.setVisible(remoteEnabled);
         workerEndpointsField.setEditable(remoteEnabled);
         workerEndpointsField.setForeground(remoteEnabled
@@ -431,7 +457,7 @@ final class PerformancePanelViewFactory {
         workerEndpointsField.putClientProperty(FlatClientProperties.OUTLINE, null);
         if (!remoteEnabled) {
             workerEndpointsField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_TOOLTIP));
-            revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged);
+            revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged || rowVisibilityChanged);
             return;
         }
 
@@ -439,7 +465,7 @@ final class PerformancePanelViewFactory {
         if (text == null || text.isBlank()) {
             workerEndpointsField.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_REQUIRED));
             workerEndpointsField.putClientProperty(FlatClientProperties.OUTLINE, FlatClientProperties.OUTLINE_WARNING);
-            revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged);
+            revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged || rowVisibilityChanged);
             return;
         }
 
@@ -450,7 +476,7 @@ final class PerformancePanelViewFactory {
             workerEndpointsField.setToolTipText(ex.getMessage());
             workerEndpointsField.putClientProperty(FlatClientProperties.OUTLINE, FlatClientProperties.OUTLINE_ERROR);
         }
-        revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged);
+        revalidateToolbarIfNeeded(workerEndpointsField, visibilityChanged || rowVisibilityChanged);
     }
 
     private void revalidateToolbarIfNeeded(Component component, boolean required) {

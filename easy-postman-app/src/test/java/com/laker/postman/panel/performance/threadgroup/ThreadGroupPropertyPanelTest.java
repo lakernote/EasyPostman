@@ -1,6 +1,5 @@
 package com.laker.postman.panel.performance.threadgroup;
 
-import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.performance.model.PerformanceTreeNode;
@@ -34,11 +33,11 @@ public class ThreadGroupPropertyPanelTest extends AbstractSwingUiTest {
 
         JToggleButton loopButton = findToggleButton(
                 panel,
-                trimFieldLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_LOOPS))
+                I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_COUNT)
         );
         JToggleButton timeButton = findToggleButton(
                 panel,
-                I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_USE_TIME)
+                I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_TIME)
         );
         assertNotNull(loopButton);
         assertNotNull(timeButton);
@@ -65,7 +64,12 @@ public class ThreadGroupPropertyPanelTest extends AbstractSwingUiTest {
         fixedPanel.setSize(new Dimension(700, 128));
         layoutRecursively(fixedPanel);
 
-        SegmentedButtonGroupPanel modePanel = findComponent(fixedPanel, SegmentedButtonGroupPanel.class);
+        JToggleButton timeButton = findToggleButton(
+                fixedPanel,
+                I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_TIME)
+        );
+        assertNotNull(timeButton);
+        JPanel modePanel = (JPanel) timeButton.getParent();
 
         assertNotNull(modePanel);
         assertTrue(modePanel.getWidth() > 0, "execution mode segmented panel should be laid out");
@@ -119,10 +123,4 @@ public class ThreadGroupPropertyPanelTest extends AbstractSwingUiTest {
         return type.cast(field.get(instance));
     }
 
-    private static String trimFieldLabel(String text) {
-        if (text == null) {
-            return "";
-        }
-        return text.replaceAll("[:：]\\s*$", "");
-    }
 }

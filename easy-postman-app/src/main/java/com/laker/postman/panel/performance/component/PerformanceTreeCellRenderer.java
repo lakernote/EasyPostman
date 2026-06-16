@@ -5,10 +5,12 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 
 
-import com.formdev.flatlaf.extras.FlatSVGIcon;
+import com.laker.postman.common.component.RequestMethodUiMetadata;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.http.request.HttpRequestProtocol;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 
@@ -27,6 +29,11 @@ public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
         DefaultMutableTreeNode node = (DefaultMutableTreeNode) value;
         Object userObj = node.getUserObject();
         if (userObj instanceof PerformanceTreeNode nodeData) {
+            if (nodeData.type == NodeType.REQUEST) {
+                applyRequestRendering(label, nodeData, sel);
+                return label;
+            }
+
             // 设置图标
             switch (nodeData.type) {
                 case THREAD_GROUP -> label.setIcon(IconUtil.createThemed("icons/user-group.svg", SIZE, SIZE));
@@ -36,7 +43,6 @@ public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
                 case CONDITION -> label.setIcon(IconUtil.createThemed("icons/performance-condition-controller.svg", SIZE, SIZE));
                 case WHILE -> label.setIcon(IconUtil.createThemed("icons/performance-condition-controller.svg", SIZE, SIZE));
                 case ONCE_ONLY -> label.setIcon(IconUtil.createThemed("icons/performance-once-only-controller.svg", SIZE, SIZE));
-                case REQUEST -> label.setIcon(resolveRequestIcon(nodeData.httpRequestItem));
                 case ASSERTION -> label.setIcon(IconUtil.createThemed("icons/warning.svg", SIZE, SIZE));
                 case EXTRACTOR -> label.setIcon(IconUtil.createThemed("icons/global-variables.svg", SIZE, SIZE));
                 case TIMER -> label.setIcon(IconUtil.createThemed("icons/time.svg", SIZE, SIZE));
@@ -65,16 +71,71 @@ public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
         return label;
     }
 
-    private Icon resolveRequestIcon(HttpRequestItem item) {
+    private void applyRequestRendering(JLabel label, PerformanceTreeNode nodeData, boolean selected) {
+        label.setIcon(null);
+        label.setFont(FontsUtil.getDefaultFont(nodeData.enabled ? Font.PLAIN : Font.ITALIC));
+        if (!nodeData.enabled && !selected) {
+            label.setForeground(ModernColors.getTextHint());
+        }
+        label.setText(buildRequestText(nodeData.httpRequestItem, nodeData.name, !nodeData.enabled));
+    }
+
+    private String buildRequestText(HttpRequestItem item, String name, boolean disabled) {
+        String method = item == null ? "" : item.getMethod();
+        String methodColor = RequestMethodUiMetadata.methodColorHex(method);
         RequestItemProtocolEnum protocol = item != null && item.getProtocol() != null
                 ? item.getProtocol()
                 : RequestItemProtocolEnum.HTTP;
         if (protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpRequestProtocol.isSse(item))) {
-            return new FlatSVGIcon("icons/sse.svg", SIZE, SIZE);
+            method = "SSE";
+            methodColor = ModernColors.toHtmlColor(ModernColors.getSecondaryLight());
+        } else if (protocol.isWebSocketProtocol()) {
+            method = "WS";
+            methodColor = ModernColors.toHtmlColor(ModernColors.getAccent());
+        } else {
+            method = abbreviateMethod(method);
         }
-        if (protocol.isWebSocketProtocol()) {
-            return new FlatSVGIcon("icons/websocket.svg", SIZE, SIZE);
+        return buildStyledText(method, methodColor, name, disabled);
+    }
+
+    private String abbreviateMethod(String method) {
+        if (method == null) return "";
+        return switch (method.toUpperCase()) {
+            case "DELETE" -> "DEL";
+            case "OPTIONS" -> "OPT";
+            case "PATCH" -> "PAT";
+            case "TRACE" -> "TRC";
+            default -> method;
+        };
+    }
+
+    private static String buildStyledText(String method, String methodColor, String name, boolean disabled) {
+        String safeMethod = method == null ? "" : escapeHtml(method);
+        String safeName = name == null ? "" : escapeHtml(name);
+        String color = methodColor == null ? ModernColors.toHtmlColor(ModernColors.getTextPrimary()) : methodColor;
+        int baseFontSize = SettingManager.getUiFontSize();
+        int methodFontSize = Math.max(7, baseFontSize - 5);
+        int nameFontSize = Math.max(8, baseFontSize - 4);
+        String nameHtml = disabled ? "<strike>" + safeName + "</strike>" : safeName;
+        return "<html><nobr>"
+                + "<span style='color:" + color + ";font-size:" + methodFontSize + "px'>" + safeMethod + "</span> "
+                + "<span style='font-size:" + nameFontSize + "px'>" + nameHtml + "</span>"
+                + "</nobr></html>";
+    }
+
+    private static String escapeHtml(String s) {
+        if (s == null) return null;
+        StringBuilder out = new StringBuilder(Math.max(16, s.length()));
+        for (char c : s.toCharArray()) {
+            switch (c) {
+                case '<' -> out.append("&lt;");
+                case '>' -> out.append("&gt;");
+                case '&' -> out.append("&amp;");
+                case '"' -> out.append("&quot;");
+                case '\'' -> out.append("&#39;");
+                default -> out.append(c);
+            }
         }
-        return new FlatSVGIcon("icons/http.svg", SIZE, SIZE);
+        return out.toString();
     }
 }

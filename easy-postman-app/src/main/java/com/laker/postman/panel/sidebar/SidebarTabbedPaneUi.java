@@ -159,12 +159,11 @@ final class SidebarTabbedPaneUi extends BasicTabbedPaneUI {
             return collapsedTabStateBounds(x, y, w, h);
         }
 
-        int insetX = SidebarTabMetrics.EXPANDED_SELECTED_BACKGROUND_INSET_HORIZONTAL;
         int insetY = SidebarTabMetrics.EXPANDED_SELECTED_BACKGROUND_INSET_VERTICAL;
         return new Rectangle(
-                x + insetX,
+                SidebarTabMetrics.expandedSelectedBackgroundX(x),
                 y + insetY,
-                Math.max(0, w - insetX * 2),
+                SidebarTabMetrics.expandedSelectedBackgroundWidth(w),
                 Math.max(0, h - insetY * 2)
         );
     }

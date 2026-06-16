@@ -16,8 +16,30 @@ public class SidebarTabMetricsTest {
 
     @Test
     public void shouldCalculateCollapsedTabWidthFromIconWidth() {
-        assertEquals(SidebarTabMetrics.collapsedWidth(10), 44);
-        assertEquals(SidebarTabMetrics.collapsedWidth(24), 46);
+        assertEquals(SidebarTabMetrics.collapsedWidth(10), 36);
+        assertEquals(SidebarTabMetrics.collapsedWidth(24), 36);
+        assertEquals(SidebarTabMetrics.collapsedWidth(32), 44);
+    }
+
+    @Test
+    public void expandedSelectedBackgroundShouldAccountForContentGutter() {
+        int tabWidth = SidebarTabMetrics.expandedWidth(20);
+
+        assertEquals(tabWidth, 60);
+        assertEquals(SidebarTabMetrics.EXPANDED_SELECTED_BACKGROUND_INSET_LEFT, 10);
+        assertEquals(SidebarTabMetrics.EXPANDED_SELECTED_BACKGROUND_INSET_RIGHT, 2);
+        assertEquals(SidebarTabMetrics.expandedSelectedBackgroundX(0), 10);
+        assertEquals(SidebarTabMetrics.expandedSelectedBackgroundWidth(tabWidth), 48);
+        assertEquals(SidebarTabMetrics.expandedContentPaddingLeft(), 16);
+        assertEquals(SidebarTabMetrics.expandedContentPaddingRight(), 8);
+        assertEquals(
+                SidebarTabMetrics.expandedContentPaddingLeft()
+                        + (tabWidth
+                        - SidebarTabMetrics.expandedContentPaddingLeft()
+                        - SidebarTabMetrics.expandedContentPaddingRight()) / 2,
+                SidebarTabMetrics.expandedSelectedBackgroundX(0)
+                        + SidebarTabMetrics.expandedSelectedBackgroundWidth(tabWidth) / 2
+        );
     }
 
     @Test
@@ -38,15 +60,33 @@ public class SidebarTabMetricsTest {
     @Test
     public void collapsedSelectedBackgroundShouldBeGeometricallyCenteredInCollapsedRail() {
         assertEquals(SidebarTabMetrics.TAB_AREA_INSET_TOP, 4);
-        assertEquals(SidebarTabMetrics.COLLAPSED_VISUAL_CENTER_OFFSET_X, 0);
-        assertEquals(SidebarTabMetrics.collapsedSelectedBackgroundX(4, 44, 32), 10);
-        assertEquals(SidebarTabMetrics.collapsedSelectedBackgroundX(4, 32, 32), 4);
+        assertEquals(SidebarTabMetrics.TAB_AREA_INSET_LEFT, 2);
+        assertEquals(SidebarTabMetrics.TAB_AREA_INSET_RIGHT, 2);
+        assertEquals(SidebarTabMetrics.COLLAPSED_VISUAL_CENTER_OFFSET_X, 2);
+        assertEquals(SidebarTabMetrics.collapsedSelectedBackgroundX(0, 36, 32), 4);
+        assertEquals(SidebarTabMetrics.collapsedSelectedBackgroundX(0, 32, 32), 0);
     }
 
     @Test
-    public void collapsedIconPaddingShouldStaySymmetricAroundSelectedBackground() {
-        assertEquals(SidebarTabMetrics.collapsedIconPaddingLeft(), 11);
-        assertEquals(SidebarTabMetrics.collapsedIconPaddingRight(), 11);
+    public void collapsedIconPaddingShouldFollowVisualCenterOffset() {
+        assertEquals(SidebarTabMetrics.collapsedIconPaddingLeft(), 8);
+        assertEquals(SidebarTabMetrics.collapsedIconPaddingRight(), 4);
+    }
+
+    @Test
+    public void collapsedSelectedBackgroundShouldAccountForRailInsetWhenTabStartsAtEdge() {
+        int railWidth = SidebarTabMetrics.TAB_AREA_INSET_LEFT
+                + SidebarTabMetrics.collapsedWidth(20)
+                + SidebarTabMetrics.TAB_AREA_INSET_RIGHT;
+        int backgroundX = SidebarTabMetrics.collapsedSelectedBackgroundX(
+                0,
+                SidebarTabMetrics.collapsedWidth(20),
+                SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH
+        );
+
+        assertEquals(railWidth, 40);
+        assertEquals(backgroundX, 4);
+        assertEquals(railWidth - backgroundX - SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH, 4);
     }
 
     @Test

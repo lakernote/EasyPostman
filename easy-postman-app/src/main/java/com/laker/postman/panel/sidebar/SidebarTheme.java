@@ -12,11 +12,11 @@ class SidebarTheme {
     }
 
     Color hoverTabBackground() {
-        return ModernColors.getHoverBackgroundColor();
+        return ModernColors.getTabHoverBackgroundColor();
     }
 
     Color selectedExpandedTabBackground() {
-        return ModernColors.primaryWithAlpha(ModernColors.isDarkTheme() ? 36 : 22);
+        return ModernColors.getSelectionBackgroundColor();
     }
 
     Color selectedCollapsedTabBackground() {
@@ -24,7 +24,7 @@ class SidebarTheme {
     }
 
     Color selectedTabTitleForeground() {
-        return ModernColors.getPrimary();
+        return ModernColors.getTextPrimary();
     }
 
     Color inactiveTabTitleForeground() {

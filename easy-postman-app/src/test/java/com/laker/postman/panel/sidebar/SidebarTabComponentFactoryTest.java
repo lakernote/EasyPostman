@@ -19,6 +19,34 @@ import static org.testng.Assert.assertTrue;
 public class SidebarTabComponentFactoryTest {
 
     @Test
+    public void expandedTabContentShouldCenterInsideSelectedBackground() {
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.addTab("Collections", new JPanel());
+        tabbedPane.setSelectedIndex(0);
+        SidebarTabComponentFactory factory = new SidebarTabComponentFactory(
+                tabbedPane,
+                () -> true,
+                ignored -> 0,
+                () -> SidebarTabMetrics.expandedWidth(20),
+                () -> SidebarTabMetrics.collapsedWidth(20),
+                () -> new Font(Font.SANS_SERIF, Font.PLAIN, 12),
+                () -> new Font(Font.SANS_SERIF, Font.BOLD, 12)
+        );
+
+        Component component = factory.create(
+                SidebarTab.COLLECTIONS,
+                "Collections",
+                SidebarTab.COLLECTIONS.getIcon()
+        );
+
+        assertTrue(component instanceof JPanel);
+        JPanel panel = (JPanel) component;
+        Insets insets = panel.getBorder().getBorderInsets(panel);
+        assertEquals(insets.left, SidebarTabMetrics.expandedContentPaddingLeft());
+        assertEquals(insets.right, SidebarTabMetrics.expandedContentPaddingRight());
+    }
+
+    @Test
     public void collapsedTabShouldCenterIconWithBorderLayout() {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("Collections", new JPanel());

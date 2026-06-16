@@ -106,9 +106,9 @@ final class SidebarTabComponentFactory {
         panel.add(Box.createVerticalStrut(SidebarTabMetrics.EXPANDED_TAB_SPACING_BOTTOM));
         panel.setBorder(BorderFactory.createEmptyBorder(
                 SidebarTabMetrics.EXPANDED_TAB_PADDING_VERTICAL,
-                SidebarTabMetrics.EXPANDED_TAB_PADDING_HORIZONTAL,
+                SidebarTabMetrics.expandedContentPaddingLeft(),
                 SidebarTabMetrics.EXPANDED_TAB_PADDING_VERTICAL,
-                SidebarTabMetrics.EXPANDED_TAB_PADDING_HORIZONTAL
+                SidebarTabMetrics.expandedContentPaddingRight()
         ));
     }
 

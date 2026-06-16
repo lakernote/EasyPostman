@@ -43,7 +43,9 @@ public class TimelinePanel extends JPanel {
     private static final int INFO_TEXT_BOTTOM_PAD = 12;
     private static final int INFO_TEXT_LEFT_PAD = 18;
     private static final int INFO_COLUMN_GAP = 32;
-    private static final int INFO_LABEL_WIDTH = 88;
+    private static final int INFO_LABEL_MIN_WIDTH = 54;
+    static final int INFO_LABEL_VALUE_GAP = 8;
+    static final int INFO_VALUE_MIN_WIDTH = 120;
 
     // 区域间距
     private static final int AREA_GAP = 10;
@@ -400,10 +402,24 @@ public class TimelinePanel extends JPanel {
 
     private void drawConnectionInfo(Graphics2D g2, int sectionX, int sectionY, int sectionWidth) {
         List<InfoItem> items = buildConnectionInfoItems();
+        String warning = httpEventInfo == null ? null : httpEventInfo.getSslCertWarning();
+        boolean hasWarning = warning != null && !warning.isBlank();
+        List<String> infoLabels = new ArrayList<>();
+        for (InfoItem item : items) {
+            infoLabels.add(item.label);
+        }
+        if (hasWarning) {
+            infoLabels.add(I18nUtil.getMessage(MessageKeys.WATERFALL_CERT_WARNING));
+        }
         int contentX = sectionX + INFO_TEXT_LEFT_PAD;
         int contentY = sectionY + INFO_TEXT_TOP_PAD;
         int usableWidth = Math.max(0, sectionWidth - 2 * INFO_TEXT_LEFT_PAD);
         int columnWidth = Math.max(120, (usableWidth - INFO_COLUMN_GAP) / 2);
+        int labelWidth = resolveInfoLabelWidth(
+                g2.getFontMetrics(FontsUtil.getDefaultFont(Font.BOLD)),
+                infoLabels,
+                columnWidth
+        );
         int rowHeight = INFO_TEXT_LINE_HEIGHT + INFO_TEXT_EXTRA_GAP;
         int baselineOffset = g2.getFontMetrics(FontsUtil.getDefaultFont(Font.PLAIN)).getAscent();
 
@@ -418,15 +434,14 @@ public class TimelinePanel extends JPanel {
             int row = i / 2;
             int x = contentX + column * (columnWidth + INFO_COLUMN_GAP);
             int baseline = contentY + row * rowHeight + baselineOffset;
-            drawInfoItem(g2, item, x, baseline, columnWidth);
+            drawInfoItem(g2, item, x, baseline, columnWidth, labelWidth);
         }
 
-        String warning = httpEventInfo == null ? null : httpEventInfo.getSslCertWarning();
-        if (warning != null && !warning.isBlank()) {
+        if (hasWarning) {
             int row = (items.size() + 1) / 2;
             int baseline = contentY + row * rowHeight + baselineOffset;
             InfoItem warningItem = new InfoItem(I18nUtil.getMessage(MessageKeys.WATERFALL_CERT_WARNING), warning, true);
-            drawInfoItem(g2, warningItem, contentX, baseline, usableWidth);
+            drawInfoItem(g2, warningItem, contentX, baseline, usableWidth, labelWidth);
         }
     }
 
@@ -463,20 +478,33 @@ public class TimelinePanel extends JPanel {
         return Math.max(0, millis) + "ms";
     }
 
-    private void drawInfoItem(Graphics2D g2, InfoItem item, int x, int baseline, int width) {
-        int labelWidth = Math.min(INFO_LABEL_WIDTH, Math.max(54, width / 3));
-        int valueX = x + labelWidth;
-        int valueWidth = Math.max(12, width - labelWidth);
+    private void drawInfoItem(Graphics2D g2, InfoItem item, int x, int baseline, int width, int labelWidth) {
+        int resolvedLabelWidth = Math.min(labelWidth, Math.max(INFO_LABEL_MIN_WIDTH, width - 12));
+        int valueX = x + resolvedLabelWidth;
+        int valueWidth = Math.max(12, width - resolvedLabelWidth);
         Color labelColor = item.warning ? TimelineTheme.certificateWarning() : TimelineTheme.labelText();
         Color valueColor = item.warning ? TimelineTheme.certificateWarning() : TimelineTheme.infoText();
 
         g2.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         g2.setColor(labelColor);
-        g2.drawString(ellipsis(g2, item.label, labelWidth - 6), x, baseline);
+        g2.drawString(ellipsis(g2, item.label, resolvedLabelWidth - INFO_LABEL_VALUE_GAP), x, baseline);
 
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         g2.setColor(valueColor);
         g2.drawString(ellipsis(g2, item.value, valueWidth), valueX, baseline);
+    }
+
+    // 根据当前语言的 key 宽度动态分配 label 区，避免英文信息项被固定宽度截断。
+    static int resolveInfoLabelWidth(FontMetrics metrics, List<String> labels, int itemWidth) {
+        int preferredWidth = INFO_LABEL_MIN_WIDTH;
+        if (metrics != null && labels != null) {
+            for (String label : labels) {
+                String text = label == null || label.isBlank() ? "-" : label;
+                preferredWidth = Math.max(preferredWidth, metrics.stringWidth(text) + INFO_LABEL_VALUE_GAP);
+            }
+        }
+        int maxWidthWithValueSpace = Math.max(INFO_LABEL_MIN_WIDTH, itemWidth - INFO_VALUE_MIN_WIDTH);
+        return Math.min(preferredWidth, maxWidthWithValueSpace);
     }
 
     private List<InfoItem> buildConnectionInfoItems() {

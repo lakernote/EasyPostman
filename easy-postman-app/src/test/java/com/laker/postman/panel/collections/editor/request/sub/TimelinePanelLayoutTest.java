@@ -2,10 +2,15 @@ package com.laker.postman.panel.collections.editor.request.sub;
 
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.test.AbstractSwingUiTest;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 
 import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
 import java.util.List;
@@ -81,6 +86,39 @@ public class TimelinePanelLayoutTest extends AbstractSwingUiTest {
                 "Info tooltip should expose the full remote address");
         assertTrue(tooltip.contains("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"),
                 "Info tooltip should expose the full cipher name");
+    }
+
+    @Test
+    public void englishConnectionInfoLabelsShouldFitNormalSummaryColumns() {
+        boolean originalChinese = I18nUtil.isChinese();
+        try {
+            I18nUtil.setLocale("en");
+            TimelinePanel panel = new TimelinePanel(List.of(
+                    new TimelinePanel.Stage("DNS", 0, 148, "DNS")
+            ), new HttpEventInfo());
+            FontMetrics metrics = panel.getFontMetrics(FontsUtil.getDefaultFont(Font.BOLD));
+            List<String> labels = List.of(
+                    I18nUtil.getMessage(MessageKeys.WATERFALL_HTTP_VERSION),
+                    I18nUtil.getMessage(MessageKeys.WATERFALL_LOCAL_ADDRESS),
+                    I18nUtil.getMessage(MessageKeys.WATERFALL_REMOTE_ADDRESS),
+                    I18nUtil.getMessage(MessageKeys.WATERFALL_TLS_PROTOCOL),
+                    I18nUtil.getMessage(MessageKeys.WATERFALL_CIPHER_NAME),
+                    I18nUtil.getMessage(MessageKeys.WATERFALL_CERTIFICATE_CN),
+                    I18nUtil.getMessage(MessageKeys.WATERFALL_ISSUER_CN),
+                    I18nUtil.getMessage(MessageKeys.WATERFALL_VALID_UNTIL)
+            );
+
+            int labelWidth = TimelinePanel.resolveInfoLabelWidth(metrics, labels, 560);
+
+            for (String label : labels) {
+                assertTrue(metrics.stringWidth(label) <= labelWidth - TimelinePanel.INFO_LABEL_VALUE_GAP,
+                        label + " should not be ellipsized in the English timeline summary");
+            }
+            assertTrue(560 - labelWidth >= TimelinePanel.INFO_VALUE_MIN_WIDTH,
+                    "Timeline summary values should keep enough space after dynamic label width");
+        } finally {
+            I18nUtil.setLocale(originalChinese ? "zh" : "en");
+        }
     }
 
     private static void moveMouse(TimelinePanel panel, int x, int y) {

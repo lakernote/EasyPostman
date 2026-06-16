@@ -1,6 +1,6 @@
 ---
 name: swing-flatlaf-miglayout-principles
-description: Use when modifying EasyPostman Swing forms, tool-window panels, or FlatLaf/MigLayout layouts, especially when refactors introduce clipped focus rings, truncated text, clipped status badges, dense spacing, border conflicts, rounded-card corner leaks, or inconsistent form structure.
+description: Use when modifying EasyPostman Swing forms, tool-window panels, localized English/Chinese text layouts, or FlatLaf/MigLayout layouts, especially when refactors introduce clipped focus rings, truncated text, clipped status badges, dense spacing, border conflicts, rounded-card corner leaks, or inconsistent form structure.
 ---
 
 # Swing FlatLaf MigLayout Principles
@@ -71,6 +71,17 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 - If a status must be semantically long, add a short list-specific i18n key for the badge and keep the full text in the details panel or tooltip.
 - Do not fix repeated clipping by reducing font sizes. Use `FontsUtil` only to preserve hierarchy after the layout constraints are correct.
 - Recheck both installed and marketplace renderers when they share the same list pattern; otherwise the bug usually comes back in the sibling view.
+
+## Localized text width
+
+- Treat every user-visible string as variable width across Chinese and English. Never tune a container only against the current screenshot locale.
+- For compact UI surfaces such as toolbar buttons, tabs, sidebars, badges, table headers, and custom-painted summaries, decide which text is primary and which text may truncate before changing layout.
+- Use separate short i18n keys for compact commands or tabs when the full label is too long. Keep the full phrase in tooltips, detail panels, or accessible text instead of forcing one key to serve every surface.
+- Prefer layout capacity over font-size reduction: adjust `growx`, `wmin 0`, column constraints, dynamic preferred sizes, or custom `FontMetrics` measurement before considering typography.
+- For custom painting, measure translated labels with the actual `FontsUtil` font and allocate label/value areas dynamically. Avoid fixed label widths chosen from one locale.
+- Do not ellipsize critical labels or command text first. Ellipsize secondary values, metadata, long hostnames, certificate names, and paths; provide a tooltip or detail view with the full value.
+- Buttons with localized text should use familiar icons plus concise labels when space is tight. Icon-only buttons need tooltips and accessible names.
+- When fixing localized truncation, add a test at the source of the layout rule: assert the longest English and Chinese labels fit or that truncation has a full-value tooltip. Prefer width-budget tests over screenshot assertions.
 
 ## Rounded tool-window card chrome
 
@@ -163,6 +174,7 @@ Preferred order when adjusting theme:
 - Adding more nested panels than the visual structure actually needs
 - Combining long title text and long status text in a fixed-width list row with both components preserving preferred width
 - Adding absolute point-size font tweaks to make one English string fit
+- Reusing one long i18n key for compact tabs, buttons, toolbars, and full detail labels
 
 ## Verification
 
@@ -173,4 +185,5 @@ After the fix, verify all of the following:
 3. Confirm the highlight ring is visible on top, bottom, left, and right.
 4. Confirm spacing still looks intentional when the control is unfocused.
 5. For truncation fixes, verify the longest English and Chinese labels/statuses in the affected fixed-width container.
-6. Rebuild with `mvn -q -DskipTests compile`.
+6. For buttons, tabs, and custom-painted text, verify any truncated value has a tooltip or detail path with the full text.
+7. Rebuild with `mvn -q -DskipTests compile`.

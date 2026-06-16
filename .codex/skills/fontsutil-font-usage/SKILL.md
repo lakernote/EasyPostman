@@ -26,6 +26,7 @@ Use this skill when changing Swing font sizes in this repo. The goal is to keep 
    - section/list titles: `+1`
    - dialog/detail titles: `+1` or `+2`
 5. If only weight changes and size should remain exactly as-is, `font.deriveFont(Font.BOLD)` is acceptable.
+6. Do not solve localized English/Chinese text overflow by shrinking fonts first. Fix layout constraints, short i18n keys, wrapping, dynamic measurement, or tooltip-backed truncation before changing typography.
 
 ## Repo-specific guidance
 
@@ -40,6 +41,7 @@ Use this skill when changing Swing font sizes in this repo. The goal is to keep 
 - `label.getFont().deriveFont(Font.BOLD, 18f)` for regular dialog headers
 - Mixing `FontsUtil` and hard-coded point sizes in the same panel without a reason
 - Fixing a "font too big" complaint by picking another absolute size
+- Reducing the UI font offset because an English button, tab, or label does not fit a Chinese-sized container
 
 ## Verification
 

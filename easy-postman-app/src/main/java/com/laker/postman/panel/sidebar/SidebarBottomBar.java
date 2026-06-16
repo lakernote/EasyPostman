@@ -19,6 +19,8 @@ final class SidebarBottomBar {
     private static final String TOOLTIP_COLLAPSE_SIDEBAR = "Collapse sidebar";
     private static final String TOOLTIP_EXPAND_SIDEBAR = "Expand sidebar";
     private static final int BOTTOM_BAR_ICON_SIZE = 19;
+    private static final int BOTTOM_BAR_TOP_PADDING = 2;
+    private static final int BOTTOM_BAR_BOTTOM_PADDING = 6;
 
     private final JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
     private final JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
@@ -115,7 +117,13 @@ final class SidebarBottomBar {
         JLabel label = new JLabel(icon);
         setActionLabelText(label, tooltipText);
         label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        label.setBorder(BorderFactory.createEmptyBorder(4, leftPadding, 4, rightPadding));
+        // 底栏紧贴窗口边缘，底部留白略大于顶部，让 SVG 图标视觉上离底边更舒服。
+        label.setBorder(BorderFactory.createEmptyBorder(
+                BOTTOM_BAR_TOP_PADDING,
+                leftPadding,
+                BOTTOM_BAR_BOTTOM_PADDING,
+                rightPadding
+        ));
         label.setFocusable(true);
         label.setEnabled(true);
         label.addMouseListener(new MouseAdapter() {
@@ -135,7 +143,12 @@ final class SidebarBottomBar {
     private JLabel createVersionLabel() {
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        versionLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 8));
+        versionLabel.setBorder(BorderFactory.createEmptyBorder(
+                BOTTOM_BAR_TOP_PADDING,
+                4,
+                BOTTOM_BAR_BOTTOM_PADDING,
+                8
+        ));
         return versionLabel;
     }
 

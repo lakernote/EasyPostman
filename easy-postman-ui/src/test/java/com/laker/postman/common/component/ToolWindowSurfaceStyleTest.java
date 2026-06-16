@@ -29,6 +29,8 @@ import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.event.HierarchyEvent;
+import java.awt.event.HierarchyListener;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -169,6 +171,31 @@ public class ToolWindowSurfaceStyleTest {
         }
 
         assertEquals(panel.getBackground(), nextSurface);
+    }
+
+    @Test
+    public void shouldRemoveThemeRefreshListenerWhenComponentIsNoLongerDisplayable() throws Exception {
+        JPanel panel = new JPanel();
+        int initialListeners = UIManager.getPropertyChangeListeners().length;
+
+        ToolWindowSurfaceStyle.applyCard(panel);
+
+        assertEquals(UIManager.getPropertyChangeListeners().length, initialListeners + 1);
+
+        HierarchyEvent displayabilityChanged = new HierarchyEvent(
+                panel,
+                HierarchyEvent.HIERARCHY_CHANGED,
+                panel,
+                null,
+                HierarchyEvent.DISPLAYABILITY_CHANGED
+        );
+        for (HierarchyListener listener : panel.getHierarchyListeners()) {
+            listener.hierarchyChanged(displayabilityChanged);
+        }
+        SwingUtilities.invokeAndWait(() -> {
+        });
+
+        assertEquals(UIManager.getPropertyChangeListeners().length, initialListeners);
     }
 
     @Test

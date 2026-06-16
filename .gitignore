@@ -22,3 +22,5 @@ logs/
 temp/
 /.m2/
 /.superpowers/
+/.playwright-mcp/
+/docs/superpowers/

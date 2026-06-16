@@ -212,8 +212,22 @@ class RequestViewFactory {
 
                 @Override
                 public void paint(Graphics g) {
-                    g.setColor(ModernColors.getBackgroundColor());
-                    g.fillRect(0, 0, getWidth(), getHeight());
+                    Graphics2D g2 = (Graphics2D) g.create();
+                    try {
+                        g2.setColor(ModernColors.getCardBackgroundColor());
+                        g2.fillRect(0, 0, getWidth(), getHeight());
+                        g2.setColor(ModernColors.getTabSeparatorColor());
+                        JSplitPane splitPane = EditorSplitPaneUi.this.getSplitPane();
+                        if (splitPane != null && splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT) {
+                            int x = Math.max(0, getWidth() / 2);
+                            g2.drawLine(x, 0, x, getHeight());
+                        } else {
+                            int y = Math.max(0, getHeight() / 2);
+                            g2.drawLine(0, y, getWidth(), y);
+                        }
+                    } finally {
+                        g2.dispose();
+                    }
                 }
             };
         }

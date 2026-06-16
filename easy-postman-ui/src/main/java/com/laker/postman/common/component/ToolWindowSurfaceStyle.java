@@ -100,6 +100,11 @@ public final class ToolWindowSurfaceStyle {
         installThemeRefresh(component, ToolWindowSurfaceStyle::setOpaqueCard);
     }
 
+    public static void applyToolWindowToolbarSeparator(JComponent component, int top, int left, int bottom, int right) {
+        setToolWindowToolbarSeparator(component, top, left, bottom, right);
+        installThemeRefresh(component, target -> setToolWindowToolbarSeparator(target, top, left, bottom, right));
+    }
+
     public static void applySectionCard(JComponent component) {
         setSectionCard(component);
         installThemeRefresh(component, ToolWindowSurfaceStyle::setSectionCard);
@@ -456,6 +461,14 @@ public final class ToolWindowSurfaceStyle {
         component.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, ModernColors.getTabSeparatorColor()),
                 BorderFactory.createEmptyBorder(10, 16, 10, 16)
+        ));
+    }
+
+    private static void setToolWindowToolbarSeparator(JComponent component, int top, int left, int bottom, int right) {
+        setCard(component, true);
+        component.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getTabSeparatorColor()),
+                BorderFactory.createEmptyBorder(top, left, bottom, right)
         ));
     }
 

@@ -5,56 +5,81 @@ import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 
 import javax.swing.BorderFactory;
+import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 
 /**
- * Manages the sidebar console area and its collapsed bottom bar state.
+ * Manages the sidebar console tool window and keeps the bottom toolbar outside the console split.
  */
 final class SidebarConsoleArea {
-    static final int DEFAULT_EXPANDED_CONSOLE_HEIGHT = 300;
-    static final int EXPANDED_CONSOLE_DIVIDER_SIZE = 3;
-    private static final int MIN_EXPANDED_CONSOLE_HEIGHT = 160;
+    static final int DEFAULT_CONSOLE_HEIGHT = 300;
+    static final int CONSOLE_DIVIDER_SIZE = AppToolWindowChrome.STACKED_DIVIDER_SIZE;
+    private static final int MIN_CONSOLE_HEIGHT = 160;
 
     private final JPanel owner;
     private final SidebarBottomBar bottomBar;
     private final JPanel consoleContainer = new JPanel(new BorderLayout());
-    private final ConsolePanel consolePanel;
+    private final JPanel bottomBarContainer = new JPanel(new BorderLayout());
+    private final JComponent consolePanel;
     private JTabbedPane tabbedPane;
-    private boolean expanded;
+    private SidebarTabContentHost consoleHost;
+    private JSplitPane consoleSplitPane;
+    private boolean consoleVisible;
 
     SidebarConsoleArea(JPanel owner, SidebarBottomBar bottomBar) {
+        this(owner, bottomBar, UiSingletonFactory.getInstance(ConsolePanel.class));
+    }
+
+    SidebarConsoleArea(JPanel owner, SidebarBottomBar bottomBar, JComponent consolePanel) {
         this.owner = owner;
         this.bottomBar = bottomBar;
-        this.consolePanel = UiSingletonFactory.getInstance(ConsolePanel.class);
-        this.consolePanel.setCloseAction(e -> collapse());
+        this.consolePanel = consolePanel;
+        if (consolePanel instanceof ConsolePanel panel) {
+            panel.setHideAction(e -> hideConsole());
+        }
         consoleContainer.setOpaque(false);
-        ToolWindowSurfaceStyle.applyBackground(consoleContainer);
+        bottomBarContainer.setOpaque(false);
+        ToolWindowSurfaceStyle.applyBackground(bottomBarContainer);
         refreshTheme();
     }
 
     void setTabbedPane(JTabbedPane tabbedPane) {
+        restoreContentHost();
         this.tabbedPane = tabbedPane;
         render();
     }
 
-    void expand() {
-        expanded = true;
+    void showConsole() {
+        consoleVisible = true;
+        render();
+    }
+
+    void toggleConsole() {
+        consoleVisible = !consoleVisible;
         render();
     }
 
     void refreshTheme() {
         consoleContainer.setBorder(BorderFactory.createEmptyBorder());
+        bottomBarContainer.setBorder(BorderFactory.createEmptyBorder());
     }
 
-    private void collapse() {
-        expanded = false;
+    void handleSelectedTabChanged() {
+        if (consoleVisible) {
+            render();
+        }
+    }
+
+    private void hideConsole() {
+        consoleVisible = false;
         render();
     }
 
@@ -63,87 +88,141 @@ final class SidebarConsoleArea {
             return;
         }
         owner.removeAll();
-        if (expanded) {
-            showExpandedConsole();
+        if (consoleVisible) {
+            renderVisibleConsole();
         } else {
-            showCollapsedBottomBar();
+            renderHiddenConsole();
         }
         owner.revalidate();
         owner.repaint();
     }
 
-    private void showExpandedConsole() {
+    private void renderVisibleConsole() {
+        owner.add(tabbedPane, BorderLayout.CENTER);
+        renderBottomBar();
+        owner.add(bottomBarContainer, BorderLayout.SOUTH);
+        int selectedIndex = tabbedPane.getSelectedIndex();
+        if (selectedIndex < 0) {
+            return;
+        }
+        SidebarTabContentHost selectedHost = SidebarTabContentHost.from(tabbedPane.getComponentAt(selectedIndex));
+        if (selectedHost == null) {
+            return;
+        }
+        if (consoleHost == selectedHost && consoleSplitPane != null) {
+            return;
+        }
+        restoreContentHost();
+
+        Component selectedContent = selectedHost.content();
+        JComponent resizableContent = createResizableContentWrapper(selectedContent);
         consoleContainer.removeAll();
         consoleContainer.add(consolePanel, BorderLayout.CENTER);
-        consoleContainer.setPreferredSize(new Dimension(0, DEFAULT_EXPANDED_CONSOLE_HEIGHT));
+        consoleContainer.setPreferredSize(new Dimension(0, DEFAULT_CONSOLE_HEIGHT));
 
-        JSplitPane splitPane = createExpandedConsoleSplitPane(tabbedPane, consoleContainer);
+        JSplitPane splitPane = createConsoleSplitPane(resizableContent, consoleContainer);
         splitPane.setResizeWeight(1.0);
         splitPane.setMinimumSize(new Dimension(0, 10));
-        tabbedPane.setMinimumSize(new Dimension(0, 30));
         consoleContainer.setMinimumSize(new Dimension(0, 30));
 
-        owner.add(splitPane, BorderLayout.CENTER);
-        installInitialExpandedConsoleDivider(splitPane);
+        consoleHost = selectedHost;
+        consoleSplitPane = splitPane;
+        selectedHost.showConsoleSplit(splitPane);
+        installInitialConsoleDivider(splitPane);
     }
 
-    static JSplitPane createExpandedConsoleSplitPane(JTabbedPane tabbedPane, JPanel consoleContainer) {
-        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(tabbedPane, consoleContainer, 0);
-        splitPane.setDividerSize(EXPANDED_CONSOLE_DIVIDER_SIZE);
-        return splitPane;
+    private static JComponent createResizableContentWrapper(Component content) {
+        JPanel wrapper = new JPanel(new BorderLayout());
+        wrapper.setOpaque(false);
+        wrapper.setMinimumSize(new Dimension(0, 30));
+        if (content != null) {
+            wrapper.add(content, BorderLayout.CENTER);
+            wrapper.setSize(content.getSize());
+        }
+        return wrapper;
     }
 
-    private void showCollapsedBottomBar() {
+    static JSplitPane createConsoleSplitPane(Component content, JPanel consoleContainer) {
+        return AppToolWindowChrome.createVerticalStackedCardSplitPane(
+                content,
+                consoleContainer,
+                initialConsoleDividerLocation(content)
+        );
+    }
+
+    private static int initialConsoleDividerLocation(Component content) {
+        int contentHeight = content != null ? content.getHeight() : 0;
+        if (contentHeight <= MIN_CONSOLE_HEIGHT + CONSOLE_DIVIDER_SIZE) {
+            return Integer.MAX_VALUE / 4;
+        }
+        return defaultConsoleDividerLocation(contentHeight, CONSOLE_DIVIDER_SIZE);
+    }
+
+    private void renderHiddenConsole() {
+        restoreContentHost();
         consoleContainer.removeAll();
         consoleContainer.setPreferredSize(null);
         consoleContainer.setMinimumSize(null);
-        consoleContainer.add(bottomBar.leftPanel(), BorderLayout.WEST);
-        consoleContainer.add(bottomBar.rightPanel(), BorderLayout.EAST);
+        renderBottomBar();
 
         owner.add(tabbedPane, BorderLayout.CENTER);
-        owner.add(consoleContainer, BorderLayout.SOUTH);
+        owner.add(bottomBarContainer, BorderLayout.SOUTH);
     }
 
-    private void installInitialExpandedConsoleDivider(JSplitPane splitPane) {
+    private void renderBottomBar() {
+        bottomBarContainer.removeAll();
+        bottomBarContainer.add(bottomBar.leftPanel(), BorderLayout.WEST);
+        bottomBarContainer.add(bottomBar.rightPanel(), BorderLayout.EAST);
+    }
+
+    void restoreContentHost() {
+        if (consoleHost != null) {
+            consoleHost.showContentOnly();
+        }
+        consoleHost = null;
+        consoleSplitPane = null;
+    }
+
+    private void installInitialConsoleDivider(JSplitPane splitPane) {
         ComponentAdapter listener = new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
-                if (applyInitialExpandedConsoleDivider(splitPane)) {
+                if (applyInitialConsoleDivider(splitPane)) {
                     splitPane.removeComponentListener(this);
                 }
             }
         };
         splitPane.addComponentListener(listener);
         SwingUtilities.invokeLater(() -> {
-            if (applyInitialExpandedConsoleDivider(splitPane)) {
+            if (applyInitialConsoleDivider(splitPane)) {
                 splitPane.removeComponentListener(listener);
             }
         });
     }
 
-    private boolean applyInitialExpandedConsoleDivider(JSplitPane splitPane) {
+    private boolean applyInitialConsoleDivider(JSplitPane splitPane) {
         int splitHeight = splitPane.getHeight();
-        int readyHeight = MIN_EXPANDED_CONSOLE_HEIGHT + Math.max(0, splitPane.getDividerSize());
-        if (splitHeight <= readyHeight || !expanded || splitPane.getParent() == null) {
+        int readyHeight = MIN_CONSOLE_HEIGHT + Math.max(0, splitPane.getDividerSize());
+        if (splitHeight <= readyHeight || !consoleVisible || splitPane.getParent() == null) {
             return false;
         }
-        splitPane.setDividerLocation(defaultExpandedConsoleDividerLocation(
+        splitPane.setDividerLocation(defaultConsoleDividerLocation(
                 splitHeight,
                 splitPane.getDividerSize()
         ));
         return true;
     }
 
-    static int defaultExpandedConsoleDividerLocation(int splitHeight, int dividerSize) {
-        int consoleHeight = defaultExpandedConsoleHeight(splitHeight);
+    static int defaultConsoleDividerLocation(int splitHeight, int dividerSize) {
+        int consoleHeight = defaultConsoleHeight(splitHeight);
         return Math.max(0, splitHeight - consoleHeight - Math.max(0, dividerSize));
     }
 
-    private static int defaultExpandedConsoleHeight(int splitHeight) {
+    private static int defaultConsoleHeight(int splitHeight) {
         if (splitHeight <= 0) {
-            return DEFAULT_EXPANDED_CONSOLE_HEIGHT;
+            return DEFAULT_CONSOLE_HEIGHT;
         }
-        int maxReasonableHeight = Math.max(MIN_EXPANDED_CONSOLE_HEIGHT, splitHeight / 2);
-        return Math.min(DEFAULT_EXPANDED_CONSOLE_HEIGHT, maxReasonableHeight);
+        int maxReasonableHeight = Math.max(MIN_CONSOLE_HEIGHT, splitHeight / 2);
+        return Math.min(DEFAULT_CONSOLE_HEIGHT, maxReasonableHeight);
     }
 }

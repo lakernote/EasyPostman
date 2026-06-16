@@ -12,9 +12,13 @@ import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicSplitPaneDivider;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Graphics2D;
+import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -114,13 +118,16 @@ public class RequestViewFactoryTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void requestResponseSplitShouldUseBackgroundGapAndCardSurfaces() throws Exception {
+    public void requestResponseSplitShouldUseSubtleSeparatorAndCardSurfaces() throws Exception {
         Object previousBackground = UIManager.get(ThemeColors.BACKGROUND);
         Object previousSurface = UIManager.get(ThemeColors.SURFACE);
+        Object previousSeparator = UIManager.get(ThemeColors.TAB_SEPARATOR);
         Color background = new Color(233, 234, 238);
         Color surface = new Color(255, 255, 255);
+        Color separator = new Color(229, 231, 235);
         UIManager.put(ThemeColors.BACKGROUND, background);
         UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.TAB_SEPARATOR, separator);
 
         try {
             RequestViewComponents components = createView(RequestItemProtocolEnum.HTTP);
@@ -139,9 +146,11 @@ public class RequestViewFactoryTest extends AbstractSwingUiTest {
             }
             assertTrue(components.responsePanel.isOpaque());
             assertEquals(components.responsePanel.getBackground(), surface);
+            assertDividerPaintsSingleSeparatorLine(components.splitPane, surface, separator);
         } finally {
             UIManager.put(ThemeColors.BACKGROUND, previousBackground);
             UIManager.put(ThemeColors.SURFACE, previousSurface);
+            UIManager.put(ThemeColors.TAB_SEPARATOR, previousSeparator);
         }
     }
 
@@ -203,6 +212,32 @@ public class RequestViewFactoryTest extends AbstractSwingUiTest {
         assertTrue(scrollPane.isWheelScrollingEnabled());
         assertTrue(scrollPane.getViewport().getView() instanceof JPanel);
         return (JPanel) scrollPane.getViewport().getView();
+    }
+
+    private void assertDividerPaintsSingleSeparatorLine(JSplitPane splitPane, Color surface, Color separator) {
+        BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
+        int dividerSize = splitPane.getDividerSize();
+        int width = splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT ? dividerSize : 80;
+        int height = splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT ? 80 : dividerSize;
+        divider.setSize(width, height);
+
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        try {
+            divider.paint(graphics);
+        } finally {
+            graphics.dispose();
+        }
+
+        if (splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT) {
+            int x = Math.max(0, width / 2);
+            assertEquals(new Color(image.getRGB(0, 10), true), surface);
+            assertEquals(new Color(image.getRGB(x, 10), true), separator);
+        } else {
+            int y = Math.max(0, height / 2);
+            assertEquals(new Color(image.getRGB(10, 0), true), surface);
+            assertEquals(new Color(image.getRGB(10, y), true), separator);
+        }
     }
 
     private void withHiddenRequestEditorTabs(List<String> hiddenTabs, CheckedRunnable runnable) throws Exception {

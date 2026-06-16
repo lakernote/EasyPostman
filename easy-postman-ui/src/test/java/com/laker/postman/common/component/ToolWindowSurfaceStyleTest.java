@@ -23,6 +23,7 @@ import javax.swing.UIManager;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.border.MatteBorder;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
 import javax.swing.plaf.metal.MetalLookAndFeel;
@@ -185,6 +186,30 @@ public class ToolWindowSurfaceStyleTest {
         assertEquals(panel.getInsets().left, 2);
         assertEquals(panel.getInsets().bottom, 3);
         assertEquals(panel.getInsets().right, 4);
+    }
+
+    @Test
+    public void shouldApplyToolWindowToolbarSeparatorWithThemeColorAndPadding() {
+        Color surface = new Color(250, 251, 252);
+        Color separator = new Color(229, 231, 235);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.TAB_SEPARATOR, separator);
+        JPanel panel = new JPanel();
+
+        ToolWindowSurfaceStyle.applyToolWindowToolbarSeparator(panel, 4, 6, 4, 6);
+
+        assertTrue(panel.isOpaque());
+        assertEquals(panel.getBackground(), surface);
+        assertTrue(panel.getBorder() instanceof CompoundBorder);
+        CompoundBorder border = (CompoundBorder) panel.getBorder();
+        assertTrue(border.getOutsideBorder() instanceof MatteBorder);
+        MatteBorder separatorBorder = (MatteBorder) border.getOutsideBorder();
+        assertEquals(separatorBorder.getBorderInsets(panel).bottom, 1);
+        assertEquals(separatorBorder.getMatteColor(), separator);
+        assertEquals(panel.getInsets().top, 4);
+        assertEquals(panel.getInsets().left, 6);
+        assertEquals(panel.getInsets().bottom, 5);
+        assertEquals(panel.getInsets().right, 6);
     }
 
     @Test

@@ -81,6 +81,25 @@ Use this skill when editing Swing form layouts in this repo. The goal is not jus
 - Inside an already rounded card, avoid stacking more opaque `applyCard` panels at the outer edge just to get the same background. Use transparent section panels or inner split panes where the parent card should remain visually continuous.
 - If a rounded corner becomes square only after interaction, resize, scrolling, or split-pane dragging, suspect descendant repaint bypassing the parent clip before changing colors or arc values. The fix belongs in the rounded chrome or wrapper hierarchy, not in per-panel paint hacks.
 
+## IDEA-like tool-window separators
+
+- IntelliJ IDEA tool-window separators are usually quiet 1px lines, not thick gray bands. Match that visual weight unless the user explicitly wants a larger gutter.
+- For toolbar-to-content boundaries, use a bottom/top `MatteBorder` with `ModernColors.getTabSeparatorColor()`. Avoid `getDividerBorderColor()` for these header separators unless a deliberately stronger boundary is needed.
+- For request/response or other resizable `JSplitPane` dividers, keep the divider's hit area wide enough for dragging, but paint the visible separator as a centered 1px line:
+  - fill the divider with the surrounding card/background color
+  - draw one line with `ModernColors.getTabSeparatorColor()`
+  - orient the line from `splitPane.getOrientation()`
+- For editor tab strips that need an IDEA-like baseline, prefer `TABBED_PANE_HAS_FULL_BORDER=false` and `TABBED_PANE_SHOW_CONTENT_SEPARATOR=true` with `TabbedPane.contentSeparatorHeight=1`; do not add an extra hand-drawn border on top of FlatLaf's content separator.
+- For inner request tabs or detail tabs whose content should flow as one card, explicitly disable the content separator instead of stacking another border.
+- For stacked bottom tool windows such as Console, keep the status bar outside the resizable tool-window split and use `ToolWindowChrome`/`AppToolWindowChrome` stacked-card APIs so the top/bottom gap matches the left/right tool-window gap.
+- If the tool-window split belongs inside a tab content area, keep the `JTabbedPane` component identity stable. Prefer a small stable host component that owns the real content and swaps only its internal layout; do not repeatedly replace tab components with temporary `JSplitPane` wrappers.
+- Do not let a persistent scrollbar become a fake divider. Use `VERTICAL_SCROLLBAR_AS_NEEDED` unless always-visible scrollbars are a functional requirement.
+- Regression tests should lock the behavior at the source:
+  - assert the tab pane FlatLaf client properties
+  - assert toggling the tool window does not replace the tab component identity when a stable host is needed
+  - inspect toolbar `MatteBorder` color/insets
+  - paint split-pane dividers into a `BufferedImage` and assert only the centered pixel line uses the separator color
+
 ## Repo-specific guidance
 
 - For module placement before changing shared UI, read `docs/ARCHITECTURE_MODULES_zh.md` and keep reusable Swing components, colors, fonts, icons, notifications, and editor theme helpers in `easy-postman-ui`.

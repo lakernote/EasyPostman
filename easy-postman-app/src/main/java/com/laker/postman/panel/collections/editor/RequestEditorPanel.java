@@ -177,6 +177,8 @@ public class RequestEditorPanel extends UiSingletonPanel {
         tabs.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, REQUEST_TAB_AREA_INSETS);
         tabs.putClientProperty(TABBED_PANE_TAB_INSETS, REQUEST_TAB_INSETS);
         tabs.putClientProperty(TABBED_PANE_TAB_HEIGHT, REQUEST_TAB_HEIGHT);
+        tabs.putClientProperty(TABBED_PANE_HAS_FULL_BORDER, false);
+        tabs.putClientProperty(TABBED_PANE_SHOW_CONTENT_SEPARATOR, true);
         return tabs;
     }
 

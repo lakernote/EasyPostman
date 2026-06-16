@@ -183,12 +183,14 @@ public final class ToolWindowChrome {
 
     static JSplitPane createVerticalStackedCardSplitPane(Component topToolWindow, Component bottomContent,
                                                         int dividerLocation, SplitDividerStyle dividerStyle) {
-        return createVerticalSplitPane(
+        JSplitPane splitPane = createVerticalSplitPane(
                 topToolWindow,
                 wrapBottomToolWindow(bottomContent, innerGap(dividerStyle)),
                 dividerLocation,
                 dividerStyle
         );
+        splitPane.setDividerSize(stackedDividerSize(dividerStyle));
+        return splitPane;
     }
 
     private static JComponent wrapLeftInsetToolWindow(Component content, int innerGap) {
@@ -249,6 +251,13 @@ public final class ToolWindowChrome {
             return DRAG_GAP_DIVIDER_SIZE;
         }
         return inner ? INNER_DIVIDER_SIZE : DIVIDER_SIZE;
+    }
+
+    static int stackedDividerSize(SplitDividerStyle dividerStyle) {
+        SplitDividerStyle style = normalizeStyle(dividerStyle);
+        int targetCardGap = dividerSize(style, false) + (innerGap(style) * 2);
+        int divider = targetCardGap - OUTER_VERTICAL_GAP - innerGap(style);
+        return Math.max(INNER_GAP, divider);
     }
 
     private static int innerGap(SplitDividerStyle dividerStyle) {

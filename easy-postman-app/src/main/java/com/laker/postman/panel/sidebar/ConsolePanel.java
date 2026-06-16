@@ -1,5 +1,6 @@
 package com.laker.postman.panel.sidebar;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.SearchTextField;
@@ -7,9 +8,9 @@ import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.AutoScrollToggleButton;
 import com.laker.postman.common.component.button.ClearButton;
-import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.NextButton;
 import com.laker.postman.common.component.button.PreviousButton;
+import com.laker.postman.util.IconUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -27,7 +28,7 @@ public class ConsolePanel extends UiSingletonPanel {
     private JTextPane consoleLogArea;
     private transient StyledDocument consoleDoc;
     private SearchTextField searchField;
-    private CloseButton closeBtn;
+    private JButton hideButton;
     private PreviousButton prevBtn;
     private NextButton nextBtn;
     private JLabel matchCountLabel;
@@ -47,6 +48,8 @@ public class ConsolePanel extends UiSingletonPanel {
     private static final int FILTER_WIDTH = 90;
     private static final int SEARCH_WIDTH = 260;
     private static final int TOOLBAR_CONTROL_HEIGHT = ToolWindowActionToolbar.ACTION_SIZE;
+    private static final String TOOL_WINDOW_HIDE_ICON = "icons/tool-window-hide.svg";
+    private static final String HIDE_CONSOLE_TOOLTIP = "Hide console";
 
     // 日志类型
     public enum LogType {
@@ -319,14 +322,19 @@ public class ConsolePanel extends UiSingletonPanel {
         ToolWindowSurfaceStyle.applyTextComponentCard(consoleLogArea);
         consoleDoc = consoleLogArea.getStyledDocument();
         JScrollPane logScroll = new JScrollPane(consoleLogArea);
-        logScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
+        logScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
         logScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         ToolWindowSurfaceStyle.applyScrollPaneCard(logScroll);
 
         // 顶部工具栏
-        JPanel topPanel = new JPanel(new BorderLayout(5, 0));
-        topPanel.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
-        ToolWindowSurfaceStyle.applyCard(topPanel);
+        JPanel topPanel = new JPanel(new BorderLayout(5, 0)) {
+            @Override
+            public void updateUI() {
+                super.updateUI();
+                applyConsoleToolbarStyle(this);
+            }
+        };
+        applyConsoleToolbarStyle(topPanel);
 
         logLevelFilter = new JComboBox<>(new String[]{"All", "INFO", "ERROR", "WARN", "DEBUG"});
         lockToolbarControlSize(logLevelFilter, FILTER_WIDTH);
@@ -360,18 +368,21 @@ public class ConsolePanel extends UiSingletonPanel {
         // 右侧：工具按钮
         autoScrollBtn = new AutoScrollToggleButton();
 
-        ClearButton clearBtn = new ClearButton();
+        ClearButton clearBtn = new ClearButton(IconUtil.SIZE_SMALL);
         clearBtn.addActionListener(e -> clearConsole());
 
-        closeBtn = new CloseButton();
-        closeBtn.setToolTipText("Hide console");
-        JPanel rightPanel = ToolWindowActionToolbar.inlineRight(autoScrollBtn, clearBtn, closeBtn);
+        hideButton = createToolWindowToolbarButton(TOOL_WINDOW_HIDE_ICON, HIDE_CONSOLE_TOOLTIP);
+        JPanel rightPanel = ToolWindowActionToolbar.inlineRight(autoScrollBtn, clearBtn, hideButton);
 
         topPanel.add(centerPanel, BorderLayout.WEST);
         topPanel.add(rightPanel, BorderLayout.EAST);
 
         add(topPanel, BorderLayout.NORTH);
         add(logScroll, BorderLayout.CENTER);
+    }
+
+    private static void applyConsoleToolbarStyle(JComponent component) {
+        ToolWindowSurfaceStyle.applyToolWindowToolbarSeparator(component, 4, 6, 4, 6);
     }
 
     private static void lockToolbarControlSize(JComponent component, int width) {
@@ -381,6 +392,14 @@ public class ConsolePanel extends UiSingletonPanel {
         component.setMaximumSize(size);
     }
 
+    private static JButton createToolWindowToolbarButton(String iconPath, String toolTipText) {
+        JButton button = new JButton(IconUtil.createThemed(iconPath, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        button.setToolTipText(toolTipText);
+        button.setFocusable(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        return button;
+    }
 
     /**
      * 清空控制台
@@ -559,7 +578,7 @@ public class ConsolePanel extends UiSingletonPanel {
         UiSingletonFactory.getInstance(ConsolePanel.class).appendConsoleLog(msg, type);
     }
 
-    public void setCloseAction(ActionListener listener) {
-        closeBtn.addActionListener(listener);
+    public void setHideAction(ActionListener listener) {
+        hideButton.addActionListener(listener);
     }
 }

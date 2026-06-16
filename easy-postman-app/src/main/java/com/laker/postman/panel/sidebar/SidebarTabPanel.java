@@ -79,16 +79,16 @@ public class SidebarTabPanel extends UiSingletonPanel {
         return new SidebarBottomBar(
                 sidebarExpanded,
                 this::toggleSidebarExpansion,
-                this::expandConsoleArea,
+                this::toggleConsoleArea,
                 this::toggleLayoutOrientation,
                 this::showGlobalVariablesDialog,
                 this::showCookieManagerDialog
         );
     }
 
-    private void expandConsoleArea() {
+    private void toggleConsoleArea() {
         if (consoleArea != null) {
-            consoleArea.expand();
+            consoleArea.toggleConsole();
         }
     }
 
@@ -289,20 +289,27 @@ public class SidebarTabPanel extends UiSingletonPanel {
         ensureTabComponentLoaded(selectedIndex); // 懒加载当前选中的tab内容
         SidebarTab selectedTab = getSidebarTabAt(selectedIndex);
         if (selectedTab == SidebarTab.ENVIRONMENTS) {
-            Component comp = tabbedPane.getComponentAt(selectedIndex);
+            Component comp = SidebarTabContentHost.contentOf(tabbedPane.getComponentAt(selectedIndex));
             if (comp instanceof EnvironmentPanel environmentPanel) {
                 environmentPanel.refreshUI();
             }
+        }
+        if (consoleArea != null) {
+            consoleArea.handleSelectedTabChanged();
         }
     }
 
     private void ensureTabComponentLoaded(int index) {
         if (index < 0 || index >= tabInfos.size()) return;
         TabInfo info = tabInfos.get(index);
-        Component comp = tabbedPane.getComponentAt(index);
+        SidebarTabContentHost host = SidebarTabContentHost.from(tabbedPane.getComponentAt(index));
+        if (host == null) {
+            return;
+        }
+        Component comp = host.content();
         if (comp == null || comp.getClass() == JPanel.class) {
             JPanel realPanel = info.getPanel(); // 懒加载真正的面板内容
-            tabbedPane.setComponentAt(index, realPanel);
+            host.setContent(realPanel);
         }
     }
 
@@ -531,6 +538,9 @@ public class SidebarTabPanel extends UiSingletonPanel {
      * 重新创建标签页以应用新的展开/收起状态
      */
     private void recreateTabbedPane() {
+        if (consoleArea != null) {
+            consoleArea.restoreContentHost();
+        }
         int selectedIndex = tabbedPane.getSelectedIndex();
         SidebarTab selectedTab = getSidebarTabAt(selectedIndex);
 
@@ -563,7 +573,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
             SidebarTab sidebarTab = visibleTabs.get(i);
             TabInfo info = tabInfos.get(i);
             Component content = retainedContent.getOrDefault(sidebarTab, new JPanel());
-            tabbedPane.addTab(info.getTitle(), content);
+            tabbedPane.addTab(info.getTitle(), new SidebarTabContentHost(content));
             tabbedPane.setTabComponentAt(i, tabComponentFactory().create(sidebarTab, info.getTitle(), info.getIcon()));
         }
     }
@@ -576,7 +586,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
 
         int tabCount = Math.min(visibleTabs.size(), tabbedPane.getTabCount());
         for (int i = 0; i < tabCount; i++) {
-            loadedPanels.put(visibleTabs.get(i), tabbedPane.getComponentAt(i));
+            loadedPanels.put(visibleTabs.get(i), SidebarTabContentHost.contentOf(tabbedPane.getComponentAt(i)));
         }
         return loadedPanels;
     }

@@ -16,6 +16,7 @@ public final class AppToolWindowChrome {
     public static final int DIVIDER_SIZE = ToolWindowChrome.DRAG_GAP_DIVIDER_SIZE;
     private static final ToolWindowChrome.SplitDividerStyle HOST_SPLIT_STYLE =
             ToolWindowChrome.SplitDividerStyle.DRAG_GAP;
+    public static final int STACKED_DIVIDER_SIZE = ToolWindowChrome.stackedDividerSize(HOST_SPLIT_STYLE);
 
     private AppToolWindowChrome() {
     }

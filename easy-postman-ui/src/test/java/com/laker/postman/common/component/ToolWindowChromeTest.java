@@ -206,6 +206,24 @@ public class ToolWindowChromeTest {
     }
 
     @Test
+    public void shouldCreateStackedDragGapSplitWithSameCardGapAsHorizontalDragGap() {
+        JSplitPane horizontalSplit = ToolWindowChrome.createHorizontalCardSplitPane(
+                new JLabel("left"),
+                new JLabel("right"),
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH,
+                ToolWindowChrome.SplitDividerStyle.DRAG_GAP
+        );
+        JSplitPane stackedSplit = ToolWindowChrome.createVerticalStackedCardSplitPane(
+                horizontalSplit,
+                new JLabel("bottom"),
+                260,
+                ToolWindowChrome.SplitDividerStyle.DRAG_GAP
+        );
+
+        assertEquals(stackedCardGap(stackedSplit), horizontalCardGap(horizontalSplit));
+    }
+
+    @Test
     public void shouldCreateVerticalCardSplitPaneWithMatchingToolWindowGaps() {
         JLabel top = new JLabel("top");
         JLabel bottom = new JLabel("bottom");
@@ -259,6 +277,19 @@ public class ToolWindowChromeTest {
         assertTrue(toolWindowWrapper.getComponent(0) instanceof RoundedToolWindowPanel);
         RoundedToolWindowPanel roundedPanel = (RoundedToolWindowPanel) toolWindowWrapper.getComponent(0);
         assertSame(roundedPanel.getComponent(0), content);
+    }
+
+    private static int horizontalCardGap(JSplitPane splitPane) {
+        JComponent leftWrapper = (JComponent) splitPane.getLeftComponent();
+        JComponent rightWrapper = (JComponent) splitPane.getRightComponent();
+        return leftWrapper.getInsets().right + splitPane.getDividerSize() + rightWrapper.getInsets().left;
+    }
+
+    private static int stackedCardGap(JSplitPane splitPane) {
+        JSplitPane topSplit = (JSplitPane) splitPane.getTopComponent();
+        JComponent topWrapper = (JComponent) topSplit.getLeftComponent();
+        JComponent bottomWrapper = (JComponent) splitPane.getBottomComponent();
+        return topWrapper.getInsets().bottom + splitPane.getDividerSize() + bottomWrapper.getInsets().top;
     }
 
     @Test

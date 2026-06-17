@@ -1,7 +1,9 @@
 package com.laker.postman.service;
 
 import com.laker.postman.model.GitAuthType;
+import com.laker.postman.model.GitBranchInfo;
 import com.laker.postman.model.GitCommitInfo;
+import com.laker.postman.model.GitFileChange;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.GitRepoSource;
@@ -327,6 +329,16 @@ public class WorkspaceService {
         return requireGitService().getChangedFilesBetweenCommits(workspace, oldCommitId, newCommitId);
     }
 
+    public List<GitFileChange> listWorkingTreeChanges(String workspaceId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        return requireGitService().listWorkingTreeChanges(workspace);
+    }
+
+    public String getWorkingTreeDiff(String workspaceId, String filePath) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        return requireGitService().getWorkingTreeDiff(workspace, filePath);
+    }
+
     /**
      * 根据ID获取工作区
      */
@@ -385,8 +397,15 @@ public class WorkspaceService {
      */
     public void addRemoteRepository(String workspaceId, String remoteUrl, String remoteBranch,
                                     GitAuthType authType, String username, String password, String token) throws Exception {
+        addRemoteRepository(workspaceId, remoteUrl, remoteBranch, authType, username, password, token, null, null);
+    }
+
+    public void addRemoteRepository(String workspaceId, String remoteUrl, String remoteBranch,
+                                    GitAuthType authType, String username, String password, String token,
+                                    String sshPrivateKeyPath, String sshPassphrase) throws Exception {
         Workspace workspace = getWorkspaceById(workspaceId);
-        requireGitService().addRemoteRepository(workspace, remoteUrl, remoteBranch, authType, username, password, token);
+        requireGitService().addRemoteRepository(workspace, remoteUrl, remoteBranch, authType, username, password, token,
+                sshPrivateKeyPath, sshPassphrase);
         saveWorkspaces();
     }
 
@@ -541,6 +560,48 @@ public class WorkspaceService {
 
     public boolean isGitServiceAvailable() {
         return GitServiceAccess.isServiceAvailable();
+    }
+
+    public List<GitBranchInfo> listGitBranches(String workspaceId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        return requireGitService().listBranches(workspace);
+    }
+
+    public GitOperationResult switchGitBranch(String workspaceId, String branchName) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        GitOperationResult result = requireGitService().switchBranch(workspace, branchName);
+        saveWorkspaces();
+        return result;
+    }
+
+    public GitOperationResult fetchGitBranches(String workspaceId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        return requireGitService().fetchBranches(workspace);
+    }
+
+    public GitOperationResult createGitBranch(String workspaceId, String branchName) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        GitOperationResult result = requireGitService().createBranch(workspace, branchName);
+        saveWorkspaces();
+        return result;
+    }
+
+    public GitOperationResult deleteGitBranch(String workspaceId, String branchName) throws Exception {
+        return deleteGitBranch(workspaceId, branchName, false);
+    }
+
+    public GitOperationResult deleteGitBranch(String workspaceId, String branchName, boolean force) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        GitOperationResult result = requireGitService().deleteBranch(workspace, branchName, force);
+        saveWorkspaces();
+        return result;
+    }
+
+    public GitOperationResult publishGitBranch(String workspaceId) throws Exception {
+        Workspace workspace = getWorkspaceById(workspaceId);
+        GitOperationResult result = requireGitService().publishBranch(workspace);
+        saveWorkspaces();
+        return result;
     }
 
     private GitPluginService requireGitService() {

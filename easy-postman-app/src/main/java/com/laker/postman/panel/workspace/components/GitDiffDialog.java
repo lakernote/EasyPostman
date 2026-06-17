@@ -1,0 +1,355 @@
+package com.laker.postman.panel.workspace.components;
+
+import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.button.RefreshButton;
+import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.model.GitFileChange;
+import com.laker.postman.model.Workspace;
+import com.laker.postman.service.WorkspaceService;
+import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.SimpleAttributeSet;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyledDocument;
+import java.awt.*;
+import java.awt.event.MouseEvent;
+import java.text.MessageFormat;
+import java.util.List;
+
+/**
+ * Git working tree diff dialog for a workspace.
+ */
+@Slf4j
+public class GitDiffDialog extends JDialog {
+
+    private final transient Workspace workspace;
+    private final transient WorkspaceService workspaceService;
+    private DefaultListModel<GitFileChange> changeListModel;
+    private JList<GitFileChange> changeList;
+    private JTextPane diffPane;
+    private JLabel statusLabel;
+    private JButton refreshButton;
+
+    public GitDiffDialog(Window owner, Workspace workspace) {
+        super(owner, I18nUtil.getMessage(MessageKeys.GIT_DIFF_TITLE), ModalityType.APPLICATION_MODAL);
+        this.workspace = workspace;
+        this.workspaceService = WorkspaceService.getInstance();
+        initUI();
+        loadChanges();
+    }
+
+    private void initUI() {
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
+        setSize(920, 620);
+        setMinimumSize(new Dimension(760, 500));
+        setLocationRelativeTo(getOwner());
+        setLayout(new BorderLayout());
+
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
+        mainPanel.add(createHeader(), BorderLayout.NORTH);
+        mainPanel.add(createContentPanel(), BorderLayout.CENTER);
+        mainPanel.add(createFooter(), BorderLayout.SOUTH);
+        setContentPane(mainPanel);
+    }
+
+    private JPanel createHeader() {
+        JPanel header = new JPanel(new BorderLayout(12, 0));
+        ToolWindowSurfaceStyle.applyDialogHeader(header, 10, 18, 10, 18);
+
+        JPanel titlePanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        titlePanel.setOpaque(false);
+        JLabel title = new JLabel(I18nUtil.getMessage(MessageKeys.GIT_DIFF_TITLE));
+        title.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
+        JLabel workspaceLabel = new JLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_NAME) + ": " + workspace.getName());
+        workspaceLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        workspaceLabel.setForeground(ModernColors.getTextSecondary());
+        workspaceLabel.setToolTipText(workspace.getName());
+        titlePanel.add(title);
+        titlePanel.add(workspaceLabel);
+        header.add(titlePanel, BorderLayout.CENTER);
+
+        refreshButton = new RefreshButton();
+        refreshButton.addActionListener(e -> loadChanges());
+        header.add(refreshButton, BorderLayout.EAST);
+        return header;
+    }
+
+    private JPanel createContentPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 8));
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+        panel.setBorder(new EmptyBorder(10, 18, 12, 18));
+        panel.add(createDiffSplitPane(), BorderLayout.CENTER);
+
+        statusLabel = new JLabel(" ");
+        statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        statusLabel.setForeground(ModernColors.getTextSecondary());
+        panel.add(statusLabel, BorderLayout.SOUTH);
+        return panel;
+    }
+
+    private JSplitPane createDiffSplitPane() {
+        JSplitPane splitPane = new JSplitPane(
+                JSplitPane.HORIZONTAL_SPLIT,
+                createChangeListScrollPane(),
+                createDiffScrollPane()
+        );
+        splitPane.setResizeWeight(0.28);
+        splitPane.setDividerLocation(280);
+        splitPane.setContinuousLayout(true);
+        ToolWindowSurfaceStyle.applyDialogSplitPane(splitPane);
+        return splitPane;
+    }
+
+    private JScrollPane createChangeListScrollPane() {
+        changeListModel = new DefaultListModel<>();
+        changeList = new JList<>(changeListModel) {
+            @Override
+            public String getToolTipText(MouseEvent event) {
+                int index = locationToIndex(event.getPoint());
+                if (index < 0 || index >= changeListModel.size()) {
+                    return null;
+                }
+                GitFileChange change = changeListModel.getElementAt(index);
+                return change == null ? null : change.getPath();
+            }
+        };
+        changeList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        changeList.setFixedCellHeight(Math.max(34,
+                FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1).getSize() + 18));
+        changeList.setCellRenderer(new ChangeListCellRenderer());
+        changeList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                GitFileChange selected = changeList.getSelectedValue();
+                if (selected != null) {
+                    loadDiff(selected);
+                }
+            }
+        });
+
+        JScrollPane scrollPane = new JScrollPane(changeList);
+        ToolWindowSurfaceStyle.applyDialogListScrollPane(scrollPane, changeList);
+        ToolWindowSurfaceStyle.applyDialogFrame(scrollPane);
+        return scrollPane;
+    }
+
+    private JScrollPane createDiffScrollPane() {
+        diffPane = new JTextPane();
+        diffPane.setEditable(false);
+        diffPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN,
+                FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1).getSize()));
+        diffPane.setBorder(new EmptyBorder(8, 10, 8, 10));
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(diffPane);
+        renderPlainMessage(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SELECT_FILE));
+
+        JScrollPane scrollPane = new JScrollPane(diffPane);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
+        ToolWindowSurfaceStyle.applyDialogFrame(scrollPane);
+        return scrollPane;
+    }
+
+    private JPanel createFooter() {
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        ToolWindowSurfaceStyle.applyDialogFooter(footer);
+
+        JButton closeButton = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.GIT_DIFF_CLOSE),
+                false,
+                "icons/close.svg"
+        );
+        closeButton.addActionListener(e -> dispose());
+        footer.add(closeButton);
+        return footer;
+    }
+
+    private void loadChanges() {
+        setBusy(true);
+        statusLabel.setText(I18nUtil.getMessage(MessageKeys.GIT_DIFF_LOADING));
+        changeListModel.clear();
+        renderPlainMessage(I18nUtil.getMessage(MessageKeys.GIT_DIFF_LOADING));
+
+        new SwingWorker<List<GitFileChange>, Void>() {
+            @Override
+            protected List<GitFileChange> doInBackground() throws Exception {
+                return workspaceService.listWorkingTreeChanges(workspace.getId());
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    List<GitFileChange> changes = get();
+                    displayChanges(changes);
+                } catch (Exception ex) {
+                    log.warn("Failed to load Git changes for workspace: {}", workspace.getId(), ex);
+                    String message = format(MessageKeys.GIT_DIFF_LOAD_FAILED, ex.getMessage());
+                    statusLabel.setText(message);
+                    renderPlainMessage(message);
+                } finally {
+                    setBusy(false);
+                }
+            }
+        }.execute();
+    }
+
+    private void displayChanges(List<GitFileChange> changes) {
+        changeListModel.clear();
+        if (changes == null || changes.isEmpty()) {
+            statusLabel.setText(I18nUtil.getMessage(MessageKeys.GIT_DIFF_NO_CHANGES));
+            renderPlainMessage(I18nUtil.getMessage(MessageKeys.GIT_DIFF_NO_CHANGES));
+            return;
+        }
+
+        for (GitFileChange change : changes) {
+            changeListModel.addElement(change);
+        }
+        statusLabel.setText(format(MessageKeys.GIT_DIFF_STATUS_COUNT, changes.size()));
+        changeList.setSelectedIndex(0);
+    }
+
+    private void loadDiff(GitFileChange change) {
+        String selectedPath = change.getPath();
+        statusLabel.setText(format(MessageKeys.GIT_DIFF_LOADING_FILE, change.getPath()));
+        renderPlainMessage(I18nUtil.getMessage(MessageKeys.GIT_DIFF_LOADING));
+
+        new SwingWorker<String, Void>() {
+            @Override
+            protected String doInBackground() throws Exception {
+                return workspaceService.getWorkingTreeDiff(workspace.getId(), change.getPath());
+            }
+
+            @Override
+            protected void done() {
+                GitFileChange currentSelection = changeList.getSelectedValue();
+                if (currentSelection == null || !selectedPath.equals(currentSelection.getPath())) {
+                    return;
+                }
+                try {
+                    String diff = get();
+                    if (diff == null || diff.isBlank()) {
+                        renderPlainMessage(I18nUtil.getMessage(MessageKeys.GIT_DIFF_NO_TEXT_DIFF));
+                    } else {
+                        renderDiff(diff);
+                    }
+                    statusLabel.setText(change.getPath());
+                } catch (Exception ex) {
+                    log.warn("Failed to load Git diff for workspace: {}, file: {}",
+                            workspace.getId(), change.getPath(), ex);
+                    String message = format(MessageKeys.GIT_DIFF_LOAD_FAILED, ex.getMessage());
+                    statusLabel.setText(message);
+                    renderPlainMessage(message);
+                }
+            }
+        }.execute();
+    }
+
+    private void renderPlainMessage(String message) {
+        diffPane.setText(message == null ? "" : message);
+        diffPane.setCaretPosition(0);
+    }
+
+    private void renderDiff(String diff) throws BadLocationException {
+        StyledDocument document = diffPane.getStyledDocument();
+        document.remove(0, document.getLength());
+        for (String line : diff.split("\n", -1)) {
+            document.insertString(document.getLength(), line + "\n", styleForLine(line));
+        }
+        diffPane.setCaretPosition(0);
+    }
+
+    private SimpleAttributeSet styleForLine(String line) {
+        SimpleAttributeSet attributes = new SimpleAttributeSet();
+        StyleConstants.setFontFamily(attributes, Font.MONOSPACED);
+        StyleConstants.setForeground(attributes, ModernColors.getTextPrimary());
+        if (line.startsWith("diff --git") || line.startsWith("index ")) {
+            StyleConstants.setForeground(attributes, ModernColors.getTextSecondary());
+            StyleConstants.setBold(attributes, true);
+        } else if (line.startsWith("@@")) {
+            StyleConstants.setForeground(attributes, ModernColors.getPrimary());
+            StyleConstants.setBold(attributes, true);
+        } else if (line.startsWith("+") && !line.startsWith("+++")) {
+            StyleConstants.setForeground(attributes, ModernColors.getSuccessDark());
+        } else if (line.startsWith("-") && !line.startsWith("---")) {
+            StyleConstants.setForeground(attributes, ModernColors.getErrorDark());
+        } else if (line.startsWith("+++") || line.startsWith("---")) {
+            StyleConstants.setForeground(attributes, ModernColors.getTextSecondary());
+        }
+        return attributes;
+    }
+
+    private void setBusy(boolean busy) {
+        if (refreshButton != null) {
+            refreshButton.setEnabled(!busy);
+        }
+        if (changeList != null) {
+            changeList.setEnabled(!busy);
+        }
+    }
+
+    private static String format(String key, Object... args) {
+        return MessageFormat.format(I18nUtil.getMessage(key), args);
+    }
+
+    private static String typeLabel(GitFileChange.Type type) {
+        if (type == null) {
+            return "";
+        }
+        return switch (type) {
+            case ADDED -> I18nUtil.getMessage(MessageKeys.GIT_DIFF_TYPE_ADDED);
+            case MODIFIED -> I18nUtil.getMessage(MessageKeys.GIT_DIFF_TYPE_MODIFIED);
+            case DELETED -> I18nUtil.getMessage(MessageKeys.GIT_DIFF_TYPE_DELETED);
+            case UNTRACKED -> I18nUtil.getMessage(MessageKeys.GIT_DIFF_TYPE_UNTRACKED);
+            case CONFLICTING -> I18nUtil.getMessage(MessageKeys.GIT_DIFF_TYPE_CONFLICTING);
+        };
+    }
+
+    private static Color typeColor(GitFileChange.Type type) {
+        if (type == null) {
+            return ModernColors.getTextSecondary();
+        }
+        return switch (type) {
+            case ADDED, UNTRACKED -> ModernColors.getSuccessDark();
+            case MODIFIED -> ModernColors.getPrimary();
+            case DELETED, CONFLICTING -> ModernColors.getErrorDark();
+        };
+    }
+
+    private static final class ChangeListCellRenderer extends JPanel implements ListCellRenderer<GitFileChange> {
+
+        private final JLabel pathLabel = new JLabel();
+        private final JLabel typeLabel = new JLabel();
+
+        private ChangeListCellRenderer() {
+            super(new BorderLayout(8, 0));
+            setBorder(new EmptyBorder(6, 10, 6, 10));
+            pathLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            typeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+            add(pathLabel, BorderLayout.CENTER);
+            add(typeLabel, BorderLayout.EAST);
+        }
+
+        @Override
+        public Component getListCellRendererComponent(JList<? extends GitFileChange> list,
+                                                      GitFileChange value,
+                                                      int index,
+                                                      boolean isSelected,
+                                                      boolean cellHasFocus) {
+            setOpaque(true);
+            setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
+            pathLabel.setForeground(isSelected ? list.getSelectionForeground() : ModernColors.getTextPrimary());
+            pathLabel.setText(value == null ? "" : value.getPath());
+            if (value != null) {
+                pathLabel.setToolTipText(value.getPath());
+            }
+            typeLabel.setForeground(isSelected ? list.getSelectionForeground() : typeColor(value == null ? null : value.getType()));
+            typeLabel.setText(value == null ? "" : GitDiffDialog.typeLabel(value.getType()));
+            return this;
+        }
+    }
+}

@@ -2,6 +2,7 @@ package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
@@ -23,6 +24,14 @@ import java.util.Date;
 public class WorkspaceDetailPanel extends JPanel {
 
     public WorkspaceDetailPanel(Workspace workspace) {
+        this(workspace, null, null);
+    }
+
+    public WorkspaceDetailPanel(Workspace workspace, Runnable branchManagementAction) {
+        this(workspace, branchManagementAction, null);
+    }
+
+    public WorkspaceDetailPanel(Workspace workspace, Runnable branchManagementAction, Runnable diffAction) {
         setLayout(new GridBagLayout());
         ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(14, 18, 18, 18));
@@ -48,7 +57,8 @@ public class WorkspaceDetailPanel extends JPanel {
         if (workspace.getType() == WorkspaceType.GIT) {
             addSection(sectionRow++, createSection(
                     I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_GIT_INFO),
-                    createGitInfoPanel(workspace)
+                    createGitInfoPanel(workspace),
+                    createGitActionPanel(diffAction, branchManagementAction)
             ), new Insets(14, 0, 0, 0));
         }
         addVerticalFiller(sectionRow);
@@ -77,13 +87,23 @@ public class WorkspaceDetailPanel extends JPanel {
     }
 
     private static JPanel createSection(String title, JComponent body) {
+        return createSection(title, body, null);
+    }
+
+    private static JPanel createSection(String title, JComponent body, JComponent headerAction) {
         JPanel section = new JPanel(new BorderLayout(0, 8));
         section.setOpaque(false);
 
+        JPanel header = new JPanel(new BorderLayout(8, 0));
+        header.setOpaque(false);
         JLabel titleLabel = new JLabel(title);
         titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, 1));
         titleLabel.setForeground(ModernColors.getTextPrimary());
-        section.add(titleLabel, BorderLayout.NORTH);
+        header.add(titleLabel, BorderLayout.WEST);
+        if (headerAction != null) {
+            header.add(headerAction, BorderLayout.EAST);
+        }
+        section.add(header, BorderLayout.NORTH);
         section.add(body, BorderLayout.CENTER);
         return section;
     }
@@ -208,6 +228,44 @@ public class WorkspaceDetailPanel extends JPanel {
                 shortCommitId);
 
         return panel;
+    }
+
+    private JComponent createGitActionPanel(Runnable diffAction, Runnable branchManagementAction) {
+        if (diffAction == null && branchManagementAction == null) {
+            return null;
+        }
+
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        panel.setOpaque(false);
+        if (diffAction != null) {
+            JButton diffButton = createHeaderActionButton(
+                    I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_DIFF),
+                    "icons/detail.svg",
+                    diffAction
+            );
+            panel.add(diffButton);
+        }
+        if (branchManagementAction != null) {
+            JButton branchButton = createHeaderActionButton(
+                    I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_BRANCHES),
+                    "icons/git.svg",
+                    branchManagementAction
+            );
+            panel.add(branchButton);
+        }
+        return panel;
+    }
+
+    private JButton createHeaderActionButton(String text, String iconPath, Runnable action) {
+        JButton button = ModernButtonFactory.createButton(text, false, iconPath, 14);
+        Dimension preferredSize = button.getPreferredSize();
+        int textWidth = button.getFontMetrics(button.getFont()).stringWidth(text);
+        int iconWidth = button.getIcon() == null ? 0 : button.getIcon().getIconWidth();
+        button.setPreferredSize(new Dimension(Math.max(preferredSize.width,
+                Math.max(96, textWidth + iconWidth + button.getIconTextGap() + 44)), 30));
+        button.setToolTipText(text);
+        button.addActionListener(e -> action.run());
+        return button;
     }
 
     /**

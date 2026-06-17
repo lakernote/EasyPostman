@@ -459,6 +459,16 @@ public class WorkspacePanel extends UiSingletonPanel {
         historyItem.addActionListener(e -> showGitHistory(workspace));
         menu.add(historyItem);
 
+        JMenuItem diffItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_DIFF));
+        diffItem.setIcon(IconUtil.createThemed("icons/detail.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        diffItem.addActionListener(e -> showGitDiff(workspace));
+        menu.add(diffItem);
+
+        JMenuItem branchesItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_BRANCHES));
+        branchesItem.setIcon(IconUtil.createThemed("icons/git.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        branchesItem.addActionListener(e -> showGitBranches(workspace));
+        menu.add(branchesItem);
+
         try {
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
             if (remoteStatus.hasRemote) { // 3.只有已配置远程仓库的工作区才显示拉取操作
@@ -659,6 +669,48 @@ public class WorkspacePanel extends UiSingletonPanel {
         }
     }
 
+    private void showGitBranches(Workspace workspace) {
+        Workspace current = workspaceService.getCurrentWorkspace();
+        boolean isCurrentWorkspace = current != null && current.getId().equals(workspace.getId());
+        if (isCurrentWorkspace) {
+            saveCurrentWorkspaceScopedPanels();
+        }
+
+        GitBranchDialog dialog = new GitBranchDialog(
+                SwingUtilities.getWindowAncestor(this),
+                workspace
+        );
+        dialog.setVisible(true);
+
+        if (dialog.isNeedRefresh()) {
+            if (isCurrentWorkspace) {
+                UiSingletonFactory.getInstance(CollectionTreePanel.class)
+                        .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
+                            refreshExistingWorkspaceScopedPanels();
+                            refreshWorkspaceList();
+                        });
+                UiSingletonFactory.getInstance(EnvironmentPanel.class)
+                        .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
+            } else {
+                refreshWorkspaceList();
+            }
+        }
+    }
+
+    private void showGitDiff(Workspace workspace) {
+        Workspace current = workspaceService.getCurrentWorkspace();
+        boolean isCurrentWorkspace = current != null && current.getId().equals(workspace.getId());
+        if (isCurrentWorkspace) {
+            saveCurrentWorkspaceScopedPanels();
+        }
+
+        GitDiffDialog dialog = new GitDiffDialog(
+                SwingUtilities.getWindowAncestor(this),
+                workspace
+        );
+        dialog.setVisible(true);
+    }
+
     /**
      * 重命名工作区
      */
@@ -785,22 +837,7 @@ public class WorkspacePanel extends UiSingletonPanel {
         dialog.setVisible(true);
 
         if (dialog.isConfirmed()) {
-            try {
-                workspaceService.addRemoteRepository(
-                        workspace.getId(),
-                        dialog.getRemoteUrl(),
-                        dialog.getRemoteBranch(),
-                        dialog.getAuthType(),
-                        dialog.getUsername(),
-                        dialog.getPassword(),
-                        dialog.getToken()
-                );
-                refreshWorkspaceList();
-            } catch (Exception e) {
-                log.error("Failed to configure remote repository", e);
-                logError("Error: " + e.getMessage());
-                showError(e.getMessage());
-            }
+            refreshWorkspaceList();
         }
     }
 
@@ -900,7 +937,11 @@ public class WorkspacePanel extends UiSingletonPanel {
         infoPanel.removeAll();
 
         if (selected != null) {
-            infoPanel.add(new WorkspaceDetailPanel(selected), BorderLayout.CENTER);
+            infoPanel.add(new WorkspaceDetailPanel(
+                    selected,
+                    () -> showGitBranches(selected),
+                    () -> showGitDiff(selected)
+            ), BorderLayout.CENTER);
         } else {
             JLabel welcomeLabel = new JLabel(HTML_START + "<center>" +
                     I18nUtil.getMessage(MessageKeys.FUNCTIONAL_DETAIL_WELCOME_MESSAGE) +

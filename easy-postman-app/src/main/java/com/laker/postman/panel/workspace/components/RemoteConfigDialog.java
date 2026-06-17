@@ -37,6 +37,10 @@ public class RemoteConfigDialog extends JDialog {
     private String password;
     @Getter
     private String token;
+    @Getter
+    private String sshPrivateKeyPath;
+    @Getter
+    private String sshPassphrase;
 
     // UI组件
     private JTextField remoteUrlField;
@@ -206,6 +210,8 @@ public class RemoteConfigDialog extends JDialog {
         username = gitAuthPanel.getUsername();
         password = gitAuthPanel.getPassword();
         token = gitAuthPanel.getToken();
+        sshPrivateKeyPath = gitAuthPanel.getSshKeyPath();
+        sshPassphrase = gitAuthPanel.getSshPassphrase();
 
         confirmed = true;
         progressPanel.setProgressText(I18nUtil.getMessage(MessageKeys.WORKSPACE_OPERATION_SUCCESS));
@@ -268,6 +274,8 @@ public class RemoteConfigDialog extends JDialog {
                     String username = gitAuthPanel.getUsername();
                     String password = gitAuthPanel.getPassword();
                     String token = gitAuthPanel.getToken();
+                    String sshPrivateKeyPath = gitAuthPanel.getSshKeyPath();
+                    String sshPassphrase = gitAuthPanel.getSshPassphrase();
 
                     publish(I18nUtil.getMessage(WORKSPACE_CONFIG_PROGRESS_VALIDATING));
                     setProgress(30);
@@ -280,7 +288,9 @@ public class RemoteConfigDialog extends JDialog {
                             authType,
                             username,
                             password,
-                            token
+                            token,
+                            sshPrivateKeyPath,
+                            sshPassphrase
                     );
 
                     publish(I18nUtil.getMessage(WORKSPACE_CONFIG_PROGRESS_DONE));

@@ -1,7 +1,9 @@
 package com.laker.postman.plugin.git;
 
 import com.laker.postman.model.GitAuthType;
+import com.laker.postman.model.GitBranchInfo;
 import com.laker.postman.model.GitCommitInfo;
+import com.laker.postman.model.GitFileChange;
 import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.GitStatusCheck;
@@ -14,34 +16,49 @@ import com.laker.postman.plugin.git.internal.GitConflictDetector;
 import com.laker.postman.plugin.git.internal.SshCredentialsProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.CloneCommand;
+import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ListBranchCommand;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.transport.RefLeaseSpec;
+import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.CodingErrorAction;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 public class GitWorkspacePluginService implements GitPluginService {
 
     private static final int GIT_OPERATION_TIMEOUT = 10;
+    private static final long MAX_UNTRACKED_TEXT_DIFF_BYTES = 1024 * 1024;
 
     @Override
     public void prepareGitWorkspace(Workspace workspace) throws Exception {
@@ -68,6 +85,236 @@ public class GitWorkspacePluginService implements GitPluginService {
         if (privateKeyPath != null && !privateKeyPath.isBlank()) {
             SshCredentialsProvider.clearCache(privateKeyPath);
         }
+    }
+
+    @Override
+    public List<GitBranchInfo> listBranches(Workspace workspace) throws Exception {
+        ensureGitWorkspace(workspace);
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            String currentBranch = git.getRepository().getBranch();
+            List<Ref> refs = git.branchList().setListMode(ListBranchCommand.ListMode.ALL).call();
+            Map<String, String> trackingByLocalBranch = localBranchTrackingMap(git, refs);
+            Set<String> trackedRemoteBranches = new HashSet<>(trackingByLocalBranch.values());
+            List<GitBranchInfo> branches = new ArrayList<>();
+            for (Ref ref : refs) {
+                GitBranchInfo branchInfo = toBranchInfo(git, ref, currentBranch, trackingByLocalBranch, trackedRemoteBranches);
+                if (branchInfo != null) {
+                    branches.add(branchInfo);
+                }
+            }
+            branches.sort((left, right) -> {
+                if (left.isCurrent() != right.isCurrent()) {
+                    return left.isCurrent() ? -1 : 1;
+                }
+                if (left.isRemote() != right.isRemote()) {
+                    return left.isRemote() ? 1 : -1;
+                }
+                return left.getName().compareToIgnoreCase(right.getName());
+            });
+            return branches;
+        }
+    }
+
+    @Override
+    public GitOperationResult switchBranch(Workspace workspace, String branchName) throws Exception {
+        ensureGitWorkspace(workspace);
+        String requestedBranch = normalizeRequestedBranchName(branchName);
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "Switch Branch";
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            var status = git.status().call();
+            if (!status.isClean()) {
+                throw new IllegalStateException("Cannot switch branches with uncommitted changes. Commit or stash changes first.");
+            }
+
+            String localBranch = localBranchNameForCheckout(git, requestedBranch);
+            if (git.getRepository().resolve("refs/heads/" + localBranch) != null) {
+                git.checkout().setName(localBranch).call();
+            } else {
+                String remoteBranch = resolveRemoteBranchForCheckout(git, requestedBranch);
+                if (remoteBranch == null) {
+                    throw new IllegalArgumentException("Branch not found: " + branchName);
+                }
+                localBranch = remoteBranch.substring(remoteBranch.indexOf('/') + 1);
+                git.checkout()
+                        .setCreateBranch(true)
+                        .setName(localBranch)
+                        .setStartPoint(remoteBranch)
+                        .setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+                        .call();
+            }
+
+            updateWorkspaceBranchMetadata(git, workspace);
+            result.success = true;
+            result.message = "Switched to branch " + workspace.getCurrentBranch();
+            result.details = "Current branch: " + workspace.getCurrentBranch() + "\n";
+        }
+
+        return result;
+    }
+
+    @Override
+    public GitOperationResult fetchBranches(Workspace workspace) throws Exception {
+        ensureGitWorkspace(workspace);
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "Fetch Branches";
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            var remotes = git.remoteList().call();
+            if (remotes.isEmpty()) {
+                throw new IllegalStateException("No remote repository configured, unable to fetch branches");
+            }
+
+            var fetchCommand = git.fetch()
+                    .setRemote(remotes.get(0).getName())
+                    .setRemoveDeletedRefs(true);
+            fetchCommand.setTimeout(GIT_OPERATION_TIMEOUT);
+            applyAuth(fetchCommand, workspace);
+            fetchCommand.call();
+
+            result.success = true;
+            result.message = "Fetched remote branches";
+            result.details = "Remote: " + remotes.get(0).getName() + "\n";
+        }
+
+        return result;
+    }
+
+    @Override
+    public GitOperationResult createBranch(Workspace workspace, String branchName) throws Exception {
+        ensureGitWorkspace(workspace);
+        String localBranch = validateLocalBranchName(branchName);
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "Create Branch";
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            if (git.getRepository().resolve("refs/heads/" + localBranch) != null) {
+                throw new IllegalArgumentException("Branch already exists: " + localBranch);
+            }
+
+            git.checkout()
+                    .setCreateBranch(true)
+                    .setName(localBranch)
+                    .call();
+
+            updateWorkspaceBranchMetadata(git, workspace);
+            result.success = true;
+            result.message = "Created branch " + localBranch;
+            result.details = "Current branch: " + workspace.getCurrentBranch() + "\n";
+        }
+
+        return result;
+    }
+
+    @Override
+    public GitOperationResult deleteBranch(Workspace workspace, String branchName) throws Exception {
+        return deleteBranch(workspace, branchName, false);
+    }
+
+    @Override
+    public GitOperationResult deleteBranch(Workspace workspace, String branchName, boolean force) throws Exception {
+        ensureGitWorkspace(workspace);
+        String localBranch = validateLocalBranchName(branchName);
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "Delete Branch";
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            String currentBranch = git.getRepository().getBranch();
+            if (localBranch.equals(currentBranch)) {
+                throw new IllegalStateException("Cannot delete the current branch: " + localBranch);
+            }
+            boolean hasLocalBranch = git.getRepository().resolve("refs/heads/" + localBranch) != null;
+            boolean hasOnlyRemoteBranch = !hasLocalBranch
+                    && git.getRepository().resolve("refs/remotes/" + localBranch) != null;
+            if (hasOnlyRemoteBranch) {
+                throw new IllegalArgumentException("Only local branches can be deleted: " + localBranch);
+            }
+            if (!hasLocalBranch) {
+                throw new IllegalArgumentException("Branch not found: " + localBranch);
+            }
+
+            List<String> deletedBranches = git.branchDelete()
+                    .setBranchNames(localBranch)
+                    .setForce(force)
+                    .call();
+
+            result.success = true;
+            result.message = "Deleted branch " + localBranch;
+            result.details = "Deleted branches: " + String.join(", ", deletedBranches) + "\n";
+        }
+
+        return result;
+    }
+
+    @Override
+    public GitOperationResult publishBranch(Workspace workspace) throws Exception {
+        ensureGitWorkspace(workspace);
+        GitOperationResult result = new GitOperationResult();
+        result.operationType = "Publish Branch";
+
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            var remotes = git.remoteList().call();
+            if (remotes.isEmpty()) {
+                throw new IllegalStateException("No remote repository configured, unable to publish branch");
+            }
+
+            String currentBranch = git.getRepository().getBranch();
+            String tracking = git.getRepository().getConfig().getString("branch", currentBranch, "merge");
+            String remoteName = git.getRepository().getConfig().getString("branch", currentBranch, "remote");
+            if (tracking != null && remoteName != null && !remoteName.isBlank()) {
+                updateWorkspaceBranchMetadata(git, workspace);
+                result.success = true;
+                result.message = "Branch is already published";
+                result.details = "Upstream branch: " + workspace.getRemoteBranch() + "\n";
+                return result;
+            }
+
+            remoteName = remotes.get(0).getName();
+            var pushCommand = git.push()
+                    .setRemote(remoteName)
+                    .add("refs/heads/" + currentBranch + ":refs/heads/" + currentBranch);
+            pushCommand.setTimeout(GIT_OPERATION_TIMEOUT);
+            applyAuth(pushCommand, workspace);
+            var pushResults = pushCommand.call();
+
+            boolean pushSuccess = false;
+            for (var pushResult : pushResults) {
+                for (var remoteRefUpdate : pushResult.getRemoteUpdates()) {
+                    result.details += "  Branch update: " + remoteRefUpdate.getSrcRef() + " -> "
+                            + remoteRefUpdate.getRemoteName() + " (" + remoteRefUpdate.getStatus() + ")\n";
+                    if (remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.OK
+                            || remoteRefUpdate.getStatus() == org.eclipse.jgit.transport.RemoteRefUpdate.Status.UP_TO_DATE) {
+                        pushSuccess = true;
+                    }
+                }
+            }
+            if (!pushSuccess) {
+                throw new RuntimeException("Publish branch failed");
+            }
+
+            var config = git.getRepository().getConfig();
+            config.setString("branch", currentBranch, "remote", remoteName);
+            config.setString("branch", currentBranch, "merge", "refs/heads/" + currentBranch);
+            config.save();
+            updateWorkspaceBranchMetadata(git, workspace);
+
+            try {
+                var fetchCommand = git.fetch().setRemote(remoteName);
+                fetchCommand.setTimeout(GIT_OPERATION_TIMEOUT);
+                applyAuth(fetchCommand, workspace);
+                fetchCommand.call();
+            } catch (Exception fetchException) {
+                log.warn("Published branch {}, but failed to refresh remote refs", currentBranch, fetchException);
+                result.details += "Warning: published branch, but refreshing remote refs failed: "
+                        + fetchException.getMessage() + "\n";
+            }
+            result.success = true;
+            result.message = "Published branch " + currentBranch;
+            result.details += "Upstream branch: " + workspace.getRemoteBranch() + "\n";
+        }
+
+        return result;
     }
 
     @Override
@@ -121,18 +368,7 @@ public class GitWorkspacePluginService implements GitPluginService {
             }
 
             if (!statusBefore.isClean()) {
-                result.details += "Detected local uncommitted content, automatically cleaning:\n";
-                if (!statusBefore.getModified().isEmpty()) {
-                    result.details += "  Reset modified files: " + String.join(", ", statusBefore.getModified()) + "\n";
-                }
-                if (!statusBefore.getUntracked().isEmpty()) {
-                    result.details += "  Clean untracked files: " + String.join(", ", statusBefore.getUntracked()) + "\n";
-                }
-                git.reset().setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
-                git.clean().setCleanDirectories(true).setForce(true).call();
-                if (!git.status().call().isClean()) {
-                    throw new IllegalStateException("Still have uncommitted content or conflicts after automatic cleanup, please handle manually.");
-                }
+                result.details += "Detected local uncommitted content, attempting non-destructive pull\n";
             }
 
             try {
@@ -304,14 +540,24 @@ public class GitWorkspacePluginService implements GitPluginService {
         result.operationType = "Force Push";
 
         try (Git git = Git.open(new File(workspace.getPath()))) {
-            String currentBranch = git.getRepository().getBranch();
-            var pushCommand = git.push().setForce(true);
+            TrackingRef trackingRef = resolveTrackingRef(git);
+            ObjectId expectedRemoteId = git.getRepository().resolve(trackingRef.remoteTrackingRef());
+            RefSpec forceRefSpec = new RefSpec("refs/heads/" + trackingRef.localBranch()
+                    + ":" + trackingRef.remoteBranchRef()).setForceUpdate(true);
+            var pushCommand = git.push()
+                    .setRemote(trackingRef.remoteName())
+                    .setRefSpecs(forceRefSpec)
+                    .setForce(true);
+            if (expectedRemoteId != null) {
+                pushCommand.setRefLeaseSpecs(new RefLeaseSpec(trackingRef.remoteBranchRef(), expectedRemoteId.name()));
+            }
             pushCommand.setTimeout(GIT_OPERATION_TIMEOUT);
             applyAuth(pushCommand, workspace);
             var pushResults = pushCommand.call();
 
             result.details += "Force push details:\n";
-            result.details += "  Local branch: " + currentBranch + "\n";
+            result.details += "  Local branch: " + trackingRef.localBranch() + "\n";
+            result.details += "  Remote branch: " + trackingRef.remoteName() + "/" + trackingRef.remoteBranchName() + "\n";
             result.details += "  Warning: Force push has overwritten remote changes\n";
 
             boolean pushSuccess = false;
@@ -349,8 +595,10 @@ public class GitWorkspacePluginService implements GitPluginService {
             result.affectedFiles.addAll(status.getChanged());
             result.affectedFiles.addAll(status.getAdded());
             result.affectedFiles.addAll(status.getRemoved());
+            result.affectedFiles.addAll(status.getMissing());
+            result.affectedFiles.addAll(status.getUntracked());
 
-            var stashResult = git.stashCreate().call();
+            var stashResult = git.stashCreate().setIncludeUntracked(true).call();
             if (stashResult == null) {
                 throw new RuntimeException("Stash failed, no changes to stash");
             }
@@ -380,6 +628,8 @@ public class GitWorkspacePluginService implements GitPluginService {
             result.affectedFiles.addAll(status.getModified());
             result.affectedFiles.addAll(status.getChanged());
             result.affectedFiles.addAll(status.getAdded());
+            result.affectedFiles.addAll(status.getMissing());
+            result.affectedFiles.addAll(status.getUntracked());
 
             result.success = true;
             result.message = "Successfully restored stashed changes";
@@ -403,17 +653,22 @@ public class GitWorkspacePluginService implements GitPluginService {
             result.affectedFiles.addAll(statusBefore.getModified());
             result.affectedFiles.addAll(statusBefore.getChanged());
             result.affectedFiles.addAll(statusBefore.getAdded());
+            result.affectedFiles.addAll(statusBefore.getMissing());
             result.affectedFiles.addAll(statusBefore.getUntracked());
 
             String commitIdBefore = getLastCommitId(git);
-            String branchName = git.getRepository().getBranch();
+            TrackingRef trackingRef = resolveTrackingRef(git);
 
             var fetchCmd = git.fetch();
             fetchCmd.setTimeout(GIT_OPERATION_TIMEOUT);
             applyAuth(fetchCmd, workspace);
             fetchCmd.call();
 
-            git.reset().setRef("origin/" + branchName).setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
+            if (git.getRepository().resolve(trackingRef.remoteTrackingRef()) == null) {
+                throw new IllegalStateException("Unable to find upstream branch: "
+                        + trackingRef.remoteName() + "/" + trackingRef.remoteBranchName());
+            }
+            git.reset().setRef(trackingRef.remoteTrackingRef()).setMode(org.eclipse.jgit.api.ResetCommand.ResetType.HARD).call();
             git.clean().setCleanDirectories(true).setForce(true).call();
 
             String commitIdAfter = getLastCommitId(git);
@@ -485,8 +740,128 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     @Override
+    public List<GitFileChange> listWorkingTreeChanges(Workspace workspace) throws Exception {
+        ensureGitWorkspace(workspace);
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            var status = git.status().call();
+            Map<String, GitFileChange.Type> changes = new HashMap<>();
+            putChanges(changes, status.getAdded(), GitFileChange.Type.ADDED);
+            putChanges(changes, status.getChanged(), GitFileChange.Type.MODIFIED);
+            putChanges(changes, status.getModified(), GitFileChange.Type.MODIFIED);
+            putChanges(changes, status.getRemoved(), GitFileChange.Type.DELETED);
+            putChanges(changes, status.getMissing(), GitFileChange.Type.DELETED);
+            putChanges(changes, status.getUntracked(), GitFileChange.Type.UNTRACKED);
+            putChanges(changes, status.getConflicting(), GitFileChange.Type.CONFLICTING);
+            return changes.entrySet().stream()
+                    .map(entry -> new GitFileChange(entry.getKey(), entry.getValue()))
+                    .sorted((left, right) -> left.getPath().compareToIgnoreCase(right.getPath()))
+                    .toList();
+        }
+    }
+
+    @Override
+    public String getWorkingTreeDiff(Workspace workspace, String filePath) throws Exception {
+        ensureGitWorkspace(workspace);
+        String normalizedPath = normalizeWorkspaceRelativePath(filePath);
+        try (Git git = Git.open(new File(workspace.getPath()))) {
+            var status = git.status().call();
+            if (status.getUntracked().contains(normalizedPath)) {
+                return renderUntrackedFileDiff(Paths.get(workspace.getPath()).resolve(normalizedPath), normalizedPath);
+            }
+
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            git.diff()
+                    .setCached(true)
+                    .setPathFilter(PathFilter.create(normalizedPath))
+                    .setOutputStream(output)
+                    .call();
+            git.diff()
+                    .setPathFilter(PathFilter.create(normalizedPath))
+                    .setOutputStream(output)
+                    .call();
+            String diff = output.toString(StandardCharsets.UTF_8);
+            return diff;
+        }
+    }
+
+    private void putChanges(Map<String, GitFileChange.Type> changes,
+                            Set<String> paths,
+                            GitFileChange.Type type) {
+        for (String path : paths) {
+            changes.put(path, type);
+        }
+    }
+
+    private String renderUntrackedFileDiff(Path filePath, String displayPath) throws IOException {
+        if (!Files.isRegularFile(filePath) || Files.size(filePath) > MAX_UNTRACKED_TEXT_DIFF_BYTES) {
+            return "";
+        }
+        String content = readUntrackedTextContent(filePath);
+        if (content == null) {
+            return "";
+        }
+        List<String> lines = content.isEmpty() ? List.of() : content.lines().toList();
+        StringBuilder diff = new StringBuilder();
+        diff.append("diff --git a/").append(displayPath).append(" b/").append(displayPath).append("\n");
+        diff.append("new file mode 100644\n");
+        diff.append("--- /dev/null\n");
+        diff.append("+++ b/").append(displayPath).append("\n");
+        diff.append("@@ -0,0 +1,").append(lines.size()).append(" @@\n");
+        for (String line : lines) {
+            diff.append("+").append(line).append("\n");
+        }
+        return diff.toString();
+    }
+
+    private String readUntrackedTextContent(Path filePath) throws IOException {
+        byte[] bytes = Files.readAllBytes(filePath);
+        if (containsNulByte(bytes)) {
+            return null;
+        }
+        try {
+            return StandardCharsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes))
+                    .toString();
+        } catch (CharacterCodingException e) {
+            return null;
+        }
+    }
+
+    private boolean containsNulByte(byte[] bytes) {
+        for (byte value : bytes) {
+            if (value == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String normalizeWorkspaceRelativePath(String filePath) {
+        if (filePath == null || filePath.trim().isEmpty()) {
+            throw new IllegalArgumentException("File path is required");
+        }
+        String normalizedPath = filePath.trim().replace('\\', '/');
+        if (normalizedPath.startsWith("/")
+                || normalizedPath.contains("../")
+                || normalizedPath.endsWith("/..")
+                || normalizedPath.equals("..")) {
+            throw new IllegalArgumentException("Invalid workspace relative path: " + filePath);
+        }
+        return normalizedPath;
+    }
+
+    @Override
     public void addRemoteRepository(Workspace workspace, String remoteUrl, String remoteBranch,
                                     GitAuthType authType, String username, String password, String token) throws Exception {
+        addRemoteRepository(workspace, remoteUrl, remoteBranch, authType, username, password, token, null, null);
+    }
+
+    @Override
+    public void addRemoteRepository(Workspace workspace, String remoteUrl, String remoteBranch,
+                                    GitAuthType authType, String username, String password, String token,
+                                    String sshPrivateKeyPath, String sshPassphrase) throws Exception {
         ensureGitWorkspace(workspace);
         if (workspace.getGitRepoSource() != GitRepoSource.INITIALIZED) {
             throw new IllegalStateException("Only Git workspaces of type INITIALIZED can add a remote repository");
@@ -516,9 +891,25 @@ public class GitWorkspacePluginService implements GitPluginService {
             if (authType == GitAuthType.PASSWORD) {
                 workspace.setGitPassword(password);
                 workspace.setGitToken(null);
+                workspace.setSshPrivateKeyPath(null);
+                workspace.setSshPassphrase(null);
             } else if (authType == GitAuthType.TOKEN) {
                 workspace.setGitToken(token);
                 workspace.setGitPassword(null);
+                workspace.setSshPrivateKeyPath(null);
+                workspace.setSshPassphrase(null);
+            } else if (authType == GitAuthType.SSH_KEY) {
+                workspace.setSshPrivateKeyPath(sshPrivateKeyPath);
+                workspace.setSshPassphrase(sshPassphrase);
+                workspace.setGitUsername(null);
+                workspace.setGitPassword(null);
+                workspace.setGitToken(null);
+            } else if (authType == GitAuthType.NONE) {
+                workspace.setGitUsername(null);
+                workspace.setGitPassword(null);
+                workspace.setGitToken(null);
+                workspace.setSshPrivateKeyPath(null);
+                workspace.setSshPassphrase(null);
             }
             workspace.setUpdatedAt(System.currentTimeMillis());
         }
@@ -796,6 +1187,197 @@ public class GitWorkspacePluginService implements GitPluginService {
         ignorePatterns.add(".DS_Store");
         ignorePatterns.add("Thumbs.db");
         Files.write(gitignorePath, ignorePatterns, StandardCharsets.UTF_8);
+    }
+
+    private TrackingRef resolveTrackingRef(Git git) throws IOException {
+        String localBranch = git.getRepository().getBranch();
+        String tracking = git.getRepository().getConfig().getString("branch", localBranch, "merge");
+        if (tracking == null || tracking.isBlank()) {
+            throw new IllegalStateException("Current branch has no upstream branch set: " + localBranch);
+        }
+        String remoteName = git.getRepository().getConfig().getString("branch", localBranch, "remote");
+        if (remoteName == null || remoteName.isBlank()) {
+            remoteName = "origin";
+        }
+        String remoteBranchName = tracking.startsWith("refs/heads/")
+                ? tracking.substring("refs/heads/".length())
+                : tracking;
+        if (remoteBranchName.isBlank()) {
+            throw new IllegalStateException("Current branch has invalid upstream branch: " + tracking);
+        }
+        return new TrackingRef(
+                localBranch,
+                remoteName,
+                remoteBranchName,
+                "refs/heads/" + remoteBranchName,
+                "refs/remotes/" + remoteName + "/" + remoteBranchName
+        );
+    }
+
+    private record TrackingRef(String localBranch,
+                               String remoteName,
+                               String remoteBranchName,
+                               String remoteBranchRef,
+                               String remoteTrackingRef) {
+    }
+
+    private GitBranchInfo toBranchInfo(Git git,
+                                       Ref ref,
+                                       String currentBranch,
+                                       Map<String, String> trackingByLocalBranch,
+                                       Set<String> trackedRemoteBranches) throws Exception {
+        String fullName = ref.getName();
+        boolean remote = fullName.startsWith("refs/remotes/");
+        String name = Repository.shortenRefName(fullName);
+        if (remote && name.endsWith("/HEAD")) {
+            return null;
+        }
+        if (remote && trackedRemoteBranches.contains(name)) {
+            return null;
+        }
+        String remoteName = null;
+        if (remote) {
+            int separatorIndex = name.indexOf('/');
+            remoteName = separatorIndex > 0 ? name.substring(0, separatorIndex) : null;
+        }
+        boolean current = !remote && name.equals(currentBranch);
+        String trackingBranch = trackingByLocalBranch.get(name);
+        GitBranchInfo branchInfo = new GitBranchInfo(name, fullName, current, remote, remoteName, trackingBranch);
+        populateSyncCounts(git, branchInfo);
+        return branchInfo;
+    }
+
+    private void populateSyncCounts(Git git, GitBranchInfo branchInfo) throws Exception {
+        if (branchInfo.isRemote() || branchInfo.getTrackingBranch() == null || branchInfo.getTrackingBranch().isBlank()) {
+            return;
+        }
+        ObjectId localId = git.getRepository().resolve("refs/heads/" + branchInfo.getName());
+        ObjectId remoteId = git.getRepository().resolve("refs/remotes/" + branchInfo.getTrackingBranch());
+        if (localId == null || remoteId == null) {
+            return;
+        }
+        branchInfo.setAheadCount(countCommitsBetween(git, remoteId, localId));
+        branchInfo.setBehindCount(countCommitsBetween(git, localId, remoteId));
+    }
+
+    private int countCommitsBetween(Git git, ObjectId startExclusive, ObjectId endInclusive) throws Exception {
+        int count = 0;
+        for (RevCommit ignored : git.log().addRange(startExclusive, endInclusive).call()) {
+            count++;
+        }
+        return count;
+    }
+
+    private Map<String, String> localBranchTrackingMap(Git git, List<Ref> refs) {
+        Map<String, String> trackingByLocalBranch = new HashMap<>();
+        for (Ref ref : refs) {
+            String fullName = ref.getName();
+            if (!fullName.startsWith("refs/heads/")) {
+                continue;
+            }
+            String localBranch = Repository.shortenRefName(fullName);
+            String trackingBranch = currentTrackingBranchName(git, localBranch);
+            if (trackingBranch != null && !trackingBranch.isBlank()) {
+                trackingByLocalBranch.put(localBranch, trackingBranch);
+            }
+        }
+        return trackingByLocalBranch;
+    }
+
+    private String currentTrackingBranchName(Git git, String currentBranch) {
+        String tracking = git.getRepository().getConfig().getString("branch", currentBranch, "merge");
+        if (tracking == null || tracking.isBlank()) {
+            return null;
+        }
+        String remoteName = git.getRepository().getConfig().getString("branch", currentBranch, "remote");
+        if (remoteName == null || remoteName.isBlank() || ".".equals(remoteName)) {
+            return null;
+        }
+        String remoteBranchName = tracking.startsWith("refs/heads/")
+                ? tracking.substring("refs/heads/".length())
+                : tracking;
+        if (remoteBranchName.isBlank()) {
+            return null;
+        }
+        return remoteName + "/" + remoteBranchName;
+    }
+
+    private String normalizeRequestedBranchName(String branchName) {
+        if (branchName == null || branchName.trim().isEmpty()) {
+            throw new IllegalArgumentException("Branch name is required");
+        }
+        String normalized = branchName.trim();
+        if (normalized.startsWith("refs/heads/")) {
+            return normalized.substring("refs/heads/".length());
+        }
+        if (normalized.startsWith("refs/remotes/")) {
+            return normalized.substring("refs/remotes/".length());
+        }
+        return normalized;
+    }
+
+    private String validateLocalBranchName(String branchName) {
+        String localBranch = normalizeRequestedBranchName(branchName);
+        if (!Repository.isValidRefName("refs/heads/" + localBranch)) {
+            throw new IllegalArgumentException("Invalid branch name: " + branchName);
+        }
+        return localBranch;
+    }
+
+    private String localBranchNameForCheckout(Git git, String requestedBranch) throws IOException {
+        if (git.getRepository().resolve("refs/heads/" + requestedBranch) != null) {
+            return requestedBranch;
+        }
+        int remoteSeparator = requestedBranch.indexOf('/');
+        if (remoteSeparator > 0) {
+            return requestedBranch.substring(remoteSeparator + 1);
+        }
+        return requestedBranch;
+    }
+
+    private String resolveRemoteBranchForCheckout(Git git, String requestedBranch) throws Exception {
+        if (git.getRepository().resolve("refs/remotes/" + requestedBranch) != null) {
+            return requestedBranch;
+        }
+        if (requestedBranch.contains("/")) {
+            return null;
+        }
+
+        String matchedRemoteBranch = null;
+        for (Ref ref : git.branchList().setListMode(ListBranchCommand.ListMode.REMOTE).call()) {
+            String remoteBranch = Repository.shortenRefName(ref.getName());
+            if (remoteBranch.endsWith("/HEAD")) {
+                continue;
+            }
+            int separatorIndex = remoteBranch.indexOf('/');
+            if (separatorIndex > 0 && remoteBranch.substring(separatorIndex + 1).equals(requestedBranch)) {
+                if (matchedRemoteBranch != null) {
+                    throw new IllegalArgumentException("Branch name is ambiguous across remotes: " + requestedBranch);
+                }
+                matchedRemoteBranch = remoteBranch;
+            }
+        }
+        return matchedRemoteBranch;
+    }
+
+    private void updateWorkspaceBranchMetadata(Git git, Workspace workspace) throws Exception {
+        String currentBranch = git.getRepository().getBranch();
+        workspace.setCurrentBranch(currentBranch);
+        String tracking = git.getRepository().getConfig().getString("branch", currentBranch, "merge");
+        String remoteName = git.getRepository().getConfig().getString("branch", currentBranch, "remote");
+        if (tracking != null && !tracking.isBlank()) {
+            if (remoteName == null || remoteName.isBlank()) {
+                remoteName = "origin";
+            }
+            String remoteBranchName = tracking.startsWith("refs/heads/")
+                    ? tracking.substring("refs/heads/".length())
+                    : tracking;
+            workspace.setRemoteBranch(remoteName + "/" + remoteBranchName);
+        } else {
+            workspace.setRemoteBranch(null);
+        }
+        workspace.setLastCommitId(getLastCommitId(git));
+        workspace.setUpdatedAt(System.currentTimeMillis());
     }
 
     private String getLastCommitId(Git git) {

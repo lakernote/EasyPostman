@@ -42,7 +42,7 @@ public final class ToolWindowChrome {
         DEFAULT,
 
         /**
-         * Explicit app opt-in: a 5px background-colored drag gap without line or handle.
+         * Explicit app opt-in: a 5px background-colored drag target with a centered 1px separator line.
          */
         DRAG_GAP
     }
@@ -402,8 +402,16 @@ public final class ToolWindowChrome {
                     Graphics2D g2 = (Graphics2D) g.create();
                     try {
                         if (dividerStyle == SplitDividerStyle.DRAG_GAP) {
-                            g2.setColor(ModernColors.getBackgroundColor());
+                            g2.setColor(ModernColors.getCardBackgroundColor());
                             g2.fillRect(0, 0, getWidth(), getHeight());
+                            g2.setColor(ModernColors.getTabSeparatorColor());
+                            if (splitPane != null && splitPane.getOrientation() == JSplitPane.HORIZONTAL_SPLIT) {
+                                int x = Math.max(0, getWidth() / 2);
+                                g2.drawLine(x, 0, x, getHeight());
+                            } else {
+                                int y = Math.max(0, getHeight() / 2);
+                                g2.drawLine(0, y, getWidth(), y);
+                            }
                             return;
                         }
                         g2.setColor(ModernColors.getCardBackgroundColor());

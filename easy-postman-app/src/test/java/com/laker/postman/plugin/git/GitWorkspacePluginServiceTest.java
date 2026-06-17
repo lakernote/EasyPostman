@@ -7,6 +7,9 @@ import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
+import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.transport.URIish;
 import org.testng.annotations.AfterMethod;
@@ -14,11 +17,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -28,14 +33,27 @@ public class GitWorkspacePluginServiceTest {
 
     private final GitWorkspacePluginService service = new GitWorkspacePluginService();
     private Path tempDir;
+    private Properties settingsProps;
+    private Properties settingsBackup;
 
     @BeforeMethod
-    public void setUp() throws IOException {
+    public void setUp() throws Exception {
         tempDir = Files.createTempDirectory("easy-postman-git-service");
+        settingsProps = getSettingsProperties();
+        settingsBackup = new Properties();
+        settingsBackup.putAll(settingsProps);
+        settingsProps.setProperty(
+                "git_diff_large_file_threshold_mb",
+                String.valueOf(SettingManager.DEFAULT_GIT_DIFF_LARGE_FILE_THRESHOLD_MB)
+        );
     }
 
     @AfterMethod(alwaysRun = true)
     public void tearDown() throws IOException {
+        if (settingsProps != null && settingsBackup != null) {
+            settingsProps.clear();
+            settingsProps.putAll(settingsBackup);
+        }
         if (tempDir == null || !Files.exists(tempDir)) {
             return;
         }
@@ -416,11 +434,139 @@ public class GitWorkspacePluginServiceTest {
     @Test
     public void getWorkingTreeDiffShouldSkipLargeUntrackedFiles() throws Exception {
         Path workspacePath = initRepositoryWithInitialCommit("diff-large-workspace");
-        Files.writeString(workspacePath.resolve("large.txt"), "x".repeat(1024 * 1024 + 1), StandardCharsets.UTF_8);
+        Files.writeString(workspacePath.resolve("large.txt"),
+                "x".repeat((int) SettingManager.getGitDiffLargeFileThresholdBytes() + 1),
+                StandardCharsets.UTF_8);
 
         String diff = service.getWorkingTreeDiff(workspace(workspacePath, GitRepoSource.INITIALIZED), "large.txt");
 
-        assertEquals(diff, "");
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED)));
+        assertTrue(diff.contains(I18nUtil.getMessage(
+                MessageKeys.GIT_DIFF_LARGE_UNTRACKED_SKIPPED_NOTICE,
+                SettingManager.getGitDiffLargeFileThresholdMb()
+        )));
+        assertTrue(diff.contains(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_WORKTREE) + ":"));
+    }
+
+    @Test
+    public void getWorkingTreeDiffShouldTruncateUntrackedTextPreview() throws Exception {
+        Path workspacePath = initRepositoryWithInitialCommit("diff-large-untracked-preview-workspace");
+        Files.writeString(workspacePath.resolve("preview.txt"), "x".repeat(700 * 1024), StandardCharsets.UTF_8);
+
+        String diff = service.getWorkingTreeDiff(workspace(workspacePath, GitRepoSource.INITIALIZED), "preview.txt");
+
+        assertTrue(diff.length() < 540 * 1024);
+        assertTrue(diff.contains("+++ b/preview.txt"));
+        assertTrue(diff.contains(I18nUtil.getMessage(MessageKeys.GIT_DIFF_TRUNCATED_NOTICE)));
+    }
+
+    @Test
+    public void getWorkingTreeDiffShouldSummarizeTrackedFileAboveDefaultLargeFileThreshold() throws Exception {
+        Path workspacePath = initRepositoryWithInitialCommit("diff-large-tracked-workspace");
+        Path largeFile = workspacePath.resolve("large.txt");
+        String original = largeMultilineContent("old head");
+        assertTrue(original.getBytes(StandardCharsets.UTF_8).length > SettingManager.getGitDiffLargeFileThresholdBytes());
+        try (Git git = Git.open(workspacePath.toFile())) {
+            writeAndCommit(git, largeFile, original, "Add large text file");
+        }
+        Files.writeString(largeFile, original.replace("old head", "new head"), StandardCharsets.UTF_8);
+
+        String diff = service.getWorkingTreeDiff(workspace(workspacePath, GitRepoSource.INITIALIZED), "large.txt");
+
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED)));
+        assertTrue(diff.contains(largeSkippedNotice()));
+        assertTrue(diff.contains(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_WORKTREE) + ":"));
+    }
+
+    @Test
+    public void getWorkingTreeDiffShouldRenderTrackedDiffBelowDefaultLargeFileThreshold() throws Exception {
+        Path workspacePath = initRepositoryWithInitialCommit("diff-medium-tracked-workspace");
+        Path mediumFile = workspacePath.resolve("medium.txt");
+        String original = mediumMultilineContent("old head");
+        int originalBytes = original.getBytes(StandardCharsets.UTF_8).length;
+        assertTrue(originalBytes > 1024 * 1024);
+        assertTrue(originalBytes < SettingManager.getGitDiffLargeFileThresholdBytes());
+        try (Git git = Git.open(workspacePath.toFile())) {
+            writeAndCommit(git, mediumFile, original, "Add medium text file");
+        }
+        Files.writeString(mediumFile, original.replace("old head", "new head"), StandardCharsets.UTF_8);
+
+        String diff = service.getWorkingTreeDiff(workspace(workspacePath, GitRepoSource.INITIALIZED), "medium.txt");
+
+        assertTrue(diff.contains("-old head"));
+        assertTrue(diff.contains("+new head"));
+        assertFalse(diff.contains(largeSkippedNotice()));
+    }
+
+    @Test
+    public void getWorkingTreeDiffShouldSummarizeVeryLargeTrackedPatchInput() throws Exception {
+        Path workspacePath = initRepositoryWithInitialCommit("diff-truncated-workspace");
+        Files.writeString(workspacePath.resolve("README.md"), "x".repeat(9 * 1024 * 1024), StandardCharsets.UTF_8);
+
+        String diff = service.getWorkingTreeDiff(workspace(workspacePath, GitRepoSource.INITIALIZED), "README.md");
+
+        assertTrue(diff.length() < 128 * 1024);
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED)));
+        assertTrue(diff.contains(largeSkippedNotice()));
+        assertTrue(diff.contains(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_WORKTREE) + ":"));
+    }
+
+    @Test
+    public void getWorkingTreeDiffShouldSummarizeLargeFileWithStagedAndUnstagedChanges() throws Exception {
+        Path workspacePath = initRepositoryWithInitialCommit("diff-large-staged-unstaged-workspace");
+        Path collections = workspacePath.resolve("collections.json");
+        try (Git git = Git.open(workspacePath.toFile())) {
+            writeAndCommit(git, collections, largeSingleLineContent("committed"), "Add large collection");
+            Files.writeString(collections, largeSingleLineContent("staged"), StandardCharsets.UTF_8);
+            git.add().addFilepattern("collections.json").call();
+            Files.writeString(collections, largeSingleLineContent("unstaged"), StandardCharsets.UTF_8);
+        }
+
+        String diff = service.getWorkingTreeDiff(workspace(workspacePath, GitRepoSource.INITIALIZED), "collections.json");
+
+        assertTrue(diff.length() < 128 * 1024);
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_STAGED)));
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED)));
+        assertTrue(diff.contains(largeSkippedNotice()));
+        assertTrue(diff.contains(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_STAGED) + ":"));
+        assertTrue(diff.contains(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_WORKTREE) + ":"));
+    }
+
+    @Test
+    public void getWorkingTreeDiffShouldSummarizeLargeStagedBlobWhenWorktreeFileIsSmall() throws Exception {
+        Path workspacePath = initRepositoryWithInitialCommit("diff-large-index-small-worktree-workspace");
+        Path collections = workspacePath.resolve("collections.json");
+        try (Git git = Git.open(workspacePath.toFile())) {
+            writeAndCommit(git, collections, largeSingleLineContent("committed"), "Add large collection");
+            Files.writeString(collections, largeSingleLineContent("staged"), StandardCharsets.UTF_8);
+            git.add().addFilepattern("collections.json").call();
+            Files.writeString(collections, "{\"small\":true}\n", StandardCharsets.UTF_8);
+        }
+
+        String diff = service.getWorkingTreeDiff(workspace(workspacePath, GitRepoSource.INITIALIZED), "collections.json");
+
+        assertTrue(diff.length() < 128 * 1024);
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_STAGED)));
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED)));
+        assertTrue(diff.contains(largeSkippedNotice()));
+        assertTrue(diff.contains(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_STAGED) + ":"));
+        assertTrue(diff.contains(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_WORKTREE) + ":"));
+    }
+
+    @Test
+    public void getWorkingTreeDiffShouldShowStagedAndUnstagedShortStats() throws Exception {
+        Path workspacePath = initRepositoryWithInitialCommit("diff-staged-unstaged-workspace");
+        Path readme = workspacePath.resolve("README.md");
+        Files.writeString(readme, "initial\nstaged\n", StandardCharsets.UTF_8);
+        try (Git git = Git.open(workspacePath.toFile())) {
+            git.add().addFilepattern("README.md").call();
+        }
+        Files.writeString(readme, "initial\nstaged\nunstaged\n", StandardCharsets.UTF_8);
+
+        String diff = service.getWorkingTreeDiff(workspace(workspacePath, GitRepoSource.INITIALIZED), "README.md");
+
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_STAGED)));
+        assertTrue(diff.contains(oneFileSummary(MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED)));
     }
 
     private Path createBareRemote() throws Exception {
@@ -491,6 +637,46 @@ public class GitWorkspacePluginServiceTest {
                 .setCommitter("EasyPostman Test", "test@example.com")
                 .setMessage(message)
                 .call();
+    }
+
+    private String largeMultilineContent(String tail) {
+        StringBuilder content = new StringBuilder(1024 * 1024 + 128);
+        content.append(tail).append('\n');
+        for (int i = 0; i < 90_000; i++) {
+            content.append("line-").append(i).append(": unchanged content\n");
+        }
+        return content.toString();
+    }
+
+    private String mediumMultilineContent(String tail) {
+        StringBuilder content = new StringBuilder(1024 * 1024 + 128);
+        content.append(tail).append('\n');
+        for (int i = 0; i < 40_000; i++) {
+            content.append("line-").append(i).append(": unchanged content\n");
+        }
+        return content.toString();
+    }
+
+    private String largeSingleLineContent(String marker) {
+        return "{\"marker\":\"" + marker + "\",\"data\":\"" + "x".repeat(2 * 1024 * 1024) + "\"}\n";
+    }
+
+    private String oneFileSummary(String labelKey) {
+        return I18nUtil.getMessage(labelKey) + ": "
+                + I18nUtil.getMessage(MessageKeys.GIT_DIFF_SUMMARY_FILE_CHANGED, 1);
+    }
+
+    private String largeSkippedNotice() {
+        return I18nUtil.getMessage(
+                MessageKeys.GIT_DIFF_LARGE_SKIPPED_NOTICE,
+                SettingManager.getGitDiffLargeFileThresholdMb()
+        );
+    }
+
+    private static Properties getSettingsProperties() throws Exception {
+        Field propsField = SettingManager.class.getDeclaredField("props");
+        propsField.setAccessible(true);
+        return (Properties) propsField.get(null);
     }
 
     private Workspace workspace(Path path, GitRepoSource repoSource) {

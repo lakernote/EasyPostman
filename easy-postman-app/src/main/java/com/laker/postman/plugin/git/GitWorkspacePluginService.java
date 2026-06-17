@@ -14,19 +14,31 @@ import com.laker.postman.model.WorkspaceType;
 import com.laker.postman.plugin.api.service.GitPluginService;
 import com.laker.postman.plugin.git.internal.GitConflictDetector;
 import com.laker.postman.plugin.git.internal.SshCredentialsProvider;
+import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.CloneCommand;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
+import org.eclipse.jgit.api.Status;
 import org.eclipse.jgit.api.errors.NoHeadException;
 import org.eclipse.jgit.api.errors.RefNotAdvertisedException;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.Edit;
+import org.eclipse.jgit.diff.EditList;
+import org.eclipse.jgit.dircache.DirCache;
+import org.eclipse.jgit.dircache.DirCacheEntry;
+import org.eclipse.jgit.dircache.DirCacheIterator;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.MergeStrategy;
+import org.eclipse.jgit.patch.FileHeader;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.transport.RefLeaseSpec;
@@ -35,15 +47,20 @@ import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.EmptyTreeIterator;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import org.eclipse.jgit.treewalk.filter.PathFilter;
+import org.eclipse.jgit.util.io.DisabledOutputStream;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -51,6 +68,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -58,7 +76,7 @@ import java.util.Set;
 public class GitWorkspacePluginService implements GitPluginService {
 
     private static final int GIT_OPERATION_TIMEOUT = 10;
-    private static final long MAX_UNTRACKED_TEXT_DIFF_BYTES = 1024 * 1024;
+    private static final int MAX_DIFF_PREVIEW_BYTES = 512 * 1024;
 
     @Override
     public void prepareGitWorkspace(Workspace workspace) throws Exception {
@@ -763,25 +781,228 @@ public class GitWorkspacePluginService implements GitPluginService {
     public String getWorkingTreeDiff(Workspace workspace, String filePath) throws Exception {
         ensureGitWorkspace(workspace);
         String normalizedPath = normalizeWorkspaceRelativePath(filePath);
+        Path workspacePath = Paths.get(workspace.getPath());
         try (Git git = Git.open(new File(workspace.getPath()))) {
             var status = git.status().call();
+            int largeFileThresholdMb = SettingManager.getGitDiffLargeFileThresholdMb();
+            long largeFileThresholdBytes = SettingManager.gitDiffLargeFileThresholdBytes(largeFileThresholdMb);
             if (status.getUntracked().contains(normalizedPath)) {
-                return renderUntrackedFileDiff(Paths.get(workspace.getPath()).resolve(normalizedPath), normalizedPath);
+                return renderUntrackedFileDiff(
+                        workspacePath.resolve(normalizedPath),
+                        normalizedPath,
+                        largeFileThresholdBytes,
+                        largeFileThresholdMb
+                );
             }
-
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            git.diff()
-                    .setCached(true)
-                    .setPathFilter(PathFilter.create(normalizedPath))
-                    .setOutputStream(output)
-                    .call();
-            git.diff()
-                    .setPathFilter(PathFilter.create(normalizedPath))
-                    .setOutputStream(output)
-                    .call();
-            String diff = output.toString(StandardCharsets.UTF_8);
-            return diff;
+            LargeDiffInputs largeInputs = inspectLargeDiffInputs(git.getRepository(), workspacePath, normalizedPath);
+            if (largeInputs.hasLargeInput(largeFileThresholdBytes)) {
+                return renderLargeTrackedFileSummary(status, normalizedPath, largeInputs, largeFileThresholdMb);
+            }
+            return renderJGitTrackedFileDiff(git, normalizedPath);
         }
+    }
+
+    private String renderLargeTrackedFileSummary(Status status,
+                                                 String normalizedPath,
+                                                 LargeDiffInputs largeInputs,
+                                                 int thresholdMb) {
+        StringBuilder result = new StringBuilder();
+        if (hasStagedChange(status, normalizedPath)) {
+            result.append(summaryLabel(MessageKeys.GIT_DIFF_SUMMARY_STAGED))
+                    .append(": ")
+                    .append(changedFilesLabel(1))
+                    .append('\n');
+        }
+        if (hasUnstagedChange(status, normalizedPath)) {
+            result.append(summaryLabel(MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED))
+                    .append(": ")
+                    .append(changedFilesLabel(1))
+                    .append('\n');
+        }
+        if (!result.isEmpty()) {
+            result.append('\n');
+        }
+        result.append(I18nUtil.getMessage(MessageKeys.GIT_DIFF_LARGE_SKIPPED_NOTICE, thresholdMb)).append('\n');
+        result.append(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_HEAD))
+                .append(": ")
+                .append(formatBytes(largeInputs.headSize()))
+                .append('\n');
+        result.append(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_STAGED))
+                .append(": ")
+                .append(formatBytes(largeInputs.indexSize()))
+                .append('\n');
+        result.append(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_WORKTREE))
+                .append(": ")
+                .append(formatBytes(largeInputs.worktreeSize()))
+                .append('\n');
+        return result.toString();
+    }
+
+    private boolean hasStagedChange(Status status, String normalizedPath) {
+        return status.getAdded().contains(normalizedPath)
+                || status.getChanged().contains(normalizedPath)
+                || status.getRemoved().contains(normalizedPath);
+    }
+
+    private boolean hasUnstagedChange(Status status, String normalizedPath) {
+        return status.getModified().contains(normalizedPath)
+                || status.getMissing().contains(normalizedPath);
+    }
+
+    private String renderJGitTrackedFileDiff(Git git, String normalizedPath) throws Exception {
+        StringBuilder result = new StringBuilder();
+        appendDiffStats(
+                result,
+                MessageKeys.GIT_DIFF_SUMMARY_STAGED,
+                diffStats(git.getRepository(), normalizedPath, true)
+        );
+        appendDiffStats(
+                result,
+                MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED,
+                diffStats(git.getRepository(), normalizedPath, false)
+        );
+        if (!result.isEmpty()) {
+            result.append('\n');
+        }
+
+        PreviewOutputStream output = new PreviewOutputStream(MAX_DIFF_PREVIEW_BYTES);
+        writeDiffPreview(git, normalizedPath, true, output);
+        writeDiffPreview(git, normalizedPath, false, output);
+        result.append(output.toString(StandardCharsets.UTF_8));
+        if (output.isTruncated()) {
+            result.append("\n\n... ")
+                    .append(I18nUtil.getMessage(MessageKeys.GIT_DIFF_TRUNCATED_NOTICE))
+                    .append('\n');
+        }
+        return result.toString();
+    }
+
+    private LargeDiffInputs inspectLargeDiffInputs(Repository repository, Path workspacePath, String normalizedPath) {
+        long headSize = blobSize(repository, "HEAD:" + normalizedPath);
+        long indexSize = indexBlobSize(repository, normalizedPath);
+        long worktreeSize = worktreeFileSize(workspacePath.resolve(normalizedPath));
+        return new LargeDiffInputs(headSize, indexSize, worktreeSize);
+    }
+
+    private long blobSize(Repository repository, String revPath) {
+        try {
+            ObjectId objectId = repository.resolve(revPath);
+            if (objectId == null) {
+                return -1;
+            }
+            ObjectLoader loader = repository.open(objectId);
+            return loader.getSize();
+        } catch (IOException ex) {
+            log.debug("Failed to inspect Git blob size for {}", revPath, ex);
+            return -1;
+        }
+    }
+
+    private long indexBlobSize(Repository repository, String normalizedPath) {
+        try {
+            DirCache dirCache = repository.readDirCache();
+            int entryIndex = dirCache.findEntry(normalizedPath);
+            if (entryIndex < 0) {
+                return -1;
+            }
+            DirCacheEntry entry = dirCache.getEntry(entryIndex);
+            return repository.open(entry.getObjectId()).getSize();
+        } catch (IOException ex) {
+            log.debug("Failed to inspect Git index blob size for {}", normalizedPath, ex);
+            return -1;
+        }
+    }
+
+    private long worktreeFileSize(Path filePath) {
+        try {
+            return Files.isRegularFile(filePath) ? Files.size(filePath) : -1;
+        } catch (IOException ex) {
+            log.debug("Failed to inspect working tree file size for {}", filePath, ex);
+            return -1;
+        }
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 0) {
+            return "-";
+        }
+        if (bytes < 1024) {
+            return bytes + " B";
+        }
+        long kib = Math.round(bytes / 1024.0);
+        if (kib < 1024) {
+            return kib + " KB";
+        }
+        return String.format(Locale.ROOT, "%.1f MB", bytes / 1024.0 / 1024.0);
+    }
+
+    private void writeDiffPreview(Git git,
+                                  String normalizedPath,
+                                  boolean cached,
+                                  PreviewOutputStream output) throws Exception {
+        if (output.isTruncated()) {
+            return;
+        }
+        try {
+            git.diff()
+                    .setCached(cached)
+                    .setPathFilter(PathFilter.create(normalizedPath))
+                    .setOutputStream(output)
+                    .call();
+        } catch (Exception ex) {
+            if (!hasCause(ex, DiffPreviewTruncatedException.class)) {
+                throw ex;
+            }
+        }
+    }
+
+    private void appendDiffStats(StringBuilder result, String labelKey, DiffStats stats) {
+        if (stats.isEmpty()) {
+            return;
+        }
+        result.append(summaryLabel(labelKey)).append(": ").append(stats.toShortStat()).append('\n');
+    }
+
+    private String summaryLabel(String key) {
+        return I18nUtil.getMessage(key);
+    }
+
+    private static String changedFilesLabel(int filesChanged) {
+        return I18nUtil.getMessage(
+                filesChanged == 1
+                        ? MessageKeys.GIT_DIFF_SUMMARY_FILE_CHANGED
+                        : MessageKeys.GIT_DIFF_SUMMARY_FILES_CHANGED,
+                filesChanged
+        );
+    }
+
+    private DiffStats diffStats(Repository repository, String normalizedPath, boolean cached) throws Exception {
+        try (DiffFormatter formatter = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+            formatter.setRepository(repository);
+            formatter.setPathFilter(PathFilter.create(normalizedPath));
+            List<DiffEntry> entries = formatter.scan(
+                    cached ? headTreeIterator(repository) : new DirCacheIterator(repository.readDirCache()),
+                    cached ? new DirCacheIterator(repository.readDirCache()) : new FileTreeIterator(repository)
+            );
+            DiffStats stats = new DiffStats(entries.size());
+            for (DiffEntry entry : entries) {
+                FileHeader header = formatter.toFileHeader(entry);
+                EditList edits = header.toEditList();
+                for (Edit edit : edits) {
+                    stats.addInsertions(edit.getEndB() - edit.getBeginB());
+                    stats.addDeletions(edit.getEndA() - edit.getBeginA());
+                }
+            }
+            return stats;
+        }
+    }
+
+    private AbstractTreeIterator headTreeIterator(Repository repository) throws Exception {
+        ObjectId head = repository.resolve("HEAD");
+        if (head == null) {
+            return new EmptyTreeIterator();
+        }
+        return prepareTreeParser(repository, head);
     }
 
     private void putChanges(Map<String, GitFileChange.Type> changes,
@@ -792,40 +1013,107 @@ public class GitWorkspacePluginService implements GitPluginService {
         }
     }
 
-    private String renderUntrackedFileDiff(Path filePath, String displayPath) throws IOException {
-        if (!Files.isRegularFile(filePath) || Files.size(filePath) > MAX_UNTRACKED_TEXT_DIFF_BYTES) {
+    private String renderUntrackedFileDiff(Path filePath,
+                                           String displayPath,
+                                           long largeFileThresholdBytes,
+                                           int thresholdMb) throws IOException {
+        if (!Files.isRegularFile(filePath)) {
             return "";
         }
-        String content = readUntrackedTextContent(filePath);
-        if (content == null) {
+        long fileSize = Files.size(filePath);
+        if (fileSize > largeFileThresholdBytes) {
+            return renderLargeUntrackedFileSummary(fileSize, thresholdMb);
+        }
+
+        UntrackedTextPreview preview = readUntrackedTextPreview(filePath, fileSize);
+        if (preview == null) {
             return "";
         }
-        List<String> lines = content.isEmpty() ? List.of() : content.lines().toList();
-        StringBuilder diff = new StringBuilder();
-        diff.append("diff --git a/").append(displayPath).append(" b/").append(displayPath).append("\n");
-        diff.append("new file mode 100644\n");
-        diff.append("--- /dev/null\n");
-        diff.append("+++ b/").append(displayPath).append("\n");
-        diff.append("@@ -0,0 +1,").append(lines.size()).append(" @@\n");
+
+        List<String> lines = preview.content().isEmpty() ? List.of() : preview.content().lines().toList();
+        PreviewOutputStream output = new PreviewOutputStream(MAX_DIFF_PREVIEW_BYTES);
+        writePreview(output, "diff --git a/" + displayPath + " b/" + displayPath + "\n");
+        writePreview(output, "new file mode 100644\n");
+        writePreview(output, "--- /dev/null\n");
+        writePreview(output, "+++ b/" + displayPath + "\n");
+        writePreview(output, "@@ -0,0 +1," + lines.size() + " @@\n");
         for (String line : lines) {
-            diff.append("+").append(line).append("\n");
+            writePreview(output, "+" + line + "\n");
+            if (output.isTruncated()) {
+                break;
+            }
         }
-        return diff.toString();
+        String result = output.toString(StandardCharsets.UTF_8);
+        if (preview.truncated() || output.isTruncated()) {
+            if (!result.endsWith("\n")) {
+                result += "\n";
+            }
+            result += "\n... " + I18nUtil.getMessage(MessageKeys.GIT_DIFF_TRUNCATED_NOTICE) + "\n";
+        }
+        return result;
     }
 
-    private String readUntrackedTextContent(Path filePath) throws IOException {
-        byte[] bytes = Files.readAllBytes(filePath);
+    private String renderLargeUntrackedFileSummary(long worktreeSize, int thresholdMb) {
+        return summaryLabel(MessageKeys.GIT_DIFF_SUMMARY_UNSTAGED)
+                + ": "
+                + changedFilesLabel(1)
+                + "\n\n"
+                + I18nUtil.getMessage(MessageKeys.GIT_DIFF_LARGE_UNTRACKED_SKIPPED_NOTICE, thresholdMb)
+                + "\n"
+                + I18nUtil.getMessage(MessageKeys.GIT_DIFF_SIZE_WORKTREE)
+                + ": "
+                + formatBytes(worktreeSize)
+                + "\n";
+    }
+
+    private UntrackedTextPreview readUntrackedTextPreview(Path filePath, long fileSize) throws IOException {
+        byte[] bytes = readFirstBytes(filePath, (int) Math.min(fileSize, (long) MAX_DIFF_PREVIEW_BYTES + 4));
         if (containsNulByte(bytes)) {
             return null;
         }
+        boolean truncated = fileSize > MAX_DIFF_PREVIEW_BYTES;
+        int decodeLength = truncated ? Math.min(MAX_DIFF_PREVIEW_BYTES, bytes.length) : bytes.length;
+        int minDecodeLength = truncated ? Math.max(0, decodeLength - 4) : decodeLength;
+        while (decodeLength >= minDecodeLength) {
+            try {
+                return new UntrackedTextPreview(decodeUtf8(bytes, decodeLength), truncated);
+            } catch (CharacterCodingException e) {
+                if (!truncated) {
+                    return null;
+                }
+                decodeLength--;
+            }
+        }
+        return null;
+    }
+
+    private byte[] readFirstBytes(Path filePath, int maxBytes) throws IOException {
+        try (InputStream input = Files.newInputStream(filePath)) {
+            return input.readNBytes(Math.max(0, maxBytes));
+        }
+    }
+
+    private String decodeUtf8(byte[] bytes, int length) throws CharacterCodingException {
         try {
             return StandardCharsets.UTF_8.newDecoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(bytes))
+                    .decode(ByteBuffer.wrap(bytes, 0, length))
                     .toString();
         } catch (CharacterCodingException e) {
-            return null;
+            throw e;
+        }
+    }
+
+    private void writePreview(PreviewOutputStream output, String value) throws IOException {
+        if (output.isTruncated()) {
+            return;
+        }
+        try {
+            byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+            output.write(bytes, 0, bytes.length);
+        } catch (DiffPreviewTruncatedException ignored) {
+            // The preview stream records truncation; callers append a localized notice.
         }
     }
 
@@ -834,6 +1122,118 @@ public class GitWorkspacePluginService implements GitPluginService {
             if (value == 0) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    private record LargeDiffInputs(long headSize, long indexSize, long worktreeSize) {
+        private boolean hasLargeInput(long thresholdBytes) {
+            return headSize > thresholdBytes
+                    || indexSize > thresholdBytes
+                    || worktreeSize > thresholdBytes;
+        }
+    }
+
+    private record UntrackedTextPreview(String content, boolean truncated) {
+    }
+
+    private static final class PreviewOutputStream extends OutputStream {
+        private final int limit;
+        private final ByteArrayOutputStream delegate;
+        private boolean truncated;
+
+        private PreviewOutputStream(int limit) {
+            this.limit = Math.max(0, limit);
+            this.delegate = new ByteArrayOutputStream(Math.min(this.limit, 8192));
+        }
+
+        @Override
+        public synchronized void write(byte[] bytes, int offset, int length) throws IOException {
+            int remaining = limit - delegate.size();
+            if (remaining <= 0) {
+                truncated = true;
+                throw new DiffPreviewTruncatedException();
+            }
+            int accepted = Math.min(length, remaining);
+            delegate.write(bytes, offset, accepted);
+            if (accepted < length) {
+                truncated = true;
+                throw new DiffPreviewTruncatedException();
+            }
+        }
+
+        @Override
+        public synchronized void write(int value) throws IOException {
+            if (delegate.size() >= limit) {
+                truncated = true;
+                throw new DiffPreviewTruncatedException();
+            }
+            delegate.write(value);
+        }
+
+        private boolean isTruncated() {
+            return truncated;
+        }
+
+        private String toString(java.nio.charset.Charset charset) {
+            return delegate.toString(charset);
+        }
+    }
+
+    private static final class DiffPreviewTruncatedException extends IOException {
+    }
+
+    private static final class DiffStats {
+        private final int filesChanged;
+        private int insertions;
+        private int deletions;
+
+        private DiffStats(int filesChanged) {
+            this.filesChanged = filesChanged;
+        }
+
+        private void addInsertions(int count) {
+            insertions += count;
+        }
+
+        private void addDeletions(int count) {
+            deletions += count;
+        }
+
+        private boolean isEmpty() {
+            return filesChanged == 0;
+        }
+
+        private String toShortStat() {
+            List<String> parts = new ArrayList<>();
+            parts.add(changedFilesLabel(filesChanged));
+            if (insertions > 0) {
+                parts.add(I18nUtil.getMessage(
+                        insertions == 1
+                                ? MessageKeys.GIT_DIFF_SUMMARY_INSERTION
+                                : MessageKeys.GIT_DIFF_SUMMARY_INSERTIONS,
+                        insertions
+                ));
+            }
+            if (deletions > 0) {
+                parts.add(I18nUtil.getMessage(
+                        deletions == 1
+                                ? MessageKeys.GIT_DIFF_SUMMARY_DELETION
+                                : MessageKeys.GIT_DIFF_SUMMARY_DELETIONS,
+                        deletions
+                ));
+            }
+            return String.join(", ", parts);
+        }
+    }
+
+    private boolean hasCause(Throwable throwable, Class<? extends Throwable> causeType) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (causeType.isInstance(current)) {
+                return true;
+            }
+            current = current.getCause();
         }
         return false;
     }

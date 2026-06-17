@@ -66,6 +66,13 @@ final class RequestSavedResponseController {
             SavedResponse.OriginalRequest originalRequest = savedResponse.getOriginalRequest();
             if (originalRequest != null) {
                 populateOriginalRequest(originalRequest);
+                if (originalRequest.isBodyTruncated()) {
+                    int previewLength = originalRequest.getBody() == null ? 0 : originalRequest.getBody().length();
+                    NotificationUtil.showWarning(I18nUtil.getMessage(
+                            MessageKeys.SAVED_RESPONSE_ORIGINAL_BODY_TRUNCATED,
+                            previewLength
+                    ));
+                }
             }
             savedResponseUiController.displaySavedResponse(responsePanel, requestLinePanel, sendAction, savedResponse);
         } catch (Exception ex) {

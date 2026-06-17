@@ -361,6 +361,7 @@ public final class MessageKeys {
     public static final String TAB_UNSAVED_CHANGES_TITLE = "tab.unsaved_changes.title";
     public static final String TAB_CLOSE_CURRENT = "tab.close_current";
     public static final String SAVED_RESPONSE_READONLY = "saved_response.readonly";
+    public static final String SAVED_RESPONSE_ORIGINAL_BODY_TRUNCATED = "saved_response.original_body_truncated";
     public static final String NETWORK_LOG_COPY_ACTUAL_CURL = "network_log.copy_actual_curl";
     public static final String NETWORK_LOG_COPY_ACTUAL_CURL_TOOLTIP = "network_log.copy_actual_curl.tooltip";
     public static final String NETWORK_LOG_COPY_ACTUAL_CURL_SUCCESS = "network_log.copy_actual_curl.success";
@@ -620,6 +621,20 @@ public final class MessageKeys {
     public static final String GIT_DIFF_TYPE_DELETED = "git.diff.type.deleted";
     public static final String GIT_DIFF_TYPE_UNTRACKED = "git.diff.type.untracked";
     public static final String GIT_DIFF_TYPE_CONFLICTING = "git.diff.type.conflicting";
+    public static final String GIT_DIFF_SUMMARY_STAGED = "git.diff.summary.staged";
+    public static final String GIT_DIFF_SUMMARY_UNSTAGED = "git.diff.summary.unstaged";
+    public static final String GIT_DIFF_SUMMARY_FILE_CHANGED = "git.diff.summary.file_changed";
+    public static final String GIT_DIFF_SUMMARY_FILES_CHANGED = "git.diff.summary.files_changed";
+    public static final String GIT_DIFF_SUMMARY_INSERTION = "git.diff.summary.insertion";
+    public static final String GIT_DIFF_SUMMARY_INSERTIONS = "git.diff.summary.insertions";
+    public static final String GIT_DIFF_SUMMARY_DELETION = "git.diff.summary.deletion";
+    public static final String GIT_DIFF_SUMMARY_DELETIONS = "git.diff.summary.deletions";
+    public static final String GIT_DIFF_TRUNCATED_NOTICE = "git.diff.truncated_notice";
+    public static final String GIT_DIFF_LARGE_SKIPPED_NOTICE = "git.diff.large_skipped_notice";
+    public static final String GIT_DIFF_LARGE_UNTRACKED_SKIPPED_NOTICE = "git.diff.large_untracked_skipped_notice";
+    public static final String GIT_DIFF_SIZE_HEAD = "git.diff.size.head";
+    public static final String GIT_DIFF_SIZE_STAGED = "git.diff.size.staged";
+    public static final String GIT_DIFF_SIZE_WORKTREE = "git.diff.size.worktree";
 
     // Git Branch Dialog
     public static final String GIT_BRANCH_TITLE = "git.branch.title";
@@ -1442,6 +1457,8 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_MAX_HISTORY_TOOLTIP = "settings.general.max_history.tooltip";
     public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS = "settings.general.max_opened_requests";
     public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS_TOOLTIP = "settings.general.max_opened_requests.tooltip";
+    public static final String SETTINGS_GIT_DIFF_LARGE_FILE_THRESHOLD = "settings.git.diff.large_file_threshold";
+    public static final String SETTINGS_GIT_DIFF_LARGE_FILE_THRESHOLD_TOOLTIP = "settings.git.diff.large_file_threshold.tooltip";
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE = "settings.general.auto_format_response";
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE_TOOLTIP = "settings.general.auto_format_response.tooltip";
     public static final String SETTINGS_GENERAL_STARTUP_SPLASH = "settings.general.startup_splash";
@@ -1481,6 +1498,7 @@ public final class MessageKeys {
     public static final String SETTINGS_VALIDATION_SLOW_REQUEST_THRESHOLD_ERROR = "settings.validation.slow_request_threshold.error";
     public static final String SETTINGS_VALIDATION_RESPONSE_BODY_PREVIEW_LIMIT_ERROR = "settings.validation.response_body_preview_limit.error";
     public static final String SETTINGS_VALIDATION_RESULT_ROW_LIMIT_ERROR = "settings.validation.result_row_limit.error";
+    public static final String SETTINGS_VALIDATION_GIT_DIFF_LARGE_FILE_THRESHOLD_ERROR = "settings.validation.git_diff_large_file_threshold.error";
     public static final String SETTINGS_VALIDATION_MAX_HISTORY_ERROR = "settings.validation.max_history.error";
     public static final String SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR = "settings.validation.max_opened_requests_error";
     public static final String SETTINGS_VALIDATION_PORT_ERROR = "settings.validation.port.error";

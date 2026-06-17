@@ -36,6 +36,9 @@ class AppSettingKeys {
     static final int DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT = 3_000;
     static final int MIN_PERFORMANCE_RESULT_ROW_LIMIT = 100;
     static final int MAX_PERFORMANCE_RESULT_ROW_LIMIT = 100_000;
+    static final int DEFAULT_GIT_DIFF_LARGE_FILE_THRESHOLD_MB = 2;
+    static final int MIN_GIT_DIFF_LARGE_FILE_THRESHOLD_MB = 1;
+    static final int MAX_GIT_DIFF_LARGE_FILE_THRESHOLD_MB = 64;
     static final int DEFAULT_TREND_SAMPLING_INTERVAL_SECONDS = 1;
     static final int DEFAULT_DOWNLOAD_PROGRESS_DIALOG_THRESHOLD = 100 * 1024 * 1024;
     static final int DEFAULT_MAX_HISTORY_COUNT = 100;
@@ -108,6 +111,11 @@ class AppSettingKeys {
             "performance_result_row_limit",
             DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT,
             AppSettingKeys::sanitizePerformanceResultRowLimit
+    );
+    static final SettingKey<Integer> GIT_DIFF_LARGE_FILE_THRESHOLD_MB = SettingKey.integerKey(
+            "git_diff_large_file_threshold_mb",
+            DEFAULT_GIT_DIFF_LARGE_FILE_THRESHOLD_MB,
+            AppSettingKeys::sanitizeGitDiffLargeFileThresholdMb
     );
     static final SettingKey<String> CSV_LAST_IMPORT_DIRECTORY = SettingKey.stringKey(
             "csv_last_import_directory",
@@ -330,6 +338,15 @@ class AppSettingKeys {
             return DEFAULT_PERFORMANCE_RESULT_ROW_LIMIT;
         }
         return rowLimit;
+    }
+
+    static int sanitizeGitDiffLargeFileThresholdMb(Integer thresholdMb) {
+        if (thresholdMb == null
+                || thresholdMb < MIN_GIT_DIFF_LARGE_FILE_THRESHOLD_MB
+                || thresholdMb > MAX_GIT_DIFF_LARGE_FILE_THRESHOLD_MB) {
+            return DEFAULT_GIT_DIFF_LARGE_FILE_THRESHOLD_MB;
+        }
+        return thresholdMb;
     }
 
     static String normalizeAutoUpdateFrequency(String frequency) {

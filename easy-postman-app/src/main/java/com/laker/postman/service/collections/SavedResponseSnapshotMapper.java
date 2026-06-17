@@ -3,9 +3,11 @@ package com.laker.postman.service.collections;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpHeader;
+import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.SavedResponse;
 import lombok.experimental.UtilityClass;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.UUID;
 
 @UtilityClass
 public class SavedResponseSnapshotMapper {
+    private static final int MAX_ORIGINAL_REQUEST_BODY_PREVIEW_CHARS = 64 * 1024;
 
     public SavedResponse fromExchange(String name, PreparedRequest request, HttpResponse response) {
         SavedResponse saved = new SavedResponse();
@@ -58,6 +61,42 @@ public class SavedResponseSnapshotMapper {
         return response;
     }
 
+    public void sanitizeSavedResponses(HttpRequestItem item) {
+        if (item == null || item.getResponse() == null) {
+            return;
+        }
+        for (SavedResponse savedResponse : item.getResponse()) {
+            sanitizeSavedResponse(savedResponse);
+        }
+    }
+
+    public void sanitizeSavedResponse(SavedResponse savedResponse) {
+        if (savedResponse == null) {
+            return;
+        }
+        sanitizeOriginalRequest(savedResponse.getOriginalRequest());
+    }
+
+    public void sanitizeOriginalRequest(SavedResponse.OriginalRequest originalRequest) {
+        if (originalRequest == null || originalRequest.getBody() == null) {
+            return;
+        }
+
+        String body = originalRequest.getBody();
+        long bodySize = body.getBytes(StandardCharsets.UTF_8).length;
+        if (body.length() <= MAX_ORIGINAL_REQUEST_BODY_PREVIEW_CHARS) {
+            if (!originalRequest.isBodyTruncated()) {
+                originalRequest.setOriginalBodySize(bodySize);
+            }
+            return;
+        }
+
+        long originalSize = Math.max(originalRequest.getOriginalBodySize(), bodySize);
+        originalRequest.setBody(body.substring(0, MAX_ORIGINAL_REQUEST_BODY_PREVIEW_CHARS));
+        originalRequest.setBodyTruncated(true);
+        originalRequest.setOriginalBodySize(originalSize);
+    }
+
     private SavedResponse.OriginalRequest toOriginalRequest(PreparedRequest request) {
         SavedResponse.OriginalRequest originalRequest = new SavedResponse.OriginalRequest();
         if (request == null) {
@@ -72,6 +111,7 @@ public class SavedResponseSnapshotMapper {
         originalRequest.setBody(request.body);
         originalRequest.setFormDataList(request.formDataList != null ? new ArrayList<>(request.formDataList) : new ArrayList<>());
         originalRequest.setUrlencodedList(request.urlencodedList != null ? new ArrayList<>(request.urlencodedList) : new ArrayList<>());
+        sanitizeOriginalRequest(originalRequest);
         return originalRequest;
     }
 

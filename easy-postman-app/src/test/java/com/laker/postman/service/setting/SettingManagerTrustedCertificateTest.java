@@ -240,6 +240,59 @@ public class SettingManagerTrustedCertificateTest {
     }
 
     @Test
+    public void shouldReadAndNormalizeGitDiffLargeFileThreshold() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+
+        try {
+            props.clear();
+            assertEquals(SettingManager.getGitDiffLargeFileThresholdMb(), 2);
+            assertEquals(SettingManager.getGitDiffLargeFileThresholdBytes(), 2L * 1024 * 1024);
+
+            props.setProperty("git_diff_large_file_threshold_mb", "4");
+            assertEquals(SettingManager.getGitDiffLargeFileThresholdMb(), 4);
+            assertEquals(SettingManager.gitDiffLargeFileThresholdBytes(4), 4L * 1024 * 1024);
+
+            props.setProperty("git_diff_large_file_threshold_mb", "0");
+            assertEquals(SettingManager.getGitDiffLargeFileThresholdMb(), 2);
+
+            props.setProperty("git_diff_large_file_threshold_mb", "65");
+            assertEquals(SettingManager.getGitDiffLargeFileThresholdMb(), 2);
+
+            props.setProperty("git_diff_large_file_threshold_mb", "abc");
+            assertEquals(SettingManager.getGitDiffLargeFileThresholdMb(), 2);
+        } finally {
+            props.clear();
+            props.putAll(backup);
+        }
+    }
+
+    @Test
+    public void shouldPersistSanitizedGitDiffLargeFileThreshold() throws Exception {
+        Properties props = getSettingsProperties();
+        Properties backup = new Properties();
+        backup.putAll(props);
+        Path configPath = Path.of(ConfigPathConstants.EASY_POSTMAN_SETTINGS);
+        boolean configExisted = Files.exists(configPath);
+        String originalConfig = configExisted ? Files.readString(configPath) : null;
+
+        try {
+            props.clear();
+
+            SettingManager.setGitDiffLargeFileThresholdMb(4);
+            assertEquals(props.getProperty("git_diff_large_file_threshold_mb"), "4");
+
+            SettingManager.setGitDiffLargeFileThresholdMb(65);
+            assertEquals(props.getProperty("git_diff_large_file_threshold_mb"), "2");
+        } finally {
+            props.clear();
+            props.putAll(backup);
+            restoreConfig(configPath, configExisted, originalConfig);
+        }
+    }
+
+    @Test
     public void shouldPreserveUpdateSourceWhenPersistingLastCheckTimeFromStaleSettings() throws Exception {
         Path tempFile = Files.createTempFile("easy-postman-settings", ".properties");
         Properties diskSettings = new Properties();

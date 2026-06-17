@@ -12,6 +12,7 @@ import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class CollectionDocumentJsonCodecTest {
 
@@ -63,5 +64,35 @@ public class CollectionDocumentJsonCodecTest {
             return;
         }
         throw new AssertionError("Expected missing group id to be rejected");
+    }
+
+    @Test
+    public void shouldSanitizeLargeOriginalRequestBodiesDuringRoundTrip() {
+        RequestGroup rootGroup = new RequestGroup("Root");
+        rootGroup.setId("group-root");
+        HttpRequestItem request = new HttpRequestItem();
+        request.setId("request-1");
+        request.setName("Import");
+        SavedResponse savedResponse = new SavedResponse();
+        savedResponse.setId("response-1");
+        SavedResponse.OriginalRequest originalRequest = new SavedResponse.OriginalRequest();
+        originalRequest.setBody("x".repeat(512 * 1024));
+        savedResponse.setOriginalRequest(originalRequest);
+        request.setResponse(List.of(savedResponse));
+        CollectionNode rootNode = CollectionNode.group(rootGroup);
+        rootNode.addChild(CollectionNode.request(request));
+
+        JSONArray encoded = CollectionDocumentJsonCodec.toJson(new CollectionDocument(List.of(rootNode)));
+        CollectionDocument decoded = CollectionDocumentJsonCodec.fromJson(encoded);
+
+        SavedResponse.OriginalRequest decodedOriginalRequest = decoded.getRoots().get(0)
+                .getChildren().get(0)
+                .asRequest()
+                .getResponse().get(0)
+                .getOriginalRequest();
+        assertTrue(encoded.toString().length() < 80 * 1024);
+        assertTrue(decodedOriginalRequest.isBodyTruncated());
+        assertEquals(decodedOriginalRequest.getOriginalBodySize(), 512 * 1024);
+        assertTrue(decodedOriginalRequest.getBody().length() <= 64 * 1024);
     }
 }

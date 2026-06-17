@@ -1,7 +1,6 @@
 package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
-import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ModernButtonFactory;
@@ -12,7 +11,6 @@ import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.GitStatusCheck;
 import com.laker.postman.model.Workspace;
-import com.laker.postman.panel.workspace.WorkspacePanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.*;
@@ -816,21 +814,6 @@ public class GitOperationDialog extends JDialog {
     }
 
     /**
-     * 通知 WorkspacePanel 记录 Git 操作结果
-     */
-    private void notifyWorkspacePanel(GitOperationResult result) {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                WorkspacePanel workspacePanel =
-                        UiSingletonFactory.getInstance(WorkspacePanel.class);
-                workspacePanel.logGitOperationResult(result);
-            } catch (Exception e) {
-                log.warn("Failed to notify WorkspacePanel", e);
-            }
-        });
-    }
-
-    /**
      * 展示文件变更信息，并在有冲突的文件下展示冲突详情
      */
     private void displayFileChangesStatus() {
@@ -1100,38 +1083,30 @@ public class GitOperationDialog extends JDialog {
                             if (OPTION_COMMIT_AND_PUSH.equals(choice)) {
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_COMMITTING));
                                 var commitResult = workspaceService.commitChanges(workspace.getId(), commitMessage);
-                                notifyWorkspacePanel(commitResult);
                                 if (statusCheck.remoteCommitsBehind > 0) {
                                     publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_REMOTE_COMMITS_PULL_FIRST));
                                     var pullResult = workspaceService.pullUpdates(workspace.getId());
-                                    notifyWorkspacePanel(pullResult);
                                 }
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_COMMIT_DONE_PUSHING));
                                 var pushResult = workspaceService.pushChanges(workspace.getId());
-                                notifyWorkspacePanel(pushResult);
                             } else {
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_COMMITTING));
                                 var result = workspaceService.commitChanges(workspace.getId(), commitMessage);
-                                notifyWorkspacePanel(result);
                             }
                         }
                         case PUSH -> {
                             if (OPTION_FORCE.equals(choice)) {
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_FORCE_PUSHING));
                                 var result = workspaceService.forcePushChanges(workspace.getId());
-                                notifyWorkspacePanel(result);
                             } else if (OPTION_PULL_FIRST.equals(choice)) {
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_PULL_FIRST));
                                 var pullResult = workspaceService.pullUpdates(workspace.getId());
-                                notifyWorkspacePanel(pullResult);
 
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_THEN_PUSH));
                                 var pushResult = workspaceService.pushChanges(workspace.getId());
-                                notifyWorkspacePanel(pushResult);
                             } else {
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_PUSHING));
                                 var result = workspaceService.pushChanges(workspace.getId());
-                                notifyWorkspacePanel(result);
                             }
                         }
                         case PULL -> {
@@ -1140,33 +1115,26 @@ public class GitOperationDialog extends JDialog {
                                 String autoCommitMsg = "Auto commit before pull - " +
                                         LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                                 var commitResult = workspaceService.commitChanges(workspace.getId(), autoCommitMsg);
-                                notifyWorkspacePanel(commitResult);
 
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_THEN_PULL));
                                 var pullResult = workspaceService.pullUpdates(workspace.getId());
-                                notifyWorkspacePanel(pullResult);
                             } else if (OPTION_STASH.equals(choice)) {
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_STASHING));
                                 var stashResult = workspaceService.stashChanges(workspace.getId());
-                                notifyWorkspacePanel(stashResult);
 
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_PULLING_REMOTE));
                                 var pullResult = workspaceService.pullUpdates(workspace.getId());
-                                notifyWorkspacePanel(pullResult);
 
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_RESTORING_STASH));
                                 var popResult = workspaceService.popStashChanges(workspace.getId());
-                                notifyWorkspacePanel(popResult);
                             } else if (OPTION_FORCE.equals(choice)) {
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_FORCE_PULL_DISCARD));
                                 var result = workspaceService.forcePullUpdates(workspace.getId());
-                                notifyWorkspacePanel(result);
                             } else if (OPTION_CANCEL.equals(choice)) {
                                 throw new RuntimeException(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_USER_CANCELLED));
                             } else {
                                 publish(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_PROGRESS_PULLING_FROM_REMOTE));
                                 var result = workspaceService.pullUpdates(workspace.getId());
-                                notifyWorkspacePanel(result);
                             }
                         }
                     }

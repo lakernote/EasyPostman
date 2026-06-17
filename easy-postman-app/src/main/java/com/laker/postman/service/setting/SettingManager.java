@@ -35,6 +35,12 @@ public class SettingManager {
             AppSettingKeys.MIN_PERFORMANCE_RESULT_ROW_LIMIT;
     public static final int MAX_PERFORMANCE_RESULT_ROW_LIMIT =
             AppSettingKeys.MAX_PERFORMANCE_RESULT_ROW_LIMIT;
+    public static final int DEFAULT_GIT_DIFF_LARGE_FILE_THRESHOLD_MB =
+            AppSettingKeys.DEFAULT_GIT_DIFF_LARGE_FILE_THRESHOLD_MB;
+    public static final int MIN_GIT_DIFF_LARGE_FILE_THRESHOLD_MB =
+            AppSettingKeys.MIN_GIT_DIFF_LARGE_FILE_THRESHOLD_MB;
+    public static final int MAX_GIT_DIFF_LARGE_FILE_THRESHOLD_MB =
+            AppSettingKeys.MAX_GIT_DIFF_LARGE_FILE_THRESHOLD_MB;
     public static final String PROXY_MODE_MANUAL = "MANUAL";
     public static final String PROXY_MODE_SYSTEM = "SYSTEM";
     public static final String PROXY_TYPE_HTTP = "HTTP";
@@ -254,6 +260,26 @@ public class SettingManager {
 
     public static int sanitizePerformanceResultRowLimit(Integer rowLimit) {
         return AppSettingKeys.sanitizePerformanceResultRowLimit(rowLimit);
+    }
+
+    public static int getGitDiffLargeFileThresholdMb() {
+        return get(AppSettingKeys.GIT_DIFF_LARGE_FILE_THRESHOLD_MB);
+    }
+
+    public static void setGitDiffLargeFileThresholdMb(int thresholdMb) {
+        put(AppSettingKeys.GIT_DIFF_LARGE_FILE_THRESHOLD_MB, thresholdMb);
+    }
+
+    public static int sanitizeGitDiffLargeFileThresholdMb(Integer thresholdMb) {
+        return AppSettingKeys.sanitizeGitDiffLargeFileThresholdMb(thresholdMb);
+    }
+
+    public static long gitDiffLargeFileThresholdBytes(int thresholdMb) {
+        return sanitizeGitDiffLargeFileThresholdMb(thresholdMb) * 1024L * 1024L;
+    }
+
+    public static long getGitDiffLargeFileThresholdBytes() {
+        return gitDiffLargeFileThresholdBytes(getGitDiffLargeFileThresholdMb());
     }
 
     public static String getCsvLastImportDirectory() {

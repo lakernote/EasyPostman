@@ -1,7 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitFileChange;
@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultStyledDocument;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
@@ -24,10 +25,10 @@ import java.text.MessageFormat;
 import java.util.List;
 
 /**
- * Git working tree diff dialog for a workspace.
+ * Embedded Git working tree diff viewer for a workspace.
  */
 @Slf4j
-public class GitDiffDialog extends JDialog {
+public class GitDiffPanel extends JPanel {
 
     private final transient Workspace workspace;
     private final transient WorkspaceService workspaceService;
@@ -36,33 +37,26 @@ public class GitDiffDialog extends JDialog {
     private JTextPane diffPane;
     private JLabel statusLabel;
     private JButton refreshButton;
+    private int changeLoadGeneration;
+    private int diffLoadGeneration;
 
-    public GitDiffDialog(Window owner, Workspace workspace) {
-        super(owner, I18nUtil.getMessage(MessageKeys.GIT_DIFF_TITLE), ModalityType.APPLICATION_MODAL);
+    public GitDiffPanel(Workspace workspace) {
         this.workspace = workspace;
         this.workspaceService = WorkspaceService.getInstance();
         initUI();
-        loadChanges();
+        SwingUtilities.invokeLater(this::loadChanges);
     }
 
     private void initUI() {
-        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
-        setSize(920, 620);
-        setMinimumSize(new Dimension(760, 500));
-        setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout());
-
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
-        mainPanel.add(createHeader(), BorderLayout.NORTH);
-        mainPanel.add(createContentPanel(), BorderLayout.CENTER);
-        mainPanel.add(createFooter(), BorderLayout.SOUTH);
-        setContentPane(mainPanel);
+        setOpaque(false);
+        add(createHeader(), BorderLayout.NORTH);
+        add(createContentPanel(), BorderLayout.CENTER);
     }
 
     private JPanel createHeader() {
         JPanel header = new JPanel(new BorderLayout(12, 0));
-        ToolWindowSurfaceStyle.applyDialogHeader(header, 10, 18, 10, 18);
+        ToolWindowSurfaceStyle.applySectionHeader(header, 10, 18, 10, 18);
 
         JPanel titlePanel = new JPanel(new GridLayout(2, 1, 0, 2));
         titlePanel.setOpaque(false);
@@ -84,7 +78,7 @@ public class GitDiffDialog extends JDialog {
 
     private JPanel createContentPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 8));
-        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+        panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(10, 18, 12, 18));
         panel.add(createDiffSplitPane(), BorderLayout.CENTER);
 
@@ -96,15 +90,13 @@ public class GitDiffDialog extends JDialog {
     }
 
     private JSplitPane createDiffSplitPane() {
-        JSplitPane splitPane = new JSplitPane(
-                JSplitPane.HORIZONTAL_SPLIT,
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(
                 createChangeListScrollPane(),
-                createDiffScrollPane()
+                createDiffScrollPane(),
+                280
         );
         splitPane.setResizeWeight(0.28);
-        splitPane.setDividerLocation(280);
         splitPane.setContinuousLayout(true);
-        ToolWindowSurfaceStyle.applyDialogSplitPane(splitPane);
         return splitPane;
     }
 
@@ -135,8 +127,7 @@ public class GitDiffDialog extends JDialog {
         });
 
         JScrollPane scrollPane = new JScrollPane(changeList);
-        ToolWindowSurfaceStyle.applyDialogListScrollPane(scrollPane, changeList);
-        ToolWindowSurfaceStyle.applyDialogFrame(scrollPane);
+        ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, changeList);
         return scrollPane;
     }
 
@@ -146,30 +137,17 @@ public class GitDiffDialog extends JDialog {
         diffPane.setFont(new Font(Font.MONOSPACED, Font.PLAIN,
                 FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1).getSize()));
         diffPane.setBorder(new EmptyBorder(8, 10, 8, 10));
-        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(diffPane);
+        ToolWindowSurfaceStyle.applyTextComponentCard(diffPane);
         renderPlainMessage(I18nUtil.getMessage(MessageKeys.GIT_DIFF_SELECT_FILE));
 
         JScrollPane scrollPane = new JScrollPane(diffPane);
-        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
-        ToolWindowSurfaceStyle.applyDialogFrame(scrollPane);
+        ToolWindowSurfaceStyle.applyScrollPaneCard(scrollPane);
         return scrollPane;
     }
 
-    private JPanel createFooter() {
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        ToolWindowSurfaceStyle.applyDialogFooter(footer);
-
-        JButton closeButton = ModernButtonFactory.createButton(
-                I18nUtil.getMessage(MessageKeys.GIT_DIFF_CLOSE),
-                false,
-                "icons/close.svg"
-        );
-        closeButton.addActionListener(e -> dispose());
-        footer.add(closeButton);
-        return footer;
-    }
-
     private void loadChanges() {
+        int generation = ++changeLoadGeneration;
+        diffLoadGeneration++;
         setBusy(true);
         statusLabel.setText(I18nUtil.getMessage(MessageKeys.GIT_DIFF_LOADING));
         changeListModel.clear();
@@ -183,6 +161,9 @@ public class GitDiffDialog extends JDialog {
 
             @Override
             protected void done() {
+                if (generation != changeLoadGeneration) {
+                    return;
+                }
                 try {
                     List<GitFileChange> changes = get();
                     displayChanges(changes);
@@ -214,28 +195,36 @@ public class GitDiffDialog extends JDialog {
     }
 
     private void loadDiff(GitFileChange change) {
+        int generation = ++diffLoadGeneration;
         String selectedPath = change.getPath();
         statusLabel.setText(format(MessageKeys.GIT_DIFF_LOADING_FILE, change.getPath()));
         renderPlainMessage(I18nUtil.getMessage(MessageKeys.GIT_DIFF_LOADING));
 
-        new SwingWorker<String, Void>() {
+        new SwingWorker<DiffLoadResult, Void>() {
             @Override
-            protected String doInBackground() throws Exception {
-                return workspaceService.getWorkingTreeDiff(workspace.getId(), change.getPath());
+            protected DiffLoadResult doInBackground() throws Exception {
+                String diff = workspaceService.getWorkingTreeDiff(workspace.getId(), change.getPath());
+                if (diff == null || diff.isBlank()) {
+                    return DiffLoadResult.message(I18nUtil.getMessage(MessageKeys.GIT_DIFF_NO_TEXT_DIFF));
+                }
+                return DiffLoadResult.diff(createDiffDocument(diff));
             }
 
             @Override
             protected void done() {
+                if (generation != diffLoadGeneration) {
+                    return;
+                }
                 GitFileChange currentSelection = changeList.getSelectedValue();
                 if (currentSelection == null || !selectedPath.equals(currentSelection.getPath())) {
                     return;
                 }
                 try {
-                    String diff = get();
-                    if (diff == null || diff.isBlank()) {
-                        renderPlainMessage(I18nUtil.getMessage(MessageKeys.GIT_DIFF_NO_TEXT_DIFF));
+                    DiffLoadResult result = get();
+                    if (result.document() == null) {
+                        renderPlainMessage(result.message());
                     } else {
-                        renderDiff(diff);
+                        renderDiff(result.document());
                     }
                     statusLabel.setText(change.getPath());
                 } catch (Exception ex) {
@@ -249,17 +238,21 @@ public class GitDiffDialog extends JDialog {
         }.execute();
     }
 
+    private StyledDocument createDiffDocument(String diff) throws BadLocationException {
+        StyledDocument document = new DefaultStyledDocument();
+        for (String line : diff.split("\n", -1)) {
+            document.insertString(document.getLength(), line + "\n", styleForLine(line));
+        }
+        return document;
+    }
+
     private void renderPlainMessage(String message) {
         diffPane.setText(message == null ? "" : message);
         diffPane.setCaretPosition(0);
     }
 
-    private void renderDiff(String diff) throws BadLocationException {
-        StyledDocument document = diffPane.getStyledDocument();
-        document.remove(0, document.getLength());
-        for (String line : diff.split("\n", -1)) {
-            document.insertString(document.getLength(), line + "\n", styleForLine(line));
-        }
+    private void renderDiff(StyledDocument document) {
+        diffPane.setDocument(document);
         diffPane.setCaretPosition(0);
     }
 
@@ -309,6 +302,16 @@ public class GitDiffDialog extends JDialog {
         };
     }
 
+    private record DiffLoadResult(StyledDocument document, String message) {
+        private static DiffLoadResult diff(StyledDocument document) {
+            return new DiffLoadResult(document, null);
+        }
+
+        private static DiffLoadResult message(String message) {
+            return new DiffLoadResult(null, message);
+        }
+    }
+
     private static Color typeColor(GitFileChange.Type type) {
         if (type == null) {
             return ModernColors.getTextSecondary();
@@ -348,7 +351,7 @@ public class GitDiffDialog extends JDialog {
                 pathLabel.setToolTipText(value.getPath());
             }
             typeLabel.setForeground(isSelected ? list.getSelectionForeground() : typeColor(value == null ? null : value.getType()));
-            typeLabel.setText(value == null ? "" : GitDiffDialog.typeLabel(value.getType()));
+            typeLabel.setText(value == null ? "" : GitDiffPanel.typeLabel(value.getType()));
             return this;
         }
     }

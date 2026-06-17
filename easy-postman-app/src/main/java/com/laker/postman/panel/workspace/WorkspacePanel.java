@@ -3,17 +3,14 @@ package com.laker.postman.panel.workspace;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.SearchTextField;
-import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitOperation;
-import com.laker.postman.model.GitOperationResult;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.RemoteStatus;
 import com.laker.postman.model.Workspace;
@@ -40,11 +37,10 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * 工作区面板
@@ -60,16 +56,16 @@ public class WorkspacePanel extends UiSingletonPanel {
     private static final int WORKSPACE_DETAIL_DEFAULT_HEIGHT = 360;
     private static final int WORKSPACE_DETAIL_MIN_HEIGHT = 320;
     private static final int WORKSPACE_DETAIL_MAX_HEIGHT = 400;
-    private static final int WORKSPACE_LOG_MIN_HEIGHT = 180;
+    private static final int WORKSPACE_TOOL_MIN_HEIGHT = 220;
     private static final double WORKSPACE_DETAIL_RESIZE_WEIGHT = 0.34;
-    public static final String HH_MM_SS = "HH:mm:ss";
 
     private JList<Workspace> workspaceList;
     private DefaultListModel<Workspace> listModel;
     private SearchTextField workspaceSearchField;
     private List<Workspace> allWorkspaces = new ArrayList<>();
     private JPanel infoPanel;
-    private JTextArea logArea;
+    private JPanel workspaceToolPanel;
+    private String displayedWorkspaceId;
     private transient WorkspaceService workspaceService;
 
     @Override
@@ -85,7 +81,7 @@ public class WorkspacePanel extends UiSingletonPanel {
 
         JSplitPane rightSplitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
                 createInfoPanel(),
-                createLogPanel(),
+                createWorkspaceToolPanel(),
                 WORKSPACE_DETAIL_DEFAULT_HEIGHT
         );
         rightSplitPane.setResizeWeight(WORKSPACE_DETAIL_RESIZE_WEIGHT);
@@ -209,33 +205,38 @@ public class WorkspacePanel extends UiSingletonPanel {
     }
 
     /**
-     * 创建日志面板
+     * 创建工作区内嵌工具区域
      */
-    private JPanel createLogPanel() {
+    private JPanel createWorkspaceToolPanel() {
+        workspaceToolPanel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(workspaceToolPanel);
+        workspaceToolPanel.setMinimumSize(new Dimension(0, WORKSPACE_TOOL_MIN_HEIGHT));
+        workspaceToolPanel.setPreferredSize(new Dimension(0, WORKSPACE_TOOL_MIN_HEIGHT));
+        return workspaceToolPanel;
+    }
+
+    private JPanel createEmptyWorkspaceToolPanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyCard(panel);
-        panel.setBorder(BorderFactory.createEmptyBorder(6, 8, 8, 8));
-        panel.setMinimumSize(new Dimension(0, WORKSPACE_LOG_MIN_HEIGHT));
-        panel.setPreferredSize(new Dimension(0, WORKSPACE_LOG_MIN_HEIGHT));
-
-        // 创建日志文本区域
-        logArea = new JTextArea();
-        logArea.setEditable(false);
-        logArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        ToolWindowSurfaceStyle.applyTextComponentCard(logArea);
-
-        JScrollPane logScrollPane = new JScrollPane(logArea);
-        logScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        ToolWindowSurfaceStyle.applyScrollPaneCard(logScrollPane);
-        panel.add(logScrollPane, BorderLayout.CENTER);
-
-        // 添加清空日志按钮
-        ClearButton clearLogButton = new ClearButton();
-        clearLogButton.addActionListener(e -> logArea.setText(""));
-        JPanel logToolbar = ToolWindowActionToolbar.right(clearLogButton);
-        panel.add(logToolbar, BorderLayout.SOUTH);
-
+        panel.setOpaque(false);
         return panel;
+    }
+
+    private void showDefaultWorkspaceTool(Workspace workspace) {
+        if (workspace != null && workspace.getType() == WorkspaceType.GIT) {
+            showGitDiff(workspace, false);
+            return;
+        }
+        showWorkspaceTool(createEmptyWorkspaceToolPanel());
+    }
+
+    private void showWorkspaceTool(JComponent component) {
+        if (workspaceToolPanel == null || component == null) {
+            return;
+        }
+        workspaceToolPanel.removeAll();
+        workspaceToolPanel.add(component, BorderLayout.CENTER);
+        workspaceToolPanel.revalidate();
+        workspaceToolPanel.repaint();
     }
 
     private static void installInitialWorkspaceDetailDivider(JSplitPane splitPane) {
@@ -278,7 +279,7 @@ public class WorkspacePanel extends UiSingletonPanel {
         int desiredLocation = Math.max(WORKSPACE_DETAIL_DEFAULT_HEIGHT,
                 Math.max(WORKSPACE_DETAIL_MIN_HEIGHT, ratioLocation));
         desiredLocation = Math.min(desiredLocation, WORKSPACE_DETAIL_MAX_HEIGHT);
-        int maxLocation = usableHeight - WORKSPACE_LOG_MIN_HEIGHT;
+        int maxLocation = usableHeight - WORKSPACE_TOOL_MIN_HEIGHT;
         if (maxLocation < WORKSPACE_DETAIL_MIN_HEIGHT) {
             return Math.max(0, maxLocation);
         }
@@ -458,16 +459,6 @@ public class WorkspacePanel extends UiSingletonPanel {
         historyItem.setIcon(IconUtil.createThemed("icons/history.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         historyItem.addActionListener(e -> showGitHistory(workspace));
         menu.add(historyItem);
-
-        JMenuItem diffItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_DIFF));
-        diffItem.setIcon(IconUtil.createThemed("icons/detail.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        diffItem.addActionListener(e -> showGitDiff(workspace));
-        menu.add(diffItem);
-
-        JMenuItem branchesItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_BRANCHES));
-        branchesItem.setIcon(IconUtil.createThemed("icons/git.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        branchesItem.addActionListener(e -> showGitBranches(workspace));
-        menu.add(branchesItem);
 
         try {
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
@@ -676,39 +667,38 @@ public class WorkspacePanel extends UiSingletonPanel {
             saveCurrentWorkspaceScopedPanels();
         }
 
-        GitBranchDialog dialog = new GitBranchDialog(
-                SwingUtilities.getWindowAncestor(this),
-                workspace
-        );
-        dialog.setVisible(true);
-
-        if (dialog.isNeedRefresh()) {
-            if (isCurrentWorkspace) {
-                UiSingletonFactory.getInstance(CollectionTreePanel.class)
-                        .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                            refreshExistingWorkspaceScopedPanels();
-                            refreshWorkspaceList();
-                        });
-                UiSingletonFactory.getInstance(EnvironmentPanel.class)
-                        .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
-            } else {
-                refreshWorkspaceList();
-            }
-        }
+        showWorkspaceTool(new GitBranchPanel(
+                workspace,
+                () -> refreshAfterGitBranchChange(workspace, isCurrentWorkspace)
+        ));
     }
 
     private void showGitDiff(Workspace workspace) {
+        showGitDiff(workspace, true);
+    }
+
+    private void showGitDiff(Workspace workspace, boolean saveBeforeShow) {
         Workspace current = workspaceService.getCurrentWorkspace();
         boolean isCurrentWorkspace = current != null && current.getId().equals(workspace.getId());
-        if (isCurrentWorkspace) {
+        if (saveBeforeShow && isCurrentWorkspace) {
             saveCurrentWorkspaceScopedPanels();
         }
 
-        GitDiffDialog dialog = new GitDiffDialog(
-                SwingUtilities.getWindowAncestor(this),
-                workspace
-        );
-        dialog.setVisible(true);
+        showWorkspaceTool(new GitDiffPanel(workspace));
+    }
+
+    private void refreshAfterGitBranchChange(Workspace workspace, boolean isCurrentWorkspace) {
+        if (isCurrentWorkspace) {
+            UiSingletonFactory.getInstance(CollectionTreePanel.class)
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
+                        refreshExistingWorkspaceScopedPanels();
+                        refreshWorkspaceList();
+                    });
+            UiSingletonFactory.getInstance(EnvironmentPanel.class)
+                    .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
+        } else {
+            refreshWorkspaceList();
+        }
     }
 
     /**
@@ -815,10 +805,10 @@ public class WorkspacePanel extends UiSingletonPanel {
                 UiSingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
             }
 
-            logSuccess("Successfully converted workspace '" + workspace.getName() + "' to Git workspace (branch: " + dialog.getBranchName() + ")");
+            log.info("Successfully converted workspace '{}' to Git workspace (branch: {})",
+                    workspace.getName(), dialog.getBranchName());
         } catch (Exception e) {
             log.error("Failed to convert workspace to Git", e);
-            logError("Failed to convert workspace: " + e.getMessage());
             JOptionPane.showMessageDialog(
                     this,
                     I18nUtil.getMessage(MessageKeys.WORKSPACE_CONVERT_FAILED) + ": " + e.getMessage(),
@@ -858,7 +848,7 @@ public class WorkspacePanel extends UiSingletonPanel {
                 logMessage += " (SSH session cache cleared)";
             }
 
-            logSuccess(logMessage);
+            log.info(logMessage);
         }
     }
 
@@ -935,6 +925,12 @@ public class WorkspacePanel extends UiSingletonPanel {
     private void updateInfoPanel() {
         Workspace selected = workspaceList.getSelectedValue();
         infoPanel.removeAll();
+        String selectedWorkspaceId = selected == null ? null : selected.getId();
+        boolean workspaceChanged = !Objects.equals(displayedWorkspaceId, selectedWorkspaceId);
+        displayedWorkspaceId = selectedWorkspaceId;
+        if (workspaceChanged) {
+            showDefaultWorkspaceTool(selected);
+        }
 
         if (selected != null) {
             infoPanel.add(new WorkspaceDetailPanel(
@@ -954,64 +950,6 @@ public class WorkspacePanel extends UiSingletonPanel {
 
         infoPanel.revalidate();
         infoPanel.repaint();
-    }
-
-    /**
-     * 记录错误日志
-     */
-    private void logError(String message) {
-        if (logArea != null) {
-            SwingUtilities.invokeLater(() -> {
-                SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
-                String timestamp = sdf.format(new Date());
-                logArea.append("[" + timestamp + "] ERROR: " + message + "\n");
-                logArea.setCaretPosition(logArea.getDocument().getLength());
-            });
-        }
-    }
-
-    /**
-     * 记录成功日志
-     */
-    private void logSuccess(String message) {
-        if (logArea != null) {
-            SwingUtilities.invokeLater(() -> {
-                SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
-                String timestamp = sdf.format(new Date());
-                logArea.append("[" + timestamp + "] SUCCESS: " + message + "\n");
-                logArea.setCaretPosition(logArea.getDocument().getLength());
-            });
-        }
-    }
-
-    /**
-     * 记录Git操作结果到日志区域
-     */
-    public void logGitOperationResult(GitOperationResult result) {
-        if (logArea != null) {
-            SwingUtilities.invokeLater(() -> {
-                SimpleDateFormat sdf = new SimpleDateFormat(HH_MM_SS);
-                String timestamp = sdf.format(new Date());
-
-                // 操作标题
-                logArea.append("[" + timestamp + "] " + result.message + "\n");
-
-                // 详细信息
-                if (!result.details.isEmpty()) {
-                    logArea.append(result.details);
-                }
-
-                // 操作状态
-                if (result.success) {
-                    logArea.append("[" + timestamp + "] " + result.operationType + " ✅ \n");
-                } else {
-                    logArea.append("[" + timestamp + "] " + result.operationType + " ❌ \n");
-                }
-
-                logArea.append("\n"); // 添加空行分隔
-                logArea.setCaretPosition(logArea.getDocument().getLength());
-            });
-        }
     }
 
     private void showError(String message) {

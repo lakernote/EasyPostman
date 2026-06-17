@@ -6,13 +6,13 @@ import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitBranchInfo;
 import com.laker.postman.model.GitOperationResult;
+import com.laker.postman.model.RemoteStatus;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jgit.api.errors.NotMergedException;
 
@@ -25,13 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Git branch management dialog for a workspace.
+ * Embedded Git branch management panel for a workspace.
  */
 @Slf4j
-public class GitBranchDialog extends JDialog {
+public class GitBranchPanel extends JPanel {
 
     private final transient Workspace workspace;
     private final transient WorkspaceService workspaceService;
+    private final transient Runnable workspaceRefreshAction;
     private JTable branchTable;
     private BranchTableModel tableModel;
     private JLabel statusLabel;
@@ -41,35 +42,27 @@ public class GitBranchDialog extends JDialog {
     private JButton deleteButton;
     private JButton publishButton;
     private boolean busy;
-    @Getter
-    private boolean needRefresh = false;
+    private boolean remoteConfigured;
 
-    public GitBranchDialog(Window owner, Workspace workspace) {
-        super(owner, I18nUtil.getMessage(MessageKeys.GIT_BRANCH_TITLE), ModalityType.APPLICATION_MODAL);
+    public GitBranchPanel(Workspace workspace, Runnable workspaceRefreshAction) {
         this.workspace = workspace;
         this.workspaceService = WorkspaceService.getInstance();
+        this.workspaceRefreshAction = workspaceRefreshAction;
+        this.remoteConfigured = hasConfiguredRemote(workspace);
         initUI();
         loadBranches();
     }
 
     private void initUI() {
-        ToolWindowSurfaceStyle.applyDialogWindowChrome(this);
-        setSize(640, 420);
-        setMinimumSize(new Dimension(560, 340));
-        setLocationRelativeTo(getOwner());
         setLayout(new BorderLayout());
-
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyDialogSurface(mainPanel);
-        mainPanel.add(createHeader(), BorderLayout.NORTH);
-        mainPanel.add(createContentPanel(), BorderLayout.CENTER);
-        mainPanel.add(createFooter(), BorderLayout.SOUTH);
-        setContentPane(mainPanel);
+        setOpaque(false);
+        add(createHeader(), BorderLayout.NORTH);
+        add(createContentPanel(), BorderLayout.CENTER);
     }
 
     private JPanel createHeader() {
         JPanel header = new JPanel(new BorderLayout(12, 0));
-        ToolWindowSurfaceStyle.applyDialogHeader(header, 10, 18, 10, 18);
+        ToolWindowSurfaceStyle.applySectionHeader(header, 10, 18, 10, 18);
 
         JPanel titlePanel = new JPanel(new GridLayout(2, 1, 0, 2));
         titlePanel.setOpaque(false);
@@ -88,7 +81,7 @@ public class GitBranchDialog extends JDialog {
 
     private JPanel createContentPanel() {
         JPanel panel = new JPanel(new BorderLayout(0, 8));
-        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+        panel.setOpaque(false);
         panel.setBorder(new EmptyBorder(10, 18, 12, 18));
         panel.add(createBranchActionToolbar(), BorderLayout.NORTH);
         panel.add(createTableScrollPane(), BorderLayout.CENTER);
@@ -139,7 +132,6 @@ public class GitBranchDialog extends JDialog {
 
         JScrollPane scrollPane = new JScrollPane(branchTable);
         ToolWindowSurfaceStyle.applyTableScrollPaneCard(scrollPane, branchTable);
-        ToolWindowSurfaceStyle.applyDialogFrame(scrollPane);
         return scrollPane;
     }
 
@@ -184,6 +176,17 @@ public class GitBranchDialog extends JDialog {
         deleteButton.addActionListener(e -> deleteSelectedBranch());
         fitToolbarButton(deleteButton);
         toolbar.add(deleteButton);
+
+        switchButton = ModernButtonFactory.createButton(
+                I18nUtil.getMessage(MessageKeys.GIT_BRANCH_SWITCH),
+                true,
+                "icons/switch.svg"
+        );
+        switchButton.setDisabledIcon(IconUtil.createThemed("icons/switch.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        switchButton.setEnabled(false);
+        switchButton.addActionListener(e -> switchSelectedBranch());
+        fitToolbarButton(switchButton);
+        toolbar.add(switchButton);
         return toolbar;
     }
 
@@ -201,53 +204,26 @@ public class GitBranchDialog extends JDialog {
         return Math.max(100, textWidth + iconWidth + iconTextGap + 52);
     }
 
-    private JPanel createFooter() {
-        JPanel footer = new JPanel(new BorderLayout(12, 0));
-        ToolWindowSurfaceStyle.applyDialogFooter(footer);
-
-        JPanel rightActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        rightActions.setOpaque(false);
-
-        JButton closeButton = ModernButtonFactory.createButton(
-                I18nUtil.getMessage(MessageKeys.GIT_BRANCH_CLOSE),
-                false,
-                "icons/close.svg"
-        );
-        closeButton.addActionListener(e -> dispose());
-        rightActions.add(closeButton);
-
-        switchButton = ModernButtonFactory.createButton(
-                I18nUtil.getMessage(MessageKeys.GIT_BRANCH_SWITCH),
-                true,
-                "icons/switch.svg"
-        );
-        switchButton.setDisabledIcon(IconUtil.createThemed("icons/switch.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        switchButton.setEnabled(false);
-        switchButton.addActionListener(e -> switchSelectedBranch());
-        rightActions.add(switchButton);
-        footer.add(rightActions, BorderLayout.EAST);
-        getRootPane().setDefaultButton(switchButton);
-        return footer;
-    }
-
     private void loadBranches() {
         loadBranches(null);
     }
 
     private void loadBranches(String postLoadStatus) {
         setBusy(true, I18nUtil.getMessage(MessageKeys.GIT_BRANCH_LOADING));
-        new SwingWorker<List<GitBranchInfo>, Void>() {
+        new SwingWorker<BranchLoadResult, Void>() {
             @Override
-            protected List<GitBranchInfo> doInBackground() throws Exception {
-                return workspaceService.listGitBranches(workspace.getId());
+            protected BranchLoadResult doInBackground() throws Exception {
+                List<GitBranchInfo> branches = workspaceService.listGitBranches(workspace.getId());
+                return new BranchLoadResult(branches, loadRemoteConfigured());
             }
 
             @Override
             protected void done() {
                 try {
-                    List<GitBranchInfo> branches = get();
-                    tableModel.setBranches(branches);
-                    if (branches.isEmpty()) {
+                    BranchLoadResult result = get();
+                    remoteConfigured = result.hasRemote();
+                    tableModel.setBranches(result.branches());
+                    if (result.branches().isEmpty()) {
                         statusLabel.setText(I18nUtil.getMessage(MessageKeys.GIT_BRANCH_NO_BRANCHES));
                     } else {
                         statusLabel.setText(" ");
@@ -294,7 +270,7 @@ public class GitBranchDialog extends JDialog {
                 try {
                     GitOperationResult result = get();
                     if (result.success) {
-                        needRefresh = true;
+                        notifyWorkspaceChanged();
                         statusLabel.setText(I18nUtil.getMessage(
                                 MessageKeys.GIT_BRANCH_SWITCH_SUCCESS,
                                 workspace.getCurrentBranch()
@@ -319,7 +295,7 @@ public class GitBranchDialog extends JDialog {
     }
 
     private void fetchBranches() {
-        if (!canFetchBranches(workspace)) {
+        if (!canFetchBranches()) {
             statusLabel.setText(I18nUtil.getMessage(MessageKeys.GIT_BRANCH_NO_REMOTE));
             return;
         }
@@ -375,7 +351,7 @@ public class GitBranchDialog extends JDialog {
                     try {
                         GitOperationResult result = get();
                         if (result.success) {
-                            needRefresh = true;
+                            notifyWorkspaceChanged();
                             statusLabel.setText(I18nUtil.getMessage(
                                     MessageKeys.GIT_BRANCH_CREATE_SUCCESS,
                                     workspace.getCurrentBranch()
@@ -478,7 +454,7 @@ public class GitBranchDialog extends JDialog {
             updateActionButtonState();
             return;
         }
-        if (!canFetchBranches(workspace)) {
+        if (!canFetchBranches()) {
             statusLabel.setText(I18nUtil.getMessage(MessageKeys.GIT_BRANCH_NO_REMOTE));
             updateActionButtonState();
             return;
@@ -501,7 +477,7 @@ public class GitBranchDialog extends JDialog {
                 try {
                     GitOperationResult result = get();
                     if (result.success) {
-                        needRefresh = true;
+                        notifyWorkspaceChanged();
                         reloading = true;
                         loadBranches(I18nUtil.getMessage(MessageKeys.GIT_BRANCH_PUBLISH_SUCCESS, workspace.getRemoteBranch()));
                     } else {
@@ -528,10 +504,10 @@ public class GitBranchDialog extends JDialog {
         GitBranchInfo selectedBranch = getSelectedBranch();
         boolean canSwitch = selectedBranch != null && !selectedBranch.isCurrent();
         boolean canDelete = selectedBranch != null && !selectedBranch.isCurrent() && !selectedBranch.isRemote();
-        boolean canPublish = canPublishBranch(workspace, selectedBranch);
+        boolean canPublish = canPublishBranch(selectedBranch);
         switchButton.setEnabled(!busy && canSwitch);
         if (fetchButton != null) {
-            fetchButton.setEnabled(!busy && canFetchBranches(workspace));
+            fetchButton.setEnabled(!busy && canFetchBranches());
         }
         if (deleteButton != null) {
             deleteButton.setEnabled(!busy && canDelete);
@@ -542,7 +518,7 @@ public class GitBranchDialog extends JDialog {
         if (statusLabel != null && !busy) {
             statusLabel.setText(branchAvailabilityMessage(
                     selectedBranch,
-                    workspace,
+                    canFetchBranches(),
                     I18nUtil.getMessage(MessageKeys.GIT_BRANCH_SELECT_TO_SWITCH),
                     I18nUtil.getMessage(MessageKeys.GIT_BRANCH_CURRENT_SELECTED),
                     I18nUtil.getMessage(MessageKeys.GIT_BRANCH_READY_TO_SWITCH),
@@ -561,14 +537,14 @@ public class GitBranchDialog extends JDialog {
             switchButton.setEnabled(!busy && selectedBranch != null && !selectedBranch.isCurrent());
         }
         if (fetchButton != null) {
-            fetchButton.setEnabled(!busy && canFetchBranches(workspace));
+            fetchButton.setEnabled(!busy && canFetchBranches());
         }
         if (createButton != null) {
             createButton.setEnabled(!busy);
         }
         if (publishButton != null) {
             GitBranchInfo selectedBranch = getSelectedBranch();
-            publishButton.setEnabled(!busy && canPublishBranch(workspace, selectedBranch));
+            publishButton.setEnabled(!busy && canPublishBranch(selectedBranch));
         }
         if (deleteButton != null) {
             GitBranchInfo selectedBranch = getSelectedBranch();
@@ -594,11 +570,33 @@ public class GitBranchDialog extends JDialog {
     }
 
     static boolean canPublishBranch(Workspace workspace, GitBranchInfo branch) {
-        return hasConfiguredRemote(workspace)
+        return canPublishBranch(hasConfiguredRemote(workspace), branch);
+    }
+
+    static boolean canPublishBranch(boolean hasRemote, GitBranchInfo branch) {
+        return hasRemote
                 && branch != null
                 && branch.isCurrent()
                 && !branch.isRemote()
                 && !hasTrackingBranch(branch);
+    }
+
+    private boolean canFetchBranches() {
+        return remoteConfigured || hasConfiguredRemote(workspace);
+    }
+
+    private boolean canPublishBranch(GitBranchInfo branch) {
+        return canPublishBranch(canFetchBranches(), branch);
+    }
+
+    private boolean loadRemoteConfigured() {
+        try {
+            RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
+            return remoteStatus.hasRemote;
+        } catch (Exception ex) {
+            log.debug("Failed to inspect Git remote status for workspace: {}", workspace.getId(), ex);
+            return hasConfiguredRemote(workspace);
+        }
     }
 
     private static boolean hasConfiguredRemote(Workspace workspace) {
@@ -633,7 +631,7 @@ public class GitBranchDialog extends JDialog {
     }
 
     static String branchAvailabilityMessage(GitBranchInfo branch,
-                                            Workspace workspace,
+                                            boolean hasRemote,
                                             String noSelectionMessage,
                                             String currentSelectionMessage,
                                             String readyMessage,
@@ -642,10 +640,13 @@ public class GitBranchDialog extends JDialog {
                 && branch.isCurrent()
                 && !branch.isRemote()
                 && !hasTrackingBranch(branch)
-                && !canFetchBranches(workspace)) {
+                && !hasRemote) {
             return noRemoteMessage;
         }
         return switchAvailabilityMessage(branch, noSelectionMessage, currentSelectionMessage, readyMessage);
+    }
+
+    private record BranchLoadResult(List<GitBranchInfo> branches, boolean hasRemote) {
     }
 
     private String rootMessage(Exception e) {
@@ -661,6 +662,12 @@ public class GitBranchDialog extends JDialog {
                 I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
                 JOptionPane.ERROR_MESSAGE
         );
+    }
+
+    private void notifyWorkspaceChanged() {
+        if (workspaceRefreshAction != null) {
+            workspaceRefreshAction.run();
+        }
     }
 
     static class BranchTableModel extends AbstractTableModel {

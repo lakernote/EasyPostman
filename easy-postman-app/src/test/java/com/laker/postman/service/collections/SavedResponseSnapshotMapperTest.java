@@ -12,6 +12,7 @@ import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class SavedResponseSnapshotMapperTest {
 
@@ -40,6 +41,8 @@ public class SavedResponseSnapshotMapperTest {
         assertNotNull(savedResponse.getId());
         assertEquals(savedResponse.getName(), "Created");
         assertEquals(savedResponse.getOriginalRequest().getMethod(), "POST");
+        assertEquals(savedResponse.getOriginalRequest().getBody(), "{\"name\":\"easy\"}");
+        assertEquals(savedResponse.getOriginalRequest().getOriginalBodySize(), "{\"name\":\"easy\"}".length());
         assertEquals(savedResponse.getOriginalRequest().getHeaders().size(), 1);
         assertEquals(savedResponse.getOriginalRequest().getParams().size(), 1);
         assertEquals(savedResponse.getCode(), 201);
@@ -66,5 +69,21 @@ public class SavedResponseSnapshotMapperTest {
         assertEquals(response.costMs, 88);
         assertEquals(response.bodySize, 13);
         assertEquals(response.headersSize, 20);
+    }
+
+    @Test
+    public void shouldKeepOnlyPreviewForLargeOriginalRequestBody() {
+        PreparedRequest request = new PreparedRequest();
+        request.method = "POST";
+        request.url = "https://api.example.com/import";
+        request.bodyType = "raw";
+        request.body = "x".repeat(512 * 1024);
+
+        SavedResponse savedResponse = SavedResponseSnapshotMapper.fromExchange("Imported", request, new HttpResponse());
+        SavedResponse.OriginalRequest originalRequest = savedResponse.getOriginalRequest();
+
+        assertTrue(originalRequest.isBodyTruncated());
+        assertEquals(originalRequest.getOriginalBodySize(), 512 * 1024);
+        assertTrue(originalRequest.getBody().length() <= 64 * 1024);
     }
 }

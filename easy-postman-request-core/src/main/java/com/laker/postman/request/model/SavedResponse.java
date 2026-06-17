@@ -48,6 +48,8 @@ public class SavedResponse implements Serializable {
         private List<HttpParam> params = new ArrayList<>(); // Query 参数
         private String bodyType; // 请求体类型
         private String body; // 请求体内容
+        private boolean bodyTruncated; // 请求体内容是否仅保存了预览
+        private long originalBodySize; // 原始请求体大小（字节）
         private List<HttpFormData> formDataList = new ArrayList<>(); // FormData
         private List<HttpFormUrlencoded> urlencodedList = new ArrayList<>(); // URL编码表单
     }

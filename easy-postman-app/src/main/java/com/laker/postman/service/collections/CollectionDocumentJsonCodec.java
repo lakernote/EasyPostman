@@ -91,6 +91,7 @@ public class CollectionDocumentJsonCodec {
     }
 
     private JSONObject toRequestJson(HttpRequestItem requestItem) {
+        SavedResponseSnapshotMapper.sanitizeSavedResponses(requestItem);
         JSONObject requestJson = new JSONObject();
         requestJson.set("type", "request");
         requestJson.set("data", JSONUtil.parseObj(requestItem));
@@ -158,6 +159,7 @@ public class CollectionDocumentJsonCodec {
         JSONObject dataJson = requestJson.getJSONObject("data");
         HttpRequestItem item = JSONUtil.toBean(dataJson, HttpRequestItem.class);
         item.setBody(item.getBody() != null ? item.getBody() : "");
+        SavedResponseSnapshotMapper.sanitizeSavedResponses(item);
         if (item.getId() == null || item.getId().isEmpty()) {
             throw new IllegalArgumentException("Collection request is missing required id: " + item.getName());
         }

@@ -15,11 +15,11 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
-public class GitBranchDialogTest {
+public class GitBranchPanelTest {
 
     @Test
     public void branchTableModelShouldExposeReadableBranchRows() {
-        GitBranchDialog.BranchTableModel model = new GitBranchDialog.BranchTableModel();
+        GitBranchPanel.BranchTableModel model = new GitBranchPanel.BranchTableModel();
         model.setBranches(List.of(
                 new GitBranchInfo("main", "refs/heads/main", true, false, null, "origin/main"),
                 new GitBranchInfo("origin/feature", "refs/remotes/origin/feature", false, true, "origin")
@@ -36,7 +36,7 @@ public class GitBranchDialogTest {
 
     @Test
     public void branchTableModelShouldShowNoTrackingForUntrackedLocalBranch() {
-        GitBranchDialog.BranchTableModel model = new GitBranchDialog.BranchTableModel();
+        GitBranchPanel.BranchTableModel model = new GitBranchPanel.BranchTableModel();
         model.setBranches(List.of(
                 new GitBranchInfo("scratch", "refs/heads/scratch", false, false, null)
         ));
@@ -51,7 +51,7 @@ public class GitBranchDialogTest {
         GitBranchInfo branch = new GitBranchInfo("main", "refs/heads/main", true, false, null, "origin/main");
         branch.setAheadCount(1);
         branch.setBehindCount(2);
-        GitBranchDialog.BranchTableModel model = new GitBranchDialog.BranchTableModel();
+        GitBranchPanel.BranchTableModel model = new GitBranchPanel.BranchTableModel();
         model.setBranches(List.of(branch));
 
         assertEquals(model.getValueAt(0, 2), "Current · ↑1 ↓2");
@@ -62,9 +62,9 @@ public class GitBranchDialogTest {
         GitBranchInfo currentBranch = new GitBranchInfo("main", "refs/heads/main", true, false, null);
         GitBranchInfo targetBranch = new GitBranchInfo("feature", "refs/heads/feature", false, false, null);
 
-        assertEquals(GitBranchDialog.switchAvailabilityMessage(null, "Select", "Current", "Ready"), "Select");
-        assertEquals(GitBranchDialog.switchAvailabilityMessage(currentBranch, "Select", "Current", "Ready"), "Current");
-        assertEquals(GitBranchDialog.switchAvailabilityMessage(targetBranch, "Select", "Current", "Ready"), "Ready");
+        assertEquals(GitBranchPanel.switchAvailabilityMessage(null, "Select", "Current", "Ready"), "Select");
+        assertEquals(GitBranchPanel.switchAvailabilityMessage(currentBranch, "Select", "Current", "Ready"), "Current");
+        assertEquals(GitBranchPanel.switchAvailabilityMessage(targetBranch, "Select", "Current", "Ready"), "Ready");
     }
 
     @Test
@@ -77,45 +77,46 @@ public class GitBranchDialogTest {
         GitBranchInfo remoteBranch = new GitBranchInfo("origin/main", "refs/remotes/origin/main", false, true, "origin");
         GitBranchInfo targetBranch = new GitBranchInfo("feature", "refs/heads/feature", false, false, null);
 
-        assertFalse(GitBranchDialog.canFetchBranches(noRemoteWorkspace));
-        assertTrue(GitBranchDialog.canFetchBranches(remoteWorkspace));
-        assertFalse(GitBranchDialog.canPublishBranch(noRemoteWorkspace, currentUntrackedBranch));
-        assertTrue(GitBranchDialog.canPublishBranch(remoteWorkspace, currentUntrackedBranch));
-        assertFalse(GitBranchDialog.canPublishBranch(remoteWorkspace, currentTrackedBranch));
-        assertFalse(GitBranchDialog.canPublishBranch(remoteWorkspace, remoteBranch));
-        assertFalse(GitBranchDialog.canPublishBranch(remoteWorkspace, targetBranch));
+        assertFalse(GitBranchPanel.canFetchBranches(noRemoteWorkspace));
+        assertTrue(GitBranchPanel.canFetchBranches(remoteWorkspace));
+        assertFalse(GitBranchPanel.canPublishBranch(noRemoteWorkspace, currentUntrackedBranch));
+        assertTrue(GitBranchPanel.canPublishBranch(remoteWorkspace, currentUntrackedBranch));
+        assertFalse(GitBranchPanel.canPublishBranch(remoteWorkspace, currentTrackedBranch));
+        assertFalse(GitBranchPanel.canPublishBranch(remoteWorkspace, remoteBranch));
+        assertFalse(GitBranchPanel.canPublishBranch(remoteWorkspace, targetBranch));
     }
 
     @Test
     public void toolbarButtonWidthShouldFitLocalizedTextAndIcon() {
-        assertEquals(GitBranchDialog.toolbarButtonWidth(64, 16, 6), 138);
-        assertEquals(GitBranchDialog.toolbarButtonWidth(20, 16, 6), 100);
+        assertEquals(GitBranchPanel.toolbarButtonWidth(64, 16, 6), 138);
+        assertEquals(GitBranchPanel.toolbarButtonWidth(20, 16, 6), 100);
     }
 
     @Test
     public void notMergedDeleteFailureShouldBeRecognizedThroughSwingWorkerWrapper() {
         Exception wrapped = new ExecutionException(new NotMergedException());
 
-        assertTrue(GitBranchDialog.isBranchNotMergedFailure(wrapped));
-        assertFalse(GitBranchDialog.isBranchNotMergedFailure(new RuntimeException("other failure")));
+        assertTrue(GitBranchPanel.isBranchNotMergedFailure(wrapped));
+        assertFalse(GitBranchPanel.isBranchNotMergedFailure(new RuntimeException("other failure")));
     }
 
     @Test
-    public void branchManagementActionsShouldNotCrowdDialogFooter() throws IOException {
-        String source = Files.readString(gitBranchDialogSource());
-        String footer = methodBody(source, "private JPanel createFooter()", "\n    private void loadBranches");
+    public void branchManagementActionsShouldLiveInEmbeddedToolbar() throws IOException {
+        String source = Files.readString(gitBranchPanelSource());
+        String toolbar = methodBody(source, "private JPanel createBranchActionToolbar()", "\n    private static void fitToolbarButton");
 
-        assertFalse(footer.contains("GIT_BRANCH_FETCH"));
-        assertFalse(footer.contains("GIT_BRANCH_CREATE"));
-        assertFalse(footer.contains("GIT_BRANCH_PUBLISH"));
-        assertFalse(footer.contains("GIT_BRANCH_DELETE"));
-        assertTrue(footer.contains("GIT_BRANCH_CLOSE"));
-        assertTrue(footer.contains("GIT_BRANCH_SWITCH"));
+        assertTrue(toolbar.contains("GIT_BRANCH_FETCH"));
+        assertTrue(toolbar.contains("GIT_BRANCH_CREATE"));
+        assertTrue(toolbar.contains("GIT_BRANCH_PUBLISH"));
+        assertTrue(toolbar.contains("GIT_BRANCH_DELETE"));
+        assertTrue(toolbar.contains("GIT_BRANCH_SWITCH"));
+        assertFalse(source.contains("private JPanel createFooter()"));
+        assertFalse(source.contains("GIT_BRANCH_CLOSE"));
     }
 
     @Test
     public void branchToolbarShouldHaveBreathingRoomBelowHeader() throws IOException {
-        String source = Files.readString(gitBranchDialogSource());
+        String source = Files.readString(gitBranchPanelSource());
         String contentPanel = methodBody(source, "private JPanel createContentPanel()", "\n    private JScrollPane createTableScrollPane");
         String toolbar = methodBody(source, "private JPanel createBranchActionToolbar()", "\n    private static void fitToolbarButton");
 
@@ -124,11 +125,11 @@ public class GitBranchDialogTest {
     }
 
     @Test
-    public void publishSuccessShouldRefreshWorkspaceDetailAfterDialogCloses() throws IOException {
-        String source = Files.readString(gitBranchDialogSource());
+    public void publishSuccessShouldRefreshWorkspaceDetailFromEmbeddedPanel() throws IOException {
+        String source = Files.readString(gitBranchPanelSource());
         String publish = methodBody(source, "private void publishSelectedBranch()", "\n    private void updateActionButtonState");
 
-        assertTrue(publish.contains("needRefresh = true;"));
+        assertTrue(publish.contains("notifyWorkspaceChanged();"));
     }
 
     private static String methodBody(String source, String startMarker, String endMarker) {
@@ -139,9 +140,9 @@ public class GitBranchDialogTest {
         return source.substring(start, end);
     }
 
-    private static Path gitBranchDialogSource() {
+    private static Path gitBranchPanelSource() {
         return repositoryRoot().resolve(
-                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/GitBranchDialog.java");
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/GitBranchPanel.java");
     }
 
     private static Path repositoryRoot() {

@@ -61,6 +61,9 @@ public class PrimaryButton extends JButton {
         Color resolvedHover = hoverColor != null ? hoverColor : ModernColors.getPrimaryLight();
         Color resolvedPress = pressColor != null ? pressColor : ModernColors.getPrimaryDarker();
         putClientProperty(FlatClientProperties.STYLE, String.join("; ",
+                "arc: 8",
+                "borderWidth: 1",
+                "margin: 4,12,4,12",
                 "background: " + toStyleColor(resolvedBase),
                 "hoverBackground: " + toStyleColor(resolvedHover),
                 "pressedBackground: " + toStyleColor(resolvedPress),

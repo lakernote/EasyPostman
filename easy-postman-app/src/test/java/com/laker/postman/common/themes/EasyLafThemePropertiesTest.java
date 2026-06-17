@@ -162,6 +162,8 @@ public class EasyLafThemePropertiesTest {
             String style = properties.getProperty(key);
             assertTrue(!style.contains("buttonType: roundRect"), key + " must avoid pill-like FlatLaf roundRect type");
             assertTrue(style.contains("arc: 8"), key + " must keep a moderate 8px button arc");
+            assertTrue(style.contains("margin: 4,12,4,12"),
+                    key + " must keep shared action buttons compact enough for request toolbars");
         }
     }
 

@@ -87,6 +87,29 @@ public class ModernButtonFactoryTest {
                 "Disabled primary buttons should not paint the disabled text color as their background");
     }
 
+    @Test
+    public void sharedPrimaryAndSecondaryButtonsShouldRemainToolbarCompact() {
+        JButton primaryButton = new PrimaryButton("发送", "icons/send.svg");
+        JButton secondaryButton = new SecondaryButton("保存", "icons/save.svg");
+
+        assertTrue(primaryButton.getPreferredSize().height <= 34,
+                "PrimaryButton should not inflate compact request/toolbox rows");
+        assertTrue(secondaryButton.getPreferredSize().height <= 34,
+                "SecondaryButton should not inflate compact request/toolbox rows");
+    }
+
+    @Test
+    public void customColoredPrimaryButtonsShouldRemainToolbarCompact() {
+        JButton button = new PrimaryButton("取消", "icons/cancel.svg");
+        button.putClientProperty("baseColor", ModernColors.getWarning());
+        button.putClientProperty("hoverColor", ModernColors.getWarningDark());
+        button.putClientProperty("pressColor", ModernColors.getWarningDarker());
+        button.putClientProperty("colorsInitialized", false);
+
+        assertTrue(button.getPreferredSize().height <= 34,
+                "Custom-colored PrimaryButton states should preserve the compact FlatLaf margin");
+    }
+
     private static BufferedImage render(AbstractButton button) {
         button.setSize(90, 34);
         button.doLayout();

@@ -42,6 +42,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
 
     private JCheckBox showDownloadProgressCheckBox;
     private JTextField downloadProgressDialogThresholdField;
+    private JTextField gitDiffLargeFileThresholdField;
     private JTextField maxHistoryCountField;
     private JTextField maxOpenedRequestsCountField;
     private JCheckBox autoFormatResponseCheckBox;
@@ -132,6 +133,16 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 maxOpenedRequestsCountField
         );
         generalSection.add(requestsRow);
+        generalSection.add(createVerticalSpace(FIELD_SPACING));
+
+        gitDiffLargeFileThresholdField = new JTextField(10);
+        gitDiffLargeFileThresholdField.setText(String.valueOf(SettingManager.getGitDiffLargeFileThresholdMb()));
+        JPanel gitDiffThresholdRow = createFieldRow(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GIT_DIFF_LARGE_FILE_THRESHOLD),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GIT_DIFF_LARGE_FILE_THRESHOLD_TOOLTIP),
+                gitDiffLargeFileThresholdField
+        );
+        generalSection.add(gitDiffThresholdRow);
         generalSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 自动格式化响应体
@@ -291,6 +302,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         // 跟踪所有组件的初始值
         trackComponentValue(showDownloadProgressCheckBox);
         trackComponentValue(downloadProgressDialogThresholdField);
+        trackComponentValue(gitDiffLargeFileThresholdField);
         trackComponentValue(maxHistoryCountField);
         trackComponentValue(maxOpenedRequestsCountField);
         trackComponentValue(autoFormatResponseCheckBox);
@@ -648,6 +660,11 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_MAX_OPENED_REQUESTS_ERROR)
         );
         setupValidator(
+                gitDiffLargeFileThresholdField,
+                this::isValidGitDiffLargeFileThreshold,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_GIT_DIFF_LARGE_FILE_THRESHOLD_ERROR)
+        );
+        setupValidator(
                 fontSizeField,
                 this::isValidFontSize,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_FONT_SIZE_ERROR)
@@ -658,6 +675,16 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         try {
             int size = Integer.parseInt(value.trim());
             return size >= 10 && size <= 24;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private boolean isValidGitDiffLargeFileThreshold(String value) {
+        try {
+            int thresholdMb = Integer.parseInt(value.trim());
+            return thresholdMb >= SettingManager.MIN_GIT_DIFF_LARGE_FILE_THRESHOLD_MB
+                    && thresholdMb <= SettingManager.MAX_GIT_DIFF_LARGE_FILE_THRESHOLD_MB;
         } catch (NumberFormatException e) {
             return false;
         }
@@ -716,6 +743,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             // 保存通用设置
             SettingManager.setMaxHistoryCount(Integer.parseInt(maxHistoryCountField.getText().trim()));
             SettingManager.setMaxOpenedRequestsCount(Integer.parseInt(maxOpenedRequestsCountField.getText().trim()));
+            SettingManager.setGitDiffLargeFileThresholdMb(Integer.parseInt(gitDiffLargeFileThresholdField.getText().trim()));
             SettingManager.setAutoFormatResponse(autoFormatResponseCheckBox.isSelected());
             SettingManager.setStartupSplashEnabled(startupSplashCheckBox.isSelected());
 
@@ -768,6 +796,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             originalValues.clear();
             trackComponentValue(showDownloadProgressCheckBox);
             trackComponentValue(downloadProgressDialogThresholdField);
+            trackComponentValue(gitDiffLargeFileThresholdField);
             trackComponentValue(maxHistoryCountField);
             trackComponentValue(maxOpenedRequestsCountField);
             trackComponentValue(autoFormatResponseCheckBox);

@@ -101,16 +101,6 @@
             <artifactId>logback-classic</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.jiconfont</groupId>
-            <artifactId>jiconfont-swing</artifactId>
-            <version>${jiconfont-swing.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.jiconfont</groupId>
-            <artifactId>jiconfont-font_awesome</artifactId>
-            <version>${jiconfont-font_awesome.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.jfree</groupId>
             <artifactId>jfreechart</artifactId>
             <version>${jfreechart.version}</version>

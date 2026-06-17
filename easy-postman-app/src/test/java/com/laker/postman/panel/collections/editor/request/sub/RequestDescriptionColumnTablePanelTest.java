@@ -141,7 +141,7 @@ public class RequestDescriptionColumnTablePanelTest extends AbstractSwingUiTest 
                         new FormDataTablePanel(false, false).getTable(),
                         "",
                         I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY),
-                        I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_TYPE),
+                        "",
                         I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_VALUE),
                         I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION),
                         ""

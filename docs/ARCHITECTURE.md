@@ -67,11 +67,6 @@ EasyPostman
   - Auto-completion
   - Search and replace
   
-- **jIconFont-Swing**: Vector icon font support
-  - FontAwesome integration
-  - Scalable icons
-  - Theme-aware coloring
-  
 - **SwingX**: Extended Swing components
   - Enhanced tables and trees
   - Date pickers

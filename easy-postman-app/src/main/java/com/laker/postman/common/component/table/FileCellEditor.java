@@ -157,16 +157,7 @@ public class FileCellEditor extends DefaultCellEditor {
         } else {
             pathField.setText(filePath);
             pathField.setToolTipText(filePath);
-
-            // 设置文本框颜色
-            File file = new File(filePath);
-            if (!file.exists()) {
-                pathField.setForeground(ModernColors.getError());
-            } else if (!file.canRead()) {
-                pathField.setForeground(ModernColors.getWarning());
-            } else {
-                pathField.setForeground(TableUIConstants.getFileSelectedTextColor());
-            }
+            pathField.setForeground(table.getForeground());
         }
 
         return editorPanel;

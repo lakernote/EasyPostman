@@ -11,7 +11,10 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +25,6 @@ import java.util.List;
  */
 @Slf4j
 public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
-
     // Column indices
     private static final int COL_ENABLED = 0;
     private static final int COL_KEY = 1;
@@ -33,6 +35,7 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
 
     // Use constants from HttpFormData to avoid duplication
     private static final String[] TYPE_OPTIONS = {HttpFormData.TYPE_TEXT, HttpFormData.TYPE_FILE};
+    private static final int TYPE_COLUMN_WIDTH = 76;
 
     /**
      * 构造函数，创建默认的 Form-Data 表格面板
@@ -51,7 +54,7 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
         super(new String[]{
                 "",
                 I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY),
-                I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_TYPE),
+                "",
                 I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_VALUE),
                 I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_DESCRIPTION),
                 ""
@@ -126,17 +129,39 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
         // 设置列宽
         setEnabledColumnWidth(40);
 
-        // Type 列特殊宽度
-        table.getColumnModel().getColumn(COL_TYPE).setPreferredWidth(80);
-        table.getColumnModel().getColumn(COL_TYPE).setMaxWidth(80);
-        table.getColumnModel().getColumn(COL_TYPE).setMinWidth(80);
+        setFlexibleColumnWidth(COL_KEY, 260, 140);
+        setFixedColumnWidth(COL_TYPE, TYPE_COLUMN_WIDTH);
+        setFlexibleColumnWidth(COL_VALUE, 520, 180);
+        setFlexibleColumnWidth(COL_DESCRIPTION, 320, 160);
 
         setDeleteColumnWidth();
+        installPostmanLikeHeaderGrouping();
 
         // Setup Tab key navigation
         setupTabKeyNavigation();
     }
 
+    private void setFixedColumnWidth(int columnIndex, int width) {
+        TableColumn column = table.getColumnModel().getColumn(columnIndex);
+        column.setPreferredWidth(width);
+        column.setMaxWidth(width);
+        column.setMinWidth(width);
+    }
+
+    private void setFlexibleColumnWidth(int columnIndex, int preferredWidth, int minWidth) {
+        TableColumn column = table.getColumnModel().getColumn(columnIndex);
+        column.setPreferredWidth(preferredWidth);
+        column.setMinWidth(minWidth);
+    }
+
+    private void installPostmanLikeHeaderGrouping() {
+        table.getColumnModel().getColumn(COL_KEY).setHeaderRenderer(
+                new FormDataHeaderRenderer(I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY), false, 10, 0)
+        );
+        table.getColumnModel().getColumn(COL_TYPE).setHeaderRenderer(
+                new FormDataHeaderRenderer("", true, 0, 10)
+        );
+    }
 
     private void setupCellRenderersAndEditors() {
         // Set editors and renderers for Key, Type, Value columns
@@ -157,6 +182,7 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
 
         // Set custom renderer for delete column
         table.getColumnModel().getColumn(COL_DELETE).setCellRenderer(new DeleteButtonRenderer());
+        installTypeColumnPopupBehavior();
     }
 
     /**
@@ -165,26 +191,17 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
     private JComboBox<String> createModernTypeComboBox() {
         JComboBox<String> comboBox = new JComboBox<>(TYPE_OPTIONS);
         comboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        comboBox.setMaximumRowCount(TYPE_OPTIONS.length);
+        comboBox.setBorder(BorderFactory.createEmptyBorder());
 
         // 自定义下拉列表的渲染器
         comboBox.setRenderer(new DefaultListCellRenderer() {
-            private final Icon textIcon = IconUtil.createThemed("icons/file.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
-            private final Icon fileIcon = IconUtil.createThemed("icons/binary.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
-
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value,
                                                           int index, boolean isSelected, boolean cellHasFocus) {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-
-                String typeValue = value != null ? value.toString() : "";
-
-                // 设置图标和文本颜色
-                if (HttpFormData.TYPE_FILE.equalsIgnoreCase(typeValue)) {
-                    label.setIcon(fileIcon);
-                } else {
-                    label.setIcon(textIcon);
-                }
-
+                label.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
+                label.setIcon(null);
                 return label;
             }
         });
@@ -192,36 +209,61 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
         return comboBox;
     }
 
+    private void installTypeColumnPopupBehavior() {
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (!editable || !SwingUtilities.isLeftMouseButton(e)) {
+                    return;
+                }
+                int row = table.rowAtPoint(e.getPoint());
+                int column = table.columnAtPoint(e.getPoint());
+                if (row < 0 || column != COL_TYPE || !table.isCellEditable(row, column)) {
+                    return;
+                }
+                SwingUtilities.invokeLater(() -> showTypePopup(row));
+            }
+        });
+    }
+
+    private void showTypePopup(int row) {
+        if (row < 0 || row >= table.getRowCount()) {
+            return;
+        }
+        if (!table.isEditing() || table.getEditingRow() != row || table.getEditingColumn() != COL_TYPE) {
+            table.editCellAt(row, COL_TYPE);
+        }
+        Component editor = table.getEditorComponent();
+        if (editor instanceof JComboBox<?> comboBox && comboBox.isShowing()) {
+            comboBox.showPopup();
+        }
+    }
+
     /**
-     * Type列的自定义渲染器，显示 Text/File 图标和文本
+     * Type列的自定义渲染器，显示紧凑的 Text/File 下拉入口
      */
     private class TypeColumnRenderer extends JPanel implements TableCellRenderer {
-        private final JLabel iconLabel;
         private final JLabel textLabel;
-        private final Icon textIcon;
-        private final Icon fileIcon;
+        private final JLabel arrowLabel;
 
         public TypeColumnRenderer() {
             setLayout(new BorderLayout(4, 0));
             setOpaque(true);
-
-            // 创建图标标签
-            iconLabel = new JLabel();
-            iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
-            iconLabel.setPreferredSize(new Dimension(20, 20));
+            setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 6));
 
             // 创建文本标签
             textLabel = new JLabel();
             textLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1)); // 比标准字体小1号
             textLabel.setVerticalAlignment(SwingConstants.CENTER);
+            textLabel.setOpaque(false);
 
-            // 使用 IconUtil 创建主题适配的图标
-            textIcon = IconUtil.createThemed("icons/file.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
-            fileIcon = IconUtil.createThemed("icons/binary.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL);
+            arrowLabel = new JLabel(IconUtil.createThemed("icons/chevron-down.svg", 10, 10));
+            arrowLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+            arrowLabel.setOpaque(false);
 
             // 添加组件
-            add(iconLabel, BorderLayout.WEST);
             add(textLabel, BorderLayout.CENTER);
+            add(arrowLabel, BorderLayout.EAST);
 
         }
 
@@ -232,19 +274,44 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
             Color background = TableUIConstants.getCellBackground(isSelected, row == hoveredRow, false, table, row);
             Color foreground = isSelected ? table.getSelectionForeground() : table.getForeground();
             setBackground(background);
-            iconLabel.setBackground(background);
-            textLabel.setBackground(background);
             textLabel.setForeground(foreground);
+            arrowLabel.setForeground(foreground);
 
             // 根据类型设置图标和文本
             if (HttpFormData.TYPE_FILE.equalsIgnoreCase(typeValue)) {
-                iconLabel.setIcon(fileIcon);
                 textLabel.setText("File");
             } else {
-                iconLabel.setIcon(textIcon);
                 textLabel.setText("Text");
             }
 
+            return this;
+        }
+    }
+
+    private static class FormDataHeaderRenderer extends JLabel implements TableCellRenderer {
+        private final boolean rightBoundary;
+        private final int leftPadding;
+        private final int rightPadding;
+
+        private FormDataHeaderRenderer(String text, boolean rightBoundary, int leftPadding, int rightPadding) {
+            super(text);
+            this.rightBoundary = rightBoundary;
+            this.leftPadding = leftPadding;
+            this.rightPadding = rightPadding;
+            setOpaque(true);
+            setHorizontalAlignment(SwingConstants.LEADING);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                       boolean hasFocus, int row, int column) {
+            setFont(table.getTableHeader().getFont());
+            setBackground(table.getTableHeader().getBackground());
+            setForeground(table.getTableHeader().getForeground());
+            setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, rightBoundary ? 1 : 0, table.getGridColor()),
+                    BorderFactory.createEmptyBorder(0, leftPadding, 0, rightPadding)
+            ));
             return this;
         }
     }

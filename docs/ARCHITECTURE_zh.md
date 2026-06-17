@@ -67,11 +67,6 @@ EasyPostman
   - 自动完成
   - 搜索和替换
   
-- **jIconFont-Swing**: 矢量图标字体支持
-  - FontAwesome 集成
-  - 可缩放图标
-  - 主题感知着色
-  
 - **SwingX**: 扩展 Swing 组件库
   - 增强的表格和树
   - 日期选择器

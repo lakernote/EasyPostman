@@ -20,14 +20,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTree;
 import javax.swing.JTextField;
 import javax.swing.UIManager;
-import javax.swing.border.Border;
-import javax.swing.border.EmptyBorder;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
-import java.awt.Insets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -53,24 +50,16 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void treeSectionShouldInsetTreeScrollPaneInsideSidebarSurface() {
+    public void treeSectionShouldLetToolWindowChromeOwnSidebarInsets() {
         PerformancePanelViewFactory viewFactory = new PerformancePanelViewFactory();
         DefaultMutableTreeNode root = new DefaultMutableTreeNode("root");
 
         PerformancePanelViewFactory.TreeSection treeSection = viewFactory.createTreeSection(new DefaultTreeModel(root));
 
-        JComponent sidebarPanel = treeSection.sidebarPanel();
         JScrollPane scrollPane = treeSection.scrollPane();
-        Border border = sidebarPanel.getBorder();
-        Insets insets = border.getBorderInsets(sidebarPanel);
 
-        assertTrue(border instanceof EmptyBorder);
-        assertEquals(insets.top, 8);
-        assertEquals(insets.left, 8);
-        assertEquals(insets.bottom, 8);
-        assertEquals(insets.right, 8);
-        assertSame(scrollPane.getParent(), sidebarPanel);
-        assertSame(sidebarPanel.getComponent(0), scrollPane);
+        assertSame(treeSection.contentPanel(), scrollPane);
+        assertNull(scrollPane.getParent());
     }
 
     @Test

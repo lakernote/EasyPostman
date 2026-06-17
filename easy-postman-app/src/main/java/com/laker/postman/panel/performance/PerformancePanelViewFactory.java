@@ -1,8 +1,5 @@
 package com.laker.postman.panel.performance;
 
-import com.laker.postman.request.model.RequestItemProtocolEnum;
-
-
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.MemoryLabel;
@@ -30,13 +27,14 @@ import com.laker.postman.panel.performance.controller.ControllerDescriptionPanel
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
+import com.laker.postman.panel.performance.result.LazyPerformanceTrendPanel;
 import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
-import com.laker.postman.panel.performance.result.LazyPerformanceTrendPanel;
 import com.laker.postman.panel.performance.result.PerformanceTrendView;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.performance.core.worker.PerformanceWorkerEndpointParser;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
@@ -60,7 +58,6 @@ final class PerformancePanelViewFactory {
     private static final int WORKER_ENDPOINT_FIELD_MIN_WIDTH = 280;
     private static final int WORKER_ENDPOINT_FIELD_PREFERRED_WIDTH = 420;
     private static final int WORKER_ENDPOINT_FIELD_MAX_WIDTH = 520;
-    private static final Insets TREE_SIDEBAR_INSETS = new Insets(8, 8, 8, 8);
     private static final Insets TOOLBAR_INSETS = new Insets(6, 10, 6, 10);
     private static final String RESULT_CONTEXT_TABLE = "table";
     private static final String RESULT_CONTEXT_REPORT = "report";
@@ -79,20 +76,7 @@ final class PerformancePanelViewFactory {
         JScrollPane treeScroll = new JScrollPane(performanceTree);
         treeScroll.setPreferredSize(new Dimension(260, 300));
         ToolWindowSurfaceStyle.applyTreeScrollPaneCard(treeScroll, performanceTree);
-        return new TreeSection(performanceTree, treeScroll, createTreeSidebarPanel(treeScroll));
-    }
-
-    private JComponent createTreeSidebarPanel(JScrollPane treeScroll) {
-        JPanel panel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyCard(panel);
-        panel.setBorder(BorderFactory.createEmptyBorder(
-                TREE_SIDEBAR_INSETS.top,
-                TREE_SIDEBAR_INSETS.left,
-                TREE_SIDEBAR_INSETS.bottom,
-                TREE_SIDEBAR_INSETS.right
-        ));
-        panel.add(treeScroll, BorderLayout.CENTER);
-        return panel;
+        return new TreeSection(performanceTree, treeScroll, treeScroll);
     }
 
     PropertySection createPropertySection(String emptyCard,
@@ -734,7 +718,7 @@ final class PerformancePanelViewFactory {
         return new RequestEditorSection(wrapper, requestEditorHost);
     }
 
-    record TreeSection(JTree tree, JScrollPane scrollPane, JComponent sidebarPanel) {
+    record TreeSection(JTree tree, JScrollPane scrollPane, JComponent contentPanel) {
     }
 
     record PropertySection(JPanel propertyPanel,

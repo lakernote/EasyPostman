@@ -1,19 +1,8 @@
 package com.laker.postman.panel.performance;
 
 import com.formdev.flatlaf.util.SystemFileChooser;
-import com.laker.postman.request.model.RequestItemProtocolEnum;
-import com.laker.postman.request.model.HttpRequestItem;
-
-
-import com.laker.postman.performance.core.model.NodeType;
-import com.laker.postman.performance.core.model.PerformanceProtocol;
-import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
-import com.laker.postman.performance.core.model.PerformanceStatsCollector;
-import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
-
-
-import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.DebouncedSaveSupport;
+import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ExportButton;
@@ -36,12 +25,21 @@ import com.laker.postman.panel.performance.controller.ConditionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
+import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.core.model.PerformanceProtocol;
+import com.laker.postman.performance.core.model.PerformanceRealtimeMetrics;
+import com.laker.postman.performance.core.model.PerformanceStatsCollector;
+import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
+import com.laker.postman.performance.core.run.PerformanceRunPlan;
+import com.laker.postman.performance.core.run.PerformanceRunPlanJsonStorage;
+import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
+import com.laker.postman.performance.core.worker.PerformanceWorkerEndpointParser;
 import com.laker.postman.performance.execution.PerformanceExecutionConfig;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.model.PerformanceResultListener;
 import com.laker.postman.performance.model.PerformanceStatsCollectorListener;
 import com.laker.postman.performance.model.PerformanceTrendWindowCollectorListener;
-import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.performance.plan.PerformancePlanConfiguration;
 import com.laker.postman.performance.plan.PerformancePlanDocument;
 import com.laker.postman.performance.plan.PerformancePlanImportResult;
@@ -50,25 +48,22 @@ import com.laker.postman.performance.plan.PerformancePlanWorkspace;
 import com.laker.postman.performance.plan.PerformanceRemoteWorkerSettings;
 import com.laker.postman.performance.plan.PerformanceRunPlanFactory;
 import com.laker.postman.performance.plan.PerformanceSavedPlan;
-import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
-import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.performance.result.PerformanceResultCollector;
+import com.laker.postman.performance.runtime.PerformanceExecutionEngine;
+import com.laker.postman.performance.runtime.PerformanceRunSession;
+import com.laker.postman.panel.performance.result.PerformanceReportPanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTablePanel;
 import com.laker.postman.panel.performance.result.PerformanceResultTableVisualizer;
 import com.laker.postman.panel.performance.result.PerformanceTrendView;
-import com.laker.postman.performance.runtime.PerformanceExecutionEngine;
-import com.laker.postman.performance.runtime.PerformanceRunSession;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
-import com.laker.postman.performance.core.run.PerformanceRunPlan;
-import com.laker.postman.performance.core.run.PerformanceRunPlanJsonStorage;
-import com.laker.postman.performance.core.worker.PerformanceWorkerEndpoint;
-import com.laker.postman.performance.core.worker.PerformanceWorkerEndpointParser;
+import com.laker.postman.panel.performance.tree.PerformanceSwingTreePlanAdapter;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.PerformancePersistenceService;
 import com.laker.postman.service.collections.RequestSaveEventPublisher;
-import com.laker.postman.http.runtime.okhttp.HttpClientRuntimeConfig;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.I18nUtil;
@@ -347,30 +342,7 @@ public class PerformancePanel extends UiSingletonPanel {
         installPlanToolbarListeners();
         syncPlanSelectorItems();
 
-        JSplitPane verticalSplit = AppToolWindowChrome.createVerticalInnerSplitPane(
-                propertyPanel,
-                resultSection.resultPanel(),
-                260
-        );
-        verticalSplit.setResizeWeight(0.45);
-        verticalSplit.setDividerLocation(260);
-        propertyPanel.setMinimumSize(new Dimension(400, 150));
-        resultSection.resultPanel().setMinimumSize(new Dimension(400, 150));
-
-        JPanel rightContentPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyCard(rightContentPanel);
-        rightContentPanel.add(topPanel, BorderLayout.NORTH);
-        rightContentPanel.add(verticalSplit, BorderLayout.CENTER);
-
-        treeSection.sidebarPanel().setMinimumSize(new Dimension(220, 150));
-        rightContentPanel.setMinimumSize(new Dimension(400, 300));
-        JSplitPane mainSplit = AppToolWindowChrome.createHorizontalInnerSplitPane(
-                treeSection.sidebarPanel(),
-                rightContentPanel,
-                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
-        );
-        mainSplit.setResizeWeight(0.18);
-        add(AppToolWindowChrome.wrapToolWindow(mainSplit), BorderLayout.CENTER);
+        add(createWorkspaceSplitPane(treeSection, resultSection), BorderLayout.CENTER);
 
         List<PerformanceResultListener> resultListeners = List.of(
                 new PerformanceStatsCollectorListener(statsCollector),
@@ -455,6 +427,50 @@ public class PerformancePanel extends UiSingletonPanel {
         }
         selectFirstThreadGroup();
         setupSaveShortcut();
+    }
+
+    private JSplitPane createWorkspaceSplitPane(PerformancePanelViewFactory.TreeSection treeSection,
+                                               PerformancePanelViewFactory.ResultSection resultSection) {
+        JComponent treeContentPanel = treeSection.contentPanel();
+        JComponent resultPanel = resultSection.resultPanel();
+        JSplitPane propertyResultSplit = createPropertyResultSplitPane(resultPanel);
+        JPanel rightContentPanel = createRightContentPanel(propertyResultSplit);
+
+        treeContentPanel.setMinimumSize(new Dimension(220, 150));
+        rightContentPanel.setMinimumSize(new Dimension(400, 300));
+
+        JSplitPane mainSplit = createPerformanceSplitPane(treeContentPanel, rightContentPanel);
+        mainSplit.setResizeWeight(0.18);
+        return mainSplit;
+    }
+
+    private JSplitPane createPropertyResultSplitPane(JComponent resultPanel) {
+        JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
+                propertyPanel,
+                resultPanel,
+                260
+        );
+        splitPane.setResizeWeight(0.45);
+        splitPane.setDividerLocation(260);
+        propertyPanel.setMinimumSize(new Dimension(400, 150));
+        resultPanel.setMinimumSize(new Dimension(400, 150));
+        return splitPane;
+    }
+
+    private JPanel createRightContentPanel(Component centerContent) {
+        JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.add(topPanel, BorderLayout.NORTH);
+        panel.add(centerContent, BorderLayout.CENTER);
+        return panel;
+    }
+
+    static JSplitPane createPerformanceSplitPane(Component treeContentPanel, Component contentPanel) {
+        return AppToolWindowChrome.createHorizontalCardSplitPane(
+                treeContentPanel,
+                contentPanel,
+                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
     }
 
     public void switchWorkspaceAndRefreshUI() {

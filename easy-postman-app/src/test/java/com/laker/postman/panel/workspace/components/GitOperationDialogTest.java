@@ -1,11 +1,13 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.model.GitOperation;
 import org.testng.annotations.Test;
 
 import javax.swing.JButton;
 import java.awt.Color;
+import java.util.Objects;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
@@ -22,7 +24,14 @@ public class GitOperationDialogTest {
         assertEquals(button.getClientProperty("baseColor"), baseColor);
         assertNotEquals(button.getClientProperty("hoverColor"), baseColor);
         assertNotEquals(button.getClientProperty("pressColor"), baseColor);
-        assertEquals(button.isContentAreaFilled(), false);
-        assertEquals(button.isFocusPainted(), false);
+        assertTrue(button.isContentAreaFilled());
+        assertTrue(button.isFocusPainted());
+
+        String style = Objects.toString(button.getClientProperty(FlatClientProperties.STYLE), "");
+        assertTrue(style.contains("background: " + toStyleColor(baseColor)));
+    }
+
+    private static String toStyleColor(Color color) {
+        return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
 }

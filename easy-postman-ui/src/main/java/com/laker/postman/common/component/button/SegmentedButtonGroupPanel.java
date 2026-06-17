@@ -6,6 +6,7 @@ import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.geom.RoundRectangle2D;
 
 public class SegmentedButtonGroupPanel extends JPanel {
     private static final int ARC = 10;
@@ -28,10 +29,12 @@ public class SegmentedButtonGroupPanel extends JPanel {
 
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        RoundRectangle2D.Float segmentShape = new RoundRectangle2D.Float(
+                0.5f, 0.5f, width - 1f, height - 1f, ARC, ARC);
         g2.setColor(SegmentedButtonTheme.segmentBackground());
-        g2.fillRoundRect(0, 0, width - 1, height - 1, ARC, ARC);
+        g2.fill(segmentShape);
         g2.setColor(SegmentedButtonTheme.segmentBorder());
-        g2.drawRoundRect(0, 0, width - 1, height - 1, ARC, ARC);
+        g2.draw(segmentShape);
         g2.dispose();
     }
 }

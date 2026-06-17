@@ -60,6 +60,7 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.geom.RoundRectangle2D;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -1332,10 +1333,15 @@ public class CapturePanel extends JPanel {
             } else {
                 fillColor = ChipLabel.fillFor(borderColor, 12);
             }
+            RoundRectangle2D.Float chipShape = new RoundRectangle2D.Float(
+                    0.5f, 0.5f,
+                    Math.max(0f, getWidth() - 1f),
+                    Math.max(0f, getHeight() - 1f),
+                    10, 10);
             g2.setColor(fillColor);
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), 10, 10);
+            g2.fill(chipShape);
             g2.setColor(ChipLabel.borderFor(borderColor, isSelected() ? 160 : 90));
-            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, 10, 10);
+            g2.draw(chipShape);
             g2.dispose();
             super.paintComponent(g);
         }

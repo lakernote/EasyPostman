@@ -1,8 +1,8 @@
 package com.laker.postman.common.component.button;
 
-import com.formdev.flatlaf.FlatLightLaf;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.constants.ThemeColors;
+import com.laker.postman.common.themes.EasyLightLaf;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -15,23 +15,27 @@ import javax.swing.UIManager;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
 import java.util.Map;
 
-import static com.laker.postman.test.ThemeTokenTestSupport.remember;
-import static com.laker.postman.test.ThemeTokenTestSupport.restore;
 import static org.testng.Assert.assertTrue;
 
 public class ModernButtonFactoryTest {
     private Map<String, Object> previousThemeTokens;
 
     @BeforeClass
-    public void installLookAndFeel() throws Exception {
-        UIManager.setLookAndFeel(new FlatLightLaf());
+    public void installLookAndFeel() {
+        EasyLightLaf.setup();
     }
 
     @BeforeMethod
     public void rememberThemeTokens() {
-        previousThemeTokens = remember(ThemeColors.PRIMARY, ThemeColors.PRIMARY_LIGHT);
+        previousThemeTokens = remember(
+                ThemeColors.PRIMARY,
+                ThemeColors.PRIMARY_LIGHT,
+                ThemeColors.BUTTON_DISABLED_BACKGROUND,
+                ThemeColors.TEXT_DISABLED
+        );
     }
 
     @AfterMethod
@@ -69,6 +73,20 @@ public class ModernButtonFactoryTest {
         assertTrue(isNear(center, primaryLight), "Modern primary button hover should use the lighter primary blue");
     }
 
+    @Test
+    public void disabledPrimaryBackgroundShouldUseSemanticButtonDisabledToken() {
+        Color disabledBackground = new Color(31, 32, 33);
+        UIManager.put(ThemeColors.BUTTON_DISABLED_BACKGROUND, disabledBackground);
+        UIManager.put(ThemeColors.TEXT_DISABLED, new Color(96, 97, 98));
+        JButton button = ModernButtonFactory.createButton("", true);
+        button.setEnabled(false);
+
+        Color center = centerPixel(render(button));
+
+        assertTrue(isNear(center, disabledBackground),
+                "Disabled primary buttons should not paint the disabled text color as their background");
+    }
+
     private static BufferedImage render(AbstractButton button) {
         button.setSize(90, 34);
         button.doLayout();
@@ -84,6 +102,20 @@ public class ModernButtonFactoryTest {
 
     private static Color centerPixel(BufferedImage image) {
         return new Color(image.getRGB(image.getWidth() / 2, image.getHeight() / 2), true);
+    }
+
+    private static Map<String, Object> remember(String... keys) {
+        Map<String, Object> values = new HashMap<>();
+        for (String key : keys) {
+            values.put(key, UIManager.get(key));
+        }
+        return values;
+    }
+
+    private static void restore(Map<String, Object> values) {
+        for (Map.Entry<String, Object> entry : values.entrySet()) {
+            UIManager.put(entry.getKey(), entry.getValue());
+        }
     }
 
     private static boolean hasVisiblePixelsNear(Icon icon, JButton button, Color expectedColor) {

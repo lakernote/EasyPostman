@@ -10,6 +10,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.awt.geom.RoundRectangle2D;
 
 /**
  * Compact semantic label used for status/detail chips.
@@ -88,13 +89,21 @@ public class ChipLabel extends JLabel {
         if (accentColor != null) {
             Graphics2D g2 = (Graphics2D) g.create();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            RoundRectangle2D.Float chipShape = chipShape();
             g2.setColor(fillFor(accentColor, FILL_ALPHA));
-            g2.fillRoundRect(0, 0, getWidth(), getHeight(), ARC, ARC);
+            g2.fill(chipShape);
             g2.setColor(borderFor(accentColor, BORDER_ALPHA));
-            g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, ARC, ARC);
+            g2.draw(chipShape);
             g2.dispose();
         }
         super.paintComponent(g);
+    }
+
+    private RoundRectangle2D.Float chipShape() {
+        return new RoundRectangle2D.Float(0.5f, 0.5f,
+                Math.max(0f, getWidth() - 1f),
+                Math.max(0f, getHeight() - 1f),
+                ARC, ARC);
     }
 
     private void updateForeground() {

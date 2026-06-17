@@ -35,6 +35,11 @@ public class EasyLafThemePropertiesTest {
             "TabbedPane.hoverColor",
             "TabbedPane.tabSeparatorColor"
     );
+    private static final List<String> REQUIRED_BUTTON_STYLE_KEYS = List.of(
+            "[style]Button.easyPostmanPrimary",
+            "[style]Button.easyPostmanSecondary",
+            "[style]ToggleButton.easyPostmanToggle"
+    );
 
     private LookAndFeel previousLookAndFeel;
 
@@ -61,6 +66,12 @@ public class EasyLafThemePropertiesTest {
     public void shouldDefineSharedComponentSurfaceDefaultsForBuiltInThemes() throws Exception {
         assertDefinesComponentSurfaceColors("com/laker/postman/common/themes/EasyLightLaf.properties");
         assertDefinesComponentSurfaceColors("com/laker/postman/common/themes/EasyDarkLaf.properties");
+    }
+
+    @Test
+    public void shouldDefineModernButtonStyleClassesForBuiltInThemes() throws Exception {
+        assertDefinesButtonStyleClasses("com/laker/postman/common/themes/EasyLightLaf.properties");
+        assertDefinesButtonStyleClasses("com/laker/postman/common/themes/EasyDarkLaf.properties");
     }
 
     @Test
@@ -140,6 +151,17 @@ public class EasyLafThemePropertiesTest {
 
         for (String key : REQUIRED_COMPONENT_SURFACE_KEYS) {
             assertTrue(properties.containsKey(key), resourcePath + " must define " + key);
+        }
+    }
+
+    private void assertDefinesButtonStyleClasses(String resourcePath) throws Exception {
+        Properties properties = loadProperties(resourcePath);
+
+        for (String key : REQUIRED_BUTTON_STYLE_KEYS) {
+            assertTrue(properties.containsKey(key), resourcePath + " must define " + key);
+            String style = properties.getProperty(key);
+            assertTrue(!style.contains("buttonType: roundRect"), key + " must avoid pill-like FlatLaf roundRect type");
+            assertTrue(style.contains("arc: 8"), key + " must keep a moderate 8px button arc");
         }
     }
 

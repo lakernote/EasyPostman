@@ -64,6 +64,7 @@ public class WorkspacePanel extends UiSingletonPanel {
     private SearchTextField workspaceSearchField;
     private List<Workspace> allWorkspaces = new ArrayList<>();
     private JPanel infoPanel;
+    private JSplitPane workspaceContentSplitPane;
     private JPanel workspaceToolPanel;
     private String displayedWorkspaceId;
     private transient WorkspaceService workspaceService;
@@ -79,17 +80,17 @@ public class WorkspacePanel extends UiSingletonPanel {
         leftPanel.add(createToolbar(), BorderLayout.NORTH);
         leftPanel.add(createWorkspaceListPanel(), BorderLayout.CENTER);
 
-        JSplitPane rightSplitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
+        workspaceContentSplitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
                 createInfoPanel(),
                 createWorkspaceToolPanel(),
                 WORKSPACE_DETAIL_DEFAULT_HEIGHT
         );
-        rightSplitPane.setResizeWeight(WORKSPACE_DETAIL_RESIZE_WEIGHT);
-        installInitialWorkspaceDetailDivider(rightSplitPane);
+        workspaceContentSplitPane.setResizeWeight(WORKSPACE_DETAIL_RESIZE_WEIGHT);
+        installInitialWorkspaceDetailDivider(workspaceContentSplitPane);
 
         JSplitPane mainSplitPane = AppToolWindowChrome.createHorizontalCardSplitPane(
                 leftPanel,
-                rightSplitPane,
+                workspaceContentSplitPane,
                 AppToolWindowChrome.DEFAULT_SIDE_WIDTH
         );
         mainSplitPane.setResizeWeight(0.0);
@@ -215,28 +216,58 @@ public class WorkspacePanel extends UiSingletonPanel {
         return workspaceToolPanel;
     }
 
-    private JPanel createEmptyWorkspaceToolPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setOpaque(false);
-        return panel;
-    }
-
     private void showDefaultWorkspaceTool(Workspace workspace) {
         if (workspace != null && workspace.getType() == WorkspaceType.GIT) {
             showGitDiff(workspace, false);
             return;
         }
-        showWorkspaceTool(createEmptyWorkspaceToolPanel());
+        hideWorkspaceTool();
     }
 
     private void showWorkspaceTool(JComponent component) {
         if (workspaceToolPanel == null || component == null) {
             return;
         }
+        setWorkspaceToolVisible(true);
         workspaceToolPanel.removeAll();
         workspaceToolPanel.add(component, BorderLayout.CENTER);
         workspaceToolPanel.revalidate();
         workspaceToolPanel.repaint();
+    }
+
+    private void hideWorkspaceTool() {
+        if (workspaceToolPanel == null) {
+            return;
+        }
+        workspaceToolPanel.removeAll();
+        setWorkspaceToolVisible(false);
+        workspaceToolPanel.revalidate();
+        workspaceToolPanel.repaint();
+    }
+
+    private void setWorkspaceToolVisible(boolean visible) {
+        if (workspaceContentSplitPane == null || workspaceToolPanel == null) {
+            return;
+        }
+        if (workspaceToolPanel.isVisible() == visible
+                && workspaceContentSplitPane.getDividerSize() == (visible ? AppToolWindowChrome.DIVIDER_SIZE : 0)) {
+            return;
+        }
+        workspaceToolPanel.setVisible(visible);
+        workspaceContentSplitPane.setDividerSize(visible ? AppToolWindowChrome.DIVIDER_SIZE : 0);
+        workspaceContentSplitPane.setResizeWeight(visible ? WORKSPACE_DETAIL_RESIZE_WEIGHT : 1.0);
+        SwingUtilities.invokeLater(() -> {
+            if (visible) {
+                workspaceContentSplitPane.setDividerLocation(defaultWorkspaceDetailDividerLocation(
+                        workspaceContentSplitPane.getHeight(),
+                        workspaceContentSplitPane.getDividerSize()
+                ));
+            } else {
+                workspaceContentSplitPane.setDividerLocation(1.0);
+            }
+        });
+        workspaceContentSplitPane.revalidate();
+        workspaceContentSplitPane.repaint();
     }
 
     private static void installInitialWorkspaceDetailDivider(JSplitPane splitPane) {

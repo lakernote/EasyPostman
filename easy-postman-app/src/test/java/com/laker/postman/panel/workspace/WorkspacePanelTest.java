@@ -170,8 +170,31 @@ public class WorkspacePanelTest {
 
         assertTrue(method.contains("WorkspaceType.GIT"));
         assertTrue(method.contains("showGitDiff(workspace, false);"));
+        assertTrue(method.contains("hideWorkspaceTool();"));
+        assertFalse(source.contains("createEmptyWorkspaceToolPanel"));
         assertFalse(source.contains("logArea"));
         assertFalse(source.contains("createWorkspaceLogPanel"));
+    }
+
+    @Test
+    public void workspacePanelShouldCollapseToolAreaWhenNoEmbeddedToolIsShown() throws IOException {
+        Path sourcePath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java");
+        String source = Files.readString(sourcePath);
+        String showTool = source.substring(
+                source.indexOf("private void showWorkspaceTool"),
+                source.indexOf("\n    private void hideWorkspaceTool", source.indexOf("private void showWorkspaceTool") + 1)
+        );
+        String visibility = source.substring(
+                source.indexOf("private void setWorkspaceToolVisible"),
+                source.indexOf("\n    private static void installInitialWorkspaceDetailDivider",
+                        source.indexOf("private void setWorkspaceToolVisible") + 1)
+        );
+
+        assertTrue(showTool.contains("setWorkspaceToolVisible(true);"));
+        assertTrue(visibility.contains("workspaceToolPanel.setVisible(visible);"));
+        assertTrue(visibility.contains("workspaceContentSplitPane.setDividerSize(visible ? AppToolWindowChrome.DIVIDER_SIZE : 0);"));
+        assertTrue(visibility.contains("workspaceContentSplitPane.setResizeWeight(visible ? WORKSPACE_DETAIL_RESIZE_WEIGHT : 1.0);"));
     }
 
     @Test

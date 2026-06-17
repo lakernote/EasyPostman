@@ -80,6 +80,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -420,6 +421,7 @@ public class PerformancePanel extends UiSingletonPanel {
         );
 
         treeSupport.syncAllRequestStructures((DefaultMutableTreeNode) treeModel.getRoot());
+        syncTrendAvailableProtocols();
         runBtn.addActionListener(e -> startRun(progressLabel, limitLabel));
         stopBtn.addActionListener(e -> stopRun());
         for (int i = 0; i < performanceTree.getRowCount(); i++) {
@@ -448,12 +450,12 @@ public class PerformancePanel extends UiSingletonPanel {
         JSplitPane splitPane = AppToolWindowChrome.createVerticalInnerSplitPane(
                 propertyPanel,
                 resultPanel,
-                260
+                220
         );
-        splitPane.setResizeWeight(0.45);
-        splitPane.setDividerLocation(260);
-        propertyPanel.setMinimumSize(new Dimension(400, 150));
-        resultPanel.setMinimumSize(new Dimension(400, 150));
+        splitPane.setResizeWeight(0.34);
+        splitPane.setDividerLocation(220);
+        propertyPanel.setMinimumSize(new Dimension(400, 140));
+        resultPanel.setMinimumSize(new Dimension(400, 240));
         return splitPane;
     }
 
@@ -491,6 +493,7 @@ public class PerformancePanel extends UiSingletonPanel {
         DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(persistedConfiguration, activePlanName());
         treeModel.setRoot(root);
         treeSupport.syncAllRequestStructures(root);
+        syncTrendAvailableProtocols();
         currentRequestNode = null;
         syncPlanSelectorItems();
         if (efficientCheckBox != null) {
@@ -749,6 +752,7 @@ public class PerformancePanel extends UiSingletonPanel {
         DefaultMutableTreeNode root = loadPersistedOrDefaultRoot(configuration, activePlanName());
         treeModel.setRoot(root);
         treeSupport.syncAllRequestStructures(root);
+        syncTrendAvailableProtocols();
         currentRequestNode = null;
         updateOptionControlsFromState();
         clearCachedPerformanceResults();
@@ -974,6 +978,7 @@ public class PerformancePanel extends UiSingletonPanel {
                 ensureRequestStructure(node, nodeData);
             }
         }
+        syncTrendAvailableProtocols();
     }
 
     /**
@@ -1285,6 +1290,7 @@ public class PerformancePanel extends UiSingletonPanel {
      */
     private void saveConfig() {
         // 树节点编辑和属性面板变化都会触发保存，统一防抖减少频繁写盘。
+        syncTrendAvailableProtocols();
         autoSaveSupport.requestSave();
     }
 
@@ -1292,6 +1298,7 @@ public class PerformancePanel extends UiSingletonPanel {
         try {
             // 保存所有属性面板数据到树节点
             saveAllPropertyPanelData();
+            syncTrendAvailableProtocols();
             persistenceService.saveWorkspaceAsync(currentWorkspaceSnapshot());
         } catch (Exception e) {
             log.error("Failed to save performance config", e);
@@ -1354,6 +1361,7 @@ public class PerformancePanel extends UiSingletonPanel {
     }
 
     private void clearCachedPerformanceResults() {
+        syncTrendAvailableProtocols();
         if (statisticsCoordinator != null) {
             statisticsCoordinator.resetForNewRun();
         }
@@ -1409,6 +1417,20 @@ public class PerformancePanel extends UiSingletonPanel {
     private void syncTrendResultTabState() {
         if (trendCheckBox != null) {
             trendCheckBox.setSelected(trendEnabled);
+        }
+    }
+
+    private void syncTrendAvailableProtocols() {
+        if (performanceTrendPanel == null || treeSupport == null || treeModel == null) {
+            return;
+        }
+        Object root = treeModel.getRoot();
+        if (root instanceof DefaultMutableTreeNode rootNode) {
+            Set<PerformanceProtocol> availableProtocols = treeSupport.collectAvailableProtocols(rootNode);
+            performanceTrendPanel.setAvailableProtocols(availableProtocols);
+            if (performanceReportPanel != null) {
+                performanceReportPanel.setAvailableProtocols(availableProtocols);
+            }
         }
     }
 

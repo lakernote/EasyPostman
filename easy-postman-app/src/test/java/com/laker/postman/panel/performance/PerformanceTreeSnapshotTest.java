@@ -13,6 +13,9 @@ import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import org.testng.annotations.Test;
 
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeModel;
+
+import java.util.Set;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
@@ -111,6 +114,61 @@ public class PerformanceTreeSnapshotTest {
         assertNotEquals(pastedData.requestSnapshot.getId(), "original-id");
     }
 
+    @Test
+    public void shouldCollectAvailableProtocolsFromPlanTree() {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
+        root.add(requestNode(RequestItemProtocolEnum.HTTP));
+        root.add(requestNode(RequestItemProtocolEnum.WEBSOCKET));
+
+        Set<PerformanceProtocol> protocols = new PerformanceTreeSupport(new DefaultTreeModel(root))
+                .collectAvailableProtocols(root);
+
+        assertEquals(protocols, Set.of(PerformanceProtocol.HTTP, PerformanceProtocol.WEBSOCKET));
+    }
+
+    @Test
+    public void shouldIgnoreDisabledNodesWhenCollectingAvailableProtocols() {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
+        root.add(requestNode(RequestItemProtocolEnum.HTTP));
+        DefaultMutableTreeNode webSocketNode = requestNode(RequestItemProtocolEnum.WEBSOCKET);
+        ((PerformanceTreeNode) webSocketNode.getUserObject()).enabled = false;
+        root.add(webSocketNode);
+        DefaultMutableTreeNode sseNode = requestNode(RequestItemProtocolEnum.SSE);
+        ((PerformanceTreeNode) sseNode.getUserObject()).enabled = false;
+        root.add(sseNode);
+
+        Set<PerformanceProtocol> protocols = new PerformanceTreeSupport(new DefaultTreeModel(root))
+                .collectAvailableProtocols(root);
+
+        assertEquals(protocols, Set.of(PerformanceProtocol.HTTP));
+    }
+
+    @Test
+    public void shouldCollectAvailableProtocolFromSnapshotOnlyRequest() {
+        PerformanceRequestSnapshot requestSnapshot = PerformanceRequestSnapshot.builder()
+                .protocol(PerformanceProtocol.SSE)
+                .build();
+        PerformanceTreeNode requestData = new PerformanceTreeNode("Snapshot Request", NodeType.REQUEST);
+        requestData.requestSnapshot = requestSnapshot;
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
+        root.add(new DefaultMutableTreeNode(requestData));
+
+        Set<PerformanceProtocol> protocols = new PerformanceTreeSupport(new DefaultTreeModel(root))
+                .collectAvailableProtocols(root);
+
+        assertEquals(protocols, Set.of(PerformanceProtocol.SSE));
+    }
+
+    @Test
+    public void shouldUseHttpAsFallbackWhenPlanTreeHasNoRequests() {
+        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
+
+        Set<PerformanceProtocol> protocols = new PerformanceTreeSupport(new DefaultTreeModel(root))
+                .collectAvailableProtocols(root);
+
+        assertEquals(protocols, Set.of(PerformanceProtocol.HTTP));
+    }
+
     @Test(description = "执行快照应深拷贝条件控制器配置")
     public void shouldDeepCopyConditionData() {
         ConditionData conditionData = new ConditionData();
@@ -126,5 +184,11 @@ public class PerformanceTreeSnapshotTest {
 
         assertNotSame(copiedData.conditionData, conditionData);
         assertEquals(copiedData.conditionData.expression, "{{enabled}} == true");
+    }
+
+    private static DefaultMutableTreeNode requestNode(RequestItemProtocolEnum protocol) {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setProtocol(protocol);
+        return new DefaultMutableTreeNode(new PerformanceTreeNode(protocol.name(), NodeType.REQUEST, item));
     }
 }

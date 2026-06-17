@@ -8,6 +8,7 @@ import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
 import com.laker.postman.common.component.button.SegmentedToggleButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -34,10 +35,13 @@ import java.awt.*;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 public class PerformanceTrendPanel extends UiSingletonPanel implements PerformanceTrendView {
 
@@ -89,6 +93,12 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     private final TimeSeries sseErrorRateSeries = new TimeSeries(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ERROR_RATE_PERCENT));
 
     private final List<TrendView> trendViews = new ArrayList<>();
+    private final Map<PerformanceProtocol, JToggleButton> protocolButtons = new EnumMap<>(PerformanceProtocol.class);
+    private JPanel protocolSwitcherRow;
+    private JPanel metricControlsCards;
+    private JPanel protocolCards;
+    private PerformanceProtocol selectedProtocol = PerformanceProtocol.HTTP;
+    private Set<PerformanceProtocol> availableProtocols = EnumSet.of(PerformanceProtocol.HTTP);
     private Long trendDomainStartMs;
     private Long trendDomainEndMs;
     private String chartMode = SEPARATE_VIEW;
@@ -98,8 +108,8 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         configureSeriesRetention();
         setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(this);
-        JPanel protocolCards = new JPanel(new CardLayout());
-        JPanel metricControlsCards = new JPanel(new CardLayout());
+        protocolCards = new JPanel(new CardLayout());
+        metricControlsCards = new JPanel(new CardLayout());
         ToolWindowSurfaceStyle.applyCard(protocolCards);
         metricControlsCards.setOpaque(false);
         protocolCards.add(createHttpPanel(metricControlsCards), PerformanceProtocol.HTTP.name());
@@ -107,11 +117,18 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         protocolCards.add(createSsePanel(metricControlsCards), PerformanceProtocol.SSE.name());
         add(createToolbar(protocolCards, metricControlsCards), BorderLayout.NORTH);
         add(protocolCards, BorderLayout.CENTER);
+        applyAvailableProtocols();
     }
 
     @Override
     protected void registerListeners() {
         // Charts are updated by PerformanceStatisticsCoordinator.
+    }
+
+    @Override
+    public void setAvailableProtocols(Set<PerformanceProtocol> protocols) {
+        availableProtocols = normalizeProtocols(protocols);
+        applyAvailableProtocols();
     }
 
     private void configureSeriesRetention() {
@@ -167,36 +184,111 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
 
     private JPanel createToolbar(JPanel protocolCards, JPanel metricControlsCards) {
         JPanel toolbar = new JPanel(new MigLayout(
-                "insets 6 10 6 10, fillx, novisualpadding, gap 0",
-                "[pref!,left]8[grow,fill]8[pref!,right]",
+                "insets 0, fillx, novisualpadding, hidemode 3, gap 0",
+                "[grow,fill]",
+                "[]6[]"
+        ));
+        ToolWindowSurfaceStyle.applyToolWindowToolbarSeparator(toolbar, 7, 10, 8, 10);
+        protocolSwitcherRow = createProtocolSwitcher(protocolCards, metricControlsCards);
+        toolbar.add(protocolSwitcherRow, "growx, wrap");
+        toolbar.add(createMetricSelector(metricControlsCards), "growx, wmin 0");
+        return toolbar;
+    }
+
+    private JPanel createMetricSelector(JPanel metricControlsCards) {
+        JPanel panel = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding, gap 0",
+                "[]8[grow,fill]push[pref!,right]",
                 "[]"
         ));
-        ToolWindowSurfaceStyle.applyCard(toolbar);
-        toolbar.add(createProtocolSwitcher(protocolCards, metricControlsCards));
-        toolbar.add(metricControlsCards, "growx, wmin 0");
-        toolbar.add(createModeSwitcher());
-        return toolbar;
+        panel.setOpaque(false);
+
+        JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_METRIC_FILTERS));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        label.setForeground(ModernColors.getTextSecondary());
+
+        panel.add(label);
+        panel.add(metricControlsCards, "growx, wmin 0");
+        panel.add(createModeSwitcher());
+        return panel;
     }
 
     private JPanel createProtocolSwitcher(JPanel protocolCards, JPanel metricControlsCards) {
         ButtonGroup protocolGroup = new ButtonGroup();
+        JPanel row = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding, hidemode 3, gap 0",
+                "[pref!,left]push[]",
+                "[]"
+        ));
+        row.setOpaque(false);
         JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
-        switcher.setOpaque(false);
         for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
             JToggleButton button = new SegmentedToggleButton(
                     PerformanceProtocolLabels.displayName(protocol),
                     protocol == PerformanceProtocol.HTTP
             );
             button.addActionListener(e -> {
-                CardLayout layout = (CardLayout) protocolCards.getLayout();
-                layout.show(protocolCards, protocol.name());
-                CardLayout controlsLayout = (CardLayout) metricControlsCards.getLayout();
-                controlsLayout.show(metricControlsCards, protocol.name());
+                if (button.isSelected()) {
+                    showProtocol(protocol);
+                }
             });
             protocolGroup.add(button);
+            protocolButtons.put(protocol, button);
             switcher.add(button);
         }
-        return switcher;
+        row.add(switcher);
+        return row;
+    }
+
+    private void applyAvailableProtocols() {
+        if (protocolCards == null || metricControlsCards == null || protocolSwitcherRow == null) {
+            return;
+        }
+        for (Map.Entry<PerformanceProtocol, JToggleButton> entry : protocolButtons.entrySet()) {
+            entry.getValue().setVisible(availableProtocols.contains(entry.getKey()));
+        }
+        if (!availableProtocols.contains(selectedProtocol)) {
+            selectedProtocol = firstAvailableProtocol();
+        }
+        protocolSwitcherRow.setVisible(availableProtocols.size() > 1);
+        showProtocol(selectedProtocol);
+        revalidate();
+        repaint();
+    }
+
+    private PerformanceProtocol firstAvailableProtocol() {
+        if (availableProtocols.contains(PerformanceProtocol.HTTP)) {
+            return PerformanceProtocol.HTTP;
+        }
+        for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
+            if (availableProtocols.contains(protocol)) {
+                return protocol;
+            }
+        }
+        return PerformanceProtocol.HTTP;
+    }
+
+    private void showProtocol(PerformanceProtocol protocol) {
+        selectedProtocol = protocol;
+        JToggleButton button = protocolButtons.get(protocol);
+        if (button != null && !button.isSelected()) {
+            button.setSelected(true);
+        }
+        CardLayout layout = (CardLayout) protocolCards.getLayout();
+        layout.show(protocolCards, protocol.name());
+        CardLayout controlsLayout = (CardLayout) metricControlsCards.getLayout();
+        controlsLayout.show(metricControlsCards, protocol.name());
+    }
+
+    private static Set<PerformanceProtocol> normalizeProtocols(Set<PerformanceProtocol> protocols) {
+        EnumSet<PerformanceProtocol> normalized = EnumSet.noneOf(PerformanceProtocol.class);
+        if (protocols != null) {
+            normalized.addAll(protocols);
+        }
+        if (normalized.isEmpty()) {
+            normalized.add(PerformanceProtocol.HTTP);
+        }
+        return normalized;
     }
 
     private JPanel createModeSwitcher() {

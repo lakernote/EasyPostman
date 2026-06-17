@@ -22,6 +22,7 @@ import javax.swing.JTextField;
 import javax.swing.UIManager;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
+import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
@@ -94,6 +95,12 @@ public class PerformancePanelViewFactoryTest extends AbstractSwingUiTest {
         assertSame(resultSwitcher.getComponent(0), resultSection.trendButton());
         assertSame(resultSwitcher.getComponent(1), resultSection.reportButton());
         assertSame(resultSwitcher.getComponent(2), resultSection.resultTableButton());
+        Container resultToolbarLeftPanel = resultSwitcher.getParent();
+        Container resultContextPanel = (Container) resultToolbarLeftPanel.getComponent(1);
+        assertFalse(
+                resultContextPanel.getLayout() instanceof CardLayout,
+                "result context controls should not reserve the widest card width"
+        );
 
         JCheckBox compactDetailsCheckBox = resultSection.efficientCheckBox();
         assertEquals(compactDetailsCheckBox.getText(), I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT));

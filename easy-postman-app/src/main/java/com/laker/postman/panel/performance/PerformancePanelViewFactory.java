@@ -59,10 +59,6 @@ final class PerformancePanelViewFactory {
     private static final int WORKER_ENDPOINT_FIELD_PREFERRED_WIDTH = 420;
     private static final int WORKER_ENDPOINT_FIELD_MAX_WIDTH = 520;
     private static final Insets TOOLBAR_INSETS = new Insets(6, 10, 6, 10);
-    private static final String RESULT_CONTEXT_TABLE = "table";
-    private static final String RESULT_CONTEXT_REPORT = "report";
-    private static final String RESULT_CONTEXT_TREND = "trend";
-
     TreeSection createTreeSection(DefaultTreeModel treeModel) {
         JTree performanceTree = new JTree(treeModel);
         performanceTree.setRootVisible(true);
@@ -589,24 +585,39 @@ final class PerformancePanelViewFactory {
             saveConfigAction.run();
         });
 
-        JPanel contextCards = new JPanel(new CardLayout());
-        contextCards.setOpaque(false);
-        contextCards.add(createTableContextPanel(efficientCheckBox), RESULT_CONTEXT_TABLE);
-        contextCards.add(createReportContextPanel(reportRefreshModeBox), RESULT_CONTEXT_REPORT);
-        contextCards.add(createTrendContextPanel(trendCheckBox), RESULT_CONTEXT_TREND);
-        toolbar.add(createResultToolbarLeftPanel(switcher, contextCards), BorderLayout.WEST);
+        JPanel tableContextPanel = createTableContextPanel(efficientCheckBox);
+        JPanel reportContextPanel = createReportContextPanel(reportRefreshModeBox);
+        JPanel trendContextPanel = createTrendContextPanel(trendCheckBox);
+        JPanel contextPanel = createResultContextPanel(tableContextPanel, reportContextPanel, trendContextPanel);
+        toolbar.add(createResultToolbarLeftPanel(switcher, contextPanel), BorderLayout.WEST);
 
         resultTableButton.addActionListener(e -> selectResultTab(resultTabbedPane, RESULT_TAB_TABLE, reportRefreshAction));
         reportButton.addActionListener(e -> selectResultTab(resultTabbedPane, RESULT_TAB_REPORT, reportRefreshAction));
         trendButton.addActionListener(e -> selectResultTab(resultTabbedPane, RESULT_TAB_TREND, reportRefreshAction));
 
         resultTabbedPane.addChangeListener(e -> {
-            syncResultToolbarState(resultTabbedPane, resultTableButton, reportButton, trendButton, contextCards);
+            syncResultToolbarState(
+                    resultTabbedPane,
+                    resultTableButton,
+                    reportButton,
+                    trendButton,
+                    tableContextPanel,
+                    reportContextPanel,
+                    trendContextPanel
+            );
             if (resultTabbedPane.getSelectedIndex() == RESULT_TAB_REPORT && reportRefreshAction != null) {
                 reportRefreshAction.run();
             }
         });
-        syncResultToolbarState(resultTabbedPane, resultTableButton, reportButton, trendButton, contextCards);
+        syncResultToolbarState(
+                resultTabbedPane,
+                resultTableButton,
+                reportButton,
+                trendButton,
+                tableContextPanel,
+                reportContextPanel,
+                trendContextPanel
+        );
 
         return new ResultToolbar(
                 toolbar,
@@ -649,18 +660,33 @@ final class PerformancePanelViewFactory {
     }
 
     private JPanel createTableContextPanel(JCheckBox efficientCheckBox) {
-        return ToolWindowActionToolbar.inlineRight(efficientCheckBox);
+        return ToolWindowActionToolbar.inlineLeft(efficientCheckBox);
     }
 
     private JPanel createReportContextPanel(JComboBox<String> reportRefreshModeBox) {
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_REFRESH_MODE));
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         label.setForeground(ModernColors.getTextSecondary());
-        return ToolWindowActionToolbar.inlineRight(label, reportRefreshModeBox);
+        return ToolWindowActionToolbar.inlineLeft(label, reportRefreshModeBox);
     }
 
     private JPanel createTrendContextPanel(JCheckBox trendCheckBox) {
-        return ToolWindowActionToolbar.inlineRight(trendCheckBox);
+        return ToolWindowActionToolbar.inlineLeft(trendCheckBox);
+    }
+
+    private JPanel createResultContextPanel(JPanel tableContextPanel,
+                                            JPanel reportContextPanel,
+                                            JPanel trendContextPanel) {
+        JPanel panel = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding, hidemode 3, gap 0",
+                "[]",
+                "[]"
+        ));
+        panel.setOpaque(false);
+        panel.add(tableContextPanel);
+        panel.add(reportContextPanel);
+        panel.add(trendContextPanel);
+        return panel;
     }
 
     private JPanel createResultToolbarLeftPanel(JPanel switcher, JPanel contextCards) {
@@ -692,20 +718,17 @@ final class PerformancePanelViewFactory {
                                         JToggleButton resultTableButton,
                                         JToggleButton reportButton,
                                         JToggleButton trendButton,
-                                        JPanel contextCards) {
+                                        JPanel tableContextPanel,
+                                        JPanel reportContextPanel,
+                                        JPanel trendContextPanel) {
         int selectedIndex = resultTabbedPane.getSelectedIndex();
         resultTableButton.setSelected(selectedIndex == RESULT_TAB_TABLE);
         reportButton.setSelected(selectedIndex == RESULT_TAB_REPORT);
         trendButton.setSelected(selectedIndex == RESULT_TAB_TREND);
 
-        CardLayout contextLayout = (CardLayout) contextCards.getLayout();
-        if (selectedIndex == RESULT_TAB_REPORT) {
-            contextLayout.show(contextCards, RESULT_CONTEXT_REPORT);
-        } else if (selectedIndex == RESULT_TAB_TREND) {
-            contextLayout.show(contextCards, RESULT_CONTEXT_TREND);
-        } else {
-            contextLayout.show(contextCards, RESULT_CONTEXT_TABLE);
-        }
+        tableContextPanel.setVisible(selectedIndex == RESULT_TAB_TABLE);
+        reportContextPanel.setVisible(selectedIndex == RESULT_TAB_REPORT);
+        trendContextPanel.setVisible(selectedIndex == RESULT_TAB_TREND);
     }
 
     private RequestEditorSection createRequestEditorSection(RequestEditSubPanel requestEditSubPanel) {

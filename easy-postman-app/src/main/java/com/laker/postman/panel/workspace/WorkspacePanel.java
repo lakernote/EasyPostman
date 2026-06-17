@@ -9,6 +9,7 @@ import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.PlusButton;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.GitAuthType;
 import com.laker.postman.model.GitOperation;
@@ -662,15 +663,17 @@ public class WorkspacePanel extends UiSingletonPanel {
      * 重命名工作区
      */
     private void renameWorkspace(Workspace workspace) {
-        String newName = JOptionPane.showInputDialog(
+        TextInputDialog.showRequiredName(
                 this,
-                I18nUtil.getMessage(MessageKeys.WORKSPACE_NAME) + ":",
-                workspace.getName()
-        );
-
-        if (newName != null && !newName.trim().isEmpty() && !newName.equals(workspace.getName())) {
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_RENAME),
+                workspace.getName(),
+                I18nUtil.getMessage(MessageKeys.WORKSPACE_VALIDATION_NAME_REQUIRED)
+        ).ifPresent(newName -> {
+            if (newName.equals(workspace.getName())) {
+                return;
+            }
             try {
-                workspaceService.renameWorkspace(workspace.getId(), newName.trim());
+                workspaceService.renameWorkspace(workspace.getId(), newName);
                 refreshWorkspaceList();
                 // 如果重命名的是当前工作区，更新顶部菜单栏的工作区下拉框
                 Workspace current = workspaceService.getCurrentWorkspace();
@@ -681,7 +684,7 @@ public class WorkspacePanel extends UiSingletonPanel {
             } catch (Exception e) {
                 log.error("Failed to rename workspace", e);
             }
-        }
+        });
     }
 
     /**

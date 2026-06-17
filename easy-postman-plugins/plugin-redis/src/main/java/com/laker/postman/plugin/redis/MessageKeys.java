@@ -27,7 +27,6 @@ final class MessageKeys {
     static final String TOOLBOX_REDIS_PROFILE_NEW_DEFAULT = "toolbox.redis.profile.new.default";
     static final String TOOLBOX_REDIS_PROFILE_SAVE = "toolbox.redis.profile.save";
     static final String TOOLBOX_REDIS_PROFILE_SAVE_AS = "toolbox.redis.profile.save_as";
-    static final String TOOLBOX_REDIS_PROFILE_SAVE_AS_PROMPT = "toolbox.redis.profile.save_as.prompt";
     static final String TOOLBOX_REDIS_PROFILE_SAVE_AS_TITLE = "toolbox.redis.profile.save_as.title";
     static final String TOOLBOX_REDIS_PROFILE_DELETE = "toolbox.redis.profile.delete";
     static final String TOOLBOX_REDIS_PROFILE_SAVED = "toolbox.redis.profile.saved";

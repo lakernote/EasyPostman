@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.panel.collections.editor.CollectionTreeEditorGateway;
@@ -30,15 +31,12 @@ final class SavedResponseUiController {
 
     String promptResponseName(Component owner) {
         String defaultName = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-        return (String) JOptionPane.showInputDialog(
+        return TextInputDialog.showRequiredName(
                 owner,
-                I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_DIALOG_MESSAGE),
                 I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_DIALOG_TITLE),
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                defaultName
-        );
+                defaultName,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_EMPTY)
+        ).orElse(null);
     }
 
     void saveResponse(String name,

@@ -14,6 +14,7 @@ import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
@@ -1064,21 +1065,12 @@ public class InfluxDbPanel extends JPanel {
     }
 
     private String promptProfileName(String initialValue, String existingProfileId) {
-        Object value = JOptionPane.showInputDialog(this,
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_SAVE_AS_PROMPT),
+        String name = TextInputDialog.showRequiredName(this,
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_SAVE_AS_TITLE),
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                initialValue);
-        if (value == null) {
-            return null;
-        }
-        String name = value.toString().trim();
-        if (name.isBlank()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_NAME_REQUIRED));
-            return null;
-        }
+                initialValue,
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_NAME_REQUIRED)
+        ).orElse(null);
+        if (name == null) return null;
         if (profileNameExists(name, existingProfileId)) {
             NotificationUtil.showWarning(MessageFormat.format(
                     I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_NAME_EXISTS), name));

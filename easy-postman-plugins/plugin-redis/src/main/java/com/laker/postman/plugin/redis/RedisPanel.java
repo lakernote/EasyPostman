@@ -14,6 +14,7 @@ import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.api.PluginStorage;
 import com.laker.postman.util.*;
@@ -1432,23 +1433,16 @@ public class RedisPanel extends JPanel {
     }
 
     private Optional<String> promptNewProfileName(String initialName) {
-        Object input = JOptionPane.showInputDialog(
+        Optional<String> input = TextInputDialog.showRequiredName(
                 this,
-                t(MessageKeys.TOOLBOX_REDIS_PROFILE_SAVE_AS_PROMPT),
                 t(MessageKeys.TOOLBOX_REDIS_PROFILE_SAVE_AS_TITLE),
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                initialName
+                initialName,
+                t(MessageKeys.TOOLBOX_REDIS_PROFILE_NAME_REQUIRED)
         );
-        if (input == null) {
+        if (input.isEmpty()) {
             return Optional.empty();
         }
-        String profileName = input.toString().trim();
-        if (profileName.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_REDIS_PROFILE_NAME_REQUIRED));
-            return Optional.empty();
-        }
+        String profileName = input.get();
         if (connectionProfilesByName.containsKey(profileName)) {
             NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_REDIS_PROFILE_NAME_EXISTS, profileName));
             return Optional.empty();

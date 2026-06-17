@@ -6,6 +6,7 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
 import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.service.setting.SettingManager;
@@ -740,14 +741,16 @@ public class CsvDataPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.CSV_BUTTON_ADD_COLUMN), false, "icons/plus.svg", 16);
         styleToolbarButton(addColumnBtn);
         addColumnBtn.addActionListener(e -> {
-            String columnName = JOptionPane.showInputDialog(manageDialog, I18nUtil.getMessage(MessageKeys.CSV_ENTER_COLUMN_NAME),
-                    I18nUtil.getMessage(MessageKeys.CSV_ADD_COLUMN), JOptionPane.PLAIN_MESSAGE);
-            if (columnName != null && !columnName.trim().isEmpty()) {
-                columnName = columnName.trim();
+            TextInputDialog.showRequiredName(
+                    manageDialog,
+                    I18nUtil.getMessage(MessageKeys.CSV_ADD_COLUMN),
+                    "",
+                    I18nUtil.getMessage(MessageKeys.CSV_COLUMN_NAME_EMPTY)
+            ).ifPresent(columnName -> {
                 editTableModel.addColumn(columnName);
                 csvTable.repaint();
                 refreshResponsiveTableLayout(csvTable, scrollPane);
-            }
+            });
         });
 
         JButton deleteColumnBtn = ModernButtonFactory.createButton(

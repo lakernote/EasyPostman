@@ -524,10 +524,8 @@ public final class MessageKeys {
     public static final String ENV_DIALOG_IMPORT_INTELLIJ_FAIL = "env.dialog.import_intellij.fail";
     public static final String ENV_DIALOG_IMPORT_INTELLIJ_INVALID = "env.dialog.import_intellij.invalid";
     public static final String ENV_DIALOG_ADD_TITLE = "env.dialog.add.title";
-    public static final String ENV_DIALOG_ADD_PROMPT = "env.dialog.add.prompt";
     public static final String ENV_DIALOG_RENAME_TITLE = "env.dialog.rename.title";
-    public static final String ENV_DIALOG_RENAME_PROMPT = "env.dialog.rename.prompt";
-    public static final String ENV_DIALOG_RENAME_FAIL = "env.dialog.rename.fail";
+    public static final String ENV_DIALOG_NAME_EMPTY = "env.dialog.name.empty";
     public static final String ENV_DIALOG_DELETE_TITLE = "env.dialog.delete.title";
     public static final String ENV_DIALOG_DELETE_PROMPT = "env.dialog.delete.prompt";
     public static final String ENV_DIALOG_DELETE_BATCH_PROMPT = "env.dialog.delete.batch_prompt";
@@ -702,7 +700,6 @@ public final class MessageKeys {
     public static final String PERFORMANCE_PLAN_RENAME_TOOLTIP = "performance.plan.rename.tooltip";
     public static final String PERFORMANCE_PLAN_DELETE_TOOLTIP = "performance.plan.delete.tooltip";
     public static final String PERFORMANCE_PLAN_RENAME_TITLE = "performance.plan.rename.title";
-    public static final String PERFORMANCE_PLAN_RENAME_PROMPT = "performance.plan.rename.prompt";
     public static final String PERFORMANCE_PLAN_NAME_EMPTY = "performance.plan.name.empty";
     public static final String PERFORMANCE_PLAN_COPY_SUFFIX = "performance.plan.copy_suffix";
     public static final String PERFORMANCE_PLAN_DELETE_CONFIRM = "performance.plan.delete.confirm";
@@ -834,7 +831,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_MENU_COPY = "performance.menu.copy";
     public static final String PERFORMANCE_MENU_PASTE = "performance.menu.paste";
     public static final String PERFORMANCE_MSG_SELECT_THREAD_GROUP = "performance.msg.select_thread_group";
-    public static final String PERFORMANCE_MSG_RENAME_NODE = "performance.msg.rename_node";
+    public static final String PERFORMANCE_NODE_NAME_EMPTY = "performance.node.name.empty";
     public static final String PERFORMANCE_MSG_EXECUTION_INTERRUPTED = "performance.msg.execution_interrupted";
     public static final String PERFORMANCE_MSG_EXECUTION_COMPLETED = "performance.msg.execution_completed";
     public static final String PERFORMANCE_MSG_PRE_SCRIPT_FAILED = "performance.msg.pre_script_failed";
@@ -1134,18 +1131,15 @@ public final class MessageKeys {
     public static final String COLLECTIONS_IMPORT_APIPOST_INVALID = "collections.import.apipost.invalid";
 
     // ============ 集合对话框相关 ============
-    public static final String COLLECTIONS_DIALOG_ADD_GROUP_PROMPT = "collections.dialog.add_group.prompt";
-    public static final String COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT = "collections.dialog.rename_group.prompt";
+    public static final String COLLECTIONS_DIALOG_ADD_GROUP_TITLE = "collections.dialog.add_group.title";
     public static final String COLLECTIONS_DIALOG_RENAME_GROUP_TITLE = "collections.dialog.rename_group.title";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_TITLE = "collections.dialog.add_request.title";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_NAME = "collections.dialog.add_request.name";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_PROTOCOL = "collections.dialog.add_request.protocol";
     public static final String COLLECTIONS_DIALOG_ADD_REQUEST_NAME_EMPTY = "collections.dialog.add_request.name_empty";
     public static final String COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY = "collections.dialog.rename_group.empty";
-    public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT = "collections.dialog.rename_request.prompt";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_TITLE = "collections.dialog.rename_request.title";
     public static final String COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY = "collections.dialog.rename_request.empty";
-    public static final String COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_PROMPT = "collections.dialog.rename_saved_response.prompt";
     public static final String COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_TITLE = "collections.dialog.rename_saved_response.title";
     public static final String COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_EMPTY = "collections.dialog.rename_saved_response.empty";
     public static final String COLLECTIONS_DIALOG_MULTI_SELECT_TITLE = "collections.dialog.multi_select.title";
@@ -1451,7 +1445,6 @@ public final class MessageKeys {
     public static final String RESPONSE_HEADERS_COPY_ALL = "response.headers.copy_all";
     public static final String RESPONSE_HEADERS_SELECT_ALL = "response.headers.select_all";
     public static final String RESPONSE_SAVE_DIALOG_TITLE = "response.save.dialog.title";
-    public static final String RESPONSE_SAVE_DIALOG_MESSAGE = "response.save.dialog.message";
     public static final String RESPONSE_SAVE_SUCCESS = "response.save.success";
     public static final String RESPONSE_SAVE_ERROR = "response.save.error";
     public static final String RESPONSE_LOAD_ERROR = "response.load.error";
@@ -1491,7 +1484,7 @@ public final class MessageKeys {
     public static final String CSV_SELECT_ROWS_TO_DELETE = "csv.select_rows_to_delete";
     public static final String CSV_CONFIRM_DELETE_ROWS = "csv.confirm_delete_rows";
     public static final String CSV_CONFIRM_DELETE = "csv.confirm_delete";
-    public static final String CSV_ENTER_COLUMN_NAME = "csv.enter_column_name";
+    public static final String CSV_COLUMN_NAME_EMPTY = "csv.column_name.empty";
     public static final String CSV_ADD_COLUMN = "csv.add_column";
     public static final String CSV_SELECT_COLUMNS_TO_DELETE = "csv.select_columns_to_delete";
     public static final String CSV_CANNOT_DELETE_ALL_COLUMNS = "csv.cannot_delete_all_columns";
@@ -2396,7 +2389,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_ES_PROFILE_NEW_DEFAULT = "toolbox.es.profile.new.default";
     public static final String TOOLBOX_ES_PROFILE_SAVE = "toolbox.es.profile.save";
     public static final String TOOLBOX_ES_PROFILE_SAVE_AS = "toolbox.es.profile.save_as";
-    public static final String TOOLBOX_ES_PROFILE_SAVE_AS_PROMPT = "toolbox.es.profile.save_as.prompt";
     public static final String TOOLBOX_ES_PROFILE_SAVE_AS_TITLE = "toolbox.es.profile.save_as.title";
     public static final String TOOLBOX_ES_PROFILE_DELETE = "toolbox.es.profile.delete";
     public static final String TOOLBOX_ES_PROFILE_SAVED = "toolbox.es.profile.saved";
@@ -2474,7 +2466,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_INFLUX_PROFILE_NEW_DEFAULT = "toolbox.influx.profile.new.default";
     public static final String TOOLBOX_INFLUX_PROFILE_SAVE = "toolbox.influx.profile.save";
     public static final String TOOLBOX_INFLUX_PROFILE_SAVE_AS = "toolbox.influx.profile.save_as";
-    public static final String TOOLBOX_INFLUX_PROFILE_SAVE_AS_PROMPT = "toolbox.influx.profile.save_as.prompt";
     public static final String TOOLBOX_INFLUX_PROFILE_SAVE_AS_TITLE = "toolbox.influx.profile.save_as.title";
     public static final String TOOLBOX_INFLUX_PROFILE_DELETE = "toolbox.influx.profile.delete";
     public static final String TOOLBOX_INFLUX_PROFILE_SAVED = "toolbox.influx.profile.saved";

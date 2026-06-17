@@ -21,6 +21,7 @@ import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.AppConstants;
 import com.laker.postman.ioc.BeanFactory;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
@@ -674,29 +675,19 @@ public class PerformancePanel extends UiSingletonPanel {
         if (currentPlan == null) {
             return;
         }
-        Object value = JOptionPane.showInputDialog(
+        TextInputDialog.showRequiredName(
                 this,
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_RENAME_PROMPT),
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_RENAME_TITLE),
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                currentPlan.getName()
-        );
-        if (value == null) {
-            return;
-        }
-        String newName = value.toString().trim();
-        if (newName.isEmpty()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_NAME_EMPTY));
-            return;
-        }
-        saveCurrentPlanIntoMemory();
-        PerformanceSavedPlan latestPlan = activePlan();
-        replaceSavedPlan(currentPlan.getId(), (latestPlan == null ? currentPlan : latestPlan).withName(newName));
-        renameRootNode(newName);
-        syncPlanSelectorItems();
-        persistCurrentWorkspaceSync();
+                currentPlan.getName(),
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_NAME_EMPTY)
+        ).ifPresent(newName -> {
+            saveCurrentPlanIntoMemory();
+            PerformanceSavedPlan latestPlan = activePlan();
+            replaceSavedPlan(currentPlan.getId(), (latestPlan == null ? currentPlan : latestPlan).withName(newName));
+            renameRootNode(newName);
+            syncPlanSelectorItems();
+            persistCurrentWorkspaceSync();
+        });
     }
 
     private void deletePlan() {

@@ -69,7 +69,6 @@ public final class MessageKeys {
     public static final String TOOLBOX_KAFKA_PROFILE_NEW_DEFAULT = "toolbox.kafka.profile.new.default";
     public static final String TOOLBOX_KAFKA_PROFILE_SAVE = "toolbox.kafka.profile.save";
     public static final String TOOLBOX_KAFKA_PROFILE_SAVE_AS = "toolbox.kafka.profile.save_as";
-    public static final String TOOLBOX_KAFKA_PROFILE_SAVE_AS_PROMPT = "toolbox.kafka.profile.save_as.prompt";
     public static final String TOOLBOX_KAFKA_PROFILE_SAVE_AS_TITLE = "toolbox.kafka.profile.save_as.title";
     public static final String TOOLBOX_KAFKA_PROFILE_DELETE = "toolbox.kafka.profile.delete";
     public static final String TOOLBOX_KAFKA_PROFILE_SAVED = "toolbox.kafka.profile.saved";

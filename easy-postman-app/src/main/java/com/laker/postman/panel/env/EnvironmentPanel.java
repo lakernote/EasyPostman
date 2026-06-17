@@ -17,6 +17,7 @@ import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.SaveButton;
 import com.laker.postman.common.component.combobox.EnvironmentComboBox;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.component.list.EnvironmentListCellRenderer;
 import com.laker.postman.common.component.table.EasyVariableTablePanel;
 import com.laker.postman.common.constants.ModernColors;
@@ -701,11 +702,12 @@ public class EnvironmentPanel extends UiSingletonPanel {
 
     // 新增环境
     private void addEnvironment() {
-        String name = JOptionPane.showInputDialog(this,
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_ADD_PROMPT),
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_ADD_TITLE), JOptionPane.PLAIN_MESSAGE);
-        if (name != null && !name.trim().isEmpty()) {
-            Environment env = new Environment(name.trim());
+        TextInputDialog.showRequiredName(this,
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_ADD_TITLE),
+                "",
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_NAME_EMPTY)
+        ).ifPresent(name -> {
+            Environment env = new Environment(name);
             env.setId("env-" + IdUtil.simpleUUID());
             EnvironmentService.saveEnvironment(env);
             environmentListModel.addElement(new EnvironmentItem(env));
@@ -714,7 +716,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
             if (environmentComboBox != null) {
                 environmentComboBox.addItem(new EnvironmentItem(env));
             }
-        }
+        });
     }
 
     private void reloadEnvironmentList(String filter) {
@@ -741,24 +743,20 @@ public class EnvironmentPanel extends UiSingletonPanel {
         EnvironmentItem item = environmentList.getSelectedValue();
         if (item == null) return;
         Environment env = item.getEnvironment();
-        Object result = JOptionPane.showInputDialog(this,
-                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_PROMPT),
+        TextInputDialog.showRequiredName(this,
                 I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_TITLE),
-                JOptionPane.PLAIN_MESSAGE, null, null, env.getName());
-        if (result != null) {
-            String newName = result.toString().trim();
-            if (!newName.isEmpty() && !newName.equals(env.getName())) {
-                env.setName(newName);
-                EnvironmentService.saveEnvironment(env);
-                environmentListModel.setElementAt(new EnvironmentItem(env), environmentList.getSelectedIndex());
-                // 同步刷新顶部环境下拉框
-                UiSingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox().reload();
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_RENAME_FAIL),
-                        I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_CHANGES_TITLE), JOptionPane.WARNING_MESSAGE);
+                env.getName(),
+                I18nUtil.getMessage(MessageKeys.ENV_DIALOG_NAME_EMPTY)
+        ).ifPresent(newName -> {
+            if (newName.equals(env.getName())) {
+                return;
             }
-        }
+            env.setName(newName);
+            EnvironmentService.saveEnvironment(env);
+            environmentListModel.setElementAt(new EnvironmentItem(env), environmentList.getSelectedIndex());
+            // 同步刷新顶部环境下拉框
+            UiSingletonFactory.getInstance(TopMenuBar.class).getEnvironmentComboBox().reload();
+        });
     }
 
     /**

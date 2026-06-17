@@ -13,6 +13,7 @@ public final class CommonMessageKeys {
     public static final String GENERAL_OK = "general.ok";
     public static final String GENERAL_SEARCH = "general.search";
     public static final String GENERAL_OPEN_FOLDER = "general.open_folder";
+    public static final String LABEL_NAME = "label.name";
 
     public static final String BUTTON_ADD = "button.add";
     public static final String BUTTON_CANCEL = "button.cancel";

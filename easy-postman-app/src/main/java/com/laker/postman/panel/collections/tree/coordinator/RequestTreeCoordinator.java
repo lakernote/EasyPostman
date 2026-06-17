@@ -12,6 +12,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
@@ -86,14 +87,12 @@ public class RequestTreeCoordinator {
     public void showAddGroupDialog(DefaultMutableTreeNode parentNode) {
         if (parentNode == null) return;
 
-        String groupName = JOptionPane.showInputDialog(
+        TextInputDialog.showRequiredName(
                 UiSingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_GROUP_PROMPT)
-        );
-
-        if (groupName != null && !groupName.trim().isEmpty()) {
-            addGroupToNode(parentNode, groupName);
-        }
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_GROUP_TITLE),
+                "",
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY)
+        ).ifPresent(groupName -> addGroupToNode(parentNode, groupName));
     }
 
     /**
@@ -190,24 +189,17 @@ public class RequestTreeCoordinator {
         }
         String oldName = group.getName();
 
-        Object result = JOptionPane.showInputDialog(
+        TextInputDialog.showRequiredName(
                 UiSingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_PROMPT),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_TITLE),
-                JOptionPane.PLAIN_MESSAGE,
-                null, null, oldName
-        );
-
-        if (result != null) {
-            String newName = result.toString().trim();
-            if (!newName.isEmpty() && !newName.equals(oldName)) {
-                updateGroupName(selectedNode, group, newName);
-            } else if (newName.isEmpty()) {
-                NotificationUtil.showWarning(
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY)
-                );
+                oldName,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_GROUP_EMPTY)
+        ).ifPresent(newName -> {
+            if (newName.equals(oldName)) {
+                return;
             }
-        }
+            updateGroupName(selectedNode, group, newName);
+        });
     }
 
     /**
@@ -230,24 +222,17 @@ public class RequestTreeCoordinator {
         }
         String oldName = item.getName();
 
-        Object result = JOptionPane.showInputDialog(
+        TextInputDialog.showRequiredName(
                 UiSingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_PROMPT),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_TITLE),
-                JOptionPane.PLAIN_MESSAGE,
-                null, null, oldName
-        );
-
-        if (result != null) {
-            String newName = result.toString().trim();
-            if (!newName.isEmpty() && !newName.equals(oldName)) {
-                updateRequestName(selectedNode, item, newName);
-            } else if (newName.isEmpty()) {
-                NotificationUtil.showWarning(
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY)
-                );
+                oldName,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_REQUEST_EMPTY)
+        ).ifPresent(newName -> {
+            if (newName.equals(oldName)) {
+                return;
             }
-        }
+            updateRequestName(selectedNode, item, newName);
+        });
     }
 
     /**
@@ -293,24 +278,17 @@ public class RequestTreeCoordinator {
         }
         String oldName = savedResponse.getName();
 
-        Object result = JOptionPane.showInputDialog(
+        TextInputDialog.showRequiredName(
                 UiSingletonFactory.getInstance(MainFrame.class),
-                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_PROMPT),
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_TITLE),
-                JOptionPane.PLAIN_MESSAGE,
-                null, null, oldName
-        );
-
-        if (result != null) {
-            String newName = result.toString().trim();
-            if (!newName.isEmpty() && !newName.equals(oldName)) {
-                updateSavedResponseName(selectedNode, savedResponse, newName);
-            } else if (newName.isEmpty()) {
-                NotificationUtil.showWarning(
-                        I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_EMPTY)
-                );
+                oldName,
+                I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_RENAME_SAVED_RESPONSE_EMPTY)
+        ).ifPresent(newName -> {
+            if (newName.equals(oldName)) {
+                return;
             }
-        }
+            updateSavedResponseName(selectedNode, savedResponse, newName);
+        });
     }
 
     /**

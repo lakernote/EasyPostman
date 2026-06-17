@@ -12,6 +12,7 @@ import com.laker.postman.plugin.kafka.ui.KafkaTopicItem;
 import com.laker.postman.plugin.kafka.ui.KafkaTopicPanel;
 import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -376,23 +377,16 @@ public class KafkaPanel extends JPanel {
     }
 
     private Optional<String> promptNewProfileName(String initialName) {
-        Object input = JOptionPane.showInputDialog(
+        Optional<String> input = TextInputDialog.showRequiredName(
                 this,
-                t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVE_AS_PROMPT),
                 t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVE_AS_TITLE),
-                JOptionPane.PLAIN_MESSAGE,
-                null,
-                null,
-                initialName
+                initialName,
+                t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NAME_REQUIRED)
         );
-        if (input == null) {
+        if (input.isEmpty()) {
             return Optional.empty();
         }
-        String profileName = input.toString().trim();
-        if (profileName.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NAME_REQUIRED));
-            return Optional.empty();
-        }
+        String profileName = input.get();
         if (connectionProfilesByName.containsKey(profileName)) {
             NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NAME_EXISTS, profileName));
             return Optional.empty();

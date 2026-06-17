@@ -447,80 +447,27 @@ public class WorkspacePanel extends UiSingletonPanel {
             return;
         }
 
-        // 根据工作区类型显示不同的Git操作
-        if (workspace.getGitRepoSource() == GitRepoSource.INITIALIZED) {
-            addInitializedGitMenuItems(menu, workspace);
-        }
-
-        addStandardGitMenuItems(menu, workspace);
+        boolean gitItemsAdded = addStandardGitMenuItems(menu, workspace);
         // 只有非默认工作区才添加分隔符（因为后面还有重命名和删除选项）
-        if (!WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
+        if (gitItemsAdded && !WorkspaceStorageUtil.isDefaultWorkspace(workspace)) {
             menu.addSeparator();
         }
     }
 
-    private void addInitializedGitMenuItems(JPopupMenu menu, Workspace workspace) {
+    private boolean addStandardGitMenuItems(JPopupMenu menu, Workspace workspace) {
         try {
             RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
-            if (!remoteStatus.hasRemote) {
-                // 还未配置远程仓库
-                JMenuItem configRemoteItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE));
-                configRemoteItem.setIcon(IconUtil.create("icons/git.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-                configRemoteItem.addActionListener(e -> configureRemoteRepository(workspace));
-                menu.add(configRemoteItem);
-            }
-        } catch (Exception ex) {
-            log.warn("Failed to check remote status for workspace: {}", workspace.getId(), ex);
-        }
-    }
-
-    private void addStandardGitMenuItems(JPopupMenu menu, Workspace workspace) {
-
-        // 1.提交操作 始终显示
-        JMenuItem commitItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_COMMIT));
-        commitItem.setIcon(IconUtil.createThemed(
-                GitOperationPresentation.getIconName(GitOperation.COMMIT),
-                IconUtil.SIZE_SMALL,
-                IconUtil.SIZE_SMALL));
-        commitItem.addActionListener(e -> performGitCommit(workspace));
-        menu.add(commitItem);
-
-        // 2.查看历史 始终显示
-        JMenuItem historyItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_HISTORY));
-        historyItem.setIcon(IconUtil.createThemed("icons/history.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
-        historyItem.addActionListener(e -> showGitHistory(workspace));
-        menu.add(historyItem);
-
-        try {
-            RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
-            if (remoteStatus.hasRemote) { // 3.只有已配置远程仓库的工作区才显示拉取操作
-                JMenuItem pullItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PULL));
-                pullItem.setIcon(IconUtil.createThemed(
-                        GitOperationPresentation.getIconName(GitOperation.PULL),
-                        IconUtil.SIZE_SMALL,
-                        IconUtil.SIZE_SMALL));
-                pullItem.addActionListener(e -> performGitPull(workspace));
-                menu.add(pullItem);
-
-                if (remoteStatus.hasUpstream) { // 4.只有有上游分支的工作区才显示推送操作
-                    JMenuItem pushItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PUSH));
-                    pushItem.setIcon(IconUtil.createThemed(
-                            GitOperationPresentation.getIconName(GitOperation.PUSH),
-                            IconUtil.SIZE_SMALL,
-                            IconUtil.SIZE_SMALL));
-                    pushItem.addActionListener(e -> performGitPush(workspace));
-                    menu.add(pushItem);
-                }
-
-                // 添加更新认证菜单项
+            if (remoteStatus.hasRemote) {
                 JMenuItem updateAuthItem = new JMenuItem(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_UPDATE));
                 updateAuthItem.setIcon(IconUtil.createThemed("icons/security.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
                 updateAuthItem.addActionListener(e -> updateGitAuthentication(workspace));
                 menu.add(updateAuthItem);
+                return true;
             }
         } catch (Exception ex) {
             log.warn("Failed to check remote repository for workspace: {}", workspace.getId(), ex);
         }
+        return false;
     }
 
     private void addManagementMenuItems(JPopupMenu menu, Workspace workspace) {
@@ -673,22 +620,17 @@ public class WorkspacePanel extends UiSingletonPanel {
      * 显示 Git 历史记录
      */
     private void showGitHistory(Workspace workspace) {
-        GitHistoryDialog dialog = new GitHistoryDialog(
-                SwingUtilities.getWindowAncestor(this),
-                workspace
-        );
-        dialog.setVisible(true);
+        showWorkspaceTool(new GitHistoryPanel(workspace, () -> refreshAfterGitHistoryRestore(workspace)));
+    }
 
-        // 如果恢复了版本，需要刷新请求集合和环境变量面板
-        if (dialog.isNeedRefresh()) {
-            UiSingletonFactory.getInstance(CollectionTreePanel.class)
-                    .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
-                        refreshExistingWorkspaceScopedPanels();
-                        refreshWorkspaceList();
-                    });
-            UiSingletonFactory.getInstance(EnvironmentPanel.class)
-                    .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
-        }
+    private void refreshAfterGitHistoryRestore(Workspace workspace) {
+        UiSingletonFactory.getInstance(CollectionTreePanel.class)
+                .switchWorkspaceAndRefreshUI(SystemUtil.getCollectionPathForWorkspace(workspace), () -> {
+                    refreshExistingWorkspaceScopedPanels();
+                    refreshWorkspaceList();
+                });
+        UiSingletonFactory.getInstance(EnvironmentPanel.class)
+                .switchWorkspaceAndRefreshUI(SystemUtil.getEnvPathForWorkspace(workspace));
     }
 
     private void showGitBranches(Workspace workspace) {
@@ -853,13 +795,12 @@ public class WorkspacePanel extends UiSingletonPanel {
      * 配置远程仓库
      */
     private void configureRemoteRepository(Workspace workspace) {
-        RemoteConfigDialog dialog = new RemoteConfigDialog(
-                SwingUtilities.getWindowAncestor(this), workspace);
-        dialog.setVisible(true);
+        showWorkspaceTool(new RemoteConfigPanel(workspace, () -> refreshAfterRemoteConfigured(workspace)));
+    }
 
-        if (dialog.isConfirmed()) {
-            refreshWorkspaceList();
-        }
+    private void refreshAfterRemoteConfigured(Workspace workspace) {
+        refreshWorkspaceList();
+        UiSingletonFactory.getInstance(TopMenuBar.class).updateWorkspaceDisplay();
     }
 
     /**
@@ -966,8 +907,7 @@ public class WorkspacePanel extends UiSingletonPanel {
         if (selected != null) {
             infoPanel.add(new WorkspaceDetailPanel(
                     selected,
-                    () -> showGitBranches(selected),
-                    () -> showGitDiff(selected)
+                    createGitActions(selected)
             ), BorderLayout.CENTER);
         } else {
             JLabel welcomeLabel = new JLabel(HTML_START + "<center>" +
@@ -981,6 +921,41 @@ public class WorkspacePanel extends UiSingletonPanel {
 
         infoPanel.revalidate();
         infoPanel.repaint();
+    }
+
+    private WorkspaceDetailPanel.GitActions createGitActions(Workspace workspace) {
+        if (workspace.getType() != WorkspaceType.GIT) {
+            return null;
+        }
+
+        boolean hasRemote = false;
+        boolean hasUpstream = false;
+        boolean remoteStatusKnown = false;
+        try {
+            RemoteStatus remoteStatus = workspaceService.getRemoteStatus(workspace.getId());
+            hasRemote = remoteStatus.hasRemote;
+            hasUpstream = remoteStatus.hasUpstream;
+            remoteStatusKnown = true;
+        } catch (Exception ex) {
+            log.warn("Failed to check remote status for workspace: {}", workspace.getId(), ex);
+        }
+
+        Runnable pullAction = hasRemote ? () -> performGitPull(workspace) : null;
+        Runnable pushAction = hasRemote && hasUpstream ? () -> performGitPush(workspace) : null;
+        Runnable remoteConfigAction = remoteStatusKnown
+                && !hasRemote
+                && workspace.getGitRepoSource() == GitRepoSource.INITIALIZED
+                ? () -> configureRemoteRepository(workspace)
+                : null;
+        return new WorkspaceDetailPanel.GitActions(
+                () -> performGitCommit(workspace),
+                pullAction,
+                pushAction,
+                remoteConfigAction,
+                () -> showGitHistory(workspace),
+                () -> showGitBranches(workspace),
+                () -> showGitDiff(workspace)
+        );
     }
 
     private void showError(String message) {

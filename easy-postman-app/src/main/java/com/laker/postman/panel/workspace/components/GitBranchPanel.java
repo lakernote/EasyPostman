@@ -136,48 +136,44 @@ public class GitBranchPanel extends JPanel {
     }
 
     private JPanel createBranchActionToolbar() {
-        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel toolbar = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         toolbar.setOpaque(false);
         toolbar.setBorder(new EmptyBorder(0, 0, 6, 0));
-        fetchButton = ModernButtonFactory.createButton(
+        fetchButton = ModernButtonFactory.createCompactButton(
                 I18nUtil.getMessage(MessageKeys.GIT_BRANCH_FETCH),
                 false,
                 "icons/refresh.svg"
         );
         fetchButton.addActionListener(e -> fetchBranches());
-        fitToolbarButton(fetchButton);
         toolbar.add(fetchButton);
 
-        createButton = ModernButtonFactory.createButton(
+        createButton = ModernButtonFactory.createCompactButton(
                 I18nUtil.getMessage(MessageKeys.GIT_BRANCH_CREATE),
                 false,
                 "icons/plus.svg"
         );
         createButton.addActionListener(e -> createBranch());
-        fitToolbarButton(createButton);
         toolbar.add(createButton);
 
-        publishButton = ModernButtonFactory.createButton(
+        publishButton = ModernButtonFactory.createCompactButton(
                 I18nUtil.getMessage(MessageKeys.GIT_BRANCH_PUBLISH),
                 false,
                 "icons/git.svg"
         );
         publishButton.setEnabled(false);
         publishButton.addActionListener(e -> publishSelectedBranch());
-        fitToolbarButton(publishButton);
         toolbar.add(publishButton);
 
-        deleteButton = ModernButtonFactory.createButton(
+        deleteButton = ModernButtonFactory.createCompactButton(
                 I18nUtil.getMessage(MessageKeys.GIT_BRANCH_DELETE),
                 false,
                 "icons/delete.svg"
         );
         deleteButton.setEnabled(false);
         deleteButton.addActionListener(e -> deleteSelectedBranch());
-        fitToolbarButton(deleteButton);
         toolbar.add(deleteButton);
 
-        switchButton = ModernButtonFactory.createButton(
+        switchButton = ModernButtonFactory.createCompactButton(
                 I18nUtil.getMessage(MessageKeys.GIT_BRANCH_SWITCH),
                 true,
                 "icons/switch.svg"
@@ -185,23 +181,8 @@ public class GitBranchPanel extends JPanel {
         switchButton.setDisabledIcon(IconUtil.createThemed("icons/switch.svg", IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
         switchButton.setEnabled(false);
         switchButton.addActionListener(e -> switchSelectedBranch());
-        fitToolbarButton(switchButton);
         toolbar.add(switchButton);
         return toolbar;
-    }
-
-    private static void fitToolbarButton(JButton button) {
-        int textWidth = button.getFontMetrics(button.getFont()).stringWidth(button.getText());
-        int iconWidth = button.getIcon() == null ? 0 : button.getIcon().getIconWidth();
-        Dimension preferredSize = button.getPreferredSize();
-        button.setPreferredSize(new Dimension(
-                toolbarButtonWidth(textWidth, iconWidth, button.getIconTextGap()),
-                preferredSize.height
-        ));
-    }
-
-    static int toolbarButtonWidth(int textWidth, int iconWidth, int iconTextGap) {
-        return Math.max(100, textWidth + iconWidth + iconTextGap + 52);
     }
 
     private void loadBranches() {

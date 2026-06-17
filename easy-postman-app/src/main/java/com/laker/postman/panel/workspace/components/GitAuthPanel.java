@@ -22,6 +22,11 @@ import java.io.File;
  */
 public class GitAuthPanel extends JPanel {
 
+    private static final int FORM_LABEL_WIDTH = 128;
+    private static final int FORM_CONTROL_HEIGHT = 32;
+    private static final int AUTH_TYPE_WIDTH = 260;
+    private static final int CREDENTIAL_FIELD_WIDTH = 420;
+    private static final int SSH_KEY_FIELD_WIDTH = 378;
     private static final String PASSWORD_FIELD_STYLE = "arc: 8; margin: 7, 12, 7, 12";
     private static final Dimension BROWSE_BUTTON_SIZE = new Dimension(34, 32);
 
@@ -87,14 +92,14 @@ public class GitAuthPanel extends JPanel {
     private void setupLayout() {
         setLayout(new MigLayout(
                 "insets 0, fillx, novisualpadding",
-                "[right]12[grow,fill]",
-                "[]8[]"
+                "[" + FORM_LABEL_WIDTH + "!,right]12[grow,fill]",
+                "[" + FORM_CONTROL_HEIGHT + "!]8[]"
         ));
         setOpaque(false);
 
         JLabel authTypeLabel = createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_AUTH_TYPE) + ":");
         add(authTypeLabel, "cell 0 0, aligny center");
-        add(authTypeCombo, "cell 1 0, growx");
+        add(authTypeCombo, "cell 1 0, w " + AUTH_TYPE_WIDTH + "!, h " + FORM_CONTROL_HEIGHT + "!");
 
         // 认证详情面板
         authDetailsPanel = new JPanel(new CardLayout()) {
@@ -164,36 +169,36 @@ public class GitAuthPanel extends JPanel {
     private JPanel createPasswordAuthPanel() {
         JPanel panel = createCredentialFormPanel();
         panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_USERNAME) + ":"), "cell 0 0, aligny center");
-        panel.add(passwordUsernameField, "cell 1 0, growx");
+        panel.add(passwordUsernameField, "cell 1 0, w " + CREDENTIAL_FIELD_WIDTH + "!, h " + FORM_CONTROL_HEIGHT + "!");
         panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_PASSWORD) + ":"), "cell 0 1, aligny center");
-        panel.add(passwordField, "cell 1 1, growx");
+        panel.add(passwordField, "cell 1 1, w " + CREDENTIAL_FIELD_WIDTH + "!, h " + FORM_CONTROL_HEIGHT + "!");
         return panel;
     }
 
     private JPanel createTokenAuthPanel() {
         JPanel panel = createCredentialFormPanel();
         panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_USERNAME) + ":"), "cell 0 0, aligny center");
-        panel.add(tokenUsernameField, "cell 1 0, growx");
+        panel.add(tokenUsernameField, "cell 1 0, w " + CREDENTIAL_FIELD_WIDTH + "!, h " + FORM_CONTROL_HEIGHT + "!");
         panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_TOKEN) + ":"), "cell 0 1, aligny center");
-        panel.add(tokenField, "cell 1 1, growx");
+        panel.add(tokenField, "cell 1 1, w " + CREDENTIAL_FIELD_WIDTH + "!, h " + FORM_CONTROL_HEIGHT + "!");
         return panel;
     }
 
     private JPanel createSshAuthPanel() {
         JPanel panel = createCredentialFormPanel();
         panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_KEY_PATH) + ":"), "cell 0 0, aligny center");
-        panel.add(sshKeyPathField, "cell 1 0, growx");
+        panel.add(sshKeyPathField, "cell 1 0, w " + SSH_KEY_FIELD_WIDTH + "!, h " + FORM_CONTROL_HEIGHT + "!");
         panel.add(sshKeyBrowseButton, "cell 2 0, w 34!, h 32!");
         panel.add(createFormLabel(I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_SSH_PASSPHRASE) + ":"), "cell 0 1, aligny center");
-        panel.add(sshPassphraseField, "cell 1 1 2 1, growx");
+        panel.add(sshPassphraseField, "cell 1 1 2 1, w " + CREDENTIAL_FIELD_WIDTH + "!, h " + FORM_CONTROL_HEIGHT + "!");
         return panel;
     }
 
     private JPanel createCredentialFormPanel() {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 0, fillx, novisualpadding",
-                "[right]12[grow,fill]8[pref!]",
-                "[]8[]"
+                "[" + FORM_LABEL_WIDTH + "!,right]12[grow,fill]8[pref!]",
+                "[" + FORM_CONTROL_HEIGHT + "!]8[" + FORM_CONTROL_HEIGHT + "!]"
         ));
         panel.setOpaque(false);
         return panel;
@@ -228,8 +233,8 @@ public class GitAuthPanel extends JPanel {
         authDetailsPanel.repaint();
         SwingUtilities.invokeLater(() -> {
             Window window = SwingUtilities.getWindowAncestor(this);
-            if (window != null) {
-                window.pack();
+            if (window instanceof JDialog dialog) {
+                dialog.pack();
             }
         });
     }

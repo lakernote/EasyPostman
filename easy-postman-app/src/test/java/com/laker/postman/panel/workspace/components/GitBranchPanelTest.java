@@ -87,12 +87,6 @@ public class GitBranchPanelTest {
     }
 
     @Test
-    public void toolbarButtonWidthShouldFitLocalizedTextAndIcon() {
-        assertEquals(GitBranchPanel.toolbarButtonWidth(64, 16, 6), 138);
-        assertEquals(GitBranchPanel.toolbarButtonWidth(20, 16, 6), 100);
-    }
-
-    @Test
     public void notMergedDeleteFailureShouldBeRecognizedThroughSwingWorkerWrapper() {
         Exception wrapped = new ExecutionException(new NotMergedException());
 
@@ -103,13 +97,14 @@ public class GitBranchPanelTest {
     @Test
     public void branchManagementActionsShouldLiveInEmbeddedToolbar() throws IOException {
         String source = Files.readString(gitBranchPanelSource());
-        String toolbar = methodBody(source, "private JPanel createBranchActionToolbar()", "\n    private static void fitToolbarButton");
+        String toolbar = methodBody(source, "private JPanel createBranchActionToolbar()", "\n    private void loadBranches()");
 
         assertTrue(toolbar.contains("GIT_BRANCH_FETCH"));
         assertTrue(toolbar.contains("GIT_BRANCH_CREATE"));
         assertTrue(toolbar.contains("GIT_BRANCH_PUBLISH"));
         assertTrue(toolbar.contains("GIT_BRANCH_DELETE"));
         assertTrue(toolbar.contains("GIT_BRANCH_SWITCH"));
+        assertTrue(toolbar.contains("ModernButtonFactory.createCompactButton("));
         assertFalse(source.contains("private JPanel createFooter()"));
         assertFalse(source.contains("GIT_BRANCH_CLOSE"));
     }
@@ -118,10 +113,12 @@ public class GitBranchPanelTest {
     public void branchToolbarShouldHaveBreathingRoomBelowHeader() throws IOException {
         String source = Files.readString(gitBranchPanelSource());
         String contentPanel = methodBody(source, "private JPanel createContentPanel()", "\n    private JScrollPane createTableScrollPane");
-        String toolbar = methodBody(source, "private JPanel createBranchActionToolbar()", "\n    private static void fitToolbarButton");
+        String toolbar = methodBody(source, "private JPanel createBranchActionToolbar()", "\n    private void loadBranches()");
 
         assertTrue(contentPanel.contains("new EmptyBorder(10, 18, 12, 18)"));
+        assertTrue(toolbar.contains("new FlowLayout(FlowLayout.LEFT, 6, 0)"));
         assertTrue(toolbar.contains("new EmptyBorder(0, 0, 6, 0)"));
+        assertFalse(source.contains("toolbarButtonWidth("));
     }
 
     @Test

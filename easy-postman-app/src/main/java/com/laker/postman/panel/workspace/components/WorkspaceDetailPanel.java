@@ -2,8 +2,8 @@ package com.laker.postman.panel.workspace.components;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.model.GitOperation;
 import com.laker.postman.model.GitRepoSource;
 import com.laker.postman.model.Workspace;
 import com.laker.postman.model.WorkspaceType;
@@ -23,8 +23,28 @@ import java.util.Date;
 @Slf4j
 public class WorkspaceDetailPanel extends JPanel {
 
+    public record GitActions(
+            Runnable commitAction,
+            Runnable pullAction,
+            Runnable pushAction,
+            Runnable remoteConfigAction,
+            Runnable historyAction,
+            Runnable branchManagementAction,
+            Runnable diffAction
+    ) {
+        private boolean hasAnyAction() {
+            return commitAction != null
+                    || pullAction != null
+                    || pushAction != null
+                    || remoteConfigAction != null
+                    || historyAction != null
+                    || branchManagementAction != null
+                    || diffAction != null;
+        }
+    }
+
     public WorkspaceDetailPanel(Workspace workspace) {
-        this(workspace, null, null);
+        this(workspace, (GitActions) null);
     }
 
     public WorkspaceDetailPanel(Workspace workspace, Runnable branchManagementAction) {
@@ -32,6 +52,10 @@ public class WorkspaceDetailPanel extends JPanel {
     }
 
     public WorkspaceDetailPanel(Workspace workspace, Runnable branchManagementAction, Runnable diffAction) {
+        this(workspace, new GitActions(null, null, null, null, null, branchManagementAction, diffAction));
+    }
+
+    public WorkspaceDetailPanel(Workspace workspace, GitActions gitActions) {
         setLayout(new GridBagLayout());
         ToolWindowSurfaceStyle.applyCard(this);
         setBorder(BorderFactory.createEmptyBorder(14, 18, 18, 18));
@@ -58,7 +82,7 @@ public class WorkspaceDetailPanel extends JPanel {
             addSection(sectionRow++, createSection(
                     I18nUtil.getMessage(MessageKeys.WORKSPACE_DETAIL_GIT_INFO),
                     createGitInfoPanel(workspace),
-                    createGitActionPanel(diffAction, branchManagementAction)
+                    createGitActionPanel(gitActions)
             ), new Insets(14, 0, 0, 0));
         }
         addVerticalFiller(sectionRow);
@@ -230,40 +254,55 @@ public class WorkspaceDetailPanel extends JPanel {
         return panel;
     }
 
-    private JComponent createGitActionPanel(Runnable diffAction, Runnable branchManagementAction) {
-        if (diffAction == null && branchManagementAction == null) {
+    private JComponent createGitActionPanel(GitActions gitActions) {
+        if (gitActions == null || !gitActions.hasAnyAction()) {
             return null;
         }
 
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
         panel.setOpaque(false);
-        if (diffAction != null) {
-            JButton diffButton = createHeaderActionButton(
-                    I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_DIFF),
-                    "icons/detail.svg",
-                    diffAction
-            );
-            panel.add(diffButton);
-        }
-        if (branchManagementAction != null) {
-            JButton branchButton = createHeaderActionButton(
-                    I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_BRANCHES),
-                    "icons/git.svg",
-                    branchManagementAction
-            );
-            panel.add(branchButton);
-        }
+        addGitOperationButton(panel, GitOperation.COMMIT, gitActions.commitAction());
+        addGitOperationButton(panel, GitOperation.PULL, gitActions.pullAction());
+        addGitOperationButton(panel, GitOperation.PUSH, gitActions.pushAction());
+        addHeaderActionButton(panel, I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE),
+                "icons/git-remote.svg", gitActions.remoteConfigAction());
+        addHeaderActionButton(panel, I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_DIFF),
+                "icons/detail.svg", gitActions.diffAction());
+        addHeaderActionButton(panel, I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_BRANCHES),
+                "icons/git.svg", gitActions.branchManagementAction());
+        addHeaderActionButton(panel, I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_HISTORY),
+                "icons/history.svg", gitActions.historyAction());
         return panel;
     }
 
-    private JButton createHeaderActionButton(String text, String iconPath, Runnable action) {
-        JButton button = ModernButtonFactory.createButton(text, false, iconPath, 14);
-        Dimension preferredSize = button.getPreferredSize();
-        int textWidth = button.getFontMetrics(button.getFont()).stringWidth(text);
-        int iconWidth = button.getIcon() == null ? 0 : button.getIcon().getIconWidth();
-        button.setPreferredSize(new Dimension(Math.max(preferredSize.width,
-                Math.max(96, textWidth + iconWidth + button.getIconTextGap() + 44)), 30));
-        button.setToolTipText(text);
+    private void addGitOperationButton(JPanel panel, GitOperation operation, Runnable action) {
+        if (action == null) {
+            return;
+        }
+        panel.add(createHeaderIconButton(
+                operation.getDisplayName(),
+                GitOperationPresentation.getIconName(operation),
+                action
+        ));
+    }
+
+    private void addHeaderActionButton(JPanel panel, String text, String iconPath, Runnable action) {
+        if (action == null) {
+            return;
+        }
+        panel.add(createHeaderIconButton(text, iconPath, action));
+    }
+
+    private JButton createHeaderIconButton(String tooltip, String iconPath, Runnable action) {
+        JButton button = new JButton(IconUtil.createThemed(iconPath, 16, 16));
+        button.setPreferredSize(new Dimension(30, 30));
+        button.setMinimumSize(new Dimension(30, 30));
+        button.setMaximumSize(new Dimension(30, 30));
+        button.setToolTipText(tooltip);
+        button.getAccessibleContext().setAccessibleName(tooltip);
+        button.setFocusPainted(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
         button.addActionListener(e -> action.run());
         return button;
     }

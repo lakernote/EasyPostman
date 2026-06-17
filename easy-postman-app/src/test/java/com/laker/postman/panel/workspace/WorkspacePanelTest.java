@@ -46,7 +46,7 @@ public class WorkspacePanelTest {
     }
 
     @Test
-    public void workspacePanelShouldNotConfigureRemoteRepositoryAfterDialogAlreadyConfiguredIt() throws IOException {
+    public void workspacePanelShouldEmbedRemoteRepositoryConfiguration() throws IOException {
         Path sourcePath = repositoryRoot().resolve(
                 "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java");
         String source = Files.readString(sourcePath);
@@ -56,7 +56,9 @@ public class WorkspacePanelTest {
         );
 
         assertFalse(method.contains("workspaceService.addRemoteRepository("),
-                "RemoteConfigDialog performs the remote configuration; WorkspacePanel should only refresh after confirmation.");
+                "RemoteConfigPanel performs the remote configuration; WorkspacePanel should only refresh after confirmation.");
+        assertFalse(method.contains("new RemoteConfigDialog("));
+        assertTrue(method.contains("new RemoteConfigPanel("));
         assertTrue(method.contains("refreshWorkspaceList();"));
     }
 
@@ -66,8 +68,8 @@ public class WorkspacePanelTest {
                 "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java");
         String source = Files.readString(sourcePath);
         String method = source.substring(
-                source.indexOf("private void addStandardGitMenuItems"),
-                source.indexOf("\n    private void addManagementMenuItems", source.indexOf("private void addStandardGitMenuItems"))
+                source.indexOf("private boolean addStandardGitMenuItems"),
+                source.indexOf("\n    private void addManagementMenuItems", source.indexOf("private boolean addStandardGitMenuItems"))
         );
 
         assertFalse(method.contains("MessageKeys.WORKSPACE_GIT_BRANCHES"));
@@ -80,12 +82,35 @@ public class WorkspacePanelTest {
                 "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java");
         String source = Files.readString(sourcePath);
         String method = source.substring(
-                source.indexOf("private void addStandardGitMenuItems"),
-                source.indexOf("\n    private void addManagementMenuItems", source.indexOf("private void addStandardGitMenuItems"))
+                source.indexOf("private boolean addStandardGitMenuItems"),
+                source.indexOf("\n    private void addManagementMenuItems", source.indexOf("private boolean addStandardGitMenuItems"))
         );
 
         assertFalse(method.contains("MessageKeys.WORKSPACE_GIT_DIFF"));
         assertFalse(method.contains("showGitDiff(workspace)"));
+    }
+
+    @Test
+    public void gitWorkspaceContextMenuShouldNotDuplicateHeaderGitActions() throws IOException {
+        Path sourcePath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java");
+        String source = Files.readString(sourcePath);
+        String method = source.substring(
+                source.indexOf("private boolean addStandardGitMenuItems"),
+                source.indexOf("\n    private void addManagementMenuItems", source.indexOf("private boolean addStandardGitMenuItems"))
+        );
+
+        assertFalse(method.contains("MessageKeys.WORKSPACE_GIT_COMMIT"));
+        assertFalse(method.contains("MessageKeys.WORKSPACE_GIT_PULL"));
+        assertFalse(method.contains("MessageKeys.WORKSPACE_GIT_PUSH"));
+        assertFalse(method.contains("MessageKeys.WORKSPACE_GIT_HISTORY"));
+        assertFalse(method.contains("performGitCommit(workspace)"));
+        assertFalse(method.contains("performGitPull(workspace)"));
+        assertFalse(method.contains("performGitPush(workspace)"));
+        assertFalse(method.contains("showGitHistory(workspace)"));
+        assertFalse(method.contains("MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE"));
+        assertFalse(method.contains("configureRemoteRepository(workspace)"));
+        assertTrue(method.contains("MessageKeys.WORKSPACE_GIT_AUTH_UPDATE"));
     }
 
     @Test
@@ -99,8 +124,94 @@ public class WorkspacePanelTest {
         );
 
         assertTrue(method.contains("new WorkspaceDetailPanel("));
-        assertTrue(method.contains("() -> showGitBranches(selected)"));
-        assertTrue(method.contains("() -> showGitDiff(selected)"));
+        assertTrue(method.contains("createGitActions(selected)"));
+    }
+
+    @Test
+    public void workspaceDetailShouldExposeGitSyncActions() throws IOException {
+        Path panelPath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java");
+        Path detailPath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/WorkspaceDetailPanel.java");
+        String panelSource = Files.readString(panelPath);
+        String detailSource = Files.readString(detailPath);
+        String method = panelSource.substring(
+                panelSource.indexOf("private WorkspaceDetailPanel.GitActions createGitActions"),
+                panelSource.indexOf("\n    private void showError", panelSource.indexOf("private WorkspaceDetailPanel.GitActions createGitActions") + 1)
+        );
+
+        assertTrue(method.contains("() -> performGitCommit(workspace)"));
+        assertTrue(method.contains("() -> performGitPull(workspace)"));
+        assertTrue(method.contains("() -> performGitPush(workspace)"));
+        assertTrue(method.contains("() -> configureRemoteRepository(workspace)"));
+        assertTrue(method.contains("() -> showGitHistory(workspace)"));
+        assertTrue(method.contains("() -> showGitBranches(workspace)"));
+        assertTrue(method.contains("() -> showGitDiff(workspace)"));
+
+        assertTrue(detailSource.contains("GitOperation.COMMIT"));
+        assertTrue(detailSource.contains("GitOperation.PULL"));
+        assertTrue(detailSource.contains("GitOperation.PUSH"));
+        assertTrue(detailSource.contains("MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE"));
+        assertTrue(detailSource.contains("MessageKeys.WORKSPACE_GIT_HISTORY"));
+        assertTrue(detailSource.contains("\"icons/git-remote.svg\", gitActions.remoteConfigAction()"));
+        assertTrue(detailSource.contains("\"icons/git.svg\", gitActions.branchManagementAction()"));
+        assertTrue(detailSource.contains("BUTTON_TYPE_TOOLBAR_BUTTON"));
+        assertTrue(detailSource.contains("setAccessibleName"));
+    }
+
+    @Test
+    public void remoteRepositoryConfigurationShouldUseDistinctToolbarIcon() throws IOException {
+        Path remoteIconPath = repositoryRoot().resolve("easy-postman-app/src/main/resources/icons/git-remote.svg");
+        Path branchIconPath = repositoryRoot().resolve("easy-postman-app/src/main/resources/icons/git.svg");
+        String remoteIcon = Files.readString(remoteIconPath);
+        String branchIcon = Files.readString(branchIconPath);
+
+        assertFalse(remoteIcon.equals(branchIcon));
+        assertTrue(remoteIcon.contains("stroke=\"currentColor\""));
+        assertTrue(remoteIcon.contains("stroke-width=\"2\""));
+        assertTrue(remoteIcon.contains("M12 13v8"));
+        assertFalse(remoteIcon.contains("<circle cx=\"18\""));
+        assertFalse(remoteIcon.contains("stroke=\"#"));
+    }
+
+    @Test
+    public void remoteConfigPanelShouldUseCompactEmbeddedFormLayout() throws IOException {
+        Path remoteConfigPath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/RemoteConfigPanel.java");
+        Path gitAuthPath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/GitAuthPanel.java");
+        Path modernButtonFactoryPath = repositoryRoot().resolve(
+                "easy-postman-ui/src/main/java/com/laker/postman/common/component/button/ModernButtonFactory.java");
+        String source = Files.readString(remoteConfigPath);
+        String authSource = Files.readString(gitAuthPath);
+        String buttonFactorySource = Files.readString(modernButtonFactoryPath);
+
+        assertTrue(source.contains("FORM_LABEL_WIDTH = 128"));
+        assertTrue(source.contains("FORM_LABEL_GAP = 12"));
+        assertTrue(source.contains("URL_FIELD_WIDTH = 520"));
+        assertTrue(source.contains("FORM_MAX_WIDTH = FORM_LABEL_WIDTH + FORM_LABEL_GAP + URL_FIELD_WIDTH"));
+        assertTrue(source.contains("BRANCH_FIELD_WIDTH = 260"));
+        assertTrue(source.contains("ModernButtonFactory.createCompactButton("));
+        assertTrue(source.contains("I18nUtil.getMessage(MessageKeys.BUTTON_SAVE)"));
+        assertTrue(source.contains("\"icons/save.svg\""));
+        assertFalse(source.contains("new SecondaryButton("));
+        assertFalse(source.contains("I18nUtil.getMessage(MessageKeys.GENERAL_OK)"));
+        assertFalse(source.contains("ModernButtonFactory.createButton("));
+        assertTrue(source.contains("header.add(createHeaderActionRow(), \"w \" + FORM_MAX_WIDTH + \"!, growx 0\");"));
+        assertTrue(source.contains("private JPanel createHeaderActionRow()"));
+        assertTrue(source.contains("row.add(saveButton, \"aligny center, h \" + ModernButtonFactory.COMPACT_BUTTON_HEIGHT + \"!\");"));
+        assertTrue(source.contains("hidemode 3"));
+        assertTrue(source.contains("\"w \" + FORM_MAX_WIDTH + \"!, growx 0\""));
+        assertTrue(source.contains("\" + FORM_LABEL_GAP + \"[grow,fill]"));
+        assertTrue(source.contains("progressBar.setStringPainted(false)"));
+        assertTrue(buttonFactorySource.contains("COMPACT_BUTTON_HEIGHT = 30"));
+        assertTrue(buttonFactorySource.contains("COMPACT_BUTTON_MIN_WIDTH = 72"));
+        assertTrue(buttonFactorySource.contains("COMPACT_HORIZONTAL_PADDING = 24"));
+        assertTrue(buttonFactorySource.contains("margin: 2,8,2,8; arc: 6"));
+        assertTrue(authSource.contains("AUTH_TYPE_WIDTH = 260"));
+        assertTrue(authSource.contains("CREDENTIAL_FIELD_WIDTH = 420"));
+        assertTrue(authSource.contains("FORM_LABEL_WIDTH = 128"));
+        assertFalse(source.contains("BorderLayout.SOUTH"));
     }
 
     @Test
@@ -134,12 +245,28 @@ public class WorkspacePanelTest {
     }
 
     @Test
+    public void workspacePanelShouldEmbedGitHistoryPanel() throws IOException {
+        Path sourcePath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/WorkspacePanel.java");
+        String source = Files.readString(sourcePath);
+        String method = source.substring(
+                source.indexOf("private void showGitHistory"),
+                source.indexOf("\n    private void showGitBranches", source.indexOf("private void showGitHistory") + 1)
+        );
+
+        assertTrue(method.contains("new GitHistoryPanel("));
+        assertFalse(method.contains("new GitHistoryDialog("));
+    }
+
+    @Test
     public void obsoleteGitManagementDialogsShouldBeRemoved() {
         Path componentDir = repositoryRoot().resolve(
                 "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components");
 
         assertFalse(Files.exists(componentDir.resolve("GitDiffDialog.java")));
         assertFalse(Files.exists(componentDir.resolve("GitBranchDialog.java")));
+        assertFalse(Files.exists(componentDir.resolve("GitHistoryDialog.java")));
+        assertFalse(Files.exists(componentDir.resolve("RemoteConfigDialog.java")));
     }
 
     @Test
@@ -203,8 +330,14 @@ public class WorkspacePanelTest {
                 "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/GitDiffPanel.java");
         Path branchPanelPath = repositoryRoot().resolve(
                 "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/GitBranchPanel.java");
+        Path historyPanelPath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/GitHistoryPanel.java");
+        Path remoteConfigPanelPath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/RemoteConfigPanel.java");
         String diffPanel = Files.readString(diffPanelPath);
         String branchPanel = Files.readString(branchPanelPath);
+        String historyPanel = Files.readString(historyPanelPath);
+        String remoteConfigPanel = Files.readString(remoteConfigPanelPath);
 
         assertFalse(diffPanel.contains("applyDialogHeader"));
         assertFalse(diffPanel.contains("applyDialogSurface"));
@@ -212,6 +345,12 @@ public class WorkspacePanelTest {
         assertFalse(branchPanel.contains("applyDialogHeader"));
         assertFalse(branchPanel.contains("applyDialogSurface"));
         assertFalse(branchPanel.contains("applyDialogFrame"));
+        assertFalse(historyPanel.contains("applyDialogHeader"));
+        assertFalse(historyPanel.contains("applyDialogSurface"));
+        assertFalse(historyPanel.contains("applyDialogFrame"));
+        assertFalse(remoteConfigPanel.contains("applyDialogHeader"));
+        assertFalse(remoteConfigPanel.contains("applyDialogSurface"));
+        assertFalse(remoteConfigPanel.contains("applyDialogFrame"));
     }
 
     private static Path repositoryRoot() {

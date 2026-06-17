@@ -39,4 +39,16 @@ public class ModernButtonFactoryTest {
         assertTrue(button.isContentAreaFilled(), "FlatLaf should paint the toggle background");
         assertTrue(button.isBorderPainted(), "FlatLaf should paint the toggle border");
     }
+
+    @Test
+    public void compactButtonsShouldUseSharedToolWindowSizing() {
+        JButton button = ModernButtonFactory.createCompactButton("Save", false, "icons/save.svg");
+
+        assertEquals(button.getPreferredSize().height, ModernButtonFactory.COMPACT_BUTTON_HEIGHT);
+        assertEquals(button.getMinimumSize().height, ModernButtonFactory.COMPACT_BUTTON_HEIGHT);
+        assertEquals(button.getMaximumSize().height, ModernButtonFactory.COMPACT_BUTTON_HEIGHT);
+        assertTrue(button.getPreferredSize().width >= ModernButtonFactory.COMPACT_BUTTON_MIN_WIDTH);
+        assertEquals(ModernButtonFactory.compactButtonWidth(64, 16, 6), 110);
+        assertEquals(ModernButtonFactory.compactButtonWidth(20, 16, 6), 72);
+    }
 }

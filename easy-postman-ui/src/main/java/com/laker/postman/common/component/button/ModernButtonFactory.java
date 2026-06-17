@@ -15,8 +15,12 @@ public final class ModernButtonFactory {
     static final String PRIMARY_STYLE_CLASS = "easyPostmanPrimary";
     static final String SECONDARY_STYLE_CLASS = "easyPostmanSecondary";
     static final String TOGGLE_STYLE_CLASS = "easyPostmanToggle";
+    public static final int COMPACT_BUTTON_HEIGHT = 30;
+    static final int COMPACT_BUTTON_MIN_WIDTH = 72;
     private static final Dimension DEFAULT_SIZE = new Dimension(100, 34);
     private static final int DEFAULT_ICON_SIZE = 16;
+    private static final int COMPACT_ICON_SIZE = 14;
+    private static final int COMPACT_HORIZONTAL_PADDING = 24;
 
     private ModernButtonFactory() {
     }
@@ -35,6 +39,31 @@ public final class ModernButtonFactory {
         JButton button = createButton(text, primary);
         configureButtonIcon(button, primary, iconPath, iconSize);
         return button;
+    }
+
+    public static JButton createCompactButton(String text, boolean primary, String iconPath) {
+        JButton button = createButton(text, primary);
+        configureButtonIcon(button, primary, iconPath, COMPACT_ICON_SIZE);
+        configureCompactButton(button);
+        return button;
+    }
+
+    private static void configureCompactButton(AbstractButton button) {
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        Dimension size = new Dimension(
+                compactButtonWidth(textWidth(button), iconWidth(button), button.getIconTextGap()),
+                COMPACT_BUTTON_HEIGHT
+        );
+        button.putClientProperty(FlatClientProperties.STYLE,
+                "minimumWidth: 0; minimumHeight: " + COMPACT_BUTTON_HEIGHT
+                        + "; margin: 2,8,2,8; arc: 6");
+        button.setPreferredSize(size);
+        button.setMinimumSize(size);
+        button.setMaximumSize(size);
+    }
+
+    static int compactButtonWidth(int textWidth, int iconWidth, int iconTextGap) {
+        return Math.max(COMPACT_BUTTON_MIN_WIDTH, textWidth + iconWidth + iconTextGap + COMPACT_HORIZONTAL_PADDING);
     }
 
     public static JToggleButton createToggleButton(String text) {
@@ -59,5 +88,15 @@ public final class ModernButtonFactory {
                 ? IconUtil.createOnPrimary(iconPath, iconSize, iconSize)
                 : IconUtil.createThemed(iconPath, iconSize, iconSize));
         button.setIconTextGap(6);
+    }
+
+    private static int textWidth(AbstractButton button) {
+        String text = button.getText();
+        return text == null || text.isBlank() ? 0 : button.getFontMetrics(button.getFont()).stringWidth(text);
+    }
+
+    private static int iconWidth(AbstractButton button) {
+        Icon icon = button.getIcon();
+        return icon == null ? 0 : icon.getIconWidth();
     }
 }

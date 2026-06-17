@@ -589,7 +589,7 @@ public final class MessageKeys {
     public static final String WORKSPACE_GIT_AUTH_UPDATE_SUCCESS = "workspace.git.auth.update.success";
     public static final String WORKSPACE_GIT_AUTH_UPDATE_FAILED = "workspace.git.auth.update.failed";
 
-    // Git History Dialog
+    // Git History
     public static final String GIT_HISTORY_TITLE = "git.history.title";
     public static final String GIT_HISTORY_COMMIT_ID = "git.history.commit.id";
     public static final String GIT_HISTORY_MESSAGE = "git.history.message";
@@ -604,6 +604,11 @@ public final class MessageKeys {
     public static final String GIT_HISTORY_RESTORE_SUCCESS = "git.history.restore.success";
     public static final String GIT_HISTORY_RESTORE_FAILED = "git.history.restore.failed";
     public static final String GIT_HISTORY_COMMIT_DETAILS = "git.history.commit.details";
+    public static final String GIT_HISTORY_DETAILS_LOADING = "git.history.details.loading";
+    public static final String GIT_HISTORY_RESTORING = "git.history.restoring";
+    public static final String GIT_HISTORY_SELECT_COMMIT = "git.history.select_commit";
+    public static final String GIT_HISTORY_LOAD_FAILED = "git.history.load.failed";
+    public static final String GIT_HISTORY_DETAILS_FAILED = "git.history.details.failed";
     public static final String GIT_HISTORY_CLOSE = "git.history.close";
 
     // Git Diff Dialog

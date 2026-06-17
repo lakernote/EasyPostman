@@ -34,10 +34,10 @@ public class HistoryPersistenceServiceTest {
         JSONObject json = invokeConvertToJson(service, item);
         RequestHistoryItem restored = invokeConvertFromJson(service, json);
 
-        assertNotNull(restored.request);
-        assertTrue(restored.request.body.length() < largeBody.length());
-        assertEquals(restored.request.body, restored.request.sentRequestBody);
-        assertTrue(restored.request.body.contains("内容过大，已截断"));
+        assertNotNull(restored.getRequest());
+        assertTrue(restored.getRequest().body.length() < largeBody.length());
+        assertEquals(restored.getRequest().body, restored.getRequest().sentRequestBody);
+        assertTrue(restored.getRequest().body.contains("内容过大，已截断"));
     }
 
     private JSONObject invokeConvertToJson(HistoryPersistenceService service, RequestHistoryItem item) throws Exception {

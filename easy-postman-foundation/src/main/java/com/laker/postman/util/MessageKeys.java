@@ -1074,8 +1074,6 @@ public final class MessageKeys {
     public static final String HISTORY_FILTER_ALL = "history.filter.all";
     public static final String HISTORY_FILTER_SUCCESS = "history.filter.success";
     public static final String HISTORY_FILTER_ERROR = "history.filter.error";
-    public static final String HISTORY_AGGREGATE_TOOLTIP = "history.aggregate.tooltip";
-    public static final String HISTORY_STATS = "history.stats";
     public static final String HISTORY_EMPTY_FILTERED = "history.empty_filtered";
     public static final String HISTORY_OVERVIEW_BODY = "history.overview.body";
     public static final String HISTORY_OVERVIEW_ENDPOINT_CARD = "history.overview.endpoint_card";

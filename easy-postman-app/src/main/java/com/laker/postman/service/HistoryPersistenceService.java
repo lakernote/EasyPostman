@@ -262,84 +262,86 @@ public class HistoryPersistenceService {
      * 将 RequestHistoryItem 转换为 JSON 对象
      */
     private JSONObject convertToJson(RequestHistoryItem item) {
+        PreparedRequest request = item.getRequest();
+        HttpResponse response = item.getResponse();
         JSONObject jsonItem = new JSONObject();
 
         // 基本信息
-        jsonItem.set("method", item.method);
-        jsonItem.set("url", item.url);
-        jsonItem.set("responseCode", item.responseCode);
-        jsonItem.set("requestTime", item.requestTime); // 新增请求时间
+        jsonItem.set("method", item.getMethod());
+        jsonItem.set("url", item.getUrl());
+        jsonItem.set("responseCode", item.getResponseCode());
+        jsonItem.set("requestTime", item.getRequestTime()); // 新增请求时间
 
         // 请求信息
         JSONObject requestJson = new JSONObject();
-        requestJson.set("method", item.request.method);
-        requestJson.set("url", item.request.url);
+        requestJson.set("method", request.method);
+        requestJson.set("url", request.url);
         // 请求体 - 保留完整内容，历史记录支持重新打开为可编辑请求时需要精确还原
         String requestBody = "";
-        if (item.request.sentRequestBody != null && !item.request.sentRequestBody.isEmpty()) {
-            requestBody = item.request.sentRequestBody;
-        } else if (item.request.body != null) {
-            requestBody = item.request.body;
+        if (request.sentRequestBody != null && !request.sentRequestBody.isEmpty()) {
+            requestBody = request.sentRequestBody;
+        } else if (request.body != null) {
+            requestBody = request.body;
         }
         requestBody = truncateBody(requestBody, MAX_REQUEST_BODY_SIZE);
         requestJson.set("body", requestBody);
-        if (!Objects.equals(item.request.body, requestBody)) {
-            requestJson.set("originalBody", truncateBody(item.request.body, MAX_REQUEST_BODY_SIZE));
+        if (!Objects.equals(request.body, requestBody)) {
+            requestJson.set("originalBody", truncateBody(request.body, MAX_REQUEST_BODY_SIZE));
         }
-        requestJson.set("bodyType", item.request.bodyType);
-        requestJson.set("id", item.request.id);
-        requestJson.set("followRedirects", item.request.followRedirects);
-        requestJson.set("isMultipart", item.request.isMultipart);
-        requestJson.set("cookieJarEnabled", item.request.cookieJarEnabled);
-        requestJson.set("sslVerificationEnabled", item.request.sslVerificationEnabled);
-        requestJson.set("httpVersion", item.request.httpVersion);
-        requestJson.set("requestTimeoutMs", item.request.requestTimeoutMs);
-        requestJson.set("collectBasicInfo", item.request.collectBasicInfo);
-        requestJson.set("collectEventInfo", item.request.collectEventInfo);
-        requestJson.set("enableNetworkLog", item.request.enableNetworkLog);
-        requestJson.set("prescript", item.request.prescript);
-        requestJson.set("postscript", item.request.postscript);
+        requestJson.set("bodyType", request.bodyType);
+        requestJson.set("id", request.id);
+        requestJson.set("followRedirects", request.followRedirects);
+        requestJson.set("isMultipart", request.isMultipart);
+        requestJson.set("cookieJarEnabled", request.cookieJarEnabled);
+        requestJson.set("sslVerificationEnabled", request.sslVerificationEnabled);
+        requestJson.set("httpVersion", request.httpVersion);
+        requestJson.set("requestTimeoutMs", request.requestTimeoutMs);
+        requestJson.set("collectBasicInfo", request.collectBasicInfo);
+        requestJson.set("collectEventInfo", request.collectEventInfo);
+        requestJson.set("enableNetworkLog", request.enableNetworkLog);
+        requestJson.set("prescript", request.prescript);
+        requestJson.set("postscript", request.postscript);
 
         // 请求头 - 优先保存实际发送的sentHeadersList
         JSONObject requestHeaders = new JSONObject();
-        if (item.request.sentHeadersList != null && !item.request.sentHeadersList.isEmpty()) {
-            for (HttpHeader header : item.request.sentHeadersList) {
+        if (request.sentHeadersList != null && !request.sentHeadersList.isEmpty()) {
+            for (HttpHeader header : request.sentHeadersList) {
                 if (header != null && header.getKey() != null && !header.getKey().isBlank()) {
                     requestHeaders.set(header.getKey(), header.getValue());
                 }
             }
         }
         requestJson.set("headers", requestHeaders);
-        requestJson.set("headersList", convertHeadersListToJson(item.request.headersList));
-        requestJson.set("paramsList", convertParamsListToJson(item.request.paramsList));
-        requestJson.set("formDataList", convertFormDataListToJson(item.request.formDataList));
-        requestJson.set("urlencodedList", convertUrlencodedListToJson(item.request.urlencodedList));
+        requestJson.set("headersList", convertHeadersListToJson(request.headersList));
+        requestJson.set("paramsList", convertParamsListToJson(request.paramsList));
+        requestJson.set("formDataList", convertFormDataListToJson(request.formDataList));
+        requestJson.set("urlencodedList", convertUrlencodedListToJson(request.urlencodedList));
 
 
         jsonItem.set("request", requestJson);
 
         // 响应信息
         JSONObject responseJson = new JSONObject();
-        responseJson.set("code", item.response.code);
+        responseJson.set("code", response.code);
         // 限制响应体大小
-        String responseBody = item.response.body != null ? item.response.body : "";
+        String responseBody = response.body != null ? response.body : "";
         responseBody = truncateBody(responseBody, MAX_BODY_SIZE);
         responseJson.set("body", responseBody);
-        responseJson.set("costMs", item.response.costMs);
-        responseJson.set("threadName", item.response.threadName);
-        responseJson.set("filePath", item.response.filePath);
-        responseJson.set("fileName", item.response.fileName);
-        responseJson.set("protocol", item.response.protocol);
-        responseJson.set("idleConnectionCount", item.response.idleConnectionCount);
-        responseJson.set("connectionCount", item.response.connectionCount);
-        responseJson.set("bodySize", item.response.bodySize);
-        responseJson.set("headersSize", item.response.headersSize);
-        responseJson.set("isSse", item.response.isSse);
+        responseJson.set("costMs", response.costMs);
+        responseJson.set("threadName", response.threadName);
+        responseJson.set("filePath", response.filePath);
+        responseJson.set("fileName", response.fileName);
+        responseJson.set("protocol", response.protocol);
+        responseJson.set("idleConnectionCount", response.idleConnectionCount);
+        responseJson.set("connectionCount", response.connectionCount);
+        responseJson.set("bodySize", response.bodySize);
+        responseJson.set("headersSize", response.headersSize);
+        responseJson.set("isSse", response.isSse);
 
         // 响应头
         JSONObject responseHeaders = new JSONObject();
-        if (item.response.headers != null) {
-            for (java.util.Map.Entry<String, java.util.List<String>> entry : item.response.headers.entrySet()) {
+        if (response.headers != null) {
+            for (java.util.Map.Entry<String, java.util.List<String>> entry : response.headers.entrySet()) {
                 String key = entry.getKey();
                 java.util.List<String> values = entry.getValue();
                 if (values != null && !values.isEmpty()) {
@@ -350,39 +352,39 @@ public class HistoryPersistenceService {
         responseJson.set("headers", responseHeaders);
 
         // 事件信息
-        if (item.response.httpEventInfo != null) {
+        if (response.httpEventInfo != null) {
             JSONObject eventInfo = new JSONObject();
-            eventInfo.set("localAddress", item.response.httpEventInfo.getLocalAddress());
-            eventInfo.set("remoteAddress", item.response.httpEventInfo.getRemoteAddress());
-            eventInfo.set("queueStart", item.response.httpEventInfo.getQueueStart());
-            eventInfo.set("callStart", item.response.httpEventInfo.getCallStart());
-            eventInfo.set("proxySelectStart", item.response.httpEventInfo.getProxySelectStart());
-            eventInfo.set("proxySelectEnd", item.response.httpEventInfo.getProxySelectEnd());
-            eventInfo.set("dnsStart", item.response.httpEventInfo.getDnsStart());
-            eventInfo.set("dnsEnd", item.response.httpEventInfo.getDnsEnd());
-            eventInfo.set("connectStart", item.response.httpEventInfo.getConnectStart());
-            eventInfo.set("secureConnectStart", item.response.httpEventInfo.getSecureConnectStart());
-            eventInfo.set("secureConnectEnd", item.response.httpEventInfo.getSecureConnectEnd());
-            eventInfo.set("connectEnd", item.response.httpEventInfo.getConnectEnd());
-            eventInfo.set("connectionAcquired", item.response.httpEventInfo.getConnectionAcquired());
-            eventInfo.set("requestHeadersStart", item.response.httpEventInfo.getRequestHeadersStart());
-            eventInfo.set("requestHeadersEnd", item.response.httpEventInfo.getRequestHeadersEnd());
-            eventInfo.set("requestBodyStart", item.response.httpEventInfo.getRequestBodyStart());
-            eventInfo.set("requestBodyEnd", item.response.httpEventInfo.getRequestBodyEnd());
-            eventInfo.set("responseHeadersStart", item.response.httpEventInfo.getResponseHeadersStart());
-            eventInfo.set("responseHeadersEnd", item.response.httpEventInfo.getResponseHeadersEnd());
-            eventInfo.set("responseBodyStart", item.response.httpEventInfo.getResponseBodyStart());
-            eventInfo.set("responseBodyEnd", item.response.httpEventInfo.getResponseBodyEnd());
-            eventInfo.set("connectionReleased", item.response.httpEventInfo.getConnectionReleased());
-            eventInfo.set("callEnd", item.response.httpEventInfo.getCallEnd());
-            eventInfo.set("callFailed", item.response.httpEventInfo.getCallFailed());
-            eventInfo.set("canceled", item.response.httpEventInfo.getCanceled());
-            eventInfo.set("queueingCost", item.response.httpEventInfo.getQueueingCost());
-            eventInfo.set("stalledCost", item.response.httpEventInfo.getStalledCost());
-            eventInfo.set("protocol", item.response.httpEventInfo.getProtocol());
-            eventInfo.set("tlsVersion", item.response.httpEventInfo.getTlsVersion());
-            eventInfo.set("errorMessage", item.response.httpEventInfo.getErrorMessage());
-            eventInfo.set("threadName", item.response.httpEventInfo.getThreadName());
+            eventInfo.set("localAddress", response.httpEventInfo.getLocalAddress());
+            eventInfo.set("remoteAddress", response.httpEventInfo.getRemoteAddress());
+            eventInfo.set("queueStart", response.httpEventInfo.getQueueStart());
+            eventInfo.set("callStart", response.httpEventInfo.getCallStart());
+            eventInfo.set("proxySelectStart", response.httpEventInfo.getProxySelectStart());
+            eventInfo.set("proxySelectEnd", response.httpEventInfo.getProxySelectEnd());
+            eventInfo.set("dnsStart", response.httpEventInfo.getDnsStart());
+            eventInfo.set("dnsEnd", response.httpEventInfo.getDnsEnd());
+            eventInfo.set("connectStart", response.httpEventInfo.getConnectStart());
+            eventInfo.set("secureConnectStart", response.httpEventInfo.getSecureConnectStart());
+            eventInfo.set("secureConnectEnd", response.httpEventInfo.getSecureConnectEnd());
+            eventInfo.set("connectEnd", response.httpEventInfo.getConnectEnd());
+            eventInfo.set("connectionAcquired", response.httpEventInfo.getConnectionAcquired());
+            eventInfo.set("requestHeadersStart", response.httpEventInfo.getRequestHeadersStart());
+            eventInfo.set("requestHeadersEnd", response.httpEventInfo.getRequestHeadersEnd());
+            eventInfo.set("requestBodyStart", response.httpEventInfo.getRequestBodyStart());
+            eventInfo.set("requestBodyEnd", response.httpEventInfo.getRequestBodyEnd());
+            eventInfo.set("responseHeadersStart", response.httpEventInfo.getResponseHeadersStart());
+            eventInfo.set("responseHeadersEnd", response.httpEventInfo.getResponseHeadersEnd());
+            eventInfo.set("responseBodyStart", response.httpEventInfo.getResponseBodyStart());
+            eventInfo.set("responseBodyEnd", response.httpEventInfo.getResponseBodyEnd());
+            eventInfo.set("connectionReleased", response.httpEventInfo.getConnectionReleased());
+            eventInfo.set("callEnd", response.httpEventInfo.getCallEnd());
+            eventInfo.set("callFailed", response.httpEventInfo.getCallFailed());
+            eventInfo.set("canceled", response.httpEventInfo.getCanceled());
+            eventInfo.set("queueingCost", response.httpEventInfo.getQueueingCost());
+            eventInfo.set("stalledCost", response.httpEventInfo.getStalledCost());
+            eventInfo.set("protocol", response.httpEventInfo.getProtocol());
+            eventInfo.set("tlsVersion", response.httpEventInfo.getTlsVersion());
+            eventInfo.set("errorMessage", response.httpEventInfo.getErrorMessage());
+            eventInfo.set("threadName", response.httpEventInfo.getThreadName());
             responseJson.set("httpEventInfo", eventInfo);
         }
 
@@ -476,7 +478,7 @@ public class HistoryPersistenceService {
         // 重建事件信息
         JSONObject eventInfoJson = responseJson.getJSONObject("httpEventInfo");
         if (eventInfoJson != null) {
-            response.httpEventInfo = new com.laker.postman.http.runtime.model.HttpEventInfo();
+            response.httpEventInfo = new HttpEventInfo();
             response.httpEventInfo.setLocalAddress(eventInfoJson.getStr("localAddress"));
             response.httpEventInfo.setRemoteAddress(eventInfoJson.getStr("remoteAddress"));
             response.httpEventInfo.setQueueStart(eventInfoJson.getLong("queueStart", 0L));

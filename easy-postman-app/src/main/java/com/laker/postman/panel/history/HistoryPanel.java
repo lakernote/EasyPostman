@@ -61,19 +61,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class HistoryPanel extends UiSingletonPanel {
     private static final int HISTORY_SIDEBAR_WIDTH = AppToolWindowChrome.DEFAULT_SIDE_WIDTH;
-    private static final int HISTORY_SIDEBAR_INSET = 8;
     private static final int FILTER_DEBOUNCE_MS = 180;
 
     private JList<Object> historyList;
-    private JPanel historyDetailPanel;
-    private JPanel titlePanel;
     private JTextPane requestPane;
     private JTextPane responsePane;
     private JTextPane timingPane;
     private JTextPane eventPane;
     private DefaultListModel<Object> historyListModel;
     private SearchTextField searchField;
-    private JLabel statsLabel;
     private JLabel detailTitleLabel;
     private JLabel detailMetaLabel;
     private JLabel endpointValueLabel;
@@ -84,17 +80,14 @@ public class HistoryPanel extends UiSingletonPanel {
     private JLabel structureDetailLabel;
     private JLabel resultValueLabel;
     private JLabel resultDetailLabel;
-    private JButton openRequestButton;
-    private JButton deleteItemButton;
 
     private final List<RequestHistoryItem> allHistoryItems = new ArrayList<>();
     private final Set<String> collapsedGroups = new HashSet<>();
-    private final Set<String> expandedEndpointGroups = new HashSet<>();
+    private final List<AbstractButton> detailActionButtons = new ArrayList<>();
     private RequestHistoryItem currentSelectedItem;
     private volatile boolean isUpdating = false;
     private volatile boolean suppressSelectionSync = false;
     private int hoveredHistoryIndex = -1;
-    private final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
     private final SimpleDateFormat detailTimeFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
     private long todayStartCache = 0;
     private long yesterdayStartCache = 0;
@@ -108,29 +101,18 @@ public class HistoryPanel extends UiSingletonPanel {
     private record HistoryGroupHeader(String label, int count, boolean collapsed) {
     }
 
-    private record EndpointGroupHeader(String key, String title, String subtitle, int count,
-                                       RequestHistoryItem latestItem, boolean expanded,
-                                       int successRate, List<Integer> recentStatusCodes) {
-    }
-
     private record OverviewCardLabels(JLabel valueLabel, JLabel detailLabel) {
     }
 
     private record HistoryListBuildResult(List<RequestHistoryItem> filteredItems,
-                                          List<Object> displayItems,
-                                          int totalCount,
-                                          long failedCount) {
+                                          List<Object> displayItems) {
     }
 
     @Override
     protected void initUI() {
         setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyBackground(this);
-        JPanel content = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyCard(content);
-        content.add(createHeaderPanel(), BorderLayout.PAGE_START);
-        content.add(createContentPanel(), BorderLayout.CENTER);
-        add(AppToolWindowChrome.wrapToolWindow(content), BorderLayout.CENTER);
+        add(createWorkspaceSplitPane(), BorderLayout.CENTER);
         setMinimumSize(new Dimension(0, 120));
         filterDebounceTimer = new Timer(FILTER_DEBOUNCE_MS, e -> rebuildHistoryListModel(currentSelectedItem));
         filterDebounceTimer.setRepeats(false);
@@ -142,7 +124,7 @@ public class HistoryPanel extends UiSingletonPanel {
         JPanel headerPanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(headerPanel);
 
-        titlePanel = new JPanel(new BorderLayout());
+        JPanel titlePanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(titlePanel);
         titlePanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
 
@@ -158,34 +140,43 @@ public class HistoryPanel extends UiSingletonPanel {
 
         JPanel filterPanel = new JPanel(new BorderLayout(10, 0));
         ToolWindowSurfaceStyle.applyCard(filterPanel);
-        filterPanel.setBorder(BorderFactory.createEmptyBorder(8, HISTORY_SIDEBAR_INSET, 8, HISTORY_SIDEBAR_INSET));
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         JPanel searchPanel = new JPanel(new BorderLayout());
         searchPanel.setOpaque(false);
-        int searchWidth = HISTORY_SIDEBAR_WIDTH - (HISTORY_SIDEBAR_INSET * 2);
-        searchPanel.setPreferredSize(new Dimension(searchWidth, 28));
-        searchPanel.setMinimumSize(new Dimension(searchWidth, 28));
 
         searchField = new SearchTextField();
         searchField.setPlaceholderText(I18nUtil.getMessage(MessageKeys.HISTORY_SEARCH_PLACEHOLDER));
-        searchField.setPreferredSize(new Dimension(searchWidth, 28));
-        searchField.setMaximumSize(new Dimension(searchWidth, 28));
+        searchField.setPreferredSize(new Dimension(180, 28));
+        searchField.setMinimumSize(new Dimension(50, 28));
+        searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
         searchPanel.add(searchField, BorderLayout.CENTER);
 
-        statsLabel = new JLabel();
-        statsLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        statsLabel.setForeground(ModernColors.getTextSecondary());
-        updateStatsLabel(0, 0, 0);
-
-        filterPanel.add(searchPanel, BorderLayout.WEST);
-        filterPanel.add(statsLabel, BorderLayout.EAST);
+        filterPanel.add(searchPanel, BorderLayout.CENTER);
 
         headerPanel.add(titlePanel, BorderLayout.NORTH);
         headerPanel.add(filterPanel, BorderLayout.CENTER);
         return headerPanel;
     }
 
-    private Component createContentPanel() {
+    private JSplitPane createWorkspaceSplitPane() {
+        JPanel sidebarPanel = createSidebarPanel();
+        JPanel detailPanel = createHistoryDetailPanel();
+        JSplitPane splitPane = createHistorySplitPane(sidebarPanel, detailPanel);
+        splitPane.setResizeWeight(0.22);
+        return splitPane;
+    }
+
+    private JPanel createSidebarPanel() {
+        JPanel sidebarPanel = new JPanel(new BorderLayout());
+        sidebarPanel.setOpaque(false);
+        sidebarPanel.add(createHeaderPanel(), BorderLayout.NORTH);
+        sidebarPanel.add(createHistoryListScrollPane(), BorderLayout.CENTER);
+        sidebarPanel.setMinimumSize(new Dimension(260, 160));
+        return sidebarPanel;
+    }
+
+    private JScrollPane createHistoryListScrollPane() {
         historyListModel = new DefaultListModel<>();
         historyList = new JList<>(historyListModel) {
             @Override
@@ -197,10 +188,7 @@ public class HistoryPanel extends UiSingletonPanel {
                 }
                 Object value = historyListModel.get(index);
                 if (value instanceof RequestHistoryItem item) {
-                    return item.url;
-                }
-                if (value instanceof EndpointGroupHeader groupHeader) {
-                    return groupHeader.latestItem() != null ? groupHeader.latestItem().url : null;
+                    return item.getUrl();
                 }
                 return null;
             }
@@ -225,19 +213,26 @@ public class HistoryPanel extends UiSingletonPanel {
         listScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         ToolWindowSurfaceStyle.applyListScrollPaneCard(listScroll, historyList);
 
-        historyDetailPanel = new JPanel(new BorderLayout());
+        return listScroll;
+    }
+
+    private JPanel createHistoryDetailPanel() {
+        JPanel historyDetailPanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(historyDetailPanel);
         historyDetailPanel.add(createDetailTopPanel(), BorderLayout.NORTH);
         historyDetailPanel.add(createDetailTabs(), BorderLayout.CENTER);
 
         clearDetailPanes();
+        historyDetailPanel.setMinimumSize(new Dimension(420, 220));
+        return historyDetailPanel;
+    }
 
-        JSplitPane split = AppToolWindowChrome.createHorizontalInnerSplitPane(
-                listScroll,
-                historyDetailPanel,
+    static JSplitPane createHistorySplitPane(Component historyPanel, Component detailPanel) {
+        return AppToolWindowChrome.createHorizontalCardSplitPane(
+                historyPanel,
+                detailPanel,
                 HISTORY_SIDEBAR_WIDTH
         );
-        return split;
     }
 
     private JPanel createDetailTopPanel() {
@@ -266,17 +261,20 @@ public class HistoryPanel extends UiSingletonPanel {
         detailInfoPanel.add(detailTitleLabel, BorderLayout.NORTH);
         detailInfoPanel.add(detailMetaLabel, BorderLayout.CENTER);
 
-        openRequestButton = createActionButton(
+        JButton openRequestButton = createActionButton(
                 I18nUtil.getMessage(MessageKeys.CREATE_NEW_REQUEST),
                 "icons/request.svg"
         );
         openRequestButton.addActionListener(e -> openSelectedHistoryAsRequest());
 
-        deleteItemButton = createActionButton(
+        JButton deleteItemButton = createActionButton(
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_MENU_DELETE),
                 "icons/delete.svg"
         );
         deleteItemButton.addActionListener(e -> deleteSelectedHistory());
+        detailActionButtons.clear();
+        detailActionButtons.add(openRequestButton);
+        detailActionButtons.add(deleteItemButton);
 
         JPanel actionsPanel = ToolWindowActionToolbar.inlineRight(openRequestButton, deleteItemButton);
 
@@ -439,46 +437,13 @@ public class HistoryPanel extends UiSingletonPanel {
                 return this.groupLabel;
             }
 
-            if (value instanceof EndpointGroupHeader endpointGroupHeader) {
-                Color metaColor = ModernColors.getTextSecondary();
-                Color statusColor = resolveStatusColor(endpointGroupHeader.latestItem().responseCode);
-                boolean hovered = !isSelected && index == hoveredHistoryIndex;
-                String arrow = endpointGroupHeader.expanded() ? "▾" : "▸";
-                String countText = endpointGroupHeader.count() + "x";
-
-                itemRootPanel.setBackground(list.getBackground());
-                itemCardPanel.setBackground(isSelected
-                        ? getSelectionBackground()
-                        : hovered ? getHoverBackground() : ModernColors.getCardBackgroundColor());
-                itemCardPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-
-                titleLabel.setForeground(isSelected ? HistoryTheme.selectedTitleForeground() : ModernColors.getTextPrimary());
-                titleLabel.setText("<html>" + arrow + " " + highlightMatches(abbreviateMiddle(endpointGroupHeader.title(), 52))
-                        + " <span style='color:" + toHex(statusColor) + ";font-weight:bold;'>(" + countText + ")</span></html>");
-
-                urlLabel.setForeground(metaColor);
-                urlLabel.setText("<html><span style='color:" + toHex(metaColor) + ";'>"
-                        + highlightMatches(abbreviateMiddle(endpointGroupHeader.subtitle(), 48))
-                        + "  "
-                        + escapeHtml(endpointGroupHeader.successRate() + "%")
-                        + "  "
-                        + buildStatusTrendHtml(endpointGroupHeader.recentStatusCodes())
-                        + "  "
-                        + escapeHtml(formatDuration(endpointGroupHeader.latestItem().response != null
-                                ? endpointGroupHeader.latestItem().response.costMs : 0L))
-                        + "  "
-                        + escapeHtml(formatTime(endpointGroupHeader.latestItem().requestTime))
-                        + "</span></html>");
-                return itemRootPanel;
-            }
-
             if (value instanceof RequestHistoryItem item) {
-                HistoryVisualInfo visualInfo = summarizeRequestTarget(item.url);
+                HistoryVisualInfo visualInfo = summarizeRequestTarget(item.getUrl());
                 Color metaColor = ModernColors.getTextSecondary();
-                Color statusColor = resolveStatusColor(item.responseCode);
-                String statusText = item.responseCode > 0 ? String.valueOf(item.responseCode) : "-";
-                String durationText = item.response != null ? formatDuration(item.response.costMs) : "-";
-                String timeText = formatTime(item.requestTime);
+                Color statusColor = resolveStatusColor(item.getResponseCode());
+                String statusText = item.getResponseCode() > 0 ? String.valueOf(item.getResponseCode()) : "-";
+                String durationText = item.getResponse() != null ? formatDuration(item.getResponse().costMs) : "-";
+                String timeText = formatTime(item.getRequestTime());
                 String hostText = abbreviateMiddle(visualInfo.subtitle(), 52);
                 boolean hovered = !isSelected && index == hoveredHistoryIndex;
 
@@ -493,7 +458,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
                 urlLabel.setForeground(metaColor);
                 urlLabel.setText("<html><span style='color:" + toHex(metaColor) + ";'>"
-                        + highlightMatches(item.method)
+                        + highlightMatches(item.getMethod())
                         + "  "
                         + highlightMatches(hostText)
                         + "  "
@@ -545,20 +510,6 @@ public class HistoryPanel extends UiSingletonPanel {
         private static Color getHoverBackground() {
             return HistoryTheme.hoverBackground();
         }
-
-        private String buildStatusTrendHtml(List<Integer> recentStatusCodes) {
-            if (recentStatusCodes == null || recentStatusCodes.isEmpty()) {
-                return "";
-            }
-            StringBuilder html = new StringBuilder();
-            for (Integer statusCode : recentStatusCodes) {
-                Color dotColor = resolveStatusColor(statusCode == null ? 0 : statusCode);
-                html.append("<span style='color:")
-                        .append(toHex(dotColor))
-                        .append(";font-size:12px;'>●</span>");
-            }
-            return html.toString();
-        }
     }
 
     private void clearDetailPanes() {
@@ -603,10 +554,10 @@ public class HistoryPanel extends UiSingletonPanel {
             protected Map<String, String> doInBackground() {
                 Map<String, String> htmlMap = new LinkedHashMap<>();
                 try {
-                    htmlMap.put("request", HttpHtmlRenderer.renderRequest(item.request));
-                    htmlMap.put("response", HttpHtmlRenderer.renderResponse(item.response));
-                    htmlMap.put("timing", HttpHtmlRenderer.renderTimingInfo(item.response));
-                    htmlMap.put("event", HttpHtmlRenderer.renderEventInfo(item.response));
+                    htmlMap.put("request", HttpHtmlRenderer.renderRequest(item.getRequest()));
+                    htmlMap.put("response", HttpHtmlRenderer.renderResponse(item.getResponse()));
+                    htmlMap.put("timing", HttpHtmlRenderer.renderTimingInfo(item.getResponse()));
+                    htmlMap.put("event", HttpHtmlRenderer.renderEventInfo(item.getResponse()));
                 } catch (Exception e) {
                     String errorHtml = "<html><body style='font-family:monospace;font-size:9px;color:"
                             + ModernColors.toHtmlColor(ModernColors.getTextPrimary()) + ";'>"
@@ -653,18 +604,18 @@ public class HistoryPanel extends UiSingletonPanel {
     }
 
     private void updateDetailSummary(RequestHistoryItem item) {
-        HistoryVisualInfo visualInfo = summarizeRequestTarget(item.url);
+        HistoryVisualInfo visualInfo = summarizeRequestTarget(item.getUrl());
         String protocol = resolveProtocol(item).getProtocol();
-        String duration = item.response != null && item.response.costMs > 0 ? item.response.costMs + " ms" : "-";
-        String status = item.responseCode > 0 ? String.valueOf(item.responseCode) : "-";
-        String timestamp = detailTimeFormatter.format(new Date(item.requestTime));
+        String duration = item.getResponse() != null && item.getResponse().costMs > 0 ? item.getResponse().costMs + " ms" : "-";
+        String status = item.getResponseCode() > 0 ? String.valueOf(item.getResponseCode()) : "-";
+        String timestamp = detailTimeFormatter.format(new Date(item.getRequestTime()));
         String secondary = toHex(ModernColors.getTextSecondary());
-        String statusColor = toHex(resolveStatusColor(item.responseCode));
+        String statusColor = toHex(resolveStatusColor(item.getResponseCode()));
 
         detailTitleLabel.setText("<html>" + highlightMatches(abbreviateMiddle(visualInfo.title(), 120)) + "</html>");
         detailTitleLabel.setToolTipText(visualInfo.fullUrl());
         detailMetaLabel.setText("<html><span style='color:" + secondary + ";'>"
-                + highlightMatches(item.method) + "  "
+                + highlightMatches(item.getMethod()) + "  "
                 + highlightMatches(visualInfo.subtitle()) + "  "
                 + escapeHtml(protocol) + "  "
                 + "<span style='color:" + statusColor + ";'>" + highlightMatches(status) + "</span>  "
@@ -676,16 +627,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private void updateActionButtons(RequestHistoryItem item) {
         boolean enabled = item != null;
-        openRequestButton.setEnabled(enabled);
-        deleteItemButton.setEnabled(enabled);
-    }
-
-    @Override
-    public void updateUI() {
-        super.updateUI();
-        if (titlePanel != null) {
-            titlePanel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
-        }
+        detailActionButtons.forEach(button -> button.setEnabled(enabled));
     }
 
     @Override
@@ -701,14 +643,6 @@ public class HistoryPanel extends UiSingletonPanel {
         });
 
         historyList.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (handleEndpointGroupInteraction(e)) {
-                    e.consume();
-                    return;
-                }
-            }
-
             @Override
             public void mousePressed(MouseEvent e) {
                 maybeShowContextMenu(e);
@@ -848,7 +782,6 @@ public class HistoryPanel extends UiSingletonPanel {
         boolean caseSensitive = searchField != null && searchField.isCaseSensitive();
         boolean wholeWord = searchField != null && searchField.isWholeWord();
         Set<String> collapsedGroupsSnapshot = new HashSet<>(collapsedGroups);
-        Set<String> expandedEndpointGroupsSnapshot = new HashSet<>(expandedEndpointGroups);
         updateDateCache();
         long todayStart = todayStartCache;
         long yesterdayStart = yesterdayStartCache;
@@ -865,10 +798,9 @@ public class HistoryPanel extends UiSingletonPanel {
                         itemsSnapshot, keyword, caseSensitive, wholeWord
                 );
                 List<Object> displayItems = buildDisplayItems(
-                        filteredItems, collapsedGroupsSnapshot, expandedEndpointGroupsSnapshot, todayStart, yesterdayStart
+                        filteredItems, collapsedGroupsSnapshot, todayStart, yesterdayStart
                 );
-                long failedCount = itemsSnapshot.stream().filter(item -> item.responseCode >= 400).count();
-                return new HistoryListBuildResult(filteredItems, displayItems, itemsSnapshot.size(), failedCount);
+                return new HistoryListBuildResult(filteredItems, displayItems);
             }
 
             @Override
@@ -891,7 +823,6 @@ public class HistoryPanel extends UiSingletonPanel {
                     if (searchField != null) {
                         searchField.setNoResult(!keyword.isEmpty() && result.filteredItems().isEmpty());
                     }
-                    updateStatsLabel(result.filteredItems().size(), result.totalCount(), result.failedCount());
                     restoreSelection(preferredSelection, result.filteredItems());
                 } catch (Exception ignored) {
                     // Ignore if cancelled or interrupted
@@ -917,14 +848,13 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private List<Object> buildDisplayItems(List<RequestHistoryItem> filteredItems,
                                            Set<String> collapsedGroupsSnapshot,
-                                           Set<String> expandedEndpointGroupsSnapshot,
                                            long todayStart,
                                            long yesterdayStart) {
         Map<String, List<RequestHistoryItem>> dayMap = new LinkedHashMap<>();
         SimpleDateFormat groupDateFormatter = new SimpleDateFormat("yyyy-MM-dd");
 
         for (RequestHistoryItem item : filteredItems) {
-            String groupLabel = buildDateGroupLabel(item.requestTime, todayStart, yesterdayStart, groupDateFormatter);
+            String groupLabel = buildDateGroupLabel(item.getRequestTime(), todayStart, yesterdayStart, groupDateFormatter);
             dayMap.computeIfAbsent(groupLabel, key -> new ArrayList<>()).add(item);
         }
 
@@ -933,45 +863,10 @@ public class HistoryPanel extends UiSingletonPanel {
             boolean collapsed = collapsedGroupsSnapshot.contains(entry.getKey());
             result.add(new HistoryGroupHeader(entry.getKey(), entry.getValue().size(), collapsed));
             if (!collapsed) {
-                if (isAggregateMode()) {
-                    appendAggregatedDisplayItems(result, entry.getKey(), entry.getValue(), expandedEndpointGroupsSnapshot);
-                } else {
-                    result.addAll(entry.getValue());
-                }
-            }
-        }
-        return result;
-    }
-
-    private void appendAggregatedDisplayItems(List<Object> result,
-                                              String dayLabel,
-                                              List<RequestHistoryItem> items,
-                                              Set<String> expandedEndpointGroupsSnapshot) {
-        Map<String, List<RequestHistoryItem>> endpointGroups = new LinkedHashMap<>();
-        for (RequestHistoryItem item : items) {
-            endpointGroups.computeIfAbsent(buildEndpointGroupKey(item), key -> new ArrayList<>()).add(item);
-        }
-        for (Map.Entry<String, List<RequestHistoryItem>> entry : endpointGroups.entrySet()) {
-            RequestHistoryItem latestItem = entry.getValue().get(0);
-            HistoryVisualInfo visualInfo = summarizeRequestTarget(latestItem.url);
-            String groupKey = dayLabel + "||" + entry.getKey();
-            boolean expanded = expandedEndpointGroupsSnapshot.contains(groupKey);
-            int successRate = calculateSuccessRate(entry.getValue());
-            List<Integer> recentStatusCodes = collectRecentStatusCodes(entry.getValue(), 6);
-            result.add(new EndpointGroupHeader(
-                    groupKey,
-                    visualInfo.title(),
-                    visualInfo.subtitle(),
-                    entry.getValue().size(),
-                    latestItem,
-                    expanded,
-                    successRate,
-                    recentStatusCodes
-            ));
-            if (expanded) {
                 result.addAll(entry.getValue());
             }
         }
+        return result;
     }
 
     private void restoreSelection(RequestHistoryItem preferredSelection, List<RequestHistoryItem> filteredItems) {
@@ -995,9 +890,6 @@ public class HistoryPanel extends UiSingletonPanel {
             if (value == item) {
                 return value;
             }
-            if (value instanceof EndpointGroupHeader endpointGroupHeader && endpointGroupHeader.latestItem() == item) {
-                return endpointGroupHeader;
-            }
         }
         return null;
     }
@@ -1005,7 +897,7 @@ public class HistoryPanel extends UiSingletonPanel {
     private Object findFirstSelectableDisplayObject() {
         for (int i = 0; i < historyListModel.size(); i++) {
             Object value = historyListModel.get(i);
-            if (value instanceof RequestHistoryItem || value instanceof EndpointGroupHeader) {
+            if (value instanceof RequestHistoryItem) {
                 return value;
             }
         }
@@ -1029,8 +921,6 @@ public class HistoryPanel extends UiSingletonPanel {
         RequestHistoryItem item;
         if (value instanceof RequestHistoryItem requestHistoryItem) {
             item = requestHistoryItem;
-        } else if (value instanceof EndpointGroupHeader endpointGroupHeader) {
-            item = endpointGroupHeader.latestItem();
         } else {
             return;
         }
@@ -1090,89 +980,13 @@ public class HistoryPanel extends UiSingletonPanel {
         });
     }
 
-    private boolean handleEndpointGroupInteraction(MouseEvent e) {
-        if (e.getButton() != MouseEvent.BUTTON1 || e.getClickCount() != 2) {
-            return false;
-        }
-        int index = historyList.locationToIndex(e.getPoint());
-        Rectangle bounds = index >= 0 ? historyList.getCellBounds(index, index) : null;
-        if (bounds == null || !bounds.contains(e.getPoint())) {
-            return false;
-        }
-        Object value = historyListModel.get(index);
-        if (value instanceof EndpointGroupHeader endpointGroupHeader) {
-            if (endpointGroupHeader.expanded()) {
-                expandedEndpointGroups.remove(endpointGroupHeader.key());
-            } else {
-                expandedEndpointGroups.add(endpointGroupHeader.key());
-            }
-            rebuildHistoryListModel(endpointGroupHeader.latestItem());
-            return true;
-        }
-        return false;
-    }
-
-    private boolean isAggregateMode() {
-        return false;
-    }
-
-    private String buildEndpointGroupKey(RequestHistoryItem item) {
-        return (item.method != null ? item.method.toUpperCase(Locale.ROOT) : "UNKNOWN")
-                + "|"
-                + normalizeEndpointForGrouping(item.url);
-    }
-
-    private String normalizeEndpointForGrouping(String url) {
-        if (url == null || url.isBlank()) {
-            return "-";
-        }
-        try {
-            URI uri = URI.create(url);
-            String scheme = uri.getScheme() != null ? uri.getScheme() : "";
-            String host = uri.getHost() != null ? uri.getHost() : "";
-            String port = uri.getPort() > 0 ? ":" + uri.getPort() : "";
-            String path = uri.getPath() != null && !uri.getPath().isBlank() ? uri.getPath() : "/";
-            return scheme + "://" + host + port + path;
-        } catch (Exception ignored) {
-            int queryIndex = url.indexOf('?');
-            return queryIndex >= 0 ? url.substring(0, queryIndex) : url;
-        }
-    }
-
-    private int calculateSuccessRate(List<RequestHistoryItem> items) {
-        if (items == null || items.isEmpty()) {
-            return 0;
-        }
-        int successCount = 0;
-        for (RequestHistoryItem item : items) {
-            if (item.responseCode >= 200 && item.responseCode < 400) {
-                successCount++;
-            }
-        }
-        return (int) Math.round(successCount * 100.0 / items.size());
-    }
-
-    private List<Integer> collectRecentStatusCodes(List<RequestHistoryItem> items, int maxCount) {
-        List<Integer> recentStatusCodes = new ArrayList<>();
-        if (items == null) {
-            return recentStatusCodes;
-        }
-        for (RequestHistoryItem item : items) {
-            recentStatusCodes.add(item.responseCode);
-            if (recentStatusCodes.size() >= maxCount) {
-                break;
-            }
-        }
-        return recentStatusCodes;
-    }
-
     private boolean matchesKeyword(RequestHistoryItem item, String keyword, boolean caseSensitive, boolean wholeWord) {
-        return contains(item.method, keyword, caseSensitive, wholeWord)
-                || contains(item.url, keyword, caseSensitive, wholeWord)
-                || contains(String.valueOf(item.responseCode), keyword, caseSensitive, wholeWord)
-                || contains(item.request != null ? item.request.body : null, keyword, caseSensitive, wholeWord)
-                || contains(item.request != null ? item.request.sentRequestBody : null, keyword, caseSensitive, wholeWord)
-                || contains(item.response != null ? item.response.body : null, keyword, caseSensitive, wholeWord);
+        return contains(item.getMethod(), keyword, caseSensitive, wholeWord)
+                || contains(item.getUrl(), keyword, caseSensitive, wholeWord)
+                || contains(String.valueOf(item.getResponseCode()), keyword, caseSensitive, wholeWord)
+                || contains(item.getRequest() != null ? item.getRequest().body : null, keyword, caseSensitive, wholeWord)
+                || contains(item.getRequest() != null ? item.getRequest().sentRequestBody : null, keyword, caseSensitive, wholeWord)
+                || contains(item.getResponse() != null ? item.getResponse().body : null, keyword, caseSensitive, wholeWord);
     }
 
     private boolean contains(String value, String keyword, boolean caseSensitive, boolean wholeWord) {
@@ -1200,24 +1014,17 @@ public class HistoryPanel extends UiSingletonPanel {
         return false;
     }
 
-    private void updateStatsLabel(int visibleCount, int totalCount, long failedCount) {
-        statsLabel.setText(I18nUtil.getMessage(MessageKeys.HISTORY_STATS, visibleCount, totalCount, failedCount));
-    }
-
     private RequestHistoryItem getSelectedHistoryItem() {
         Object selectedValue = historyList != null ? historyList.getSelectedValue() : null;
         if (selectedValue instanceof RequestHistoryItem item) {
             return item;
-        }
-        if (selectedValue instanceof EndpointGroupHeader endpointGroupHeader) {
-            return endpointGroupHeader.latestItem();
         }
         return null;
     }
 
     private void openSelectedHistoryAsRequest() {
         RequestHistoryItem item = getSelectedHistoryItem();
-        if (item == null || item.request == null) {
+        if (item == null || item.getRequest() == null) {
             return;
         }
 
@@ -1245,12 +1052,12 @@ public class HistoryPanel extends UiSingletonPanel {
     }
 
     private HttpRequestItem createRequestItemFromHistory(RequestHistoryItem item, RequestItemProtocolEnum protocol) {
-        PreparedRequest request = item.request;
+        PreparedRequest request = item.getRequest();
         HttpRequestItem requestItem = new HttpRequestItem();
         requestItem.setName("");
         requestItem.setProtocol(protocol);
-        requestItem.setMethod(request.method != null ? request.method : item.method);
-        String historyUrl = request.url != null ? request.url : item.url;
+        requestItem.setMethod(request.method != null ? request.method : item.getMethod());
+        String historyUrl = request.url != null ? request.url : item.getUrl();
         requestItem.setUrl(com.laker.postman.request.util.HttpUrlUtil.decodeQueryForDisplay(historyUrl));
         requestItem.setHeadersList(copyHeaders(request));
         requestItem.setParamsList(copyParams(request.paramsList));
@@ -1358,10 +1165,10 @@ public class HistoryPanel extends UiSingletonPanel {
     }
 
     private RequestItemProtocolEnum resolveProtocol(RequestHistoryItem item) {
-        if (item.response != null && item.response.isSse) {
+        if (item.getResponse() != null && item.getResponse().isSse) {
             return RequestItemProtocolEnum.SSE;
         }
-        String url = item.url != null ? item.url.toLowerCase(Locale.ROOT) : "";
+        String url = item.getUrl() != null ? item.getUrl().toLowerCase(Locale.ROOT) : "";
         if (url.startsWith("ws://") || url.startsWith("wss://")) {
             return RequestItemProtocolEnum.WEBSOCKET;
         }
@@ -1455,10 +1262,10 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private void updateOverviewCards(RequestHistoryItem item, HistoryVisualInfo visualInfo,
                                      String protocol, String duration, String status, String timestamp) {
-        if (item == null || item.request == null) {
+        if (item == null || item.getRequest() == null) {
             return;
         }
-        PreparedRequest request = item.request;
+        PreparedRequest request = item.getRequest();
         setOverviewCardState(endpointValueLabel, endpointDetailLabel,
                 abbreviateMiddle(visualInfo.subtitle(), 30),
                 abbreviateMiddle(visualInfo.title(), 42));
@@ -1572,7 +1379,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
     private String buildTabTitle(RequestHistoryItem item) {
         try {
-            URI uri = URI.create(item.url);
+            URI uri = URI.create(item.getUrl());
             String path = uri.getPath();
             if (path != null && !path.isBlank() && !"/".equals(path)) {
                 int slashIndex = path.lastIndexOf('/');
@@ -1588,14 +1395,9 @@ public class HistoryPanel extends UiSingletonPanel {
         } catch (Exception ignored) {
             // Fall back to method-based title below.
         }
-        return item.method != null && !item.method.isBlank()
-                ? item.method.toUpperCase(Locale.ROOT)
+        return item.getMethod() != null && !item.getMethod().isBlank()
+                ? item.getMethod().toUpperCase(Locale.ROOT)
                 : I18nUtil.getMessage(MessageKeys.NEW_REQUEST);
-    }
-
-    private String getDateGroupLabel(long timestamp) {
-        updateDateCache();
-        return buildDateGroupLabel(timestamp, todayStartCache, yesterdayStartCache, dateFormatter);
     }
 
     private String buildDateGroupLabel(long timestamp,

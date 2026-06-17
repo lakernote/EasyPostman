@@ -2,17 +2,19 @@ package com.laker.postman.history;
 
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
+import lombok.Getter;
 
 /**
  * 请求历史项，包含请求和响应的简要信息
  */
+@Getter
 public class RequestHistoryItem {
-    public final String method;
-    public final String url;
-    public final int responseCode; // 响应状态码
-    public final long requestTime; // 请求时间戳
-    public PreparedRequest request; // 原始请求对象
-    public HttpResponse response; // 响应对象
+    private final String method;
+    private final String url;
+    private final int responseCode;
+    private final long requestTime;
+    private final PreparedRequest request;
+    private final HttpResponse response;
 
     public RequestHistoryItem(PreparedRequest request, HttpResponse response, long requestTime) {
         this.method = request.method;

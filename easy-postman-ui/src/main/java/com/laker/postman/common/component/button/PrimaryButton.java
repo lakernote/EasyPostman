@@ -63,6 +63,8 @@ public class PrimaryButton extends JButton {
         putClientProperty(FlatClientProperties.STYLE, String.join("; ",
                 "arc: 8",
                 "borderWidth: 1",
+                "focusWidth: 0",
+                "innerFocusWidth: 0",
                 "margin: 4,12,4,12",
                 "background: " + toStyleColor(resolvedBase),
                 "hoverBackground: " + toStyleColor(resolvedHover),
@@ -70,7 +72,8 @@ public class PrimaryButton extends JButton {
                 "borderColor: " + toStyleColor(resolvedBase),
                 "hoverBorderColor: " + toStyleColor(resolvedHover),
                 "pressedBorderColor: " + toStyleColor(resolvedPress),
-                "focusedBorderColor: " + toStyleColor(resolvedHover)
+                "focusedBorderColor: " + toStyleColor(resolvedHover),
+                "focusColor: " + toStyleColor(resolvedHover)
         ));
         revalidate();
         repaint();

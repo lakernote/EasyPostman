@@ -36,9 +36,12 @@ public class PrimaryButtonTest {
         button.putClientProperty("colorsInitialized", false);
 
         String style = Objects.toString(button.getClientProperty(FlatClientProperties.STYLE), "");
+        assertTrue(style.contains("focusWidth: 0"));
+        assertTrue(style.contains("innerFocusWidth: 0"));
         assertTrue(style.contains("background: #0c2238"));
         assertTrue(style.contains("hoverBackground: #4e5a66"));
         assertTrue(style.contains("pressedBackground: #6f7a85"));
         assertTrue(style.contains("focusedBorderColor: #4e5a66"));
+        assertTrue(style.contains("focusColor: #4e5a66"));
     }
 }

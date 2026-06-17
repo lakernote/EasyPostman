@@ -162,6 +162,10 @@ public class EasyLafThemePropertiesTest {
             String style = properties.getProperty(key);
             assertTrue(!style.contains("buttonType: roundRect"), key + " must avoid pill-like FlatLaf roundRect type");
             assertTrue(style.contains("arc: 8"), key + " must keep a moderate 8px button arc");
+            assertTrue(style.contains("focusWidth: 0"),
+                    key + " must avoid a second outer focus ring on compact action buttons");
+            assertTrue(style.contains("innerFocusWidth: 0"),
+                    key + " must keep compact action button borders visually single-weight");
             assertTrue(style.contains("margin: 4,12,4,12"),
                     key + " must keep shared action buttons compact enough for request toolbars");
         }

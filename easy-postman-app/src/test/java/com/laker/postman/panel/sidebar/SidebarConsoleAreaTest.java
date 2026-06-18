@@ -10,6 +10,7 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Dimension;
+import java.awt.Insets;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -107,6 +108,26 @@ public class SidebarConsoleAreaTest {
         Component bottom = ((BorderLayout) owner.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
         assertTrue(bottom instanceof JPanel);
         assertEquals(((JPanel) bottom).getComponentCount(), 2);
+    }
+
+    @Test
+    public void bottomToolbarShouldMatchCompactStripeThickness() {
+        JPanel owner = new JPanel(new BorderLayout());
+        SidebarConsoleArea consoleArea = new SidebarConsoleArea(owner, noopBottomBar(), new JPanel());
+        JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.LEFT);
+        tabbedPane.addTab("Requests", new SidebarTabContentHost(new JPanel()));
+
+        consoleArea.setTabbedPane(tabbedPane);
+
+        JPanel bottom = (JPanel) ((BorderLayout) owner.getLayout()).getLayoutComponent(BorderLayout.SOUTH);
+        Insets insets = bottom.getBorder().getBorderInsets(bottom);
+
+        assertEquals(insets.top, 0);
+        assertEquals(insets.left, 0);
+        assertEquals(insets.bottom, 0);
+        assertEquals(insets.right, 0);
+        assertEquals(bottom.getPreferredSize().height, SidebarBottomBar.STRIPE_THICKNESS);
+        assertEquals(bottom.getMinimumSize().height, SidebarBottomBar.STRIPE_THICKNESS);
     }
 
     @Test

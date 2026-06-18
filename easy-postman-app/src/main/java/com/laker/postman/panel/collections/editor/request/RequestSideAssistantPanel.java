@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.common.component.AppToolWindowChrome;
-import com.laker.postman.common.component.ToolWindowActionToolbar;
+import com.laker.postman.common.component.ToolWindowStripeMetrics;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.request.model.HttpRequestItem;
@@ -16,16 +16,19 @@ import java.awt.event.MouseEvent;
 import java.util.function.Supplier;
 
 public final class RequestSideAssistantPanel extends JPanel {
-    private static final int TOOLBAR_WIDTH = ToolWindowActionToolbar.ACTION_SIZE;
+    private static final int TOOLBAR_WIDTH = ToolWindowStripeMetrics.STRIPE_THICKNESS;
     private static final int DEFAULT_DRAWER_WIDTH = AppToolWindowChrome.DEFAULT_SIDE_WIDTH;
     private static final int MIN_DRAWER_WIDTH = 260;
     private static final int MAX_DRAWER_WIDTH = 640;
     private static final int RESIZE_HANDLE_WIDTH = AppToolWindowChrome.DIVIDER_SIZE;
     private static final int TOOL_ICON_SIZE = 19;
     private static final int TOOL_BUTTON_ARC = 7;
-    private static final int TOOLBAR_TOP_PADDING = 2;
-    private static final int TOOLBAR_BOTTOM_PADDING = 6;
+    private static final int TOOLBAR_TOP_PADDING = 4;
+    private static final int TOOLBAR_BOTTOM_PADDING = 4;
     private static final int TOOL_BUTTON_GAP = 4;
+    private static final int TOOL_BUTTON_VERTICAL_PADDING = 2;
+    private static final int TOOL_BUTTON_CONTENT_SHIFT_LEFT = 4;
+    private static final int TOOL_BUTTON_SELECTED_BACKGROUND_PADDING = 1;
 
     private final Supplier<HttpRequestItem> requestSupplier;
     private final CardLayout drawerLayout = new CardLayout();
@@ -234,7 +237,12 @@ public final class RequestSideAssistantPanel extends JPanel {
             setFocusable(false);
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+            setBorder(BorderFactory.createEmptyBorder(
+                    TOOL_BUTTON_VERTICAL_PADDING,
+                    0,
+                    TOOL_BUTTON_VERTICAL_PADDING,
+                    TOOL_BUTTON_CONTENT_SHIFT_LEFT * 2
+            ));
             Dimension size = new Dimension(TOOLBAR_WIDTH, TOOLBAR_WIDTH);
             setPreferredSize(size);
             setMinimumSize(size);
@@ -257,10 +265,30 @@ public final class RequestSideAssistantPanel extends JPanel {
                 Graphics2D copy = (Graphics2D) g.create();
                 copy.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 copy.setColor(ModernColors.getPrimary());
-                copy.fillRoundRect(2, 2, getWidth() - 4, getHeight() - 4, TOOL_BUTTON_ARC, TOOL_BUTTON_ARC);
+                Rectangle bounds = selectedBackgroundBounds();
+                copy.fillRoundRect(
+                        bounds.x,
+                        bounds.y,
+                        bounds.width,
+                        bounds.height,
+                        TOOL_BUTTON_ARC,
+                        TOOL_BUTTON_ARC
+                );
                 copy.dispose();
             }
             super.paintComponent(g);
+        }
+
+        private Rectangle selectedBackgroundBounds() {
+            Insets insets = getInsets();
+            int x = Math.max(0, insets.left - TOOL_BUTTON_SELECTED_BACKGROUND_PADDING);
+            int y = insets.top;
+            int width = Math.max(0, getWidth()
+                    - insets.left
+                    - insets.right
+                    + TOOL_BUTTON_SELECTED_BACKGROUND_PADDING * 2);
+            int height = Math.max(0, getHeight() - insets.top - insets.bottom);
+            return new Rectangle(x, y, Math.min(width, getWidth() - x), height);
         }
     }
 }

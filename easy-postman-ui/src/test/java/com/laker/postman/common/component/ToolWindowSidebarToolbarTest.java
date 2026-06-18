@@ -33,9 +33,11 @@ public class ToolWindowSidebarToolbarTest {
         assertTrue(toolbar.getComponent(1) instanceof Box.Filler);
         assertSame(toolbar.getComponent(2), searchField);
         assertEquals(plusButton.getPreferredSize(), new Dimension(
-                ToolWindowSidebarToolbar.ACTION_SIZE,
-                ToolWindowSidebarToolbar.ACTION_SIZE
+                ToolWindowStripeMetrics.ACTION_SIZE,
+                ToolWindowStripeMetrics.ACTION_SIZE
         ));
+        assertEquals(ToolWindowSidebarToolbar.ACTION_SIZE, ToolWindowStripeMetrics.ACTION_SIZE);
+        assertEquals(ToolWindowStripeMetrics.STRIPE_THICKNESS, ToolWindowStripeMetrics.ACTION_SIZE);
         assertEquals(searchField.getPreferredSize().height, ToolWindowSidebarToolbar.SEARCH_HEIGHT);
         assertEquals(searchField.getMaximumSize().height, ToolWindowSidebarToolbar.SEARCH_HEIGHT);
         assertEquals(plusButton.getAlignmentY(), Component.CENTER_ALIGNMENT);

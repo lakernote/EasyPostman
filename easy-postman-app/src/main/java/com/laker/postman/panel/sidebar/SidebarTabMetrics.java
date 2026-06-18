@@ -18,8 +18,7 @@ class SidebarTabMetrics {
     static final int EXPANDED_SELECTED_BACKGROUND_INSET_VERTICAL = 5;
     static final int COLLAPSED_SELECTED_BACKGROUND_WIDTH = 32;
     static final int COLLAPSED_SELECTED_BACKGROUND_HEIGHT = 32;
-    // 折叠态 tab rect 从 rail 最左侧开始，tab area 的左右 inset 计入整条 rail。
-    // 这里向右补偿 2px，让 32px 选中背景在 40px rail 内形成左右各 4px 的视觉边距。
+    // 折叠态菜单左侧紧贴窗口边缘，右侧又临近内容卡片 gap，需要轻微右移抵消视觉偏左。
     static final int COLLAPSED_VISUAL_CENTER_OFFSET_X = 2;
     static final int SELECTED_BACKGROUND_ARC = 10;
 
@@ -30,7 +29,7 @@ class SidebarTabMetrics {
     static final int EXPANDED_TAB_SPACING_BOTTOM = 4;
 
     static final int COLLAPSED_TAB_PADDING_VERTICAL = 8;
-    // 选中背景做了右移补偿，图标左右 padding 也随之变成 8/4，避免图标偏左。
+    // 选中背景做了视觉右移补偿，图标 padding 同步，保证图标中心跟随选中背景。
     static final int COLLAPSED_TAB_PADDING_HORIZONTAL = 6;
 
     static int expandedWidth(int maxTextWidth) {

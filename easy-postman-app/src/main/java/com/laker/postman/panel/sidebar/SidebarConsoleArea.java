@@ -76,6 +76,9 @@ final class SidebarConsoleArea {
     void refreshTheme() {
         consoleContainer.setBorder(BorderFactory.createEmptyBorder());
         bottomBarContainer.setBorder(BorderFactory.createEmptyBorder());
+        Dimension bottomBarSize = new Dimension(0, SidebarBottomBar.STRIPE_THICKNESS);
+        bottomBarContainer.setPreferredSize(bottomBarSize);
+        bottomBarContainer.setMinimumSize(bottomBarSize);
     }
 
     void handleSelectedTabChanged() {

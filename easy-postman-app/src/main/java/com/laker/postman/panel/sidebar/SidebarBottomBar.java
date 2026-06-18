@@ -1,5 +1,6 @@
 package com.laker.postman.panel.sidebar;
 
+import com.laker.postman.common.component.ToolWindowStripeMetrics;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -19,8 +20,9 @@ final class SidebarBottomBar {
     private static final String TOOLTIP_COLLAPSE_SIDEBAR = "Collapse sidebar";
     private static final String TOOLTIP_EXPAND_SIDEBAR = "Expand sidebar";
     private static final int BOTTOM_BAR_ICON_SIZE = 19;
-    private static final int BOTTOM_BAR_TOP_PADDING = 2;
-    private static final int BOTTOM_BAR_BOTTOM_PADDING = 6;
+    static final int BOTTOM_BAR_ACTION_SIZE = ToolWindowStripeMetrics.ACTION_SIZE;
+    static final int STRIPE_THICKNESS = ToolWindowStripeMetrics.STRIPE_THICKNESS;
+    private static final int BOTTOM_BAR_TEXT_VERTICAL_PADDING = 4;
 
     private final JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
     private final JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
@@ -42,36 +44,26 @@ final class SidebarBottomBar {
         sidebarToggleLabel = createActionLabel(
                 null,
                 IconUtil.createThemed("icons/sidebar-toggle.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                8,
-                4,
                 toggleSidebarExpansionAction
         );
         consoleLabel = createActionLabel(
                 I18nUtil.getMessage(MessageKeys.CONSOLE_TITLE),
                 IconUtil.createThemed("icons/console.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                4,
-                4,
                 openConsoleAction
         );
         layoutToggleLabel = createActionLabel(
                 null,
                 layoutToggleIcon(SettingManager.isLayoutVertical()),
-                4,
-                12,
                 toggleLayoutOrientationAction
         );
         globalVariablesLabel = createActionLabel(
                 I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_TITLE),
                 IconUtil.createThemed("icons/global-variables.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                4,
-                4,
                 openGlobalVariablesAction
         );
         cookieLabel = createActionLabel(
                 I18nUtil.getMessage(MessageKeys.COOKIES_TITLE),
                 IconUtil.createThemed("icons/cookie.svg", BOTTOM_BAR_ICON_SIZE, BOTTOM_BAR_ICON_SIZE),
-                4,
-                4,
                 openCookieManagerAction
         );
         JLabel versionLabel = createVersionLabel();
@@ -113,17 +105,17 @@ final class SidebarBottomBar {
         updateLayoutToggleState(SettingManager.isLayoutVertical());
     }
 
-    private JLabel createActionLabel(String tooltipText, Icon icon, int leftPadding, int rightPadding, Runnable action) {
+    private JLabel createActionLabel(String tooltipText, Icon icon, Runnable action) {
         JLabel label = new JLabel(icon);
         setActionLabelText(label, tooltipText);
+        label.setHorizontalAlignment(SwingConstants.CENTER);
+        label.setVerticalAlignment(SwingConstants.CENTER);
         label.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        // 底栏紧贴窗口边缘，底部留白略大于顶部，让 SVG 图标视觉上离底边更舒服。
-        label.setBorder(BorderFactory.createEmptyBorder(
-                BOTTOM_BAR_TOP_PADDING,
-                leftPadding,
-                BOTTOM_BAR_BOTTOM_PADDING,
-                rightPadding
-        ));
+        label.setBorder(BorderFactory.createEmptyBorder());
+        Dimension size = ToolWindowStripeMetrics.actionSize();
+        label.setPreferredSize(size);
+        label.setMinimumSize(size);
+        label.setMaximumSize(size);
         label.setFocusable(true);
         label.setEnabled(true);
         label.addMouseListener(new MouseAdapter() {
@@ -144,9 +136,9 @@ final class SidebarBottomBar {
         JLabel versionLabel = new JLabel(SystemUtil.getCurrentVersion());
         versionLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         versionLabel.setBorder(BorderFactory.createEmptyBorder(
-                BOTTOM_BAR_TOP_PADDING,
+                BOTTOM_BAR_TEXT_VERTICAL_PADDING,
                 4,
-                BOTTOM_BAR_BOTTOM_PADDING,
+                BOTTOM_BAR_TEXT_VERTICAL_PADDING,
                 8
         ));
         return versionLabel;

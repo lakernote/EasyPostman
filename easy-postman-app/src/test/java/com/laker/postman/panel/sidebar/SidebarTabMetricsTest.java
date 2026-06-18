@@ -58,7 +58,7 @@ public class SidebarTabMetricsTest {
     }
 
     @Test
-    public void collapsedSelectedBackgroundShouldBeGeometricallyCenteredInCollapsedRail() {
+    public void collapsedSelectedBackgroundShouldUseVisualCenterCompensation() {
         assertEquals(SidebarTabMetrics.TAB_AREA_INSET_TOP, 4);
         assertEquals(SidebarTabMetrics.TAB_AREA_INSET_LEFT, 2);
         assertEquals(SidebarTabMetrics.TAB_AREA_INSET_RIGHT, 2);
@@ -74,19 +74,19 @@ public class SidebarTabMetricsTest {
     }
 
     @Test
-    public void collapsedSelectedBackgroundShouldAccountForRailInsetWhenTabStartsAtEdge() {
+    public void collapsedSelectedBackgroundShouldAccountForCompensatedRailCenter() {
         int railWidth = SidebarTabMetrics.TAB_AREA_INSET_LEFT
                 + SidebarTabMetrics.collapsedWidth(20)
                 + SidebarTabMetrics.TAB_AREA_INSET_RIGHT;
         int backgroundX = SidebarTabMetrics.collapsedSelectedBackgroundX(
-                0,
+                SidebarTabMetrics.TAB_AREA_INSET_LEFT,
                 SidebarTabMetrics.collapsedWidth(20),
                 SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH
         );
 
         assertEquals(railWidth, 40);
-        assertEquals(backgroundX, 4);
-        assertEquals(railWidth - backgroundX - SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH, 4);
+        assertEquals(backgroundX, 6);
+        assertEquals(railWidth - backgroundX - SidebarTabMetrics.COLLAPSED_SELECTED_BACKGROUND_WIDTH, 2);
     }
 
     @Test

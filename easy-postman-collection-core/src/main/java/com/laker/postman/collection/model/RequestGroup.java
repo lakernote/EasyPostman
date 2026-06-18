@@ -1,6 +1,7 @@
 package com.laker.postman.collection.model;
 
 import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 
@@ -24,10 +25,13 @@ public class RequestGroup implements Serializable {
     private String id = ""; // 唯一标识符
     private String name = ""; // 分组名称
     private String description = ""; // 分组描述
-    private String authType = AuthType.INHERIT.getConstant(); // 认证类型（none/basic/bearer/digest/inherit），分组默认继承父级认证
+    private String authType = AuthType.INHERIT.getConstant(); // 认证类型（none/apiKey/basic/bearer/digest/inherit），分组默认继承父级认证
     private String authUsername = ""; // Basic/Digest用户名
     private String authPassword = ""; // Basic/Digest密码
     private String authToken = "";    // Bearer Token
+    private String authApiKeyName = ""; // API Key 名称
+    private String authApiKeyValue = ""; // API Key 值
+    private String authApiKeyPlacement = AuthApiKeyPlacement.HEADER.getConstant(); // API Key 添加位置
     // 前置脚本（请求前执行）
     private String prescript = "";
     // 后置脚本（响应后执行）

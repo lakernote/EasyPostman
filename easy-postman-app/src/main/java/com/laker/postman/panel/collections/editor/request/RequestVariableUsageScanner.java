@@ -37,6 +37,8 @@ class RequestVariableUsageScanner {
         collect(names, request.getAuthUsername());
         collect(names, request.getAuthPassword());
         collect(names, request.getAuthToken());
+        collect(names, request.getAuthApiKeyName());
+        collect(names, request.getAuthApiKeyValue());
         collect(names, request.getBody());
         collectFormData(names, request.getFormDataList());
         collectUrlencoded(names, request.getUrlencodedList());

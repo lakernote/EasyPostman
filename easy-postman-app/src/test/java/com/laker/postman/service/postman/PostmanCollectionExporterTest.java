@@ -2,6 +2,7 @@ package com.laker.postman.service.postman;
 
 import com.laker.postman.collection.importer.postman.PostmanCollectionParser;
 import com.laker.postman.collection.model.CollectionParseResult;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
@@ -274,6 +275,33 @@ public class PostmanCollectionExporterTest {
         JSONObject tokenObj = (JSONObject) bearer.get(0);
         assertEquals(tokenObj.getStr("key"), "token");
         assertEquals(tokenObj.getStr("value"), "jwt-token-123");
+    }
+
+    @Test
+    public void testToPostmanItem_WithApiKeyAuth() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setName("API Key API");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/keyed");
+        item.setAuthType(AuthType.API_KEY.getConstant());
+        item.setAuthApiKeyName("api_key");
+        item.setAuthApiKeyValue("secret");
+        item.setAuthApiKeyPlacement(AuthApiKeyPlacement.QUERY_PARAMS.getConstant());
+
+        JSONObject postmanItem = PostmanCollectionExporter.toPostmanItem(item);
+
+        JSONObject auth = postmanItem.getJSONObject("request").getJSONObject("auth");
+        assertNotNull(auth);
+        assertEquals(auth.getStr("type"), "apikey");
+        JSONArray apiKey = auth.getJSONArray("apikey");
+        assertNotNull(apiKey);
+        assertEquals(apiKey.size(), 3);
+        assertEquals(((JSONObject) apiKey.get(0)).getStr("key"), "key");
+        assertEquals(((JSONObject) apiKey.get(0)).getStr("value"), "api_key");
+        assertEquals(((JSONObject) apiKey.get(1)).getStr("key"), "value");
+        assertEquals(((JSONObject) apiKey.get(1)).getStr("value"), "secret");
+        assertEquals(((JSONObject) apiKey.get(2)).getStr("key"), "in");
+        assertEquals(((JSONObject) apiKey.get(2)).getStr("value"), "query");
     }
 
     @Test

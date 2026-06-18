@@ -100,6 +100,9 @@ public class CollectionInheritance {
             item.setAuthUsername(group.getAuthUsername());
             item.setAuthPassword(group.getAuthPassword());
             item.setAuthToken(group.getAuthToken());
+            item.setAuthApiKeyName(group.getAuthApiKeyName());
+            item.setAuthApiKeyValue(group.getAuthApiKeyValue());
+            item.setAuthApiKeyPlacement(group.getAuthApiKeyPlacement());
             return;
         }
     }

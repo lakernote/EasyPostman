@@ -37,6 +37,9 @@ public class PerformanceOutboundRequestTest {
                 .authUsername("alice")
                 .authPassword("secret")
                 .authToken("bearer-token")
+                .authApiKeyName("X-API-Key")
+                .authApiKeyValue("api-secret")
+                .authApiKeyPlacement(PerformanceRequestSnapshot.AUTH_API_KEY_PLACEMENT_HEADER)
                 .bodyType("raw")
                 .body("{\"ok\":true}")
                 .requestTimeoutMs(1500)
@@ -61,6 +64,9 @@ public class PerformanceOutboundRequestTest {
         assertEquals(request.getAuthConfig().getUsername(), "alice");
         assertEquals(request.getAuthConfig().getPassword(), "secret");
         assertEquals(request.getAuthConfig().getToken(), "bearer-token");
+        assertEquals(request.getAuthConfig().getApiKeyName(), "X-API-Key");
+        assertEquals(request.getAuthConfig().getApiKeyValue(), "api-secret");
+        assertEquals(request.getAuthConfig().getApiKeyPlacement(), PerformanceRequestSnapshot.AUTH_API_KEY_PLACEMENT_HEADER);
         assertEquals(request.getBodyType(), "raw");
         assertEquals(request.getBody(), "{\"ok\":true}");
         assertEquals(request.getRequestTimeoutMs(), Integer.valueOf(1500));

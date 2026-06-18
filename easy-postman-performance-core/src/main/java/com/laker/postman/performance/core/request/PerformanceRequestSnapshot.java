@@ -16,6 +16,7 @@ public class PerformanceRequestSnapshot {
     public static final String PROXY_POLICY_DEFAULT = "DEFAULT";
     public static final String PROXY_POLICY_USE_PROXY = "USE_PROXY";
     public static final String PROXY_POLICY_NO_PROXY = "NO_PROXY";
+    public static final String AUTH_API_KEY_PLACEMENT_HEADER = "Header";
 
     String id;
     String name;
@@ -33,6 +34,9 @@ public class PerformanceRequestSnapshot {
     String authUsername;
     String authPassword;
     String authToken;
+    String authApiKeyName;
+    String authApiKeyValue;
+    String authApiKeyPlacement;
     Boolean followRedirects;
     Boolean cookieJarEnabled;
     String proxyPolicy;
@@ -59,6 +63,9 @@ public class PerformanceRequestSnapshot {
                                       String authUsername,
                                       String authPassword,
                                       String authToken,
+                                      String authApiKeyName,
+                                      String authApiKeyValue,
+                                      String authApiKeyPlacement,
                                       Boolean followRedirects,
                                       Boolean cookieJarEnabled,
                                       String proxyPolicy,
@@ -83,6 +90,9 @@ public class PerformanceRequestSnapshot {
         this.authUsername = blankToEmpty(authUsername);
         this.authPassword = blankToEmpty(authPassword);
         this.authToken = blankToEmpty(authToken);
+        this.authApiKeyName = blankToEmpty(authApiKeyName);
+        this.authApiKeyValue = blankToEmpty(authApiKeyValue);
+        this.authApiKeyPlacement = blankToDefault(authApiKeyPlacement, AUTH_API_KEY_PLACEMENT_HEADER);
         this.followRedirects = followRedirects;
         this.cookieJarEnabled = cookieJarEnabled;
         this.proxyPolicy = normalizeProxyPolicy(proxyPolicy);

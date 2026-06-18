@@ -76,6 +76,9 @@ public class GroupEditPanel extends JPanel {
     private String originalAuthUsername;
     private String originalAuthPassword;
     private String originalAuthToken;
+    private String originalAuthApiKeyName;
+    private String originalAuthApiKeyValue;
+    private String originalAuthApiKeyPlacement;
     private String originalPrescript;
     private String originalPostscript;
     private List<HttpHeader> originalHeaders;
@@ -529,6 +532,9 @@ public class GroupEditPanel extends JPanel {
         group.setAuthUsername(authTabPanel.getUsername());
         group.setAuthPassword(authTabPanel.getPassword());
         group.setAuthToken(authTabPanel.getToken());
+        group.setAuthApiKeyName(authTabPanel.getApiKeyName());
+        group.setAuthApiKeyValue(authTabPanel.getApiKeyValue());
+        group.setAuthApiKeyPlacement(authTabPanel.getApiKeyPlacement());
         group.setPrescript(scriptPanel.getPrescript());
         group.setPostscript(scriptPanel.getPostscript());
         group.setHeaders(headersPanel.getHeadersListFromModel());
@@ -560,6 +566,9 @@ public class GroupEditPanel extends JPanel {
         if (!safeEquals(originalAuthUsername, authTabPanel.getUsername())) return true;
         if (!safeEquals(originalAuthPassword, authTabPanel.getPassword())) return true;
         if (!safeEquals(originalAuthToken, authTabPanel.getToken())) return true;
+        if (!safeEquals(originalAuthApiKeyName, authTabPanel.getApiKeyName())) return true;
+        if (!safeEquals(originalAuthApiKeyValue, authTabPanel.getApiKeyValue())) return true;
+        if (!safeEquals(originalAuthApiKeyPlacement, authTabPanel.getApiKeyPlacement())) return true;
         if (!safeEquals(originalPrescript, scriptPanel.getPrescript())) return true;
         if (!safeEquals(originalPostscript, scriptPanel.getPostscript())) return true;
         if (!headersEquals(originalHeaders, headersPanel.getHeadersListFromModel())) return true;
@@ -621,6 +630,9 @@ public class GroupEditPanel extends JPanel {
         originalAuthUsername = authTabPanel.getUsername();
         originalAuthPassword = authTabPanel.getPassword();
         originalAuthToken = authTabPanel.getToken();
+        originalAuthApiKeyName = authTabPanel.getApiKeyName();
+        originalAuthApiKeyValue = authTabPanel.getApiKeyValue();
+        originalAuthApiKeyPlacement = authTabPanel.getApiKeyPlacement();
         originalPrescript = scriptPanel.getPrescript();
         originalPostscript = scriptPanel.getPostscript();
         originalHeaders = new java.util.ArrayList<>(headersPanel.getHeadersListFromModel());
@@ -637,6 +649,9 @@ public class GroupEditPanel extends JPanel {
         authTabPanel.setUsername(group.getAuthUsername() != null ? group.getAuthUsername() : "");
         authTabPanel.setPassword(group.getAuthPassword() != null ? group.getAuthPassword() : "");
         authTabPanel.setToken(group.getAuthToken() != null ? group.getAuthToken() : "");
+        authTabPanel.setApiKeyName(group.getAuthApiKeyName() != null ? group.getAuthApiKeyName() : "");
+        authTabPanel.setApiKeyValue(group.getAuthApiKeyValue() != null ? group.getAuthApiKeyValue() : "");
+        authTabPanel.setApiKeyPlacement(group.getAuthApiKeyPlacement());
 
         // Load script data using ScriptPanel
         scriptPanel.setPrescript(group.getPrescript() != null ? group.getPrescript() : "");

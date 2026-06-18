@@ -2,6 +2,7 @@ package com.laker.postman.service.postman;
 
 import com.laker.postman.collection.importer.postman.PostmanCollectionParser;
 import com.laker.postman.collection.model.CollectionParseResult;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestBodyTypes;
@@ -129,6 +130,44 @@ public class PostmanCollectionParserTest {
         assertEquals(request.getAuthType(), AuthType.DIGEST.getConstant());
         assertEquals(request.getAuthUsername(), "digest-user");
         assertEquals(request.getAuthPassword(), "digest-pass");
+    }
+
+    @Test
+    public void testParsePostmanCollection_WithApiKeyAuth() {
+        String json = """
+                {
+                    "info": {
+                        "name": "API Key Collection"
+                    },
+                    "item": [
+                        {
+                            "name": "API Key Request",
+                            "request": {
+                                "method": "GET",
+                                "url": "https://api.example.com/keyed",
+                                "auth": {
+                                    "type": "apikey",
+                                    "apikey": [
+                                        {"key": "key", "value": "X-API-Key"},
+                                        {"key": "value", "value": "secret"},
+                                        {"key": "in", "value": "header"}
+                                    ]
+                                }
+                            }
+                        }
+                    ]
+                }
+                """;
+
+        CollectionParseResult result = PostmanCollectionParser.parsePostmanCollection(json);
+
+        assertNotNull(result);
+        assertEquals(result.getChildren().size(), 1);
+        var request = result.getChildren().get(0).asRequest();
+        assertEquals(request.getAuthType(), AuthType.API_KEY.getConstant());
+        assertEquals(request.getAuthApiKeyName(), "X-API-Key");
+        assertEquals(request.getAuthApiKeyValue(), "secret");
+        assertEquals(request.getAuthApiKeyPlacement(), AuthApiKeyPlacement.HEADER.getConstant());
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.laker.postman.http.request;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.mapper.PreparedRequestMapper;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static com.laker.postman.common.constants.HttpConstants.HEADER_AUTHORIZATION;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_API_KEY;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
@@ -59,6 +61,7 @@ public class PreparedRequestFinalizer {
             replaceVariablesInParamsList(request.pathVariablesList);
             request.url = HttpUrlUtil.replacePathVariables(request.url, request.pathVariablesList);
             replaceVariablesInParamsList(request.paramsList);
+            applyDeferredQueryAuthorization(request, deferredAuthorization);
             request.url = HttpUrlUtil.buildEncodedUrl(request.url, request.paramsList);
             request.body = VariableResolver.resolve(request.body);
 
@@ -87,20 +90,35 @@ public class PreparedRequestFinalizer {
             return;
         }
 
+        applyDeferredHeaderAuthorization(request, deferredAuthorization);
+        if (hasNonPreviewAuthorizationHeader(request.headersList, deferredAuthorization)) {
+            return;
+        }
+        applyTransportAuthorization(request, deferredAuthorization);
+    }
+
+    private void applyDeferredHeaderAuthorization(PreparedRequest request,
+                                                  PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
         HttpHeader authHeader = createAuthHeader(deferredAuthorization);
-        List<HttpHeader> authorizationHeaders = findEnabledAuthorizationHeaders(request.headersList);
-        List<HttpHeader> previewHeaders = findPreviewAuthorizationHeaders(authorizationHeaders, deferredAuthorization);
-        if (previewHeaders.size() != authorizationHeaders.size()) {
-            removeAuthorizationHeaders(request.headersList, previewHeaders);
+        List<HttpHeader> stalePreviewHeaders = findPreviewHeaders(request.headersList, deferredAuthorization);
+
+        if (authHeader == null) {
+            removeHeaders(request.headersList, stalePreviewHeaders);
             return;
         }
 
-        applyTransportAuthorization(request, deferredAuthorization);
+        if (!sameHeaderKey(deferredAuthorization.previewHeaderKey(), authHeader.getKey())) {
+            removeHeaders(request.headersList, stalePreviewHeaders);
+        }
 
-        if (authorizationHeaders.isEmpty()) {
-            if (authHeader == null) {
-                return;
-            }
+        List<HttpHeader> sameKeyHeaders = findEnabledHeaders(request.headersList, authHeader.getKey());
+        List<HttpHeader> previewHeaders = findPreviewHeaders(sameKeyHeaders, deferredAuthorization);
+        if (previewHeaders.size() != sameKeyHeaders.size()) {
+            removeHeaders(request.headersList, stalePreviewHeaders);
+            return;
+        }
+
+        if (sameKeyHeaders.isEmpty()) {
             if (request.headersList == null) {
                 request.headersList = new ArrayList<>();
             }
@@ -108,15 +126,55 @@ public class PreparedRequestFinalizer {
             return;
         }
 
-        if (authHeader == null) {
-            removeAuthorizationHeaders(request.headersList, previewHeaders);
+        HttpHeader primaryPreviewHeader = previewHeaders.get(0);
+        primaryPreviewHeader.setKey(authHeader.getKey());
+        primaryPreviewHeader.setValue(authHeader.getValue());
+        primaryPreviewHeader.setEnabled(true);
+        removeHeaders(request.headersList, previewHeaders.subList(1, previewHeaders.size()));
+    }
+
+    private void applyDeferredQueryAuthorization(PreparedRequest request,
+                                                 PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
+        if (request == null || deferredAuthorization == null) {
             return;
         }
 
-        HttpHeader primaryPreviewHeader = previewHeaders.get(0);
-        primaryPreviewHeader.setValue(authHeader.getValue());
-        primaryPreviewHeader.setEnabled(true);
-        removeAuthorizationHeaders(request.headersList, previewHeaders.subList(1, previewHeaders.size()));
+        HttpParam apiKeyParam = createQueryAuthParam(deferredAuthorization);
+        List<HttpParam> stalePreviewParams = findPreviewQueryParams(request.paramsList, deferredAuthorization);
+        if (apiKeyParam == null) {
+            removeParams(request.paramsList, stalePreviewParams);
+            return;
+        }
+
+        if (!sameParamKey(deferredAuthorization.previewQueryParamKey(), apiKeyParam.getKey())) {
+            removeParams(request.paramsList, stalePreviewParams);
+        }
+
+        if (hasQueryParamInUrl(request.url, apiKeyParam.getKey())) {
+            removeParams(request.paramsList, stalePreviewParams);
+            return;
+        }
+
+        List<HttpParam> sameKeyParams = findEnabledParams(request.paramsList, apiKeyParam.getKey());
+        List<HttpParam> previewParams = findPreviewQueryParams(sameKeyParams, deferredAuthorization);
+        if (previewParams.size() != sameKeyParams.size()) {
+            removeParams(request.paramsList, stalePreviewParams);
+            return;
+        }
+
+        if (sameKeyParams.isEmpty()) {
+            if (request.paramsList == null) {
+                request.paramsList = new ArrayList<>();
+            }
+            request.paramsList.add(apiKeyParam);
+            return;
+        }
+
+        HttpParam primaryPreviewParam = previewParams.get(0);
+        primaryPreviewParam.setKey(apiKeyParam.getKey());
+        primaryPreviewParam.setValue(apiKeyParam.getValue());
+        primaryPreviewParam.setEnabled(true);
+        removeParams(request.paramsList, previewParams.subList(1, previewParams.size()));
     }
 
     private void applyTransportAuthorization(PreparedRequest request,
@@ -140,31 +198,76 @@ public class PreparedRequestFinalizer {
         );
     }
 
-    private List<HttpHeader> findEnabledAuthorizationHeaders(List<HttpHeader> headersList) {
+    private List<HttpHeader> findEnabledHeaders(List<HttpHeader> headersList, String key) {
         if (headersList == null || headersList.isEmpty()) {
             return List.of();
         }
         return headersList.stream()
-                .filter(h -> h != null && h.isEnabled() && HEADER_AUTHORIZATION.equalsIgnoreCase(h.getKey()))
+                .filter(h -> h != null && h.isEnabled() && key != null && key.equalsIgnoreCase(h.getKey()))
                 .toList();
     }
 
-    private List<HttpHeader> findPreviewAuthorizationHeaders(List<HttpHeader> authorizationHeaders,
-                                                             PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
-        String previewValue = deferredAuthorization.previewAuthorizationHeaderValue();
-        if (previewValue == null || authorizationHeaders == null || authorizationHeaders.isEmpty()) {
+    private List<HttpHeader> findPreviewHeaders(List<HttpHeader> headersList,
+                                                PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
+        String previewKey = deferredAuthorization.previewHeaderKey();
+        String previewValue = deferredAuthorization.previewHeaderValue();
+        if (previewKey == null || previewValue == null || headersList == null || headersList.isEmpty()) {
             return List.of();
         }
-        return authorizationHeaders.stream()
-                .filter(header -> previewValue.equals(header.getValue()))
+        return headersList.stream()
+                .filter(header -> header != null
+                        && header.isEnabled()
+                        && previewKey.equalsIgnoreCase(header.getKey())
+                        && previewValue.equals(header.getValue()))
                 .toList();
     }
 
-    private void removeAuthorizationHeaders(List<HttpHeader> headersList, List<HttpHeader> headersToRemove) {
+    private boolean hasNonPreviewAuthorizationHeader(List<HttpHeader> headersList,
+                                                     PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
+        List<HttpHeader> authorizationHeaders = findEnabledHeaders(headersList, HEADER_AUTHORIZATION);
+        if (authorizationHeaders.isEmpty()) {
+            return false;
+        }
+        List<HttpHeader> previewAuthorizationHeaders = findPreviewHeaders(authorizationHeaders, deferredAuthorization);
+        return previewAuthorizationHeaders.size() != authorizationHeaders.size();
+    }
+
+    private void removeHeaders(List<HttpHeader> headersList, List<HttpHeader> headersToRemove) {
         if (headersList == null || headersList.isEmpty() || headersToRemove == null || headersToRemove.isEmpty()) {
             return;
         }
         headersList.removeIf(headersToRemove::contains);
+    }
+
+    private List<HttpParam> findEnabledParams(List<HttpParam> paramsList, String key) {
+        if (paramsList == null || paramsList.isEmpty()) {
+            return List.of();
+        }
+        return paramsList.stream()
+                .filter(param -> param != null && param.isEnabled() && key != null && key.equals(param.getKey()))
+                .toList();
+    }
+
+    private List<HttpParam> findPreviewQueryParams(List<HttpParam> paramsList,
+                                                   PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
+        String previewKey = deferredAuthorization.previewQueryParamKey();
+        String previewValue = deferredAuthorization.previewQueryParamValue();
+        if (previewKey == null || previewValue == null || paramsList == null || paramsList.isEmpty()) {
+            return List.of();
+        }
+        return paramsList.stream()
+                .filter(param -> param != null
+                        && param.isEnabled()
+                        && previewKey.equals(param.getKey())
+                        && previewValue.equals(param.getValue()))
+                .toList();
+    }
+
+    private void removeParams(List<HttpParam> paramsList, List<HttpParam> paramsToRemove) {
+        if (paramsList == null || paramsList.isEmpty() || paramsToRemove == null || paramsToRemove.isEmpty()) {
+            return;
+        }
+        paramsList.removeIf(paramsToRemove::contains);
     }
 
     private HttpHeader createAuthHeader(PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
@@ -178,6 +281,12 @@ public class PreparedRequestFinalizer {
             );
         } else if (AUTH_TYPE_BEARER.equals(deferredAuthorization.authType())) {
             return createBearerAuthHeader(deferredAuthorization.authToken());
+        } else if (AUTH_TYPE_API_KEY.equals(deferredAuthorization.authType())
+                && AuthApiKeyPlacement.HEADER == AuthApiKeyPlacement.fromConstant(deferredAuthorization.authApiKeyPlacement())) {
+            return createApiKeyAuthHeader(
+                    deferredAuthorization.authApiKeyName(),
+                    deferredAuthorization.authApiKeyValue()
+            );
         }
         return null;
     }
@@ -200,6 +309,70 @@ public class PreparedRequestFinalizer {
         authHeader.setValue("Basic " + token);
         authHeader.setEnabled(true);
         return authHeader;
+    }
+
+    private HttpHeader createApiKeyAuthHeader(String rawName, String rawValue) {
+        String name = VariableResolver.resolve(rawName);
+        if (name == null || name.isEmpty() || containsUnresolvedPlaceholder(name)) {
+            return null;
+        }
+        String value = VariableResolver.resolve(rawValue);
+        if (value == null || value.isEmpty() || containsUnresolvedPlaceholder(value)) {
+            return null;
+        }
+
+        HttpHeader authHeader = new HttpHeader();
+        authHeader.setKey(name);
+        authHeader.setValue(value);
+        authHeader.setEnabled(true);
+        return authHeader;
+    }
+
+    private HttpParam createQueryAuthParam(PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
+        if (AUTH_TYPE_API_KEY.equals(deferredAuthorization.authType())) {
+            return createApiKeyQueryParam(deferredAuthorization);
+        }
+        return null;
+    }
+
+    private HttpParam createApiKeyQueryParam(PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
+        if (AuthApiKeyPlacement.QUERY_PARAMS != AuthApiKeyPlacement.fromConstant(deferredAuthorization.authApiKeyPlacement())) {
+            return null;
+        }
+        String name = VariableResolver.resolve(deferredAuthorization.authApiKeyName());
+        String value = VariableResolver.resolve(deferredAuthorization.authApiKeyValue());
+        return createEnabledParam(name, value);
+    }
+
+    private HttpParam createEnabledParam(String name, String value) {
+        if (name == null || name.isEmpty() || containsUnresolvedPlaceholder(name)) {
+            return null;
+        }
+        if (value == null || value.isEmpty() || containsUnresolvedPlaceholder(value)) {
+            return null;
+        }
+        return new HttpParam(true, name, value, "");
+    }
+
+    private boolean hasQueryParamInUrl(String url, String key) {
+        if (url == null || key == null || key.isEmpty() || !url.contains("?")) {
+            return false;
+        }
+        return HttpUrlUtil.extractQueryParamKeys(url, true).contains(HttpUrlUtil.encodeComponent(key));
+    }
+
+    private boolean sameHeaderKey(String first, String second) {
+        if (first == null || second == null) {
+            return first == second;
+        }
+        return first.equalsIgnoreCase(second);
+    }
+
+    private boolean sameParamKey(String first, String second) {
+        if (first == null || second == null) {
+            return first == second;
+        }
+        return first.equals(second);
     }
 
     private HttpHeader createBearerAuthHeader(String rawToken) {

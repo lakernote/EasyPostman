@@ -162,6 +162,9 @@ public class PerformanceCorePlanJsonStorage {
         json.put("authUsername", snapshot.getAuthUsername());
         json.put("authPassword", snapshot.getAuthPassword());
         json.put("authToken", snapshot.getAuthToken());
+        json.put("authApiKeyName", snapshot.getAuthApiKeyName());
+        json.put("authApiKeyValue", snapshot.getAuthApiKeyValue());
+        json.put("authApiKeyPlacement", snapshot.getAuthApiKeyPlacement());
         json.put("followRedirects", snapshot.getFollowRedirects());
         json.put("cookieJarEnabled", snapshot.getCookieJarEnabled());
         json.put("proxyPolicy", snapshot.getProxyPolicy());
@@ -463,6 +466,9 @@ public class PerformanceCorePlanJsonStorage {
                 .authUsername(stringValue(requestJson, "authUsername", null))
                 .authPassword(stringValue(requestJson, "authPassword", null))
                 .authToken(stringValue(requestJson, "authToken", null))
+                .authApiKeyName(stringValue(requestJson, "authApiKeyName", null))
+                .authApiKeyValue(stringValue(requestJson, "authApiKeyValue", null))
+                .authApiKeyPlacement(stringValue(requestJson, "authApiKeyPlacement", null))
                 .followRedirects(booleanObjectValue(requestJson, "followRedirects"))
                 .cookieJarEnabled(booleanObjectValue(requestJson, "cookieJarEnabled"))
                 .proxyPolicy(stringValue(requestJson, "proxyPolicy", null))

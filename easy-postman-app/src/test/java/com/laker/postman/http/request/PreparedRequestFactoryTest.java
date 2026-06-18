@@ -3,6 +3,7 @@ package com.laker.postman.http.request;
 import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
@@ -125,6 +126,40 @@ public class PreparedRequestFactoryTest {
             assertNotEquals(header.getKey(), "Authorization",
                     "Digest auth should wait for WWW-Authenticate challenge before adding Authorization");
         }
+    }
+
+    @Test
+    public void testApiKeyHeaderIsAdded() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId("test-api-key-header");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/data");
+        item.setAuthType(AuthType.API_KEY.getConstant());
+        item.setAuthApiKeyName("X-API-Key");
+        item.setAuthApiKeyValue("secret-key");
+        item.setAuthApiKeyPlacement(AuthApiKeyPlacement.HEADER.getConstant());
+
+        PreparedRequest req = PreparedRequestFactory.build(item);
+        PreparedRequestFinalizer.finalizeForSend(req, item);
+
+        assertEquals(findHeaderValue(req.headersList, "X-API-Key"), "secret-key");
+    }
+
+    @Test
+    public void testApiKeyQueryParamIsAdded() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId("test-api-key-query");
+        item.setMethod("GET");
+        item.setUrl("https://api.example.com/data");
+        item.setAuthType(AuthType.API_KEY.getConstant());
+        item.setAuthApiKeyName("api_key");
+        item.setAuthApiKeyValue("secret-key");
+        item.setAuthApiKeyPlacement(AuthApiKeyPlacement.QUERY_PARAMS.getConstant());
+
+        PreparedRequest req = PreparedRequestFactory.build(item);
+        PreparedRequestFinalizer.finalizeForSend(req, item);
+
+        assertEquals(req.url, "https://api.example.com/data?api_key=secret-key");
     }
 
     @Test
@@ -362,4 +397,5 @@ public class PreparedRequestFactoryTest {
         }
         return null;
     }
+
 }

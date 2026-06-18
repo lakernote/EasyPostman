@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.AuthType;
 import com.laker.postman.request.model.RequestAuthTypes;
 
@@ -27,6 +28,7 @@ import java.util.List;
 public class AuthTabPanel extends JPanel {
     private static final String AUTH_TYPE_INHERIT = RequestAuthTypes.AUTH_TYPE_INHERIT;
     private static final String AUTH_TYPE_NONE = RequestAuthTypes.AUTH_TYPE_NONE;
+    private static final String AUTH_TYPE_API_KEY = RequestAuthTypes.AUTH_TYPE_API_KEY;
     private static final String AUTH_TYPE_BASIC = RequestAuthTypes.AUTH_TYPE_BASIC;
     private static final String AUTH_TYPE_BEARER = RequestAuthTypes.AUTH_TYPE_BEARER;
     private static final String AUTH_TYPE_DIGEST = RequestAuthTypes.AUTH_TYPE_DIGEST;
@@ -37,6 +39,9 @@ public class AuthTabPanel extends JPanel {
     private final JTextField digestUsernameField;
     private final JTextField digestPasswordField;
     private final JTextField tokenField;
+    private final JTextField apiKeyNameField;
+    private final JTextField apiKeyValueField;
+    private final JComboBox<AuthApiKeyPlacement> apiKeyPlacementCombo;
     private AuthType currentType = AuthType.INHERIT;
     private final List<Runnable> dirtyListeners = new ArrayList<>();
 
@@ -79,6 +84,30 @@ public class AuthTabPanel extends JPanel {
         tokenField = new EasyTextField("", 30, I18nUtil.getMessage(MessageKeys.AUTH_TOKEN_PLACEHOLDER));
         tokenField.setPreferredSize(new Dimension(250, 32));
 
+        apiKeyNameField = new EasyTextField("", 20, I18nUtil.getMessage(MessageKeys.AUTH_API_KEY_NAME_PLACEHOLDER));
+        apiKeyNameField.setPreferredSize(new Dimension(220, 32));
+
+        apiKeyValueField = new EasyTextField("", 30, I18nUtil.getMessage(MessageKeys.AUTH_API_KEY_VALUE_PLACEHOLDER));
+        apiKeyValueField.setPreferredSize(new Dimension(250, 32));
+
+        apiKeyPlacementCombo = new JComboBox<>(AuthApiKeyPlacement.values());
+        apiKeyPlacementCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list,
+                                                          Object value,
+                                                          int index,
+                                                          boolean isSelected,
+                                                          boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof AuthApiKeyPlacement placement) {
+                    setText(apiKeyPlacementDisplayText(placement));
+                }
+                return this;
+            }
+        });
+        apiKeyPlacementCombo.setPreferredSize(new Dimension(180, 32));
+        apiKeyPlacementCombo.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+
         // 顶部：认证类型选择
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 3));
         topPanel.setOpaque(false);
@@ -98,6 +127,9 @@ public class AuthTabPanel extends JPanel {
 
         // No Auth Panel
         cardPanel.add(createNoAuthPanel(), AUTH_TYPE_NONE);
+
+        // API Key Panel
+        cardPanel.add(createApiKeyPanel(), AUTH_TYPE_API_KEY);
 
         // Basic Auth Panel
         cardPanel.add(createBasicAuthPanel(), AUTH_TYPE_BASIC);
@@ -139,6 +171,9 @@ public class AuthTabPanel extends JPanel {
         digestUsernameField.getDocument().addDocumentListener(docListener);
         digestPasswordField.getDocument().addDocumentListener(docListener);
         tokenField.getDocument().addDocumentListener(docListener);
+        apiKeyNameField.getDocument().addDocumentListener(docListener);
+        apiKeyValueField.getDocument().addDocumentListener(docListener);
+        apiKeyPlacementCombo.addActionListener(e -> fireDirty());
 
         // 默认显示继承面板
         ((CardLayout) cardPanel.getLayout()).show(cardPanel, AUTH_TYPE_INHERIT);
@@ -148,9 +183,17 @@ public class AuthTabPanel extends JPanel {
         return switch (type) {
             case INHERIT -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_INHERIT);
             case NONE -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE);
+            case API_KEY -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_API_KEY);
             case BASIC -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BASIC);
             case BEARER -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_BEARER);
             case DIGEST -> I18nUtil.getMessage(MessageKeys.AUTH_TYPE_DIGEST);
+        };
+    }
+
+    private static String apiKeyPlacementDisplayText(AuthApiKeyPlacement placement) {
+        return switch (placement) {
+            case HEADER -> I18nUtil.getMessage(MessageKeys.AUTH_API_KEY_ADD_TO_HEADER);
+            case QUERY_PARAMS -> I18nUtil.getMessage(MessageKeys.AUTH_API_KEY_ADD_TO_QUERY_PARAMS);
         };
     }
 
@@ -183,6 +226,13 @@ public class AuthTabPanel extends JPanel {
         return infoPanel;
     }
 
+    private JLabel createFieldLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        label.setForeground(ModernColors.getTextSecondary());
+        return label;
+    }
+
     /**
      * 创建 Inherit Auth 面板
      */
@@ -212,6 +262,83 @@ public class AuthTabPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.AUTH_TYPE_NONE_DESC),
                 true
         ), BorderLayout.NORTH);
+        return panel;
+    }
+
+    /**
+     * 创建 API Key 面板
+     */
+    private JPanel createApiKeyPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(new EmptyBorder(8, 0, 0, 0));
+
+        panel.add(createInfoPanel(
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_API_KEY),
+                I18nUtil.getMessage(MessageKeys.AUTH_TYPE_API_KEY_DESC),
+                false
+        ), BorderLayout.NORTH);
+
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        ToolWindowSurfaceStyle.applyCard(formPanel);
+        formPanel.setBorder(new EmptyBorder(8, 0, 0, 0));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 6, 4, 6);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel keyLabel = createFieldLabel(I18nUtil.getMessage(MessageKeys.AUTH_API_KEY_NAME));
+        formPanel.add(keyLabel, gbc);
+
+        gbc.gridx = 1;
+        formPanel.add(apiKeyNameField, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        formPanel.add(Box.createHorizontalGlue(), gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel valueLabel = createFieldLabel(I18nUtil.getMessage(MessageKeys.AUTH_API_KEY_VALUE));
+        formPanel.add(valueLabel, gbc);
+
+        gbc.gridx = 1;
+        formPanel.add(apiKeyValueField, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        formPanel.add(Box.createHorizontalGlue(), gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.weightx = 0;
+        gbc.fill = GridBagConstraints.NONE;
+        JLabel addToLabel = createFieldLabel(I18nUtil.getMessage(MessageKeys.AUTH_API_KEY_ADD_TO));
+        formPanel.add(addToLabel, gbc);
+
+        gbc.gridx = 1;
+        formPanel.add(apiKeyPlacementCombo, gbc);
+
+        gbc.gridx = 2;
+        gbc.weightx = 1.0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        formPanel.add(Box.createHorizontalGlue(), gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 3;
+        gbc.weighty = 1.0;
+        gbc.fill = GridBagConstraints.BOTH;
+        formPanel.add(Box.createGlue(), gbc);
+
+        panel.add(formPanel, BorderLayout.CENTER);
         return panel;
     }
 
@@ -460,6 +587,31 @@ public class AuthTabPanel extends JPanel {
         tokenField.setText(t == null ? "" : t);
     }
 
+    public String getApiKeyName() {
+        return apiKeyNameField.getText();
+    }
+
+    public void setApiKeyName(String name) {
+        apiKeyNameField.setText(name == null ? "" : name);
+    }
+
+    public String getApiKeyValue() {
+        return apiKeyValueField.getText();
+    }
+
+    public void setApiKeyValue(String value) {
+        apiKeyValueField.setText(value == null ? "" : value);
+    }
+
+    public String getApiKeyPlacement() {
+        AuthApiKeyPlacement selected = (AuthApiKeyPlacement) apiKeyPlacementCombo.getSelectedItem();
+        return selected == null ? AuthApiKeyPlacement.HEADER.getConstant() : selected.getConstant();
+    }
+
+    public void setApiKeyPlacement(String placement) {
+        apiKeyPlacementCombo.setSelectedItem(AuthApiKeyPlacement.fromConstant(placement));
+    }
+
     public void setEditable(boolean editable) {
         typeCombo.setEnabled(editable);
         usernameField.setEditable(editable);
@@ -467,6 +619,9 @@ public class AuthTabPanel extends JPanel {
         digestUsernameField.setEditable(editable);
         digestPasswordField.setEditable(editable);
         tokenField.setEditable(editable);
+        apiKeyNameField.setEditable(editable);
+        apiKeyValueField.setEditable(editable);
+        apiKeyPlacementCombo.setEnabled(editable);
     }
 
     /**
@@ -497,4 +652,5 @@ public class AuthTabPanel extends JPanel {
     private boolean usesUsernamePassword(AuthType type) {
         return type == AuthType.BASIC || type == AuthType.DIGEST;
     }
+
 }

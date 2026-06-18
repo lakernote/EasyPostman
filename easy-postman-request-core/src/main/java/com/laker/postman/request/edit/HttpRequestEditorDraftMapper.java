@@ -3,6 +3,7 @@ package com.laker.postman.request.edit;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.HttpRequestProxyPolicy;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
@@ -37,6 +38,9 @@ public class HttpRequestEditorDraftMapper {
                 .authUsername(item.getAuthUsername())
                 .authPassword(item.getAuthPassword())
                 .authToken(item.getAuthToken())
+                .authApiKeyName(item.getAuthApiKeyName())
+                .authApiKeyValue(item.getAuthApiKeyValue())
+                .authApiKeyPlacement(item.getAuthApiKeyPlacement())
                 .followRedirects(item.getFollowRedirects())
                 .cookieJarEnabled(item.getCookieJarEnabled())
                 .proxyPolicy(item.resolveProxyPolicy())
@@ -90,6 +94,9 @@ public class HttpRequestEditorDraftMapper {
         item.setAuthUsername(string(draft.getAuthUsername()));
         item.setAuthPassword(string(draft.getAuthPassword()));
         item.setAuthToken(string(draft.getAuthToken()));
+        item.setAuthApiKeyName(string(draft.getAuthApiKeyName()));
+        item.setAuthApiKeyValue(string(draft.getAuthApiKeyValue()));
+        item.setAuthApiKeyPlacement(normalizeApiKeyPlacement(draft.getAuthApiKeyPlacement()));
         item.setFollowRedirects(draft.getFollowRedirects());
         item.setCookieJarEnabled(draft.getCookieJarEnabled());
         item.setProxyPolicy(draft.getProxyPolicy());
@@ -132,6 +139,10 @@ public class HttpRequestEditorDraftMapper {
         return bodyType == null || bodyType.trim().isEmpty()
                 ? RequestBodyTypes.BODY_TYPE_NONE
                 : bodyType.trim();
+    }
+
+    private static String normalizeApiKeyPlacement(String placement) {
+        return AuthApiKeyPlacement.fromConstant(placement).getConstant();
     }
 
     private static String string(String value) {

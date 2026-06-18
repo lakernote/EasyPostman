@@ -457,11 +457,13 @@ public final class MessageKeys {
     public static final String AUTH_TYPE_LABEL = "auth.type.label";
     public static final String AUTH_TYPE_INHERIT = "auth.type.inherit";
     public static final String AUTH_TYPE_NONE = "auth.type.none";
+    public static final String AUTH_TYPE_API_KEY = "auth.type.api_key";
     public static final String AUTH_TYPE_BASIC = "auth.type.basic";
     public static final String AUTH_TYPE_BEARER = "auth.type.bearer";
     public static final String AUTH_TYPE_DIGEST = "auth.type.digest";
     public static final String AUTH_TYPE_INHERIT_DESC = "auth.type.inherit.desc";
     public static final String AUTH_TYPE_NONE_DESC = "auth.type.none.desc";
+    public static final String AUTH_TYPE_API_KEY_DESC = "auth.type.api_key.desc";
     public static final String AUTH_TYPE_BASIC_DESC = "auth.type.basic.desc";
     public static final String AUTH_TYPE_BEARER_DESC = "auth.type.bearer.desc";
     public static final String AUTH_TYPE_DIGEST_DESC = "auth.type.digest.desc";
@@ -469,6 +471,13 @@ public final class MessageKeys {
     public static final String AUTH_PASSWORD = "auth.password";
     public static final String AUTH_TOKEN = "auth.token";
     public static final String AUTH_TOKEN_PLACEHOLDER = "auth.token.placeholder";
+    public static final String AUTH_API_KEY_NAME = "auth.api_key.name";
+    public static final String AUTH_API_KEY_VALUE = "auth.api_key.value";
+    public static final String AUTH_API_KEY_ADD_TO = "auth.api_key.add_to";
+    public static final String AUTH_API_KEY_ADD_TO_HEADER = "auth.api_key.add_to.header";
+    public static final String AUTH_API_KEY_ADD_TO_QUERY_PARAMS = "auth.api_key.add_to.query_params";
+    public static final String AUTH_API_KEY_NAME_PLACEHOLDER = "auth.api_key.name.placeholder";
+    public static final String AUTH_API_KEY_VALUE_PLACEHOLDER = "auth.api_key.value.placeholder";
 
     // ============ Cookie相关 ============
     public static final String COOKIES_TITLE = "cookies.title";

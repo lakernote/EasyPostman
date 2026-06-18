@@ -46,6 +46,9 @@ public class PerformanceRequestSnapshotMapper {
                 .authUsername(item.getAuthUsername())
                 .authPassword(item.getAuthPassword())
                 .authToken(item.getAuthToken())
+                .authApiKeyName(item.getAuthApiKeyName())
+                .authApiKeyValue(item.getAuthApiKeyValue())
+                .authApiKeyPlacement(item.getAuthApiKeyPlacement())
                 .followRedirects(item.getFollowRedirects())
                 .cookieJarEnabled(item.getCookieJarEnabled())
                 .proxyPolicy(item.resolveProxyPolicy().name())
@@ -101,6 +104,9 @@ public class PerformanceRequestSnapshotMapper {
         item.setAuthUsername(snapshot.getAuthUsername());
         item.setAuthPassword(snapshot.getAuthPassword());
         item.setAuthToken(snapshot.getAuthToken());
+        item.setAuthApiKeyName(snapshot.getAuthApiKeyName());
+        item.setAuthApiKeyValue(snapshot.getAuthApiKeyValue());
+        item.setAuthApiKeyPlacement(snapshot.getAuthApiKeyPlacement());
         item.setFollowRedirects(snapshot.getFollowRedirects());
         item.setCookieJarEnabled(snapshot.getCookieJarEnabled());
         item.setProxyPolicy(HttpRequestProxyPolicy.normalize(snapshot.getProxyPolicy()));
@@ -149,6 +155,9 @@ public class PerformanceRequestSnapshotMapper {
         if (AuthType.NONE.getConstant().equals(authType)) {
             return PerformanceAuthType.NONE;
         }
+        if (AuthType.API_KEY.getConstant().equals(authType)) {
+            return PerformanceAuthType.API_KEY;
+        }
         if (AuthType.BASIC.getConstant().equals(authType)) {
             return PerformanceAuthType.BASIC;
         }
@@ -164,6 +173,9 @@ public class PerformanceRequestSnapshotMapper {
     private String toRequestAuthType(PerformanceAuthType authType) {
         if (authType == PerformanceAuthType.NONE) {
             return AuthType.NONE.getConstant();
+        }
+        if (authType == PerformanceAuthType.API_KEY) {
+            return AuthType.API_KEY.getConstant();
         }
         if (authType == PerformanceAuthType.BASIC) {
             return AuthType.BASIC.getConstant();

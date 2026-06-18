@@ -7,6 +7,7 @@ import com.laker.postman.collection.model.CollectionDocument;
 import com.laker.postman.collection.model.CollectionNode;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpRequestItem;
 import lombok.experimental.UtilityClass;
@@ -69,6 +70,9 @@ public class CollectionDocumentJsonCodec {
         groupJson.set("authUsername", group.getAuthUsername());
         groupJson.set("authPassword", group.getAuthPassword());
         groupJson.set("authToken", group.getAuthToken());
+        groupJson.set("authApiKeyName", group.getAuthApiKeyName());
+        groupJson.set("authApiKeyValue", group.getAuthApiKeyValue());
+        groupJson.set("authApiKeyPlacement", group.getAuthApiKeyPlacement());
         groupJson.set("prescript", group.getPrescript());
         groupJson.set("postscript", group.getPostscript());
         if (group.getHeaders() != null && !group.getHeaders().isEmpty()) {
@@ -116,6 +120,12 @@ public class CollectionDocumentJsonCodec {
             group.setAuthUsername(groupJson.getStr("authUsername", ""));
             group.setAuthPassword(groupJson.getStr("authPassword", ""));
             group.setAuthToken(groupJson.getStr("authToken", ""));
+            group.setAuthApiKeyName(groupJson.getStr("authApiKeyName", ""));
+            group.setAuthApiKeyValue(groupJson.getStr("authApiKeyValue", ""));
+            group.setAuthApiKeyPlacement(groupJson.getStr(
+                    "authApiKeyPlacement",
+                    AuthApiKeyPlacement.HEADER.getConstant()
+            ));
         }
         if (groupJson.containsKey("prescript")) {
             group.setPrescript(groupJson.getStr("prescript", ""));

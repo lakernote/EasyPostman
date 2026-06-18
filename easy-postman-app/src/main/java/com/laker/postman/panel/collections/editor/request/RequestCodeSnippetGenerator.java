@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.editor.request;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.http.request.AppRequestHeaderDefaults;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 import com.laker.postman.request.model.HttpHeader;
@@ -253,11 +254,10 @@ class RequestCodeSnippetGenerator {
                 }
             }
         }
-        if (headers.stream().noneMatch(header -> "Authorization".equalsIgnoreCase(header.getKey()))) {
-            HttpHeader authHeader = authHeader(request);
-            if (authHeader != null) {
-                headers.add(authHeader);
-            }
+        HttpHeader authHeader = authHeader(request);
+        if (authHeader != null
+                && headers.stream().noneMatch(header -> authHeader.getKey().equalsIgnoreCase(header.getKey()))) {
+            headers.add(authHeader);
         }
         if (headers.stream().noneMatch(header -> "Content-Type".equalsIgnoreCase(header.getKey()))) {
             String payload = bodyPayload(request);
@@ -278,6 +278,12 @@ class RequestCodeSnippetGenerator {
             String credentials = request.getAuthUsername() + ":" + nullToEmpty(request.getAuthPassword());
             String encoded = Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
             return new HttpHeader(true, "Authorization", "Basic " + encoded, "");
+        }
+        if (RequestAuthTypes.AUTH_TYPE_API_KEY.equals(authType)
+                && AuthApiKeyPlacement.HEADER == AuthApiKeyPlacement.fromConstant(request.getAuthApiKeyPlacement())
+                && CharSequenceUtil.isNotBlank(request.getAuthApiKeyName())
+                && CharSequenceUtil.isNotBlank(request.getAuthApiKeyValue())) {
+            return new HttpHeader(true, request.getAuthApiKeyName(), request.getAuthApiKeyValue(), "");
         }
         return null;
     }

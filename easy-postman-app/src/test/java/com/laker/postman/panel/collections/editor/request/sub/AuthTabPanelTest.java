@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.AuthType;
-
 
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
@@ -60,6 +60,29 @@ public class AuthTabPanelTest extends AbstractSwingUiTest {
 
         assertEquals(username[0], "edited-user");
         assertEquals(password[0], "edited-pass");
+    }
+
+    @Test
+    public void shouldRoundTripApiKeyFields() throws Exception {
+        String[] key = new String[1];
+        String[] value = new String[1];
+        String[] placement = new String[1];
+
+        SwingUtilities.invokeAndWait(() -> {
+            AuthTabPanel panel = new AuthTabPanel();
+            panel.setAuthType(AuthType.API_KEY.getConstant());
+            panel.setApiKeyName("X-API-Key");
+            panel.setApiKeyValue("secret");
+            panel.setApiKeyPlacement(AuthApiKeyPlacement.QUERY_PARAMS.getConstant());
+
+            key[0] = panel.getApiKeyName();
+            value[0] = panel.getApiKeyValue();
+            placement[0] = panel.getApiKeyPlacement();
+        });
+
+        assertEquals(key[0], "X-API-Key");
+        assertEquals(value[0], "secret");
+        assertEquals(placement[0], AuthApiKeyPlacement.QUERY_PARAMS.getConstant());
     }
 
     private static JTextField textField(AuthTabPanel panel, String fieldName) {

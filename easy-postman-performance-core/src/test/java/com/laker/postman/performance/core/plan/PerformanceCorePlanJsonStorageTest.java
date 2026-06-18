@@ -76,6 +76,10 @@ public class PerformanceCorePlanJsonStorageTest {
         assertEquals(snapshot.getUrl(), "wss://example.test/ws");
         assertEquals(snapshot.getHeaders().get(0), new PerformanceRequestKeyValue(true, "X-Test", "yes"));
         assertEquals(snapshot.getFormData().get(0), new PerformanceRequestFormDataPart(true, "upload", "File", "/tmp/a.txt"));
+        assertEquals(snapshot.getAuthType(), PerformanceAuthType.API_KEY);
+        assertEquals(snapshot.getAuthApiKeyName(), "X-API-Key");
+        assertEquals(snapshot.getAuthApiKeyValue(), "secret");
+        assertEquals(snapshot.getAuthApiKeyPlacement(), PerformanceRequestSnapshot.AUTH_API_KEY_PLACEMENT_HEADER);
         assertEquals(snapshot.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_NO_PROXY);
         assertEquals(snapshot.getExecutionScope().getGroupVariable("tenant"), "core");
 
@@ -112,8 +116,10 @@ public class PerformanceCorePlanJsonStorageTest {
                 .urlencoded(List.of(new PerformanceRequestKeyValue(false, "ignored", "true")))
                 .bodyType("json")
                 .body("{\"hello\":\"world\"}")
-                .authType(PerformanceAuthType.BEARER)
-                .authToken("token")
+                .authType(PerformanceAuthType.API_KEY)
+                .authApiKeyName("X-API-Key")
+                .authApiKeyValue("secret")
+                .authApiKeyPlacement(PerformanceRequestSnapshot.AUTH_API_KEY_PLACEMENT_HEADER)
                 .followRedirects(false)
                 .cookieJarEnabled(true)
                 .proxyPolicy(PerformanceRequestSnapshot.PROXY_POLICY_NO_PROXY)

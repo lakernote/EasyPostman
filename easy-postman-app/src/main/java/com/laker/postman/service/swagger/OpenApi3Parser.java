@@ -2,6 +2,7 @@ package com.laker.postman.service.swagger;
 
 import com.laker.postman.model.Environment;
 import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_API_KEY;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
 import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
@@ -350,10 +352,16 @@ class OpenApi3Parser {
                         req.setAuthType(AUTH_TYPE_BEARER);
                         req.setAuthToken("");
                     } else {
-                        List<HttpHeader> headers = req.getHeadersList() == null ? new ArrayList<>() : req.getHeadersList();
-                        SwaggerCommonUtil.upsertHeader(headers, name, "");
-                        req.setHeadersList(headers);
+                        req.setAuthType(AUTH_TYPE_API_KEY);
+                        req.setAuthApiKeyName(name);
+                        req.setAuthApiKeyValue("");
+                        req.setAuthApiKeyPlacement(AuthApiKeyPlacement.HEADER.getConstant());
                     }
+                } else if ("query".equals(in)) {
+                    req.setAuthType(AUTH_TYPE_API_KEY);
+                    req.setAuthApiKeyName(name);
+                    req.setAuthApiKeyValue("");
+                    req.setAuthApiKeyPlacement(AuthApiKeyPlacement.QUERY_PARAMS.getConstant());
                 }
                 break;
 

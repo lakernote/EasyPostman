@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_API_KEY;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
@@ -467,6 +468,14 @@ public class PostmanCollectionParser {
                     }
                     req.setAuthUsername(username);
                     req.setAuthPassword(password);
+                } else if ("apikey".equals(authType)) {
+                    req.setAuthType(AUTH_TYPE_API_KEY);
+                    AuthParserUtil.applyPostmanApiKeyAuth(
+                            auth.getJSONArray("apikey"),
+                            req::setAuthApiKeyName,
+                            req::setAuthApiKeyValue,
+                            req::setAuthApiKeyPlacement
+                    );
                 } else if ("bearer".equals(authType)) {
                     req.setAuthType(AUTH_TYPE_BEARER);
                     JSONArray bearerArr = auth.getJSONArray("bearer");

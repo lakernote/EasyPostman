@@ -9,6 +9,7 @@ import lombok.Getter;
 public enum AuthType {
     INHERIT("Inherit auth from parent"),
     NONE("No Auth"),
+    API_KEY("API Key"),
     BASIC("Basic Auth"),
     BEARER("Bearer Token"),
     DIGEST("Digest Auth");

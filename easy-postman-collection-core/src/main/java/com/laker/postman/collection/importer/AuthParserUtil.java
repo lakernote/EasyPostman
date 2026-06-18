@@ -1,6 +1,7 @@
 package com.laker.postman.collection.importer;
 
 import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 
 
 import cn.hutool.json.JSONArray;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Base64;
 
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_API_KEY;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
@@ -27,6 +29,7 @@ public class AuthParserUtil {
     private static final String POSTMAN_AUTH_TYPE_BASIC = "basic";
     private static final String POSTMAN_AUTH_TYPE_BEARER = "bearer";
     private static final String POSTMAN_AUTH_TYPE_DIGEST = "digest";
+    private static final String POSTMAN_AUTH_TYPE_API_KEY = "apikey";
     private static final String KEY_VALUE = "value";
 
     /**
@@ -64,6 +67,10 @@ public class AuthParserUtil {
             }
             group.setAuthUsername(username);
             group.setAuthPassword(password);
+        } else if (POSTMAN_AUTH_TYPE_API_KEY.equals(authType)) {
+            group.setAuthType(AUTH_TYPE_API_KEY);
+            JSONArray apiKeyArr = auth.getJSONArray(POSTMAN_AUTH_TYPE_API_KEY);
+            applyPostmanApiKeyAuth(apiKeyArr, group::setAuthApiKeyName, group::setAuthApiKeyValue, group::setAuthApiKeyPlacement);
         } else if (POSTMAN_AUTH_TYPE_BEARER.equals(authType)) {
             group.setAuthType(AUTH_TYPE_BEARER);
             JSONArray bearerArr = auth.getJSONArray(POSTMAN_AUTH_TYPE_BEARER);
@@ -88,6 +95,26 @@ public class AuthParserUtil {
                         group.setAuthPassword(oObj.getStr(KEY_VALUE, ""));
                     }
                 }
+            }
+        }
+    }
+
+    public static void applyPostmanApiKeyAuth(JSONArray apiKeyArr,
+                                              java.util.function.Consumer<String> keyConsumer,
+                                              java.util.function.Consumer<String> valueConsumer,
+                                              java.util.function.Consumer<String> placementConsumer) {
+        if (apiKeyArr == null) {
+            return;
+        }
+        for (Object o : apiKeyArr) {
+            JSONObject oObj = (JSONObject) o;
+            String key = oObj.getStr("key");
+            if ("key".equals(key)) {
+                keyConsumer.accept(oObj.getStr(KEY_VALUE, ""));
+            } else if ("value".equals(key)) {
+                valueConsumer.accept(oObj.getStr(KEY_VALUE, ""));
+            } else if ("in".equals(key)) {
+                placementConsumer.accept(AuthApiKeyPlacement.fromPostmanValue(oObj.getStr(KEY_VALUE, "header")).getConstant());
             }
         }
     }

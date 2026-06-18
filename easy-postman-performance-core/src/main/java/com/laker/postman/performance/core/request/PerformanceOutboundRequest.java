@@ -81,7 +81,10 @@ public class PerformanceOutboundRequest {
                         source.getAuthType(),
                         source.getAuthUsername(),
                         source.getAuthPassword(),
-                        source.getAuthToken()
+                        source.getAuthToken(),
+                        source.getAuthApiKeyName(),
+                        source.getAuthApiKeyValue(),
+                        source.getAuthApiKeyPlacement()
                 ))
                 .followRedirects(source.getFollowRedirects())
                 .cookieJarEnabled(source.getCookieJarEnabled())

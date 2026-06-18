@@ -32,10 +32,13 @@ public class HttpRequestItem implements Serializable {
     private List<HttpParam> paramsList = new ArrayList<>();
     private List<HttpFormData> formDataList = new ArrayList<>();
     private List<HttpFormUrlencoded> urlencodedList = new ArrayList<>();
-    private String authType = AuthType.INHERIT.getConstant(); // 认证类型（inherit/none/basic/bearer/digest），默认继承
+    private String authType = AuthType.INHERIT.getConstant(); // 认证类型（inherit/none/apiKey/basic/bearer/digest），默认继承
     private String authUsername = ""; // Basic/Digest用户名
     private String authPassword = ""; // Basic/Digest密码
     private String authToken = "";    // Bearer Token
+    private String authApiKeyName = ""; // API Key 名称
+    private String authApiKeyValue = ""; // API Key 值
+    private String authApiKeyPlacement = AuthApiKeyPlacement.HEADER.getConstant(); // API Key 添加位置
     private Boolean followRedirects; // 是否自动跟随重定向，null 表示跟随全局设置
     private Boolean cookieJarEnabled; // 是否启用 Cookie Jar，null 表示使用默认值
     private HttpRequestProxyPolicy proxyPolicy = HttpRequestProxyPolicy.DEFAULT; // 代理策略，默认跟随全局设置

@@ -64,6 +64,9 @@ final class RequestEditorBinder {
         view.authTabPanel.setUsername(draft.getAuthUsername());
         view.authTabPanel.setPassword(draft.getAuthPassword());
         view.authTabPanel.setToken(draft.getAuthToken());
+        view.authTabPanel.setApiKeyName(draft.getAuthApiKeyName());
+        view.authTabPanel.setApiKeyValue(draft.getAuthApiKeyValue());
+        view.authTabPanel.setApiKeyPlacement(draft.getAuthApiKeyPlacement());
         view.requestSettingsPanel.populate(settingsFromDraft(draft));
 
         view.scriptPanel.setPrescript(draft.getPrescript() == null ? "" : draft.getPrescript());
@@ -104,6 +107,9 @@ final class RequestEditorBinder {
                 .authUsername(view.authTabPanel.getUsername())
                 .authPassword(view.authTabPanel.getPassword())
                 .authToken(view.authTabPanel.getToken())
+                .authApiKeyName(view.authTabPanel.getApiKeyName())
+                .authApiKeyValue(view.authTabPanel.getApiKeyValue())
+                .authApiKeyPlacement(view.authTabPanel.getApiKeyPlacement())
                 .followRedirects(settings.getFollowRedirects())
                 .cookieJarEnabled(settings.getCookieJarEnabled())
                 .proxyPolicy(settings.getProxyPolicy())

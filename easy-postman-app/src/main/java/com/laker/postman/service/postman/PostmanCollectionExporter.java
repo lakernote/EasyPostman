@@ -2,7 +2,7 @@ package com.laker.postman.service.postman;
 
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Variable;
-import com.laker.postman.request.model.RequestAuthTypes;
+import com.laker.postman.request.model.AuthApiKeyPlacement;
 import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpFormData;
@@ -20,9 +20,11 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_API_KEY;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BASIC;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
+import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
 
 /**
@@ -61,26 +63,18 @@ public class PostmanCollectionExporter {
 
         // 导出集合级别的认证（从根节点）
         if (rootGroup != null && rootGroup.hasAuth()) {
-            JSONObject auth = new JSONObject();
-            if (AUTH_TYPE_BASIC.equals(rootGroup.getAuthType())) {
-                auth.put("type", "basic");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "username").put("value", rootGroup.getAuthUsername()));
-                arr.add(new JSONObject().put("key", "password").put("value", rootGroup.getAuthPassword()));
-                auth.put("basic", arr);
-            } else if (AUTH_TYPE_BEARER.equals(rootGroup.getAuthType())) {
-                auth.put("type", "bearer");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "token").put("value", rootGroup.getAuthToken()));
-                auth.put("bearer", arr);
-            } else if (AUTH_TYPE_DIGEST.equals(rootGroup.getAuthType())) {
-                auth.put("type", "digest");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "username").put("value", rootGroup.getAuthUsername()));
-                arr.add(new JSONObject().put("key", "password").put("value", rootGroup.getAuthPassword()));
-                auth.put("digest", arr);
+            JSONObject auth = authJson(
+                    rootGroup.getAuthType(),
+                    rootGroup.getAuthUsername(),
+                    rootGroup.getAuthPassword(),
+                    rootGroup.getAuthToken(),
+                    rootGroup.getAuthApiKeyName(),
+                    rootGroup.getAuthApiKeyValue(),
+                    rootGroup.getAuthApiKeyPlacement()
+            );
+            if (auth != null) {
+                collection.put("auth", auth);
             }
-            collection.put("auth", auth);
         }
 
         // 导出集合级别的脚本（从根节点）
@@ -153,26 +147,18 @@ public class PostmanCollectionExporter {
         }
 
         if (group.hasAuth()) {
-            JSONObject auth = new JSONObject();
-            if (AUTH_TYPE_BASIC.equals(group.getAuthType())) {
-                auth.put("type", "basic");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "username").put("value", group.getAuthUsername()));
-                arr.add(new JSONObject().put("key", "password").put("value", group.getAuthPassword()));
-                auth.put("basic", arr);
-            } else if (AUTH_TYPE_BEARER.equals(group.getAuthType())) {
-                auth.put("type", "bearer");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "token").put("value", group.getAuthToken()));
-                auth.put("bearer", arr);
-            } else if (AUTH_TYPE_DIGEST.equals(group.getAuthType())) {
-                auth.put("type", "digest");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "username").put("value", group.getAuthUsername()));
-                arr.add(new JSONObject().put("key", "password").put("value", group.getAuthPassword()));
-                auth.put("digest", arr);
+            JSONObject auth = authJson(
+                    group.getAuthType(),
+                    group.getAuthUsername(),
+                    group.getAuthPassword(),
+                    group.getAuthToken(),
+                    group.getAuthApiKeyName(),
+                    group.getAuthApiKeyValue(),
+                    group.getAuthApiKeyPlacement()
+            );
+            if (auth != null) {
+                folder.put("auth", auth);
             }
-            folder.put("auth", auth);
         }
 
         JSONArray events = new JSONArray();
@@ -328,26 +314,16 @@ public class PostmanCollectionExporter {
             request.put("body", body);
         }
         // auth
-        if (item.getAuthType() != null && !AUTH_TYPE_NONE.equals(item.getAuthType())) {
-            JSONObject auth = new JSONObject();
-            if (AUTH_TYPE_BASIC.equals(item.getAuthType())) {
-                auth.put("type", "basic");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "username").put("value", item.getAuthUsername()));
-                arr.add(new JSONObject().put("key", "password").put("value", item.getAuthPassword()));
-                auth.put("basic", arr);
-            } else if (AUTH_TYPE_BEARER.equals(item.getAuthType())) {
-                auth.put("type", "bearer");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "token").put("value", item.getAuthToken()));
-                auth.put("bearer", arr);
-            } else if (AUTH_TYPE_DIGEST.equals(item.getAuthType())) {
-                auth.put("type", "digest");
-                JSONArray arr = new JSONArray();
-                arr.add(new JSONObject().put("key", "username").put("value", item.getAuthUsername()));
-                arr.add(new JSONObject().put("key", "password").put("value", item.getAuthPassword()));
-                auth.put("digest", arr);
-            }
+        JSONObject auth = authJson(
+                item.getAuthType(),
+                item.getAuthUsername(),
+                item.getAuthPassword(),
+                item.getAuthToken(),
+                item.getAuthApiKeyName(),
+                item.getAuthApiKeyValue(),
+                item.getAuthApiKeyPlacement()
+        );
+        if (auth != null) {
             request.put("auth", auth);
         }
         postmanItem.put("request", request);
@@ -392,6 +368,55 @@ public class PostmanCollectionExporter {
         if (description != null && !description.trim().isEmpty()) {
             target.put("description", description);
         }
+    }
+
+    private static JSONObject authJson(String authType,
+                                       String username,
+                                       String password,
+                                       String token,
+                                       String apiKeyName,
+                                       String apiKeyValue,
+                                       String apiKeyPlacement) {
+        if (authType == null || AUTH_TYPE_NONE.equals(authType) || AUTH_TYPE_INHERIT.equals(authType)) {
+            return null;
+        }
+
+        JSONObject auth = new JSONObject();
+        if (AUTH_TYPE_BASIC.equals(authType)) {
+            auth.put("type", "basic");
+            JSONArray arr = new JSONArray();
+            arr.add(new JSONObject().put("key", "username").put("value", username));
+            arr.add(new JSONObject().put("key", "password").put("value", password));
+            auth.put("basic", arr);
+            return auth;
+        }
+        if (AUTH_TYPE_API_KEY.equals(authType)) {
+            auth.put("type", "apikey");
+            JSONArray arr = new JSONArray();
+            arr.add(new JSONObject().put("key", "key").put("value", apiKeyName));
+            arr.add(new JSONObject().put("key", "value").put("value", apiKeyValue));
+            arr.add(new JSONObject()
+                    .put("key", "in")
+                    .put("value", AuthApiKeyPlacement.fromConstant(apiKeyPlacement).getPostmanValue()));
+            auth.put("apikey", arr);
+            return auth;
+        }
+        if (AUTH_TYPE_BEARER.equals(authType)) {
+            auth.put("type", "bearer");
+            JSONArray arr = new JSONArray();
+            arr.add(new JSONObject().put("key", "token").put("value", token));
+            auth.put("bearer", arr);
+            return auth;
+        }
+        if (AUTH_TYPE_DIGEST.equals(authType)) {
+            auth.put("type", "digest");
+            JSONArray arr = new JSONArray();
+            arr.add(new JSONObject().put("key", "username").put("value", username));
+            arr.add(new JSONObject().put("key", "password").put("value", password));
+            auth.put("digest", arr);
+            return auth;
+        }
+        return null;
     }
 
     /**

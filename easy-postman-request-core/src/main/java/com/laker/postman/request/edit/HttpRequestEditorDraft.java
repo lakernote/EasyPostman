@@ -38,6 +38,9 @@ public class HttpRequestEditorDraft {
     String authUsername;
     String authPassword;
     String authToken;
+    String authApiKeyName;
+    String authApiKeyValue;
+    String authApiKeyPlacement;
     Boolean followRedirects;
     Boolean cookieJarEnabled;
     @Builder.Default

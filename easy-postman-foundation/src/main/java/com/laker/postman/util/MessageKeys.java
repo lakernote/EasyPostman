@@ -384,6 +384,16 @@ public final class MessageKeys {
     public static final String VARIABLE_TYPE_GLOBAL = "variable.type.global";
     public static final String VARIABLE_TYPE_BUILT_IN = "variable.type.built_in";
     public static final String VARIABLE_TYPE_UNDEFINED = "variable.type.undefined";
+    public static final String REQUEST_ASSISTANT_COLLAPSE = "request.assistant.collapse";
+    public static final String REQUEST_ASSISTANT_CODE_SNIPPET_TITLE = "request.assistant.code_snippet.title";
+    public static final String REQUEST_ASSISTANT_CODE_COPIED = "request.assistant.code_snippet.copied";
+    public static final String REQUEST_ASSISTANT_VARIABLES_TITLE = "request.assistant.variables.title";
+    public static final String REQUEST_ASSISTANT_VARIABLES_EMPTY = "request.assistant.variables.empty";
+    public static final String REQUEST_ASSISTANT_VARIABLES_HINT = "request.assistant.variables.hint";
+    public static final String REQUEST_ASSISTANT_USED_VARIABLES = "request.assistant.variables.used";
+    public static final String REQUEST_ASSISTANT_ALL_VARIABLES = "request.assistant.variables.all";
+    public static final String REQUEST_ASSISTANT_UNDEFINED_VARIABLES = "request.assistant.variables.undefined";
+    public static final String REQUEST_ASSISTANT_VARIABLE_UNRESOLVED = "request.assistant.variables.unresolved";
 
     // ============ 快捷键设置 ============
     public static final String SHORTCUT_SETTINGS_TITLE = "shortcut.settings.title";

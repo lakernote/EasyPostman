@@ -110,6 +110,33 @@ public class SidebarConsoleAreaTest {
     }
 
     @Test
+    public void sideAssistantShouldStayEastWhileBottomToolbarSpansWindow() {
+        JPanel owner = new JPanel(new BorderLayout());
+        JPanel sideAssistant = new JPanel();
+        SidebarConsoleArea consoleArea = new SidebarConsoleArea(
+                owner,
+                noopBottomBar(),
+                new JPanel(),
+                sideAssistant
+        );
+        JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.LEFT);
+        tabbedPane.addTab("Requests", new SidebarTabContentHost(new JPanel()));
+
+        consoleArea.setTabbedPane(tabbedPane);
+
+        BorderLayout layout = (BorderLayout) owner.getLayout();
+        assertSame(layout.getLayoutComponent(BorderLayout.CENTER), tabbedPane);
+        assertSame(layout.getLayoutComponent(BorderLayout.EAST), sideAssistant);
+        assertTrue(layout.getLayoutComponent(BorderLayout.SOUTH) instanceof JPanel);
+
+        consoleArea.showConsole();
+
+        assertSame(layout.getLayoutComponent(BorderLayout.CENTER), tabbedPane);
+        assertSame(layout.getLayoutComponent(BorderLayout.EAST), sideAssistant);
+        assertTrue(layout.getLayoutComponent(BorderLayout.SOUTH) instanceof JPanel);
+    }
+
+    @Test
     public void visibleConsoleShouldMoveWhenSelectedTabChanges() {
         JPanel owner = new JPanel(new BorderLayout());
         SidebarConsoleArea consoleArea = new SidebarConsoleArea(

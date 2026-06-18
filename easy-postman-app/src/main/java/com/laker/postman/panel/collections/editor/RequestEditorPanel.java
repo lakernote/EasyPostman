@@ -5,6 +5,7 @@ import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tab.TabbedPaneDragHandler;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.editor.request.RequestEditSubPanelType;
 import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
@@ -336,6 +337,25 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     public void updateAllRequestEditorTabsVisibility() {
         tabStateController.updateAllRequestEditorTabsVisibility();
+    }
+
+    /**
+     * Snapshot used by the global right-side request assistant.
+     */
+    public HttpRequestItem getCurrentRequestSnapshotForAssistant() {
+        if (tabStateController == null) {
+            return null;
+        }
+        RequestEditSubPanel currentTab = tabStateController.currentRequestTab();
+        if (currentTab == null || currentTab.isSavedResponseTab()
+                || currentTab.getPanelType() == RequestEditSubPanelType.PERFORMANCE_SNAPSHOT) {
+            return null;
+        }
+        HttpRequestItem request = currentTab.getCurrentRequest();
+        if (request == null || request.getProtocol() == null) {
+            return request;
+        }
+        return request.getProtocol().isHttpProtocol() ? request : null;
     }
 
 }

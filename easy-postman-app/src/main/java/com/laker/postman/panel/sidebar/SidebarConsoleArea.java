@@ -29,19 +29,25 @@ final class SidebarConsoleArea {
     private final JPanel consoleContainer = new JPanel(new BorderLayout());
     private final JPanel bottomBarContainer = new JPanel(new BorderLayout());
     private final JComponent consolePanel;
+    private final JComponent sideAssistant;
     private JTabbedPane tabbedPane;
     private SidebarTabContentHost consoleHost;
     private JSplitPane consoleSplitPane;
     private boolean consoleVisible;
 
     SidebarConsoleArea(JPanel owner, SidebarBottomBar bottomBar) {
-        this(owner, bottomBar, UiSingletonFactory.getInstance(ConsolePanel.class));
+        this(owner, bottomBar, UiSingletonFactory.getInstance(ConsolePanel.class), null);
     }
 
     SidebarConsoleArea(JPanel owner, SidebarBottomBar bottomBar, JComponent consolePanel) {
+        this(owner, bottomBar, consolePanel, null);
+    }
+
+    SidebarConsoleArea(JPanel owner, SidebarBottomBar bottomBar, JComponent consolePanel, JComponent sideAssistant) {
         this.owner = owner;
         this.bottomBar = bottomBar;
         this.consolePanel = consolePanel;
+        this.sideAssistant = sideAssistant;
         if (consolePanel instanceof ConsolePanel panel) {
             panel.setHideAction(e -> hideConsole());
         }
@@ -99,6 +105,7 @@ final class SidebarConsoleArea {
 
     private void renderVisibleConsole() {
         owner.add(tabbedPane, BorderLayout.CENTER);
+        renderSideAssistant();
         renderBottomBar();
         owner.add(bottomBarContainer, BorderLayout.SOUTH);
         int selectedIndex = tabbedPane.getSelectedIndex();
@@ -166,7 +173,14 @@ final class SidebarConsoleArea {
         renderBottomBar();
 
         owner.add(tabbedPane, BorderLayout.CENTER);
+        renderSideAssistant();
         owner.add(bottomBarContainer, BorderLayout.SOUTH);
+    }
+
+    private void renderSideAssistant() {
+        if (sideAssistant != null) {
+            owner.add(sideAssistant, BorderLayout.EAST);
+        }
     }
 
     private void renderBottomBar() {

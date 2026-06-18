@@ -4,10 +4,12 @@ import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
+import com.laker.postman.panel.collections.editor.request.RequestSideAssistantPanel;
 import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.performance.PerformanceUiWarmup;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.panel.sidebar.global.GlobalVariablesDialog;
+import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -35,6 +37,7 @@ public class SidebarTabPanel extends UiSingletonPanel {
     private transient List<SidebarTab> visibleTabs;
     private SidebarBottomBar bottomBar;
     private SidebarConsoleArea consoleArea;
+    private RequestSideAssistantPanel requestSideAssistantPanel;
     private boolean sidebarExpanded = false; // 侧边栏展开状态
     private CookieManagerDialog cookieManagerDialog; // Cookie管理器对话框实例
     private GlobalVariablesDialog globalVariablesDialog; // 全局变量对话框实例
@@ -71,7 +74,13 @@ public class SidebarTabPanel extends UiSingletonPanel {
         preloadInitialContent();
 
         bottomBar = createBottomBar();
-        consoleArea = new SidebarConsoleArea(this, bottomBar);
+        requestSideAssistantPanel = new RequestSideAssistantPanel(this::currentRequestSnapshot);
+        consoleArea = new SidebarConsoleArea(
+                this,
+                bottomBar,
+                UiSingletonFactory.getInstance(ConsolePanel.class),
+                requestSideAssistantPanel
+        );
         consoleArea.setTabbedPane(tabbedPane);
     }
 
@@ -89,6 +98,16 @@ public class SidebarTabPanel extends UiSingletonPanel {
     private void toggleConsoleArea() {
         if (consoleArea != null) {
             consoleArea.toggleConsole();
+        }
+    }
+
+    private HttpRequestItem currentRequestSnapshot() {
+        try {
+            return UiSingletonFactory.getExistingInstance(RequestEditorPanel.class)
+                    .map(RequestEditorPanel::getCurrentRequestSnapshotForAssistant)
+                    .orElse(null);
+        } catch (Exception ignored) {
+            return null;
         }
     }
 

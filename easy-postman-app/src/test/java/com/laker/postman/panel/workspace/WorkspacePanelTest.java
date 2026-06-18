@@ -153,7 +153,7 @@ public class WorkspacePanelTest {
         assertTrue(detailSource.contains("GitOperation.PUSH"));
         assertTrue(detailSource.contains("MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE"));
         assertTrue(detailSource.contains("MessageKeys.WORKSPACE_GIT_HISTORY"));
-        assertTrue(detailSource.contains("\"icons/git-remote.svg\", gitActions.remoteConfigAction()"));
+        assertTrue(detailSource.contains("\"icons/git-remote-config.svg\", gitActions.remoteConfigAction()"));
         assertTrue(detailSource.contains("\"icons/git.svg\", gitActions.branchManagementAction()"));
         assertTrue(detailSource.contains("BUTTON_TYPE_TOOLBAR_BUTTON"));
         assertTrue(detailSource.contains("setAccessibleName"));
@@ -161,32 +161,37 @@ public class WorkspacePanelTest {
 
     @Test
     public void remoteRepositoryConfigurationShouldUseDistinctToolbarIcon() throws IOException {
-        Path remoteIconPath = repositoryRoot().resolve("easy-postman-app/src/main/resources/icons/git-remote.svg");
-        Path branchIconPath = repositoryRoot().resolve("easy-postman-app/src/main/resources/icons/git.svg");
-        String remoteIcon = Files.readString(remoteIconPath);
-        String branchIcon = Files.readString(branchIconPath);
+        Path remoteWorkspaceIconPath = repositoryRoot().resolve("easy-postman-app/src/main/resources/icons/git-remote.svg");
+        Path remoteConfigIconPath = repositoryRoot().resolve("easy-postman-app/src/main/resources/icons/git-remote-config.svg");
+        String remoteWorkspaceIcon = Files.readString(remoteWorkspaceIconPath);
+        String remoteConfigIcon = Files.readString(remoteConfigIconPath);
 
-        assertFalse(remoteIcon.equals(branchIcon));
-        assertTrue(remoteIcon.contains("stroke=\"currentColor\""));
-        assertTrue(remoteIcon.contains("stroke-width=\"2\""));
-        assertTrue(remoteIcon.contains("M12 13v8"));
-        assertFalse(remoteIcon.contains("<circle cx=\"18\""));
-        assertFalse(remoteIcon.contains("stroke=\"#"));
+        assertFalse(remoteConfigIcon.equals(remoteWorkspaceIcon));
+        assertTrue(remoteConfigIcon.contains("stroke=\"currentColor\""));
+        assertTrue(remoteConfigIcon.contains("stroke-width=\"2\""));
+        assertTrue(remoteConfigIcon.contains("m10.852 19.772"));
+        assertFalse(remoteConfigIcon.contains("M12 13v8"));
+        assertFalse(remoteConfigIcon.contains("stroke=\"#"));
     }
 
     @Test
-    public void remoteGitWorkspaceListIconsShouldFollowDarkTheme() throws IOException {
+    public void remoteGitWorkspaceListIconsShouldUseColoredGitStatusIcon() throws IOException {
         Path workspaceListRendererPath = repositoryRoot().resolve(
                 "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/WorkspaceListCellRenderer.java");
         Path workspaceSelectionDialogPath = repositoryRoot().resolve(
                 "easy-postman-app/src/main/java/com/laker/postman/common/component/dialog/WorkspaceSelectionDialog.java");
+        Path remoteIconPath = repositoryRoot().resolve("easy-postman-app/src/main/resources/icons/git-remote.svg");
         String listRenderer = Files.readString(workspaceListRendererPath);
         String selectionDialog = Files.readString(workspaceSelectionDialogPath);
+        String remoteIcon = Files.readString(remoteIconPath);
 
-        assertTrue(listRenderer.contains("IconUtil.createThemed(\"icons/git-remote.svg\", 20, 20)"));
-        assertTrue(selectionDialog.contains("IconUtil.createThemed(\"icons/git-remote.svg\", 20, 20)"));
-        assertFalse(listRenderer.contains("IconUtil.create(\"icons/git-remote.svg\""));
-        assertFalse(selectionDialog.contains("IconUtil.create(\"icons/git-remote.svg\""));
+        assertTrue(listRenderer.contains("IconUtil.create(\"icons/git-remote.svg\", 20, 20)"));
+        assertTrue(selectionDialog.contains("IconUtil.create(\"icons/git-remote.svg\", 20, 20)"));
+        assertFalse(listRenderer.contains("IconUtil.createThemed(\"icons/git-remote.svg\""));
+        assertFalse(selectionDialog.contains("IconUtil.createThemed(\"icons/git-remote.svg\""));
+        assertTrue(remoteIcon.contains("stroke=\"#f97316\""));
+        assertTrue(remoteIcon.contains("<circle cx=\"18\""));
+        assertFalse(remoteIcon.contains("stroke=\"currentColor\""));
     }
 
     @Test

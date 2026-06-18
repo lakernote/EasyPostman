@@ -260,7 +260,7 @@ public class WorkspaceSelectionDialog extends JDialog {
                 return IconUtil.create("icons/git-warning.svg", 20, 20);
             }
             if (workspace.getGitRepoSource() == GitRepoSource.CLONED) {
-                return IconUtil.createThemed("icons/git-remote.svg", 20, 20);
+                return IconUtil.create("icons/git-remote.svg", 20, 20);
             }
             return IconUtil.create("icons/git.svg", 20, 20);
         }

@@ -265,7 +265,7 @@ public class WorkspaceDetailPanel extends JPanel {
         addGitOperationButton(panel, GitOperation.PULL, gitActions.pullAction());
         addGitOperationButton(panel, GitOperation.PUSH, gitActions.pushAction());
         addHeaderActionButton(panel, I18nUtil.getMessage(MessageKeys.WORKSPACE_REMOTE_CONFIG_TITLE),
-                "icons/git-remote.svg", gitActions.remoteConfigAction());
+                "icons/git-remote-config.svg", gitActions.remoteConfigAction());
         addHeaderActionButton(panel, I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_DIFF),
                 "icons/detail.svg", gitActions.diffAction());
         addHeaderActionButton(panel, I18nUtil.getMessage(MessageKeys.WORKSPACE_GIT_BRANCHES),

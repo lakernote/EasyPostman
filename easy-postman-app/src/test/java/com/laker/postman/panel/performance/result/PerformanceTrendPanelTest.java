@@ -180,6 +180,7 @@ public class PerformanceTrendPanelTest extends AbstractSwingUiTest {
     public void shouldSeparateTrendViewControlsFromMetricFilters() throws Exception {
         clearSingletonInstance(PerformanceTrendPanel.class);
         PerformanceTrendPanel panel = UiSingletonFactory.getInstance(PerformanceTrendPanel.class);
+        panel.setAvailableProtocols(EnumSet.of(PerformanceProtocol.HTTP, PerformanceProtocol.WEBSOCKET));
         panel.setSize(new Dimension(1500, 700));
         layoutRecursively(panel);
 

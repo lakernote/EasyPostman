@@ -51,6 +51,8 @@ public class FormUrlencodedTablePanel extends AbstractTablePanel<HttpFormUrlenco
         setupCellRenderersAndEditors();
         if (popupMenuEnabled) {
             setupTableListeners();
+        } else {
+            addDeleteButtonListener();
         }
         if (autoAppendRowEnabled) {
             addAutoAppendRowFeature();

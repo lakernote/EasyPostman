@@ -64,6 +64,8 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
         setupCellRenderersAndEditors();
         if (popupMenuEnabled) {
             setupTableListeners();
+        } else {
+            addDeleteButtonListener();
         }
         if (autoAppendRowEnabled) {
             addAutoAppendRowFeature();
@@ -308,10 +310,8 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
             setFont(table.getTableHeader().getFont());
             setBackground(table.getTableHeader().getBackground());
             setForeground(table.getTableHeader().getForeground());
-            setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, rightBoundary ? 1 : 0, table.getGridColor()),
-                    BorderFactory.createEmptyBorder(0, leftPadding, 0, rightPadding)
-            ));
+            setBorder(TableUIConstants.createFormDataGroupedHeaderBorder(
+                    table.getGridColor(), rightBoundary, leftPadding, rightPadding));
             return this;
         }
     }

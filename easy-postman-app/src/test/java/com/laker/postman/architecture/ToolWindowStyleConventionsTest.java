@@ -349,11 +349,13 @@ public class ToolWindowStyleConventionsTest {
                 .filter(path -> {
                     String source = readUnchecked(ROOT.resolve(path));
                     return !source.contains("ToolWindowActionToolbar")
+                            && !source.contains("ToolWindowSidebarToolbar")
                             && !source.contains("ToolboxWorkbench.");
                 })
                 .toList();
 
-        assertTrue(violations.isEmpty(), "Use ToolWindowActionToolbar for compact tool-window action rows: " + violations);
+        assertTrue(violations.isEmpty(),
+                "Use shared toolbar metrics for compact tool-window action rows: " + violations);
     }
 
     @Test

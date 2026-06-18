@@ -99,6 +99,20 @@ public class TableUIConstants {
     }
 
     /**
+     * 创建 form-data Key/Type 分组表头边框。
+     * 该表头是表格结构强调，不应在具体面板里散落 legacy Swing border 组合。
+     */
+    public static Border createFormDataGroupedHeaderBorder(Color gridColor,
+                                                          boolean rightBoundary,
+                                                          int leftPadding,
+                                                          int rightPadding) {
+        return BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, rightBoundary ? 1 : 0, gridColor),
+                BorderFactory.createEmptyBorder(0, leftPadding, 0, rightPadding)
+        );
+    }
+
+    /**
      * 获取指定行的非选中背景色，保持编辑态和渲染态斑马纹一致。
      */
     public static Color getRowBackground(JTable table, int row) {

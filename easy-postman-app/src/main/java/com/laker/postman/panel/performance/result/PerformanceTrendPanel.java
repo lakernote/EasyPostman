@@ -5,6 +5,7 @@ import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 
 
 import com.laker.postman.common.UiSingletonPanel;
+import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SegmentedButtonBar;
 import com.laker.postman.common.constants.ModernColors;
@@ -94,6 +95,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     private final List<TrendView> trendViews = new ArrayList<>();
     private final Map<PerformanceProtocol, JToggleButton> protocolButtons = new EnumMap<>(PerformanceProtocol.class);
     private JPanel protocolSwitcherRow;
+    private JComponent protocolSwitcher;
     private JPanel metricControlsCards;
     private JPanel protocolCards;
     private PerformanceProtocol selectedProtocol = PerformanceProtocol.HTTP;
@@ -188,7 +190,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
                 "[]6[]"
         ));
         ToolWindowSurfaceStyle.applyToolWindowToolbarSeparator(toolbar, 7, 10, 8, 10);
-        protocolSwitcherRow = createProtocolSwitcher(protocolCards, metricControlsCards);
+        protocolSwitcherRow = createProtocolSwitcher();
         toolbar.add(protocolSwitcherRow, "growx, wrap");
         toolbar.add(createMetricSelector(metricControlsCards), "growx, wmin 0");
         return toolbar;
@@ -197,7 +199,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     private JPanel createMetricSelector(JPanel metricControlsCards) {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 0, fillx, novisualpadding, gap 0",
-                "[]8[grow,fill]push[pref!,right]",
+                "[]8[grow,fill]",
                 "[]"
         ));
         panel.setOpaque(false);
@@ -208,11 +210,10 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
 
         panel.add(label);
         panel.add(metricControlsCards, "growx, wmin 0");
-        panel.add(createModeSwitcher());
         return panel;
     }
 
-    private JPanel createProtocolSwitcher(JPanel protocolCards, JPanel metricControlsCards) {
+    private JPanel createProtocolSwitcher() {
         JPanel row = new JPanel(new MigLayout(
                 "insets 0, fillx, novisualpadding, hidemode 3, gap 0",
                 "[pref!,left]push[]",
@@ -233,7 +234,9 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
             });
             protocolButtons.put(protocol, button);
         }
+        protocolSwitcher = switcher;
         row.add(switcher);
+        row.add(ToolWindowActionToolbar.inlineRight(createModeSwitcher()), "align right");
         return row;
     }
 
@@ -247,7 +250,8 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
         if (!availableProtocols.contains(selectedProtocol)) {
             selectedProtocol = firstAvailableProtocol();
         }
-        protocolSwitcherRow.setVisible(availableProtocols.size() > 1);
+        protocolSwitcher.setVisible(availableProtocols.size() > 1);
+        protocolSwitcherRow.setVisible(true);
         showProtocol(selectedProtocol);
         revalidate();
         repaint();

@@ -2,7 +2,7 @@ package com.laker.postman.panel.performance.threadgroup;
 
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyJSpinner;
-import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
+import com.laker.postman.common.component.button.SegmentedButtonBar;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
@@ -71,7 +71,7 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void fixedExecutionModeShouldUseBorderlessInlineToggleContainer() {
+    public void fixedExecutionModeShouldUseSharedCompactSegmentedButtonBar() {
         ThreadGroupPropertyPanel panel = panel();
         JToggleButton timeButton = findToggleButton(
                 panel,
@@ -79,8 +79,8 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
         );
 
         assertNotNull(timeButton);
-        assertTrue(!(timeButton.getParent() instanceof SegmentedButtonGroupPanel),
-                "execution mode should not use the heavy outer segmented container in this dense form");
+        assertTrue(timeButton.getParent() instanceof SegmentedButtonBar<?>,
+                "execution mode should use the shared segmented switch component");
     }
 
     @Test
@@ -236,9 +236,9 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
         JComponent group = (JComponent) timeButton.getParent();
         assertNotNull(group.getBorder());
         Insets insets = group.getBorder().getBorderInsets(group);
-        assertTrue(insets.left >= 3, "execution mode group should keep selected segment clear of rounded corners");
-        assertTrue(insets.top >= 3, "execution mode group should keep selected segment clear of rounded corners");
-        assertTrue(group.getPreferredSize().height <= 34,
+        assertTrue(insets.left >= 2, "execution mode group should keep selected segment clear of rounded corners");
+        assertTrue(insets.top >= 2, "execution mode group should keep selected segment clear of rounded corners");
+        assertTrue(group.getPreferredSize().height <= 30,
                 "execution mode group should stay compact, preferred height: " + group.getPreferredSize().height);
     }
 

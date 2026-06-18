@@ -12,8 +12,7 @@ import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.common.component.button.ImportButton;
 import com.laker.postman.common.component.button.PlusButton;
 import com.laker.postman.common.component.button.RefreshButton;
-import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
-import com.laker.postman.common.component.button.SegmentedToggleButton;
+import com.laker.postman.common.component.button.SegmentedButtonBar;
 import com.laker.postman.common.component.button.StartButton;
 import com.laker.postman.common.component.button.StopButton;
 import com.laker.postman.common.constants.ModernColors;
@@ -528,31 +527,25 @@ final class PerformancePanelViewFactory {
         ToolWindowSurfaceStyle.applyCard(toolbar);
         toolbar.setBorder(BorderFactory.createEmptyBorder(5, 8, 5, 8));
 
-        JToggleButton resultTableButton = new SegmentedToggleButton(
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE),
-                true
-        );
-        resultTableButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TABLE_TOOLTIP));
-        JToggleButton reportButton = new SegmentedToggleButton(
-                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT),
-                false
-        );
-        reportButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_REPORT_TOOLTIP));
-        JToggleButton trendButton = new SegmentedToggleButton(
+        SegmentedButtonBar<Integer> switcher = new SegmentedButtonBar<>(FlowLayout.LEFT);
+        JToggleButton trendButton = switcher.addOption(
+                RESULT_TAB_TREND,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_TREND),
                 false
         );
         trendButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_ENABLED_TOOLTIP));
-
-        ButtonGroup viewGroup = new ButtonGroup();
-        viewGroup.add(resultTableButton);
-        viewGroup.add(reportButton);
-        viewGroup.add(trendButton);
-
-        JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
-        switcher.add(trendButton);
-        switcher.add(reportButton);
-        switcher.add(resultTableButton);
+        JToggleButton reportButton = switcher.addOption(
+                RESULT_TAB_REPORT,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_REPORT),
+                false
+        );
+        reportButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_REPORT_TOOLTIP));
+        JToggleButton resultTableButton = switcher.addOption(
+                RESULT_TAB_TABLE,
+                I18nUtil.getMessage(MessageKeys.PERFORMANCE_TAB_RESULT_TREE),
+                true
+        );
+        resultTableButton.setToolTipText(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_TABLE_TOOLTIP));
 
         JCheckBox efficientCheckBox = createCompactDetailsCheckBox(
                 parentComponent,

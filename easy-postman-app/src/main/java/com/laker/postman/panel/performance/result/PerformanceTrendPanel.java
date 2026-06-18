@@ -6,8 +6,7 @@ import com.laker.postman.performance.core.model.PerformanceTrendSnapshot;
 
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
-import com.laker.postman.common.component.button.SegmentedToggleButton;
+import com.laker.postman.common.component.button.SegmentedButtonBar;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.util.FontsUtil;
@@ -214,16 +213,16 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     }
 
     private JPanel createProtocolSwitcher(JPanel protocolCards, JPanel metricControlsCards) {
-        ButtonGroup protocolGroup = new ButtonGroup();
         JPanel row = new JPanel(new MigLayout(
                 "insets 0, fillx, novisualpadding, hidemode 3, gap 0",
                 "[pref!,left]push[]",
                 "[]"
         ));
         row.setOpaque(false);
-        JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
+        SegmentedButtonBar<PerformanceProtocol> switcher = new SegmentedButtonBar<>(FlowLayout.LEFT);
         for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
-            JToggleButton button = new SegmentedToggleButton(
+            JToggleButton button = switcher.addOption(
+                    protocol,
                     PerformanceProtocolLabels.displayName(protocol),
                     protocol == PerformanceProtocol.HTTP
             );
@@ -232,9 +231,7 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
                     showProtocol(protocol);
                 }
             });
-            protocolGroup.add(button);
             protocolButtons.put(protocol, button);
-            switcher.add(button);
         }
         row.add(switcher);
         return row;
@@ -292,24 +289,19 @@ public class PerformanceTrendPanel extends UiSingletonPanel implements Performan
     }
 
     private JPanel createModeSwitcher() {
-        JToggleButton separateButton = new SegmentedToggleButton(
+        SegmentedButtonBar<String> modePanel = new SegmentedButtonBar<>(FlowLayout.RIGHT);
+        JToggleButton separateButton = modePanel.addOption(
+                SEPARATE_VIEW,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_SEPARATE_CHARTS),
                 true
         );
-        JToggleButton combinedButton = new SegmentedToggleButton(
+        JToggleButton combinedButton = modePanel.addOption(
+                COMBINED_VIEW,
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_TREND_COMBINED_CHART),
                 false
         );
-        ButtonGroup modeGroup = new ButtonGroup();
-        modeGroup.add(separateButton);
-        modeGroup.add(combinedButton);
         separateButton.addActionListener(e -> showChartMode(SEPARATE_VIEW));
         combinedButton.addActionListener(e -> showChartMode(COMBINED_VIEW));
-
-        JPanel modePanel = new SegmentedButtonGroupPanel(FlowLayout.RIGHT);
-        modePanel.setOpaque(false);
-        modePanel.add(separateButton);
-        modePanel.add(combinedButton);
         return modePanel;
     }
 

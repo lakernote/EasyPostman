@@ -8,11 +8,11 @@ import java.awt.Color;
 @UtilityClass
 class SegmentedButtonTheme {
     Color segmentBackground() {
-        return ModernColors.getInputBackgroundColor();
+        return ModernColors.getCardBackgroundColor();
     }
 
     Color segmentBorder() {
-        return ModernColors.getBorderLightColor();
+        return ModernColors.getBorderMediumColor();
     }
 
     Color segmentHoverBackground() {

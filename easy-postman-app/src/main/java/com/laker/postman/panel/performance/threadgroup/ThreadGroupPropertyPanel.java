@@ -3,7 +3,7 @@ package com.laker.postman.panel.performance.threadgroup;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.component.button.SegmentedToggleButton;
+import com.laker.postman.common.component.button.SegmentedButtonBar;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
@@ -30,11 +30,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private static final int LABEL_FIELD_GAP = 8;
     private static final int FIELD_PAIR_GAP = 14;
     private static final int FORM_ROW_GAP = 8;
-    private static final int EXECUTION_SEGMENT_GAP = 1;
-    private static final int EXECUTION_SEGMENT_GROUP_PADDING = 3;
-    private static final int EXECUTION_SEGMENT_GROUP_ARC = 10;
-    private static final int EXECUTION_SEGMENT_GROUP_EXTRA_WIDTH = 0;
-    private static final int EXECUTION_TOGGLE_HORIZONTAL_INSET = 6;
     private static final int CONFIG_PREVIEW_GAP = 36;
 
     private final EasyComboBox<ThreadGroupData.ThreadMode> modeComboBox;
@@ -47,6 +42,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JPanel fixedPanel;
     private final EasyJSpinner fixedNumThreadsSpinner;
     private final EasyJSpinner fixedLoopsSpinner;
+    private final SegmentedButtonBar<Boolean> executionModeBar;
     private final JToggleButton useLoopCountButton;
     private final JToggleButton useTimeCheckBox;
     private final EasyJSpinner durationSpinner;
@@ -109,17 +105,17 @@ public class ThreadGroupPropertyPanel extends JPanel {
         fixedPanel.setOpaque(false);
         fixedNumThreadsSpinner = standardThreadCountSpinner(1);
         fixedLoopsSpinner = standardIntSpinner(1, 1, null, 1);
-        useLoopCountButton = createExecutionToggleButton(
+        executionModeBar = new SegmentedButtonBar<>(FlowLayout.CENTER, SegmentedButtonBar.Size.COMPACT);
+        useLoopCountButton = executionModeBar.addOption(
+                Boolean.FALSE,
                 I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_COUNT),
                 true
         );
-        useTimeCheckBox = createExecutionToggleButton(
+        useTimeCheckBox = executionModeBar.addOption(
+                Boolean.TRUE,
                 I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_EXECUTION_TIME),
                 false
         );
-        ButtonGroup executionModeGroup = new ButtonGroup();
-        executionModeGroup.add(useLoopCountButton);
-        executionModeGroup.add(useTimeCheckBox);
         durationSpinner = standardIntSpinner(60, 1, null, 10);
 
         // 2. 递增模式面板
@@ -173,8 +169,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
             }
         });
 
-        useLoopCountButton.addActionListener(e -> updateFixedExecutionModeState());
-        useTimeCheckBox.addActionListener(e -> updateFixedExecutionModeState());
+        executionModeBar.setSelectionListener(useTime -> updateFixedExecutionModeState());
         updateFixedExecutionModeState();
 
         // 预览图表区域
@@ -243,17 +238,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private static EasyJSpinner standardSizedSpinner(EasyJSpinner spinner) {
         spinner.setPreferredSize(new Dimension(SPINNER_WIDTH, FORM_CONTROL_HEIGHT));
         return spinner;
-    }
-
-    private static JToggleButton createExecutionToggleButton(String text, boolean selected) {
-        JToggleButton button = new SegmentedToggleButton(text, selected);
-        button.setBorder(BorderFactory.createEmptyBorder(
-                5,
-                EXECUTION_TOGGLE_HORIZONTAL_INSET,
-                5,
-                EXECUTION_TOGGLE_HORIZONTAL_INSET
-        ));
-        return button;
     }
 
     private static MigLayout createValuePairLayout() {
@@ -608,74 +592,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
     }
 
     private JPanel createExecutionModePanel() {
-        JPanel modePanel = new ExecutionModeSegmentedPanel();
-        modePanel.add(useLoopCountButton);
-        modePanel.add(useTimeCheckBox);
-        return modePanel;
-    }
-
-    private static final class ExecutionModeSegmentedPanel extends JPanel {
-        private ExecutionModeSegmentedPanel() {
-            super(new FlowLayout(FlowLayout.CENTER, EXECUTION_SEGMENT_GAP, 0));
-            setOpaque(false);
-            setBorder(BorderFactory.createEmptyBorder(
-                    EXECUTION_SEGMENT_GROUP_PADDING,
-                    EXECUTION_SEGMENT_GROUP_PADDING,
-                    EXECUTION_SEGMENT_GROUP_PADDING,
-                    EXECUTION_SEGMENT_GROUP_PADDING
-            ));
-        }
-
-        @Override
-        public Dimension getPreferredSize() {
-            Dimension size = super.getPreferredSize();
-            size.width += EXECUTION_SEGMENT_GROUP_EXTRA_WIDTH;
-            return size;
-        }
-
-        @Override
-        public Dimension getMinimumSize() {
-            Dimension size = super.getMinimumSize();
-            size.width += EXECUTION_SEGMENT_GROUP_EXTRA_WIDTH;
-            return size;
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            super.paintComponent(g);
-            paintRoundedChrome(g, false);
-        }
-
-        @Override
-        public void paint(Graphics g) {
-            super.paint(g);
-            paintRoundedChrome(g, true);
-        }
-
-        private void paintRoundedChrome(Graphics g, boolean borderOnly) {
-            int width = getWidth();
-            int height = getHeight();
-            if (width <= 1 || height <= 1) {
-                return;
-            }
-
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            RoundRectangle2D.Float chrome = new RoundRectangle2D.Float(
-                    0,
-                    0,
-                    width - 1,
-                    height - 1,
-                    EXECUTION_SEGMENT_GROUP_ARC, EXECUTION_SEGMENT_GROUP_ARC);
-            if (!borderOnly) {
-                g2.setColor(ModernColors.getHoverBackgroundColor());
-                g2.fill(chrome);
-            } else {
-                g2.setColor(ModernColors.getBorderMediumColor());
-                g2.draw(chrome);
-            }
-            g2.dispose();
-        }
+        return executionModeBar;
     }
 
     private void updateFixedExecutionModeState() {

@@ -8,8 +8,7 @@ import com.laker.postman.performance.core.report.PerformanceJsonReport;
 
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.button.ModernButtonFactory;
-import com.laker.postman.common.component.button.SegmentedButtonGroupPanel;
-import com.laker.postman.common.component.button.SegmentedToggleButton;
+import com.laker.postman.common.component.button.SegmentedButtonBar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.performance.model.PerformanceProtocolLabels;
 import com.laker.postman.performance.report.PerformanceProtocolReportData;
@@ -116,10 +115,10 @@ public class PerformanceReportPanel extends JPanel {
     }
 
     private JPanel createProtocolSwitcher(JPanel reportCards) {
-        ButtonGroup protocolGroup = new ButtonGroup();
-        JPanel switcher = new SegmentedButtonGroupPanel(FlowLayout.LEFT);
+        SegmentedButtonBar<PerformanceProtocol> switcher = new SegmentedButtonBar<>(FlowLayout.LEFT);
         for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
-            JToggleButton button = new SegmentedToggleButton(
+            JToggleButton button = switcher.addOption(
+                    protocol,
                     PerformanceProtocolLabels.displayName(protocol),
                     protocol == PerformanceProtocol.HTTP
             );
@@ -128,9 +127,7 @@ public class PerformanceReportPanel extends JPanel {
                     showProtocol(protocol);
                 }
             });
-            protocolGroup.add(button);
             protocolButtons.put(protocol, button);
-            switcher.add(button);
         }
         return switcher;
     }

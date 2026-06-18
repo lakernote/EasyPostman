@@ -361,6 +361,7 @@ public class PerformancePanel extends UiSingletonPanel {
                         remoteModeCheckBox,
                         workerEndpointsField,
                         planSelector,
+                        reportRefreshModeBox,
                         addPlanButton,
                         importBtn,
                         duplicatePlanButton,

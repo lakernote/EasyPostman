@@ -7,7 +7,9 @@ import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
 import javax.swing.JLabel;
+import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,6 +42,25 @@ public class PerformanceRunUiControllerTest extends AbstractSwingUiTest {
             assertTrue(runButton.isEnabled());
             assertFalse(stopButton.isEnabled());
             assertTrue(refreshButton.isEnabled());
+        });
+    }
+
+    @Test
+    public void markRunningAndIdleShouldToggleRunLockedComponents() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            JTextField lockedField = new JTextField();
+            PerformanceRunUiController controller = new PerformanceRunUiController(
+                    new StartButton(),
+                    new StopButton(),
+                    new RefreshButton(),
+                    List.of(lockedField)
+            );
+
+            controller.markRunning();
+            assertFalse(lockedField.isEnabled());
+
+            controller.markIdle();
+            assertTrue(lockedField.isEnabled());
         });
     }
 

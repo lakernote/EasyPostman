@@ -42,7 +42,7 @@ public class WorkspaceListCellRenderer extends DefaultListCellRenderer {
         } else if (workspace.getGitRemoteUrl() == null || workspace.getGitRemoteUrl().trim().isEmpty()) {
             icon = IconUtil.create("icons/git-warning.svg", 20, 20);
         } else if (workspace.getGitRepoSource() == GitRepoSource.CLONED) {
-            icon = IconUtil.create("icons/git-remote.svg", 20, 20);
+            icon = IconUtil.createThemed("icons/git-remote.svg", 20, 20);
         } else {
             icon = IconUtil.create("icons/git.svg", 20, 20);
         }

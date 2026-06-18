@@ -19,7 +19,9 @@ import javax.swing.JTree;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 final class PerformanceTreeSupport {
 
@@ -56,6 +58,47 @@ final class PerformanceTreeSupport {
             return PerformanceProtocol.SSE;
         }
         return PerformanceProtocol.HTTP;
+    }
+
+    Set<PerformanceProtocol> collectAvailableProtocols(DefaultMutableTreeNode root) {
+        EnumSet<PerformanceProtocol> protocols = EnumSet.noneOf(PerformanceProtocol.class);
+        collectAvailableProtocols(root, protocols);
+        if (protocols.isEmpty()) {
+            protocols.add(PerformanceProtocol.HTTP);
+        }
+        return protocols;
+    }
+
+    private void collectAvailableProtocols(DefaultMutableTreeNode node, EnumSet<PerformanceProtocol> protocols) {
+        if (node == null) {
+            return;
+        }
+        Object userObject = node.getUserObject();
+        if (userObject instanceof PerformanceTreeNode nodeData) {
+            if (!nodeData.enabled) {
+                return;
+            }
+            collectNodeProtocol(nodeData, protocols);
+        }
+        for (int i = 0; i < node.getChildCount(); i++) {
+            collectAvailableProtocols((DefaultMutableTreeNode) node.getChildAt(i), protocols);
+        }
+    }
+
+    private void collectNodeProtocol(PerformanceTreeNode nodeData, EnumSet<PerformanceProtocol> protocols) {
+        switch (nodeData.type) {
+            case REQUEST -> {
+                if (nodeData.httpRequestItem != null) {
+                    protocols.add(resolvePerformanceProtocol(nodeData.httpRequestItem));
+                } else if (nodeData.requestSnapshot != null) {
+                    protocols.add(nodeData.requestSnapshot.getProtocol());
+                }
+            }
+            case WS_CONNECT, WS_SEND, WS_READ, WS_CLOSE -> protocols.add(PerformanceProtocol.WEBSOCKET);
+            case SSE_CONNECT, SSE_READ -> protocols.add(PerformanceProtocol.SSE);
+            default -> {
+            }
+        }
     }
 
     DefaultMutableTreeNode getParentRequestNode(DefaultMutableTreeNode node) {

@@ -30,7 +30,11 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class PerformanceReportPanel extends JPanel {
 
@@ -50,6 +54,11 @@ public class PerformanceReportPanel extends JPanel {
     private final DefaultTableCellRenderer failRenderer;
     private final DefaultTableCellRenderer rateRenderer;
     private final DefaultTableCellRenderer generalRenderer;
+    private final Map<PerformanceProtocol, JToggleButton> protocolButtons = new EnumMap<>(PerformanceProtocol.class);
+    private JPanel protocolSwitcherRow;
+    private JPanel reportCards;
+    private PerformanceProtocol selectedProtocol = PerformanceProtocol.HTTP;
+    private Set<PerformanceProtocol> availableProtocols = EnumSet.of(PerformanceProtocol.HTTP);
 
     public PerformanceReportPanel() {
         // Initialize internationalized column names
@@ -74,13 +83,19 @@ public class PerformanceReportPanel extends JPanel {
         JTable webSocketReportTable = createGenericReportTable(webSocketReportTableModel);
         JTable sseReportTable = createGenericReportTable(sseReportTableModel);
 
-        JPanel reportCards = new JPanel(new CardLayout());
+        reportCards = new JPanel(new CardLayout());
         ToolWindowSurfaceStyle.applyCard(reportCards);
         reportCards.add(createReportScrollPane(reportTable), PerformanceProtocol.HTTP.name());
         reportCards.add(createReportScrollPane(webSocketReportTable), PerformanceProtocol.WEBSOCKET.name());
         reportCards.add(createReportScrollPane(sseReportTable), PerformanceProtocol.SSE.name());
         add(createToolbar(reportCards), BorderLayout.NORTH);
         add(reportCards, BorderLayout.CENTER);
+        applyAvailableProtocols();
+    }
+
+    public void setAvailableProtocols(Set<PerformanceProtocol> protocols) {
+        availableProtocols = normalizeProtocols(protocols);
+        applyAvailableProtocols();
     }
 
     private JPanel createToolbar(JPanel reportCards) {
@@ -88,7 +103,8 @@ public class PerformanceReportPanel extends JPanel {
         ToolWindowSurfaceStyle.applyCard(toolbar);
         toolbar.setBorder(BorderFactory.createEmptyBorder(8, 0, 8, 0));
 
-        toolbar.add(ToolWindowActionToolbar.inlineLeft(createProtocolSwitcher(reportCards)), BorderLayout.WEST);
+        protocolSwitcherRow = ToolWindowActionToolbar.inlineLeft(createProtocolSwitcher(reportCards));
+        toolbar.add(protocolSwitcherRow, BorderLayout.WEST);
 
         JButton copyReportButton = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.PERFORMANCE_REPORT_COPY_MARKDOWN_BUTTON),
@@ -108,13 +124,64 @@ public class PerformanceReportPanel extends JPanel {
                     protocol == PerformanceProtocol.HTTP
             );
             button.addActionListener(e -> {
-                CardLayout layout = (CardLayout) reportCards.getLayout();
-                layout.show(reportCards, protocol.name());
+                if (button.isSelected()) {
+                    showProtocol(protocol);
+                }
             });
             protocolGroup.add(button);
+            protocolButtons.put(protocol, button);
             switcher.add(button);
         }
         return switcher;
+    }
+
+    private void applyAvailableProtocols() {
+        if (reportCards == null || protocolSwitcherRow == null) {
+            return;
+        }
+        for (Map.Entry<PerformanceProtocol, JToggleButton> entry : protocolButtons.entrySet()) {
+            entry.getValue().setVisible(availableProtocols.contains(entry.getKey()));
+        }
+        if (!availableProtocols.contains(selectedProtocol)) {
+            selectedProtocol = firstAvailableProtocol();
+        }
+        protocolSwitcherRow.setVisible(availableProtocols.size() > 1);
+        showProtocol(selectedProtocol);
+        revalidate();
+        repaint();
+    }
+
+    private PerformanceProtocol firstAvailableProtocol() {
+        if (availableProtocols.contains(PerformanceProtocol.HTTP)) {
+            return PerformanceProtocol.HTTP;
+        }
+        for (PerformanceProtocol protocol : PerformanceProtocol.values()) {
+            if (availableProtocols.contains(protocol)) {
+                return protocol;
+            }
+        }
+        return PerformanceProtocol.HTTP;
+    }
+
+    private void showProtocol(PerformanceProtocol protocol) {
+        selectedProtocol = protocol;
+        JToggleButton button = protocolButtons.get(protocol);
+        if (button != null && !button.isSelected()) {
+            button.setSelected(true);
+        }
+        CardLayout layout = (CardLayout) reportCards.getLayout();
+        layout.show(reportCards, protocol.name());
+    }
+
+    private static Set<PerformanceProtocol> normalizeProtocols(Set<PerformanceProtocol> protocols) {
+        EnumSet<PerformanceProtocol> normalized = EnumSet.noneOf(PerformanceProtocol.class);
+        if (protocols != null) {
+            normalized.addAll(protocols);
+        }
+        if (normalized.isEmpty()) {
+            normalized.add(PerformanceProtocol.HTTP);
+        }
+        return normalized;
     }
 
     private DefaultTableModel createTableModel(String[] tableColumns) {

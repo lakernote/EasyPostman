@@ -175,6 +175,21 @@ public class WorkspacePanelTest {
     }
 
     @Test
+    public void remoteGitWorkspaceListIconsShouldFollowDarkTheme() throws IOException {
+        Path workspaceListRendererPath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/WorkspaceListCellRenderer.java");
+        Path workspaceSelectionDialogPath = repositoryRoot().resolve(
+                "easy-postman-app/src/main/java/com/laker/postman/common/component/dialog/WorkspaceSelectionDialog.java");
+        String listRenderer = Files.readString(workspaceListRendererPath);
+        String selectionDialog = Files.readString(workspaceSelectionDialogPath);
+
+        assertTrue(listRenderer.contains("IconUtil.createThemed(\"icons/git-remote.svg\", 20, 20)"));
+        assertTrue(selectionDialog.contains("IconUtil.createThemed(\"icons/git-remote.svg\", 20, 20)"));
+        assertFalse(listRenderer.contains("IconUtil.create(\"icons/git-remote.svg\""));
+        assertFalse(selectionDialog.contains("IconUtil.create(\"icons/git-remote.svg\""));
+    }
+
+    @Test
     public void remoteConfigPanelShouldUseCompactEmbeddedFormLayout() throws IOException {
         Path remoteConfigPath = repositoryRoot().resolve(
                 "easy-postman-app/src/main/java/com/laker/postman/panel/workspace/components/RemoteConfigPanel.java");

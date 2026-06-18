@@ -23,6 +23,7 @@ import java.awt.Container;
 import java.awt.event.MouseEvent;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -100,6 +101,7 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
     @Test
     public void shouldUseCompactProtocolSwitcherInsteadOfNestedTabs() {
         PerformanceReportPanel panel = new PerformanceReportPanel();
+        panel.setAvailableProtocols(EnumSet.allOf(PerformanceProtocol.class));
 
         List<SegmentedToggleButton> protocolButtons = findAll(panel, SegmentedToggleButton.class);
 
@@ -112,6 +114,32 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
                 PerformanceProtocolLabels.displayName(PerformanceProtocol.WEBSOCKET).equals(button.getText())));
         assertTrue(protocolButtons.stream().anyMatch(button ->
                 PerformanceProtocolLabels.displayName(PerformanceProtocol.SSE).equals(button.getText())));
+    }
+
+    @Test
+    public void shouldHideProtocolSwitcherWhenOnlyHttpReportIsAvailable() {
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+        panel.setAvailableProtocols(EnumSet.of(PerformanceProtocol.HTTP));
+
+        SegmentedToggleButton httpButton = findProtocolButton(panel, PerformanceProtocol.HTTP);
+        SegmentedToggleButton webSocketButton = findProtocolButton(panel, PerformanceProtocol.WEBSOCKET);
+
+        assertFalse(isEffectivelyVisible(httpButton, panel));
+        assertFalse(isEffectivelyVisible(webSocketButton, panel));
+    }
+
+    @Test
+    public void shouldShowOnlyAvailableReportProtocolButtons() {
+        PerformanceReportPanel panel = new PerformanceReportPanel();
+        panel.setAvailableProtocols(EnumSet.of(PerformanceProtocol.HTTP, PerformanceProtocol.WEBSOCKET));
+
+        SegmentedToggleButton httpButton = findProtocolButton(panel, PerformanceProtocol.HTTP);
+        SegmentedToggleButton webSocketButton = findProtocolButton(panel, PerformanceProtocol.WEBSOCKET);
+        SegmentedToggleButton sseButton = findProtocolButton(panel, PerformanceProtocol.SSE);
+
+        assertTrue(isEffectivelyVisible(httpButton, panel));
+        assertTrue(isEffectivelyVisible(webSocketButton, panel));
+        assertFalse(isEffectivelyVisible(sseButton, panel));
     }
 
     @Test
@@ -310,6 +338,30 @@ public class PerformanceReportPanelTest extends AbstractSwingUiTest {
                 false
         );
         return header.getToolTipText(event);
+    }
+
+    private static SegmentedToggleButton findProtocolButton(Component root, PerformanceProtocol protocol) {
+        String text = PerformanceProtocolLabels.displayName(protocol);
+        for (SegmentedToggleButton button : findAll(root, SegmentedToggleButton.class)) {
+            if (text.equals(button.getText())) {
+                return button;
+            }
+        }
+        throw new AssertionError("Protocol button not found: " + protocol);
+    }
+
+    private static boolean isEffectivelyVisible(Component component, Component root) {
+        Component current = component;
+        while (current != null) {
+            if (current == root) {
+                return true;
+            }
+            if (!current.isVisible()) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return false;
     }
 
     private static <T extends Component> List<T> findAll(Component root, Class<T> type) {

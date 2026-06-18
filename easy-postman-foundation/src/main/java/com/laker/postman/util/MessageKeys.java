@@ -1060,6 +1060,7 @@ public final class MessageKeys {
     public static final String PERFORMANCE_TREND_COMBINED_CHART = "performance.trend.combined_chart";
     public static final String PERFORMANCE_TREND_SEPARATE_CHARTS = "performance.trend.separate_charts";
     public static final String PERFORMANCE_TREND_METRICS = "performance.trend.metrics";
+    public static final String PERFORMANCE_TREND_METRIC_FILTERS = "performance.trend.metric_filters";
     public static final String PERFORMANCE_TREND_PLACEHOLDER_TITLE = "performance.trend.placeholder.title";
     public static final String PERFORMANCE_TREND_PLACEHOLDER_HINT = "performance.trend.placeholder.hint";
     public static final String PERFORMANCE_TREND_OVERVIEW = "performance.trend.overview";

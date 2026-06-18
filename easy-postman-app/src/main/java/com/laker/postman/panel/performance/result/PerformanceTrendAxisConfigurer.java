@@ -12,7 +12,7 @@ import java.text.NumberFormat;
 @UtilityClass
 class PerformanceTrendAxisConfigurer {
 
-    private static final int MAX_TIME_TICK_LABELS = 12;
+    private static final int MAX_TIME_TICK_LABELS = 9;
     private static final long SECOND_MS = 1_000L;
     private static final long MINUTE_MS = 60 * SECOND_MS;
     private static final long HOUR_MS = 60 * MINUTE_MS;

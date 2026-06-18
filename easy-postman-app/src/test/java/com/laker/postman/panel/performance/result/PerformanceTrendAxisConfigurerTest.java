@@ -25,7 +25,7 @@ public class PerformanceTrendAxisConfigurerTest {
     }
 
     @Test
-    public void timeAxisShouldUseWallClockFormatAndOneSecondTicksForShortRuns() {
+    public void timeAxisShouldUseReadableWallClockTicksForShortRuns() {
         DateAxis axis = new DateAxis("时间");
 
         PerformanceTrendAxisConfigurer.configureTimeAxis(axis, 10_500L);
@@ -34,7 +34,7 @@ public class PerformanceTrendAxisConfigurerTest {
         assertTrue(axis.getTickUnit().dateToString(new Date()).matches("\\d{2}:\\d{2}:\\d{2}"));
         assertFalse(axis.isAutoTickUnitSelection());
         assertEquals(axis.getTickUnit().getUnitType(), DateTickUnitType.SECOND);
-        assertEquals(axis.getTickUnit().getMultiple(), 1);
+        assertEquals(axis.getTickUnit().getMultiple(), 2);
     }
 
     @Test

@@ -4,7 +4,7 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.util.ExceptionUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.JOptionPane;
@@ -40,7 +40,7 @@ class AppUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
 
         String message = I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE);
         if (isMainFrameVisible()) {
-            NotificationUtil.showError(message);
+            NotificationCenter.showError(message);
             return;
         }
 

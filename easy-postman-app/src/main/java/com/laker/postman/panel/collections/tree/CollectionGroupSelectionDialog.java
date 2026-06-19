@@ -11,7 +11,7 @@ import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.BorderFactory;
@@ -45,7 +45,7 @@ public class CollectionGroupSelectionDialog {
     public static Optional<RequestNameSelection> chooseGroupAndRequestName(TreeModel groupTreeModel,
                                                                           String defaultName) {
         if (groupTreeModel == null || groupTreeModel.getRoot() == null) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP));
             return Optional.empty();
         }
 
@@ -97,7 +97,7 @@ public class CollectionGroupSelectionDialog {
         Runnable okAction = () -> {
             String requestName = nameField.getText();
             if (requestName == null || requestName.trim().isEmpty()) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_ENTER_REQUEST_NAME));
+                NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_ENTER_REQUEST_NAME));
                 nameField.requestFocusInWindow();
                 return;
             }
@@ -218,11 +218,11 @@ public class CollectionGroupSelectionDialog {
 
     private static void warnInvalidGroupSelection(JTree groupTree) {
         if (groupTree.getSelectionPath() == null) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_GROUP));
             groupTree.requestFocusInWindow();
             return;
         }
-        NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP));
+        NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP));
     }
 
     public record RequestNameSelection(RequestGroup group, String requestName) {

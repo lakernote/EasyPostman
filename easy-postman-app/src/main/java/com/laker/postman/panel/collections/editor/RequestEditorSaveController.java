@@ -7,7 +7,7 @@ import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,7 +45,7 @@ final class RequestEditorSaveController {
 
             @Override
             public void showSavedResponseReadonly() {
-                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVED_RESPONSE_READONLY));
+                NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.SAVED_RESPONSE_READONLY));
             }
 
             @Override
@@ -60,7 +60,7 @@ final class RequestEditorSaveController {
 
             @Override
             public void showSettingsValidationError(String error) {
-                NotificationUtil.showError(error);
+                NotificationCenter.showError(error);
             }
 
             @Override

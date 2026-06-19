@@ -22,7 +22,7 @@ import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.JsonUtil;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -371,7 +371,7 @@ public class KafkaConsumerPanel extends JPanel {
         if (!txt.isEmpty()) {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new java.awt.datatransfer.StringSelection(txt), null);
-            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_VALUE_COPIED));
+            NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_VALUE_COPIED));
         }
     }
 

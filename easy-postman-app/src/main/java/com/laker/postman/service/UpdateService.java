@@ -9,7 +9,7 @@ import com.laker.postman.service.update.plugin.PluginUpdateCheckResult;
 import com.laker.postman.service.update.plugin.PluginUpdateCheckCoordinator;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.CompletableFuture;
@@ -58,7 +58,7 @@ public class UpdateService {
         boolean pluginHasUpdates = pluginUpdateResult != null && pluginUpdateResult.hasUpdates();
 
         if (appNoUpdate && pluginCheckSucceeded && !pluginHasUpdates) {
-            NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_ALREADY_LATEST_WITH_PLUGINS));
+            NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_ALREADY_LATEST_WITH_PLUGINS));
             return;
         }
 

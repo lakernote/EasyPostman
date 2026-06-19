@@ -68,7 +68,7 @@ import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -716,7 +716,7 @@ public class PerformancePanel extends UiSingletonPanel {
             return;
         }
         if (savedPlans.size() <= 1) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_DELETE_LAST_FORBIDDEN));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_DELETE_LAST_FORBIDDEN));
             return;
         }
         int result = JOptionPane.showConfirmDialog(
@@ -1003,7 +1003,7 @@ public class PerformancePanel extends UiSingletonPanel {
         saveAllPropertyPanelData();
 
         persistenceService.saveWorkspace(currentWorkspaceSnapshot());
-        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
+        NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_SAVE_SUCCESS));
     }
 
     private void saveAllPropertyPanelData() {
@@ -1044,18 +1044,18 @@ public class PerformancePanel extends UiSingletonPanel {
             PerformancePlanImportResult importResult = planImportService.importPlans(selectedFile.toPath());
             int importedCount = appendImportedPlans(importResult);
             if (importedCount <= 0) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_IMPORT_EMPTY));
+                NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_PLAN_IMPORT_EMPTY));
                 return;
             }
             loadActivePlanIntoUi();
             persistCurrentWorkspaceSync();
-            NotificationUtil.showSuccess(I18nUtil.getMessage(
+            NotificationCenter.showSuccess(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_PLAN_IMPORT_SUCCESS,
                     importedCount
             ));
         } catch (Exception ex) {
             log.error("Failed to import performance plan", ex);
-            NotificationUtil.showError(I18nUtil.getMessage(
+            NotificationCenter.showError(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_PLAN_IMPORT_FAIL,
                     ex.getMessage()
             ));
@@ -1122,13 +1122,13 @@ public class PerformancePanel extends UiSingletonPanel {
                     AppConstants.APP_NAME + " " + SystemUtil.getCurrentVersion()
             );
             new PerformanceRunPlanJsonStorage().save(selectedFile.toPath(), runPlan);
-            NotificationUtil.showSuccess(I18nUtil.getMessage(
+            NotificationCenter.showSuccess(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_RUN_PLAN_EXPORT_SUCCESS,
                     selectedFile.getAbsolutePath()
             ));
         } catch (Exception ex) {
             log.error("Failed to export performance run plan", ex);
-            NotificationUtil.showError(I18nUtil.getMessage(
+            NotificationCenter.showError(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_RUN_PLAN_EXPORT_FAIL,
                     ex.getMessage()
             ));
@@ -1185,11 +1185,11 @@ public class PerformancePanel extends UiSingletonPanel {
         try {
             workers = PerformanceWorkerEndpointParser.parse(remoteSettings.getWorkerEndpoints());
         } catch (IllegalArgumentException ex) {
-            NotificationUtil.showError(ex.getMessage());
+            NotificationCenter.showError(ex.getMessage());
             return;
         }
         if (workers.isEmpty()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_REQUIRED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_REQUIRED));
             return;
         }
 
@@ -1218,7 +1218,7 @@ public class PerformancePanel extends UiSingletonPanel {
             runThread = remoteRunControlSupport.startRun(runPlan, workers, progressLabel, limitLabel);
         } catch (Exception ex) {
             log.error("Failed to start remote performance run", ex);
-            NotificationUtil.showError(I18nUtil.getMessage(
+            NotificationCenter.showError(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_REMOTE_MSG_FAILED,
                     ex.getMessage()
             ));

@@ -17,7 +17,7 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -225,7 +225,7 @@ public class GlobalVariablesPanel extends JPanel {
     private void saveVariablesManually() {
         try {
             persistVariables(true);
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_SAVE_SUCCESS));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.GLOBAL_VARIABLES_SAVE_SUCCESS));
         } catch (Exception ex) {
             log.error("Failed to save global variables manually", ex);
         }

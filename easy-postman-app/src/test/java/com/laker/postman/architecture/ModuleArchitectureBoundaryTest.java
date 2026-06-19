@@ -1443,7 +1443,7 @@ public class ModuleArchitectureBoundaryTest {
                 "import com.laker.postman.common.component.",
                 "import com.laker.postman.common.util.FontsUtil",
                 "import com.laker.postman.common.util.IconUtil",
-                "import com.laker.postman.common.util.NotificationUtil",
+                "import com.laker.postman.common.component.notification.NotificationCenter",
                 "import com.laker.postman.common.util.EditorThemeUtil",
                 "import com.laker.postman.common.constants.ModernColors"
         );
@@ -1486,7 +1486,7 @@ public class ModuleArchitectureBoundaryTest {
                 "import com.laker.postman.common.UiSingleton",
                 "import com.laker.postman.common.util.FontsUtil",
                 "import com.laker.postman.common.util.IconUtil",
-                "import com.laker.postman.common.util.NotificationUtil",
+                "import com.laker.postman.common.component.notification.NotificationCenter",
                 "import com.laker.postman.common.util.EditorThemeUtil",
                 "import com.laker.postman.common.constants.ModernColors",
                 "import com.laker.postman.plugin.runtime.",

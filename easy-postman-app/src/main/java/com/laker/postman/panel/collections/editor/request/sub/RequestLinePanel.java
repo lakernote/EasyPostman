@@ -12,7 +12,7 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -152,7 +152,7 @@ public class RequestLinePanel extends JPanel {
         button.setToolTipText(I18nUtil.getMessage(MessageKeys.BUTTON_SAVE_TOOLTIP));
         button.addActionListener(e -> {
             if (UiSingletonFactory.getInstance(RequestEditorPanel.class).saveCurrentRequest()) {
-                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
+                NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
             }
         });
 

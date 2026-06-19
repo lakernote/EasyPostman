@@ -28,7 +28,7 @@ import com.laker.postman.performance.master.PerformanceWorkerReportCollector;
 import com.laker.postman.performance.master.PerformanceWorkerReportCollector.PerformanceWorkerReportResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.data.time.Millisecond;
@@ -80,7 +80,7 @@ final class PerformanceRemoteRunControlSupport {
         }
         List<PerformanceWorkerEndpoint> safeWorkers = workers == null ? List.of() : List.copyOf(workers);
         if (safeWorkers.isEmpty()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_REQUIRED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_WORKERS_REQUIRED));
             return null;
         }
 
@@ -184,7 +184,7 @@ final class PerformanceRemoteRunControlSupport {
     }
 
     private void notifyStarted(int workerCount, String runId) {
-        SwingUtilities.invokeLater(() -> NotificationUtil.showInfo(I18nUtil.getMessage(
+        SwingUtilities.invokeLater(() -> NotificationCenter.showInfo(I18nUtil.getMessage(
                 MessageKeys.PERFORMANCE_REMOTE_MSG_STARTED,
                 workerCount,
                 runId
@@ -193,7 +193,7 @@ final class PerformanceRemoteRunControlSupport {
 
     private void showAssetWarningIfNeeded(PerformanceRunPlan runPlan) {
         if (runPlan != null && !runPlan.getAssets().isEmpty()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(
+            NotificationCenter.showWarning(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_REMOTE_ASSETS_WARNING,
                     runPlan.getAssets().size()
             ));
@@ -357,19 +357,19 @@ final class PerformanceRemoteRunControlSupport {
                 updateCompletionProgress(progressLabel, totalUsers);
                 updateRemoteStatusLabel(limitLabel, report.getSummary().getTotalRequests());
                 updateFinalTrend(report, totalUsers, workerCount);
-                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MSG_STOPPED));
+                NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MSG_STOPPED));
             } else if (PerformanceRunStatus.FAILED.equals(report.getMetadata().getStatus())) {
                 updateCompletionProgress(progressLabel, totalUsers);
                 updateRemoteStatusLabel(limitLabel, report.getSummary().getTotalRequests());
                 updateFinalTrend(report, totalUsers, workerCount);
-                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MSG_FAILED,
+                NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.PERFORMANCE_REMOTE_MSG_FAILED,
                         report.getMetadata().getError()));
             } else {
                 PerformanceJsonReportSummary summary = report.getSummary();
                 updateCompletionProgress(progressLabel, totalUsers);
                 updateRemoteStatusLabel(limitLabel, summary.getTotalRequests());
                 updateFinalTrend(report, totalUsers, workerCount);
-                NotificationUtil.showSuccess(I18nUtil.getMessage(
+                NotificationCenter.showSuccess(I18nUtil.getMessage(
                         MessageKeys.PERFORMANCE_REMOTE_MSG_COMPLETED,
                         workerCount,
                         summary.getTotalRequests(),
@@ -401,7 +401,7 @@ final class PerformanceRemoteRunControlSupport {
             runUiController.markIdle();
             runUiController.updateProgressAsync(progressLabel, 0, totalUsers);
             updateRemoteStatusLabel(limitLabel, 0L);
-            NotificationUtil.showError(I18nUtil.getMessage(
+            NotificationCenter.showError(I18nUtil.getMessage(
                     MessageKeys.PERFORMANCE_REMOTE_MSG_FAILED,
                     ex.getMessage() == null ? ex.getClass().getSimpleName() : ex.getMessage()
             ));

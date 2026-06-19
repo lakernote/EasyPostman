@@ -7,7 +7,7 @@ import com.laker.postman.service.curl.CurlRequest;
 import com.laker.postman.util.AsyncClipboardUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
@@ -48,7 +48,7 @@ final class RequestCurlImportController {
 
             requestImporter.accept(item);
             AsyncClipboardUtil.clearStringAsync();
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.PARSE_CURL_SUCCESS));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.PARSE_CURL_SUCCESS));
         } catch (Exception ignored) {
             // 用户可能还在输入半截 cURL，保持静默，避免输入过程中频繁弹错。
         }

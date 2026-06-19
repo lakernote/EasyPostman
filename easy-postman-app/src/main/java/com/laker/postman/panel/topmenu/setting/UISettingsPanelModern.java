@@ -13,7 +13,7 @@ import com.laker.postman.util.FontManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import com.laker.postman.util.UiFontCatalog;
 import lombok.extern.slf4j.Slf4j;
 
@@ -443,7 +443,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private void toggleSidebarTabVisibility(int index) {
         SidebarTabSettingItem item = sidebarTabListModel.get(index);
         if (item.visible && countVisibleSidebarTabs() == 1) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_AT_LEAST_ONE));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_AT_LEAST_ONE));
             return;
         }
         item.visible = !item.visible;
@@ -720,11 +720,11 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private void saveSettings(boolean closeAfterSave) {
         // 验证所有字段
         if (!validateAllFields()) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
             return;
         }
         if (countVisibleSidebarTabs() == 0) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_AT_LEAST_ONE));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_AT_LEAST_ONE));
             return;
         }
 
@@ -758,10 +758,10 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 updateSidebarConfiguration();
             }
 
-            // 保存通知位置设置并更新NotificationUtil - 使用枚举的 fromIndex 方法
+            // 保存通知位置设置并更新NotificationCenter - 使用枚举的 fromIndex 方法
             NotificationPosition selectedPosition = NotificationPosition.fromIndex(notificationPositionComboBox.getSelectedIndex());
             SettingManager.setNotificationPosition(selectedPosition);
-            NotificationUtil.setDefaultPosition(selectedPosition);
+            NotificationCenter.setDefaultPosition(selectedPosition);
 
             // 检测字体是否有变化（在保存前获取旧值）
             String oldFontName = SettingManager.getUiFontName();
@@ -777,7 +777,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             } else {
                 newFontName = (String) fontNameComboBox.getSelectedItem();
                 if (!getFontSupport(newFontName).isUiSafe()) {
-                    NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_UNSUPPORTED_WARNING));
+                    NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_UNSUPPORTED_WARNING));
                 }
                 SettingManager.setUiFontName(newFontName);
             }
@@ -810,9 +810,9 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
 
             // 根据是否修改了字体显示不同的提示信息
             if (fontChanged) {
-                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_APPLIED));
+                NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_APPLIED));
             } else {
-                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
+                NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
             }
 
             // 根据参数决定是否关闭对话框
@@ -823,7 +823,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 }
             }
         } catch (Exception ex) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
         }
     }
 

@@ -13,7 +13,7 @@ import com.laker.postman.plugin.api.PluginStorage;
 import com.laker.postman.plugin.api.service.RequestCollectionImportService;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import net.miginfocom.swing.MigLayout;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
@@ -396,7 +396,7 @@ public class CapturePanel extends JPanel {
     private void startProxy() {
         String host = hostField.getText().trim();
         if (host.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_WARN_BIND_HOST_REQUIRED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_WARN_BIND_HOST_REQUIRED));
             return;
         }
         if (operationInProgress) {
@@ -422,12 +422,12 @@ public class CapturePanel extends JPanel {
                     StartResult result = get();
                     updateStatus();
                     String portText = String.valueOf(result.port());
-                    NotificationUtil.showSuccess(result.systemProxySynced()
+                    NotificationCenter.showSuccess(result.systemProxySynced()
                             ? t(MessageKeys.TOOLBOX_CAPTURE_START_SUCCESS_SYNCED, result.host(), portText)
                             : t(MessageKeys.TOOLBOX_CAPTURE_START_SUCCESS, result.host(), portText));
                 } catch (Exception ex) {
                     updateStatus();
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_START_FAILED, rootMessage(ex)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_CAPTURE_START_FAILED, rootMessage(ex)));
                 }
             }
         };
@@ -453,12 +453,12 @@ public class CapturePanel extends JPanel {
                 try {
                     boolean synced = get();
                     updateStatus();
-                    NotificationUtil.showInfo(synced
+                    NotificationCenter.showInfo(synced
                             ? t(MessageKeys.TOOLBOX_CAPTURE_STOP_SUCCESS_SYNCED)
                             : t(MessageKeys.TOOLBOX_CAPTURE_STOP_SUCCESS));
                 } catch (Exception ex) {
                     updateStatus();
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_STOP_FAILED, rootMessage(ex)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_CAPTURE_STOP_FAILED, rootMessage(ex)));
                 }
             }
         };
@@ -907,9 +907,9 @@ public class CapturePanel extends JPanel {
         try {
             String caPath = proxyService.rootCertificatePath();
             openCertificate(caPath);
-            NotificationUtil.showInfo(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_SUCCESS));
+            NotificationCenter.showInfo(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_SUCCESS));
         } catch (Exception ex) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_FAILED, ex.getMessage()));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_CAPTURE_OPEN_CA_FAILED, ex.getMessage()));
         }
     }
 
@@ -922,7 +922,7 @@ public class CapturePanel extends JPanel {
             installCaOnWindows();
             return;
         }
-        NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP_UNSUPPORTED));
+        NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_TOOLTIP_UNSUPPORTED));
     }
 
     private void installCaOnMac() {
@@ -955,23 +955,23 @@ public class CapturePanel extends JPanel {
                         ? t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_REMOVED_SINGLE)
                         : t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_REMOVED_NONE);
                 if (systemInstallAttempted) {
-                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_SYSTEM, removedMessage));
+                    NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_SYSTEM, removedMessage));
                 } else if (loginInstallAttempted) {
-                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_LOGIN, removedMessage));
+                    NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_LOGIN, removedMessage));
                 } else {
-                    NotificationUtil.showSuccess(removedMessage);
+                    NotificationCenter.showSuccess(removedMessage);
                 }
             } else if (trustStatus.installed()) {
                 macCertificateInstallService.openCertificate(caPath);
                 showManualTrustGuide(caPath, trustStatus.detail());
-                NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_TRUST));
+                NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_TRUST));
             } else {
                 macCertificateInstallService.openCertificate(caPath);
                 showManualTrustGuide(caPath, trustStatus.detail());
-                NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_VISIBLE));
+                NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_VISIBLE));
             }
         } catch (Exception ex) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_FAILED, ex.getMessage()));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_FAILED, ex.getMessage()));
         }
     }
 
@@ -986,19 +986,19 @@ public class CapturePanel extends JPanel {
             updateStatus();
             windowsCertificateInstallService.openCertificateManager();
             if (trustStatus.trusted()) {
-                NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_WINDOWS,
+                NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_SUCCESS_WINDOWS,
                         t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_REMOVED_NONE)));
             } else if (trustStatus.installed()) {
                 windowsCertificateInstallService.openCertificate(caPath);
                 showWindowsManualTrustGuide(caPath, trustStatus.detail());
-                NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_TRUST));
+                NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_TRUST));
             } else {
                 windowsCertificateInstallService.openCertificate(caPath);
                 showWindowsManualTrustGuide(caPath, trustStatus.detail());
-                NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_VISIBLE));
+                NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_WARN_VISIBLE));
             }
         } catch (Exception ex) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_FAILED, ex.getMessage()));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_CAPTURE_INSTALL_CA_FAILED, ex.getMessage()));
         }
     }
 
@@ -1129,7 +1129,7 @@ public class CapturePanel extends JPanel {
             return;
         }
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(detailText), null);
-        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_COPIED));
+        NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_COPIED));
     }
 
     private void copyAsCurl() {
@@ -1139,16 +1139,16 @@ public class CapturePanel extends JPanel {
         Toolkit.getDefaultToolkit().getSystemClipboard()
                 .setContents(new StringSelection(selectedFlow.curlCommand()), null);
         if (selectedFlow.curlBodyPartial()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_CURL_COPIED_PARTIAL));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_CURL_COPIED_PARTIAL));
         } else {
-            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_CURL_COPIED));
+            NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_CURL_COPIED));
         }
     }
 
     private void importSelectedFlows() {
         List<CaptureFlow> flows = selectedFlows();
         if (flows.isEmpty()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_EMPTY));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_EMPTY));
             return;
         }
         requestCollectionImporter.importFlows(flows);

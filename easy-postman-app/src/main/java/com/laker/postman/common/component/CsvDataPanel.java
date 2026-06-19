@@ -1,5 +1,7 @@
 package com.laker.postman.common.component;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import cn.hutool.core.text.CharSequenceUtil;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.UiSingletonFactory;
@@ -233,7 +235,7 @@ public class CsvDataPanel extends JPanel {
         csvHeaders = null;
         updateCsvStatus();
         notifyChangeListener();
-        NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.CSV_DATA_CLEARED));
+        NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.CSV_DATA_CLEARED));
     }
 
     /**
@@ -361,7 +363,7 @@ public class CsvDataPanel extends JPanel {
                 List<String> headers = new ArrayList<>();
                 String headersText = headersField.getText().trim();
                 if (CharSequenceUtil.isBlank(headersText)) {
-                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_REQUIRED));
+                    NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_REQUIRED));
                     return;
                 }
 
@@ -375,14 +377,14 @@ public class CsvDataPanel extends JPanel {
                 }
 
                 if (headers.isEmpty()) {
-                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_REQUIRED));
+                    NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_REQUIRED));
                     return;
                 }
 
                 // 验证列数范围（从列标题自动计算）
                 int columnCount = headers.size();
                 if (columnCount > 50) {
-                    NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_TOO_MANY_COLUMNS, columnCount));
+                    NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_TOO_MANY_COLUMNS, columnCount));
                     return;
                 }
 
@@ -904,7 +906,7 @@ public class CsvDataPanel extends JPanel {
                 updateCsvStatus();
                 notifyChangeListener();
 
-                NotificationUtil.showSuccess(
+                NotificationCenter.showSuccess(
                         I18nUtil.getMessage(MessageKeys.CSV_DATA_SAVED, newCsvData.size(), currentHeaders.size()));
 
                 manageDialog.dispose();

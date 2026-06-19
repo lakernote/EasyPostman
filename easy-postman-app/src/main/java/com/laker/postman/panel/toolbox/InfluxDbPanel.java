@@ -1,5 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import cn.hutool.core.text.csv.CsvData;
 import cn.hutool.core.text.csv.CsvReader;
 import cn.hutool.core.text.csv.CsvRow;
@@ -529,13 +531,13 @@ public class InfluxDbPanel extends JPanel {
     private void executeMeasurementQuickQuery(String measurement) {
         if (measurement == null || measurement.isBlank()) return;
         if (!connected) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_NOT_CONNECTED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_NOT_CONNECTED));
             return;
         }
         if (getSelectedMode() != QueryMode.INFLUXQL_V1) return;
         String db = getSelectedDatabase();
         if (db.isBlank()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_DB_REQUIRED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_DB_REQUIRED));
             return;
         }
 
@@ -661,17 +663,17 @@ public class InfluxDbPanel extends JPanel {
                     }
                     loadMeasurements(db);
                     if (targets.size() == 1) {
-                        NotificationUtil.showSuccess(MessageFormat.format(
+                        NotificationCenter.showSuccess(MessageFormat.format(
                                 I18nUtil.getMessage(singleSuccessMsgKey), targets.get(0)));
                     } else {
-                        NotificationUtil.showSuccess(MessageFormat.format(
+                        NotificationCenter.showSuccess(MessageFormat.format(
                                 I18nUtil.getMessage(batchSuccessMsgKey), targets.size()));
                     }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     log.warn("measurement mutation interrupted", ex);
                 } catch (Exception ex) {
-                    NotificationUtil.showError(MessageFormat.format(
+                    NotificationCenter.showError(MessageFormat.format(
                             I18nUtil.getMessage(failedMsgKey), ex.getMessage()));
                 }
             }
@@ -955,7 +957,7 @@ public class InfluxDbPanel extends JPanel {
         InfluxDbConnectionProfile profile = buildProfile(UUID.randomUUID().toString(), name);
         connectionProfileStore.upsertProfile(profile);
         loadSavedConnectionProfiles(profile.getId());
-        NotificationUtil.showSuccess(MessageFormat.format(
+        NotificationCenter.showSuccess(MessageFormat.format(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_SAVED), profile.getName()));
         hostField.requestFocusInWindow();
     }
@@ -963,25 +965,25 @@ public class InfluxDbPanel extends JPanel {
     private void saveCurrentConnectionProfile(boolean notify) {
         InfluxDbConnectionProfile selectedProfile = getSelectedConnectionProfile();
         if (selectedProfile == null) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_NOT_SELECTED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_NOT_SELECTED));
             return;
         }
         if (getCurrentHost().isBlank()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_HOST_REQUIRED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_HOST_REQUIRED));
             return;
         }
         InfluxDbConnectionProfile profile = buildProfile(selectedProfile.getId(), selectedProfile.getName());
         connectionProfileStore.upsertProfile(profile);
         loadSavedConnectionProfiles(profile.getId());
         if (notify) {
-            NotificationUtil.showSuccess(MessageFormat.format(
+            NotificationCenter.showSuccess(MessageFormat.format(
                     I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_SAVED), profile.getName()));
         }
     }
 
     private void saveCurrentConnectionProfileAs() {
         if (getCurrentHost().isBlank()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_HOST_REQUIRED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_HOST_REQUIRED));
             return;
         }
         InfluxDbConnectionProfile selectedProfile = getSelectedConnectionProfile();
@@ -995,7 +997,7 @@ public class InfluxDbPanel extends JPanel {
         InfluxDbConnectionProfile profile = buildProfile(UUID.randomUUID().toString(), name);
         connectionProfileStore.upsertProfile(profile);
         loadSavedConnectionProfiles(profile.getId());
-        NotificationUtil.showSuccess(MessageFormat.format(
+        NotificationCenter.showSuccess(MessageFormat.format(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_SAVED), profile.getName()));
     }
 
@@ -1012,7 +1014,7 @@ public class InfluxDbPanel extends JPanel {
         connectionProfileStore.upsertProfile(profile);
         loadSavedConnectionProfiles(profile.getId());
         if (notify) {
-            NotificationUtil.showSuccess(MessageFormat.format(
+            NotificationCenter.showSuccess(MessageFormat.format(
                     I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_SAVED), profile.getName()));
         }
     }
@@ -1020,11 +1022,11 @@ public class InfluxDbPanel extends JPanel {
     private void deleteSelectedConnectionProfile() {
         InfluxDbConnectionProfile selectedProfile = getSelectedConnectionProfile();
         if (selectedProfile == null) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_NOT_SELECTED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_NOT_SELECTED));
             return;
         }
         if (isDefaultProfile(selectedProfile)) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_DEFAULT_NOT_DELETABLE));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_DEFAULT_NOT_DELETABLE));
             return;
         }
         int result = JOptionPane.showConfirmDialog(this,
@@ -1039,7 +1041,7 @@ public class InfluxDbPanel extends JPanel {
         String deletedName = selectedProfile.getName();
         connectionProfileStore.deleteProfile(selectedProfile.getId());
         loadSavedConnectionProfiles(InfluxDbConnectionProfileStore.DEFAULT_PROFILE_ID);
-        NotificationUtil.showInfo(MessageFormat.format(
+        NotificationCenter.showInfo(MessageFormat.format(
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_DELETED), deletedName));
     }
 
@@ -1072,7 +1074,7 @@ public class InfluxDbPanel extends JPanel {
         ).orElse(null);
         if (name == null) return null;
         if (profileNameExists(name, existingProfileId)) {
-            NotificationUtil.showWarning(MessageFormat.format(
+            NotificationCenter.showWarning(MessageFormat.format(
                     I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_PROFILE_NAME_EXISTS), name));
             return null;
         }
@@ -1452,7 +1454,7 @@ public class InfluxDbPanel extends JPanel {
     private void doConnect() {
         String inputHost = getCurrentHost();
         if (inputHost.isEmpty()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_HOST_REQUIRED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_HOST_REQUIRED));
             return;
         }
         inputHost = InfluxDbConnectionProfileStore.normalizeBaseUrl(inputHost);
@@ -1482,7 +1484,7 @@ public class InfluxDbPanel extends JPanel {
                     connected = true;
                     btnCardLayout.show(btnCard, DISCONNECT_CARD);
                     addHostHistory(finalBaseUrl);
-                    NotificationUtil.showSuccess(MessageFormat.format(
+                    NotificationCenter.showSuccess(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_CONNECT_SUCCESS), finalBaseUrl));
                     if (mode == QueryMode.INFLUXQL_V1) {
                         loadDatabases(() -> {
@@ -1497,7 +1499,7 @@ public class InfluxDbPanel extends JPanel {
                     connected = false;
                     clearMeasurementList();
                     btnCardLayout.show(btnCard, CONNECT_CARD);
-                    NotificationUtil.showError(MessageFormat.format(
+                    NotificationCenter.showError(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_CONNECT_FAILED),
                             ex.getMessage()));
                 }
@@ -1511,7 +1513,7 @@ public class InfluxDbPanel extends JPanel {
         clearMeasurementList();
         btnCardLayout.show(btnCard, CONNECT_CARD);
         respStatusLabel.setText("");
-        NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_DISCONNECT_SUCCESS));
+        NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_DISCONNECT_SUCCESS));
     }
 
     private String getCurrentHost() {
@@ -1524,25 +1526,25 @@ public class InfluxDbPanel extends JPanel {
 
     private void executeQuery() {
         if (!connected) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_NOT_CONNECTED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_NOT_CONNECTED));
             return;
         }
 
         String query = queryEditor.getText().trim();
         if (query.isEmpty()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_QUERY_REQUIRED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_QUERY_REQUIRED));
             return;
         }
 
         QueryMode mode = getSelectedMode();
         if (mode == QueryMode.FLUX_V2) {
             if (orgField.getText().trim().isBlank()) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_ORG_REQUIRED));
+                NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_ORG_REQUIRED));
                 return;
             }
         } else {
             if (getSelectedDatabase().isBlank()) {
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_DB_REQUIRED));
+                NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_ERR_DB_REQUIRED));
                 return;
             }
         }
@@ -1589,7 +1591,7 @@ public class InfluxDbPanel extends JPanel {
                     else statusColor = ModernColors.getWarningDark();
                     respStatusLabel.setForeground(statusColor);
                     if (logicalError) {
-                        NotificationUtil.showError(influxError);
+                        NotificationCenter.showError(influxError);
                     }
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
@@ -1598,7 +1600,7 @@ public class InfluxDbPanel extends JPanel {
                     respStatusLabel.setText(MessageFormat.format(
                             I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_STATUS_ERROR), "0"));
                     respStatusLabel.setForeground(ModernColors.getError());
-                    NotificationUtil.showError(ex.getMessage());
+                    NotificationCenter.showError(ex.getMessage());
                 }
             }
         };
@@ -2200,6 +2202,6 @@ public class InfluxDbPanel extends JPanel {
         if (text == null || text.isBlank()) return;
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
                 new StringSelection(text), null);
-        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_RESULT_COPIED));
+        NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.TOOLBOX_INFLUX_RESULT_COPIED));
     }
 }

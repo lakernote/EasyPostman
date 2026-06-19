@@ -6,7 +6,7 @@ import com.laker.postman.model.RequestImportHeader;
 import com.laker.postman.model.RequestImportProtocol;
 import com.laker.postman.model.RequestImportResult;
 import com.laker.postman.plugin.api.service.RequestCollectionImportService;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,21 +26,21 @@ final class CaptureRequestCollectionImporter {
 
     void importFlows(List<CaptureFlow> flows) {
         if (flows == null || flows.isEmpty()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_EMPTY));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_EMPTY));
             return;
         }
         if (importService == null) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_UNAVAILABLE));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_UNAVAILABLE));
             return;
         }
 
         RequestImportResult result = importService.importRequests(toDrafts(flows));
         if (result == null || result.status() == RequestImportResult.Status.UNAVAILABLE) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_UNAVAILABLE));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_UNAVAILABLE));
             return;
         }
         if (result.isImported()) {
-            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_SUCCESS, result.importedCount()));
+            NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_CAPTURE_IMPORT_SUCCESS, result.importedCount()));
         }
     }
 

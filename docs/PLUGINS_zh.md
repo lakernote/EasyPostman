@@ -155,12 +155,13 @@ easy-postman-parent
 
 ### 2.2 什么时候改 platform version
 
-只有插件机制本身发生不兼容变化时，才应该提升 `plugin.platform.version`，例如：
+只有插件装配边界或插件可依赖的公共平台 API 发生不兼容变化时，才应该提升 `plugin.platform.version`，例如：
 
 - `PluginContext` 有不兼容修改
 - `PluginDescriptor` 语义发生破坏性变化
 - runtime 的装配方式变了，老插件会失效
 - 某类扩展点契约被替换
+- 插件以 `provided` 方式依赖的平台模块（例如 `easy-postman-plugin-api`、`easy-postman-foundation`、`easy-postman-ui`）删除或重命名公开类/方法，旧插件会出现 `NoClassDefFoundError`、`NoSuchMethodError` 或其他 linkage 错误
 
 如果只是：
 
@@ -400,7 +401,7 @@ context.registerSnippet(...);
 2. 在 descriptor 模板里同步加上 `plugin.minAppVersion`
 3. 本地验证老版本宿主确实不再适配
 
-如果是插件平台 SPI 变了：
+如果是插件平台边界变了（SPI、runtime 装配方式，或插件可依赖平台模块的公开 API 被破坏）：
 
 1. 先提升根 `pom.xml` 里的 `plugin.platform.version`
 2. 再更新受影响插件的 `plugin.min/maxPlatformVersion`

@@ -5,6 +5,7 @@ import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
 import lombok.Getter;
@@ -836,12 +837,12 @@ public class EnhancedTablePanel extends JPanel {
         JMenuItem copyCell = new JMenuItem(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPY_CELL));
         copyCell.addActionListener(ev -> {
             copySelectedCell();
-            NotificationUtil.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
+            NotificationCenter.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
         });
         JMenuItem copyRow = new JMenuItem(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPY_ROW));
         copyRow.addActionListener(ev -> {
             copySelectedRow();
-            NotificationUtil.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
+            NotificationCenter.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
         });
         menu.add(copyCell);
         menu.add(copyRow);
@@ -1099,7 +1100,7 @@ public class EnhancedTablePanel extends JPanel {
         btnCopy.addActionListener(ev -> {
             String selected = textArea.getSelectedText();
             clip(selected != null && !selected.isEmpty() ? selected : textArea.getText());
-            NotificationUtil.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
+            NotificationCenter.showSuccess(UiI18n.get(UiMessageKeys.TABLE_CONTEXT_COPIED));
         });
         btnClose.addActionListener(ev -> dialog.dispose());
 

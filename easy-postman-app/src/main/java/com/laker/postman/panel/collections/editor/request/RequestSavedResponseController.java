@@ -9,7 +9,7 @@ import com.laker.postman.panel.collections.editor.request.sub.RequestLinePanel;
 import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,13 +42,13 @@ final class RequestSavedResponseController {
     void showSaveDialog() {
         HttpResponse lastResponse = lastResponseSupplier.get();
         if (lastResponse == null) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_NO_RESPONSE));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_NO_RESPONSE));
             return;
         }
 
         HttpRequestItem originalRequest = originalRequestSupplier.get();
         if (originalRequest == null || originalRequest.isNewRequest()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_REQUEST_NOT_SAVED));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_REQUEST_NOT_SAVED));
             return;
         }
 
@@ -68,7 +68,7 @@ final class RequestSavedResponseController {
                 populateOriginalRequest(originalRequest);
                 if (originalRequest.isBodyTruncated()) {
                     int previewLength = originalRequest.getBody() == null ? 0 : originalRequest.getBody().length();
-                    NotificationUtil.showWarning(I18nUtil.getMessage(
+                    NotificationCenter.showWarning(I18nUtil.getMessage(
                             MessageKeys.SAVED_RESPONSE_ORIGINAL_BODY_TRUNCATED,
                             previewLength
                     ));
@@ -77,7 +77,7 @@ final class RequestSavedResponseController {
             savedResponseUiController.displaySavedResponse(responsePanel, requestLinePanel, sendAction, savedResponse);
         } catch (Exception ex) {
             log.error("加载保存的响应失败", ex);
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.RESPONSE_LOAD_ERROR, ex.getMessage()));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.RESPONSE_LOAD_ERROR, ex.getMessage()));
         }
     }
 

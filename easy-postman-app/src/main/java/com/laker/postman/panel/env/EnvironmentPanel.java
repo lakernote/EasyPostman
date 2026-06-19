@@ -1,5 +1,7 @@
 package com.laker.postman.panel.env;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.text.CharSequenceUtil;
 import cn.hutool.core.util.IdUtil;
@@ -580,7 +582,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
         saveVariables();
 
         // 显示保存成功通知（只有手动保存才显示，自动保存不打扰用户）
-        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS));
+        NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_SAVE_SUCCESS));
     }
 
     /**
@@ -597,7 +599,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
             try (Writer writer = new OutputStreamWriter(new FileOutputStream(fileToSave), StandardCharsets.UTF_8)) {
                 java.util.List<Environment> envs = EnvironmentService.getAllEnvironments();
                 writer.write(JSONUtil.toJsonPrettyStr(envs));
-                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_SUCCESS));
+                NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_SUCCESS));
             } catch (Exception ex) {
                 log.error("Export Error", ex);
                 JOptionPane.showMessageDialog(this,
@@ -637,7 +639,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
             environmentComboBox.addItem(new EnvironmentItem(env)); // 添加到下拉框
             environmentListModel.addElement(new EnvironmentItem(env)); // 添加到列表
         }
-        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_SUCCESS));
+        NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_IMPORT_EASY_SUCCESS));
     }
 
     /**
@@ -810,7 +812,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
 
             // 显示删除成功消息
             if (deletedCount > 0) {
-                NotificationUtil.showSuccess(
+                NotificationCenter.showSuccess(
                         I18nUtil.getMessage(MessageKeys.ENV_DIALOG_DELETE_SUCCESS, deletedCount)
                 );
             }
@@ -908,7 +910,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
                 // 只导出当前环境为Postman格式
                 String postmanEnvJson = PostmanEnvironmentParser.toPostmanEnvironmentJson(env);
                 FileUtil.writeUtf8String(postmanEnvJson, fileToSave);
-                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_POSTMAN_SUCCESS));
+                NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.ENV_DIALOG_EXPORT_POSTMAN_SUCCESS));
             } catch (Exception ex) {
                 log.error("导出Postman环境失败", ex);
                 JOptionPane.showMessageDialog(this,
@@ -1109,7 +1111,7 @@ public class EnvironmentPanel extends UiSingletonPanel {
      */
     private void showBulkEditDialog() {
         if (currentEnvironment == null) {
-            NotificationUtil.showWarning("Please select an environment first");
+            NotificationCenter.showWarning("Please select an environment first");
             return;
         }
 

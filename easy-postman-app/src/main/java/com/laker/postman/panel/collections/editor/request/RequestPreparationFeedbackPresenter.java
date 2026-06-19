@@ -9,7 +9,7 @@ import com.laker.postman.panel.sidebar.ConsolePanel;
 import com.laker.postman.http.request.HttpRequestValidationResult;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 
 import javax.swing.*;
 import java.awt.event.ActionListener;
@@ -27,7 +27,7 @@ final class RequestPreparationFeedbackPresenter {
                                      ResponsePanel responsePanel) {
         if (result == null) {
             resetUiAfterPreparationFailure(requestLinePanel, sendAction, responsePanel);
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE));
             return true;
         }
         if (result.hasValidationFailure()) {
@@ -37,7 +37,7 @@ final class RequestPreparationFeedbackPresenter {
         }
         if (result.hasError()) {
             resetUiAfterPreparationFailure(requestLinePanel, sendAction, responsePanel);
-            NotificationUtil.showError(result.getErrorMessage());
+            NotificationCenter.showError(result.getErrorMessage());
             return true;
         }
         return false;
@@ -47,7 +47,7 @@ final class RequestPreparationFeedbackPresenter {
         if (!result.hasWarning()) {
             return;
         }
-        NotificationUtil.showWarning(result.getValidationResult().getMessage());
+        NotificationCenter.showWarning(result.getValidationResult().getMessage());
         ConsolePanel.appendLog("[Warning] " + result.getValidationResult().getMessage(), ConsolePanel.LogType.WARN);
     }
 
@@ -83,10 +83,10 @@ final class RequestPreparationFeedbackPresenter {
         String message = validationResult.getMessage();
         if (CharSequenceUtil.isNotBlank(message)) {
             if (validationResult.isWarning()) {
-                NotificationUtil.showWarning(message);
+                NotificationCenter.showWarning(message);
                 ConsolePanel.appendLog("[Warning] " + message, ConsolePanel.LogType.WARN);
             } else {
-                NotificationUtil.showError(message);
+                NotificationCenter.showError(message);
                 ConsolePanel.appendLog("[Error] " + message, ConsolePanel.LogType.ERROR);
             }
         }

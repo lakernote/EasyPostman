@@ -33,7 +33,7 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -1030,7 +1030,7 @@ public class HistoryPanel extends UiSingletonPanel {
 
         SidebarTabPanel sidebarTabPanel = UiSingletonFactory.getInstance(SidebarTabPanel.class);
         if (!sidebarTabPanel.showTab(SidebarTab.COLLECTIONS)) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.HISTORY_OPEN_REQUEST_TAB_HIDDEN));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.HISTORY_OPEN_REQUEST_TAB_HIDDEN));
             return;
         }
 

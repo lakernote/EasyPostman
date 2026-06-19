@@ -14,7 +14,7 @@ import com.laker.postman.platform.update.source.UpdateSourceSelector;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -119,7 +119,7 @@ public class UpdateUiController {
             Desktop.getDesktop().browse(new URI(url));
         } catch (Exception ex) {
             log.error("Failed to open GitHub release page", ex);
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()));
         }
     }
 
@@ -136,7 +136,7 @@ public class UpdateUiController {
             Desktop.getDesktop().browse(new URI(releaseUrl));
         } catch (Exception ex) {
             log.error("Failed to open manual download page", ex);
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.ERROR_OPEN_LINK_FAILED, ex.getMessage()));
         }
     }
 
@@ -150,7 +150,7 @@ public class UpdateUiController {
                 updateInfo.getReleaseInfo().getJSONArray("assets") : null;
 
         if (assets == null || assets.isEmpty()) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));
             return;
         }
 
@@ -189,7 +189,7 @@ public class UpdateUiController {
      */
     private void startAutomaticUpdate(String downloadUrl) {
         if (downloadUrl == null) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.UPDATE_NO_INSTALLER_FOUND));
             return;
         }
 
@@ -216,14 +216,14 @@ public class UpdateUiController {
             @Override
             public void onError(String errorMessage) {
                 progressDialog.hide(); // 解除 modal 阻塞
-                SwingUtilities.invokeLater(() -> NotificationUtil.showError(errorMessage));
+                SwingUtilities.invokeLater(() -> NotificationCenter.showError(errorMessage));
             }
 
             @Override
             public void onCancelled() {
                 // triggerCancel() 已经调了 hideNow()，这里只需通知
                 SwingUtilities.invokeLater(() ->
-                        NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED)));
+                        NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.UPDATE_DOWNLOAD_CANCELLED)));
             }
         });
 
@@ -251,7 +251,7 @@ public class UpdateUiController {
         if (choice == JOptionPane.YES_OPTION) {
             downloader.installUpdate(installerFile, success -> {
                 if (!success) {
-                    SwingUtilities.invokeLater(() -> NotificationUtil.showError(I18nUtil.isChinese()
+                    SwingUtilities.invokeLater(() -> NotificationCenter.showError(I18nUtil.isChinese()
                             ? "更新失败，请手动下载最新版本。"
                             : "Update failed. Please download the latest version manually."));
                 }

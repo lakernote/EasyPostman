@@ -1,5 +1,7 @@
 package com.laker.postman.common.themes;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.extras.FlatAnimatedLafChange;
 import com.formdev.flatlaf.util.SystemInfo;
@@ -118,13 +120,13 @@ public class SimpleThemeManager {
                 log.info("Applied theme: {}", theme.id());
 
                 if (showNotification) {
-                    NotificationUtil.showSuccess(switchNotificationMessage(theme));
+                    NotificationCenter.showSuccess(switchNotificationMessage(theme));
                 }
             }
         } catch (Exception e) {
             log.error("Failed to apply theme: {}", theme.id(), e);
             if (showNotification) {
-                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE, e.getMessage()));
+                NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.GENERAL_ERROR_MESSAGE, e.getMessage()));
             }
         }
     }

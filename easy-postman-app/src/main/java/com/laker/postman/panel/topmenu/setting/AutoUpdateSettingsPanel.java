@@ -7,7 +7,7 @@ import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.update.AppUpdateCenter;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -197,7 +197,7 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
             trackComponentValue(updateSourceComboBox);
             setHasUnsavedChanges(false);
 
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
 
             // 根据参数决定是否关闭对话框
             if (closeAfterSave) {
@@ -207,7 +207,7 @@ public class AutoUpdateSettingsPanel extends ModernSettingsPanel {
                 }
             }
         } catch (Exception ex) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
         }
     }
 

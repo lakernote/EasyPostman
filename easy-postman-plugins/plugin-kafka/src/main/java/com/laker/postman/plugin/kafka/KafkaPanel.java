@@ -1,5 +1,7 @@
 package com.laker.postman.plugin.kafka;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.plugin.api.PluginStorage;
 import com.laker.postman.plugin.kafka.connection.ui.KafkaConnectionPanel;
@@ -299,7 +301,7 @@ public class KafkaPanel extends JPanel {
                 .build();
         connectionProfileStore.upsertProfile(newProfile);
         loadSavedConnectionProfiles(newProfile.getId());
-        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, newProfile.getName()));
+        NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, newProfile.getName()));
         connectionPanel.bootstrapField.requestFocusInWindow();
     }
 
@@ -314,21 +316,21 @@ public class KafkaPanel extends JPanel {
     private void saveCurrentConnectionProfile(boolean notify) {
         String bootstrapServers = connectionPanel.bootstrapField.getText().trim();
         if (bootstrapServers.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
             return;
         }
         KafkaConnectionProfile profile = currentConnectionProfile();
         connectionProfileStore.upsertProfile(profile);
         loadSavedConnectionProfiles(profile.getId());
         if (notify) {
-            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, profile.getName()));
+            NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, profile.getName()));
         }
     }
 
     private void saveCurrentConnectionProfileAs() {
         String bootstrapServers = connectionPanel.bootstrapField.getText().trim();
         if (bootstrapServers.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
             return;
         }
         Optional<String> profileName = promptNewProfileName(uniqueProfileName(connectionProfileNameSuggestion(bootstrapServers)));
@@ -338,18 +340,18 @@ public class KafkaPanel extends JPanel {
         KafkaConnectionProfile profile = currentConnectionProfileWithName(profileName.get(), "kafka-" + UUID.randomUUID());
         connectionProfileStore.upsertProfile(profile);
         loadSavedConnectionProfiles(profile.getId());
-        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, profile.getName()));
+        NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_SAVED, profile.getName()));
     }
 
     private void deleteSelectedConnectionProfile() {
         KafkaConnectionProfile profile = connectionProfilesByName.get(getProfileNameText());
         if (profile == null) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NOT_SELECTED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NOT_SELECTED));
             return;
         }
         if (isDefaultProfile(profile)) {
             updateDeleteProfileButton(profile);
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_DEFAULT_NOT_DELETABLE));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_DEFAULT_NOT_DELETABLE));
             return;
         }
         int option = JOptionPane.showConfirmDialog(
@@ -364,7 +366,7 @@ public class KafkaPanel extends JPanel {
         }
         connectionProfileStore.deleteProfile(profile.getId());
         loadSavedConnectionProfiles(null);
-        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_DELETED, profile.getName()));
+        NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_DELETED, profile.getName()));
     }
 
     private String getProfileNameText() {
@@ -388,7 +390,7 @@ public class KafkaPanel extends JPanel {
         }
         String profileName = input.get();
         if (connectionProfilesByName.containsKey(profileName)) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NAME_EXISTS, profileName));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_KAFKA_PROFILE_NAME_EXISTS, profileName));
             return Optional.empty();
         }
         return Optional.of(profileName);
@@ -461,7 +463,7 @@ public class KafkaPanel extends JPanel {
     private void loadTopics() {
         String bootstrap = connectionPanel.bootstrapField.getText().trim();
         if (bootstrap.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_HOST_REQUIRED));
             return;
         }
         // 在 EDT 预先读取所有 UI 字段（含 passwordField），避免非 EDT 线程读取 Swing 组件
@@ -469,7 +471,7 @@ public class KafkaPanel extends JPanel {
         try {
             baseProps = buildCommonClientProperties();
         } catch (IllegalArgumentException ex) {
-            NotificationUtil.showWarning(rootMessage(ex));
+            NotificationCenter.showWarning(rootMessage(ex));
             return;
         }
 
@@ -521,14 +523,14 @@ public class KafkaPanel extends JPanel {
                     setConnectionStatus(ModernColors.getSuccess(), status);
                     connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_DISCONNECT);
                     producerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
-                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
+                    NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_KAFKA_STATUS_TOPICS_LOADED, topics.size()));
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     log.warn("Load kafka topics interrupted", ex);
                 } catch (Exception ex) {
                     Throwable cause = unwrapException(ex);
                     setConnectionStatus(ModernColors.getError(), t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECT_FAILED, rootMessage(cause)));
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECT_FAILED, rootMessage(cause)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONNECT_FAILED, rootMessage(cause)));
                     log.warn("Load kafka topics failed", cause);
                 }
             }
@@ -565,7 +567,7 @@ public class KafkaPanel extends JPanel {
     private void sendMessage() {
         String topic = producerPanel.topicField.getText().trim();
         if (topic.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_TOPIC_REQUIRED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_TOPIC_REQUIRED));
             return;
         }
         String payload = producerPanel.payloadArea.getText();
@@ -575,14 +577,14 @@ public class KafkaPanel extends JPanel {
         try {
             headers = KafkaPanelSupport.parseHeaders(producerPanel.headersArea.getText());
         } catch (IllegalArgumentException ex) {
-            NotificationUtil.showWarning(rootMessage(ex));
+            NotificationCenter.showWarning(rootMessage(ex));
             return;
         }
         final Properties producerCustomProps;
         try {
             producerCustomProps = KafkaPanelSupport.parseCustomKafkaProperties(producerPanel.customPropsPanel.getValue());
         } catch (IllegalArgumentException ex) {
-            NotificationUtil.showWarning(rootMessage(ex));
+            NotificationCenter.showWarning(rootMessage(ex));
             return;
         }
 
@@ -591,7 +593,7 @@ public class KafkaPanel extends JPanel {
         try {
             baseProps = buildCommonClientProperties();
         } catch (IllegalArgumentException ex) {
-            NotificationUtil.showWarning(rootMessage(ex));
+            NotificationCenter.showWarning(rootMessage(ex));
             return;
         }
         final Properties producerProps = buildProducerProperties(baseProps, producerCustomProps);
@@ -628,7 +630,7 @@ public class KafkaPanel extends JPanel {
                     String msg = t(MessageKeys.TOOLBOX_KAFKA_STATUS_SENT, metadata.partition(), metadata.offset());
                     producerPanel.statusLabel.setForeground(ModernColors.getSuccess());
                     producerPanel.statusLabel.setText(msg);
-                    NotificationUtil.showSuccess(msg);
+                    NotificationCenter.showSuccess(msg);
                 } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
                     log.warn("Send kafka message interrupted", ex);
@@ -638,7 +640,7 @@ public class KafkaPanel extends JPanel {
                     closeAndClearCachedProducer();
                     producerPanel.statusLabel.setForeground(ModernColors.getError());
                     producerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_SEND_FAILED, rootMessage(cause)));
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_SEND_FAILED, rootMessage(cause)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_SEND_FAILED, rootMessage(cause)));
                     log.warn("Send kafka message failed", cause);
                 }
             }
@@ -695,7 +697,7 @@ public class KafkaPanel extends JPanel {
 
         String topic = consumerPanel.topicField.getText().trim();
         if (topic.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_TOPIC_REQUIRED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_KAFKA_ERR_TOPIC_REQUIRED));
             return;
         }
         final Set<Integer> selectedPartitions = consumerPanel.partitionSelector.getSelectedPartitions();
@@ -707,14 +709,14 @@ public class KafkaPanel extends JPanel {
         try {
             consumeStartValue = KafkaPanelSupport.parseConsumeStartValue(consumeStartMode, consumerPanel.consumeStartValueField.getText());
         } catch (IllegalArgumentException ex) {
-            NotificationUtil.showWarning(rootMessage(ex));
+            NotificationCenter.showWarning(rootMessage(ex));
             return;
         }
         final Properties consumerCustomProps;
         try {
             consumerCustomProps = KafkaPanelSupport.parseCustomKafkaProperties(consumerPanel.customPropsPanel.getValue());
         } catch (IllegalArgumentException ex) {
-            NotificationUtil.showWarning(rootMessage(ex));
+            NotificationCenter.showWarning(rootMessage(ex));
             return;
         }
 
@@ -723,7 +725,7 @@ public class KafkaPanel extends JPanel {
         try {
             baseProps = buildCommonClientProperties();
         } catch (IllegalArgumentException ex) {
-            NotificationUtil.showWarning(rootMessage(ex));
+            NotificationCenter.showWarning(rootMessage(ex));
             return;
         }
 
@@ -828,7 +830,7 @@ public class KafkaPanel extends JPanel {
                     Throwable cause = unwrapException(ex);
                     consumerPanel.statusLabel.setForeground(ModernColors.getError());
                     consumerPanel.statusLabel.setText(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONSUME_FAILED, rootMessage(cause)));
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONSUME_FAILED, rootMessage(cause)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_KAFKA_STATUS_CONSUME_FAILED, rootMessage(cause)));
                     log.warn("Consume kafka message failed", cause);
                 }
             }
@@ -1174,7 +1176,7 @@ public class KafkaPanel extends JPanel {
         consumerPanel.partitionSelector.setAvailablePartitions(Collections.emptyList());
         connectionPanel.btnCardLayout.show(connectionPanel.btnCard, CARD_CONNECT);
         setConnectionStatus(ModernColors.getTextSecondary(), t(MessageKeys.TOOLBOX_KAFKA_STATUS_NOT_CONNECTED));
-        NotificationUtil.showInfo(t(MessageKeys.TOOLBOX_KAFKA_DISCONNECT_SUCCESS));
+        NotificationCenter.showInfo(t(MessageKeys.TOOLBOX_KAFKA_DISCONNECT_SUCCESS));
     }
 
     private void syncPartitionSelector() {

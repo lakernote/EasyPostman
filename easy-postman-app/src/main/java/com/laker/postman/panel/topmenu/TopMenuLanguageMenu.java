@@ -2,7 +2,7 @@ package com.laker.postman.panel.topmenu;
 
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import com.laker.postman.util.UIRefreshManager;
 import lombok.experimental.UtilityClass;
 
@@ -43,6 +43,6 @@ class TopMenuLanguageMenu {
     private void switchLanguage(String languageCode) {
         I18nUtil.setLocale(languageCode);
         UIRefreshManager.refreshLanguage();
-        NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED));
+        NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.LANGUAGE_CHANGED));
     }
 }

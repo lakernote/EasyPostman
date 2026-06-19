@@ -11,7 +11,7 @@ import com.laker.postman.model.ClientCertificate;
 import com.laker.postman.plugin.api.service.ClientCertificatePluginService;
 import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.Getter;
 
 import javax.swing.Box;
@@ -232,7 +232,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         if (dialog.isConfirmed()) {
             certificateService.addCertificate(certificate);
             loadCertificates();
-            NotificationUtil.showSuccess(ClientCertI18n.t(MessageKeys.CERT_ADD_SUCCESS));
+            NotificationCenter.showSuccess(ClientCertI18n.t(MessageKeys.CERT_ADD_SUCCESS));
         }
     }
 
@@ -250,7 +250,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         if (dialog.isConfirmed()) {
             certificateService.updateCertificate(certificate);
             loadCertificates();
-            NotificationUtil.showSuccess(ClientCertI18n.t(MessageKeys.CERT_EDIT_SUCCESS));
+            NotificationCenter.showSuccess(ClientCertI18n.t(MessageKeys.CERT_EDIT_SUCCESS));
         }
     }
 
@@ -279,7 +279,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
         if (result == JOptionPane.YES_OPTION) {
             certificateService.deleteCertificate(certificate.getId());
             loadCertificates();
-            NotificationUtil.showSuccess(ClientCertI18n.t(MessageKeys.CERT_DELETE_SUCCESS));
+            NotificationCenter.showSuccess(ClientCertI18n.t(MessageKeys.CERT_DELETE_SUCCESS));
         }
     }
 
@@ -373,7 +373,7 @@ public class ClientCertificateSettingsPanel extends JPanel {
             certificate.setEnabled(Boolean.TRUE.equals(value));
             certificateService.updateCertificate(certificate);
             fireTableCellUpdated(rowIndex, columnIndex);
-            NotificationUtil.showSuccess(ClientCertI18n.t(MessageKeys.CERT_STATUS_UPDATED));
+            NotificationCenter.showSuccess(ClientCertI18n.t(MessageKeys.CERT_STATUS_UPDATED));
         }
     }
 

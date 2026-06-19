@@ -11,7 +11,7 @@ import com.laker.postman.panel.collections.editor.request.sub.ResponsePanel;
 import com.laker.postman.service.collections.SavedResponseSnapshotMapper;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -48,14 +48,14 @@ final class SavedResponseUiController {
 
             if (!collectionTreeGateway.saveResponseForRequest(originalRequestItem, savedResponse)) {
                 log.warn("无法找到请求节点，保存响应失败");
-                NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_REQUEST_NOT_FOUND));
+                NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_REQUEST_NOT_FOUND));
                 return;
             }
 
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_SUCCESS, name));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_SUCCESS, name));
         } catch (Exception ex) {
             log.error("保存响应失败", ex);
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_ERROR, ex.getMessage()));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.RESPONSE_SAVE_ERROR, ex.getMessage()));
         }
     }
 

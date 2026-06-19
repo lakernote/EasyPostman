@@ -14,7 +14,7 @@ easy-postman-parent (root pom.xml, revision = host version)
 ├── easy-postman-collection-core # Headless collection domain models and Postman collection parser
 ├── easy-postman-plugin-api      # Stable plugin SPI and service contracts: EasyPostmanPlugin, PluginContext, PluginDescriptor, GitPluginService, ClientCertificatePluginService
 ├── easy-postman-platform        # Host platform framework: custom IOC + update discovery core; startup/welcome/help/settings orchestration later
-├── easy-postman-ui              # Common Swing UI base components, FontsUtil, IconUtil, NotificationUtil, EditorThemeUtil, ModernColors, ModernButtonFactory
+├── easy-postman-ui              # Common Swing UI base components, FontsUtil, IconUtil, NotificationCenter, EditorThemeUtil, ModernColors, ModernButtonFactory
 ├── easy-postman-performance-core           # Headless performance domain core: editable plan contracts, run plan.json, runtime contracts, stats, report snapshots
 ├── easy-postman-plugin-runtime  # Plugin scan/load/lifecycle: PluginRuntime, PluginScanner, PluginLoader, PluginRegistry
 ├── easy-postman-plugins/        # Official plugins (each builds an independent JAR)
@@ -215,7 +215,7 @@ Platform update code must not import app `SettingManager`; use `UpdateSettingsPr
 - Extension points: `registerScriptApi`, `registerService`, `registerToolboxContribution`, `registerScriptCompletionContributor`, `registerSnippet`.
 - Host consumes registered capabilities from `PluginRegistry`.
 - **Plugin service interfaces** (`GitPluginService`, `ClientCertificatePluginService`, `RequestCollectionImportService`) live in `easy-postman-plugin-api` under `com.laker.postman.plugin.api.service`. Plugins register implementations via `context.registerService(GitPluginService.class, impl)`. Host code retrieves them through `PluginAccess.getService(Type.class)` or typed app-side accessors such as `GitServiceAccess` and `ClientCertificatePluginAccess` in `com.laker.postman.plugin.host`.
-- Version model: `revision` = host release version; `plugin.platform.version` = SPI compatibility boundary. Only bump `plugin.platform.version` when plugin SPI/runtime changes are breaking.
+- Version model: `revision` = host release version; `plugin.platform.version` = plugin compatibility boundary for SPI, runtime wiring, and public APIs in platform modules that plugins may depend on. Only bump `plugin.platform.version` when those boundaries change incompatibly.
 - Catalog source of truth: `pom.xml → descriptor → release asset → catalog`. Do not hand-edit `plugin-catalog/` or the bundled fallback in `plugin-manager/src/main/resources/plugin-catalog/` independently — update both together.
 - Reference runtime architecture: `docs/PLUGIN_RUNTIME_ARCHITECTURE_zh.md`.
 

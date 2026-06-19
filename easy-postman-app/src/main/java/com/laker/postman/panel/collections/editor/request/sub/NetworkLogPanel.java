@@ -11,7 +11,7 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
@@ -306,9 +306,9 @@ public class NetworkLogPanel extends JPanel {
             String curl = CurlParser.toActualCurl(currentRequest);
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new StringSelection(curl), null);
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.NETWORK_LOG_COPY_ACTUAL_CURL_SUCCESS));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.NETWORK_LOG_COPY_ACTUAL_CURL_SUCCESS));
         } catch (Exception ex) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.NETWORK_LOG_COPY_ACTUAL_CURL_FAIL, ex.getMessage()));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.NETWORK_LOG_COPY_ACTUAL_CURL_FAIL, ex.getMessage()));
         }
     }
 }

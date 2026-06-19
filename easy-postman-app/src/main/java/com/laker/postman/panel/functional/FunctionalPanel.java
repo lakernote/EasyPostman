@@ -1,5 +1,7 @@
 package com.laker.postman.panel.functional;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import com.laker.postman.functional.model.AssertionResult;
 import com.laker.postman.functional.model.BatchExecutionHistory;
 import com.laker.postman.functional.execution.FunctionalRequestExecutionResult;
@@ -203,7 +205,7 @@ public class FunctionalPanel extends UiSingletonPanel {
         int rowCount = tableModel.getRowCount();
         int selectedCount = (int) IntStream.range(0, rowCount).mapToObj(i -> tableModel.getRow(i)).filter(row -> row != null && row.selected).count();
         if (selectedCount == 0) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_NO_RUNNABLE_REQUEST));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_NO_RUNNABLE_REQUEST));
             return;
         }
 
@@ -751,7 +753,7 @@ public class FunctionalPanel extends UiSingletonPanel {
                             .filter(reqItem -> reqItem.getProtocol() != null && reqItem.getProtocol().isHttpProtocol())
                             .toList();
                     if (httpOnlyList.isEmpty()) {
-                        NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SUPPORTED));
+                        NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.MSG_ONLY_HTTP_SUPPORTED));
                         return;
                     }
                     loadRequests(httpOnlyList);
@@ -780,7 +782,7 @@ public class FunctionalPanel extends UiSingletonPanel {
         }
 
         if (skippedCount > 0) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_DUPLICATE_SKIPPED, skippedCount));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_DUPLICATE_SKIPPED, skippedCount));
         }
 
         table.setEnabled(true);
@@ -967,7 +969,7 @@ public class FunctionalPanel extends UiSingletonPanel {
     private void refreshRequestsFromCollections() {
         List<RunnerRowData> currentRows = tableModel.getAllRows();
         if (currentRows.isEmpty()) {
-            NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_NO_RUNNABLE_REQUEST));
+            NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_NO_RUNNABLE_REQUEST));
             return;
         }
 
@@ -1023,9 +1025,9 @@ public class FunctionalPanel extends UiSingletonPanel {
 
         // 显示刷新结果
         if (removedCount > 0) {
-            NotificationUtil.showWarning(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_REFRESH_WARNING, removedCount));
+            NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_REFRESH_WARNING, removedCount));
         } else {
-            NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_REFRESH_SUCCESS, updatedCount));
+            NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.FUNCTIONAL_MSG_REFRESH_SUCCESS, updatedCount));
         }
     }
 }

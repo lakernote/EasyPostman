@@ -3,7 +3,7 @@ package com.laker.postman.plugin.kafka.shared;
 import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.plugin.kafka.consumer.KafkaConsumeStartMode;
 import com.laker.postman.util.JsonUtil;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
@@ -212,14 +212,14 @@ public final class KafkaPanelSupport {
                     long adjusted = seekOffset;
                     String msg = t(MessageKeys.TOOLBOX_KAFKA_WARN_OFFSET_OUT_OF_RANGE,
                             offset, partition.partition(), beginOffset, endOffset, adjusted);
-                    SwingUtilities.invokeLater(() -> NotificationUtil.showWarning(msg));
+                    SwingUtilities.invokeLater(() -> NotificationCenter.showWarning(msg));
                     log.warn("Offset {} is before beginning offset {} for {}, seeking to {}", offset, beginOffset, partition, adjusted);
                 } else if (offset > endOffset) {
                     seekOffset = endOffset;
                     long adjusted = seekOffset;
                     String msg = t(MessageKeys.TOOLBOX_KAFKA_WARN_OFFSET_OUT_OF_RANGE,
                             offset, partition.partition(), beginOffset, endOffset, adjusted);
-                    SwingUtilities.invokeLater(() -> NotificationUtil.showWarning(msg));
+                    SwingUtilities.invokeLater(() -> NotificationCenter.showWarning(msg));
                     log.warn("Offset {} is after end offset {} for {}, seeking to {}", offset, endOffset, partition, adjusted);
                 }
                 consumer.seek(partition, seekOffset);
@@ -238,7 +238,7 @@ public final class KafkaPanelSupport {
                 if (offsetAndTimestamp == null) {
                     consumer.seekToEnd(Collections.singletonList(partition));
                     String msg = t(MessageKeys.TOOLBOX_KAFKA_WARN_TIMESTAMP_OUT_OF_RANGE, timestamp, partition.partition());
-                    SwingUtilities.invokeLater(() -> NotificationUtil.showWarning(msg));
+                    SwingUtilities.invokeLater(() -> NotificationCenter.showWarning(msg));
                     log.warn("Timestamp {} has no matching offset in {}, seeking to end", timestamp, partition);
                 } else {
                     consumer.seek(partition, offsetAndTimestamp.offset());

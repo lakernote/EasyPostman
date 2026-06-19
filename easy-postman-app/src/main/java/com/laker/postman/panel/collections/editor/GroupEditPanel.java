@@ -21,7 +21,7 @@ import com.laker.postman.http.request.AppRequestHeaderDefaults;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -473,7 +473,7 @@ public class GroupEditPanel extends JPanel {
                 GroupEditPanel.this.requestFocusInWindow();
                 SwingUtilities.invokeLater(() -> {
                     autoSaveGroupData(true);
-                    NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
+                    NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
                 });
             }
         });

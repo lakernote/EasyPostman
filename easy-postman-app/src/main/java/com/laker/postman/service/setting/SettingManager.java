@@ -9,7 +9,7 @@ import com.laker.postman.platform.update.model.UpdatePolicy;
 import com.laker.postman.platform.update.model.UpdateTarget;
 import com.laker.postman.settings.PreferencesStore;
 import com.laker.postman.settings.SettingKey;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -74,7 +74,7 @@ public class SettingManager {
     private static void initializeNotificationPosition() {
         try {
             NotificationPosition position = getNotificationPosition();
-            NotificationUtil.setDefaultPosition(position);
+            NotificationCenter.setDefaultPosition(position);
         } catch (Exception e) {
             // 如果解析失败，使用默认值
             log.error("Error initializing notification position", e);

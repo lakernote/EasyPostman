@@ -1,5 +1,7 @@
 package com.laker.postman.plugin.decompiler;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
@@ -400,7 +402,7 @@ public class DecompilerPanel extends JPanel {
                 } catch (Exception e) {
                     log.error("Failed to handle dropped file", e);
                     dtde.dropComplete(false);
-                    NotificationUtil.showError(
+                    NotificationCenter.showError(
                             DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage()
                     );
                 }
@@ -448,7 +450,7 @@ public class DecompilerPanel extends JPanel {
         String fileName = file.getName().toLowerCase();
         if (!fileName.endsWith(JAR_EXTENSION) && !fileName.endsWith(CLASS_EXTENSION) &&
                 !fileName.endsWith(ZIP_EXTENSION) && !fileName.endsWith(WAR_EXTENSION)) {
-            NotificationUtil.showError(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE));
+            NotificationCenter.showError(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_UNSUPPORTED_FILE));
             return;
         }
 
@@ -475,7 +477,7 @@ public class DecompilerPanel extends JPanel {
                 } catch (Exception e) {
                     log.error("Failed to load file: {}", file.getAbsolutePath(), e);
                     SwingUtilities.invokeLater(() -> {
-                        NotificationUtil.showError(
+                        NotificationCenter.showError(
                                 DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_LOAD_ERROR) + ": " + e.getMessage()
                         );
                     });
@@ -765,7 +767,7 @@ public class DecompilerPanel extends JPanel {
 
         byte[] jarBytes = classFileCache.get(jarPath);
         if (jarBytes == null) {
-            NotificationUtil.showWarning("JAR file not found in cache: " + jarPath);
+            NotificationCenter.showWarning("JAR file not found in cache: " + jarPath);
             return;
         }
 
@@ -811,7 +813,7 @@ public class DecompilerPanel extends JPanel {
                 } catch (Exception e) {
                     log.error("Failed to load nested JAR: {}", jarPath, e);
                     SwingUtilities.invokeLater(() ->
-                            NotificationUtil.showError("Failed to load nested JAR: " + e.getMessage())
+                            NotificationCenter.showError("Failed to load nested JAR: " + e.getMessage())
                     );
                 }
                 return null;
@@ -1230,7 +1232,7 @@ public class DecompilerPanel extends JPanel {
             StringSelection selection = new StringSelection(code);
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
             statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
-            NotificationUtil.showSuccess(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
+            NotificationCenter.showSuccess(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CODE_COPIED));
         }
     }
 
@@ -1262,7 +1264,7 @@ public class DecompilerPanel extends JPanel {
         // 更新状态
         statusLabel.setText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_READY));
 
-        NotificationUtil.showSuccess(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLEARED));
+        NotificationCenter.showSuccess(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLEARED));
     }
 
     /**

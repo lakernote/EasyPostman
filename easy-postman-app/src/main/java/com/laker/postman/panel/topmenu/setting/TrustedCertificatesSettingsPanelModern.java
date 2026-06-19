@@ -14,7 +14,7 @@ import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -188,14 +188,14 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
         List<TrustedCertificateEntry> entries = tableModel.getEntries();
         if (customTrustMaterialEnabledCheckBox.isSelected()) {
             if (entries.isEmpty()) {
-                NotificationUtil.showError(I18nUtil.getMessage(
+                NotificationCenter.showError(I18nUtil.getMessage(
                         MessageKeys.SETTINGS_VALIDATION_TRUSTED_MATERIAL_PATH_ERROR));
                 return;
             }
             try {
                 CustomTrustMaterialLoader.loadTrustManager(entries);
             } catch (Exception ex) {
-                NotificationUtil.showError(I18nUtil.getMessage(
+                NotificationCenter.showError(I18nUtil.getMessage(
                         MessageKeys.SETTINGS_VALIDATION_TRUSTED_MATERIAL_LOAD_ERROR) + ": " + ex.getMessage());
                 return;
             }
@@ -209,7 +209,7 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
             originalEnabled = customTrustMaterialEnabledCheckBox.isSelected();
             originalEntriesSnapshot = snapshotEntries();
             setHasUnsavedChanges(false);
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
 
             if (closeAfterSave) {
                 Window window = SwingUtilities.getWindowAncestor(this);
@@ -218,7 +218,7 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
                 }
             }
         } catch (Exception ex) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
         }
     }
 
@@ -546,14 +546,14 @@ public class TrustedCertificatesSettingsPanelModern extends ModernSettingsPanel 
         private void onConfirm() {
             String path = pathField.getText().trim();
             if (path.isEmpty() || !new File(path).isFile()) {
-                NotificationUtil.showError(I18nUtil.getMessage(
+                NotificationCenter.showError(I18nUtil.getMessage(
                         MessageKeys.SETTINGS_VALIDATION_TRUSTED_MATERIAL_PATH_ERROR));
                 return;
             }
             try {
                 CustomTrustMaterialLoader.loadTrustManager(path, new String(passwordField.getPassword()));
             } catch (Exception ex) {
-                NotificationUtil.showError(I18nUtil.getMessage(
+                NotificationCenter.showError(I18nUtil.getMessage(
                         MessageKeys.SETTINGS_VALIDATION_TRUSTED_MATERIAL_LOAD_ERROR) + ": " + ex.getMessage());
                 return;
             }

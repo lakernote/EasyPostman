@@ -1,5 +1,7 @@
 package com.laker.postman.plugin.redis;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyJSpinner;
@@ -676,7 +678,7 @@ public class RedisPanel extends JPanel {
         copyNameItem.addActionListener(e -> {
             if (selected != null) {
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(selected), null);
-                NotificationUtil.showSuccess(selected);
+                NotificationCenter.showSuccess(selected);
             }
         });
         menu.add(copyNameItem);
@@ -702,13 +704,13 @@ public class RedisPanel extends JPanel {
     private void doConnect() {
         String hostInput = getHostText();
         if (hostInput.isBlank()) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
             return;
         }
         ParsedHostPort parsed = parseHostAndPort(hostInput, portSpinner.getCommittedIntValue());
         String host = parsed.host();
         if (host.isBlank()) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
             return;
         }
         int port = parsed.port();
@@ -758,13 +760,13 @@ public class RedisPanel extends JPanel {
                     rememberHostHistory(host);
                     btnCardLayout.show(btnCard, DISCONNECT_CARD);
                     respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_CONNECTED_SIMPLE));
-                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_CONNECT_SUCCESS, host, port, db));
+                    NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_REDIS_CONNECT_SUCCESS, host, port, db));
                     loadKeysAsync();
                 } catch (Exception ex) {
                     connected = false;
                     btnCardLayout.show(btnCard, CONNECT_CARD);
                     respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_CONNECT_FAILED));
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_CONNECT_FAILED, extractErr(ex)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_CONNECT_FAILED, extractErr(ex)));
                     log.warn("Redis connect failed", ex);
                 }
             }
@@ -782,7 +784,7 @@ public class RedisPanel extends JPanel {
         keyTtlMap.clear();
         keyMetaLabel.setText("");
         respStatusLabel.setText("");
-        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_DISCONNECT_SUCCESS));
+        NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_REDIS_DISCONNECT_SUCCESS));
     }
 
     private void closeJedisQuietly() {
@@ -852,7 +854,7 @@ public class RedisPanel extends JPanel {
                     }
                 } catch (Exception ex) {
                     respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_ERROR, "-"));
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
                     log.warn("Load Redis keys failed", ex);
                 }
             }
@@ -893,10 +895,10 @@ public class RedisPanel extends JPanel {
             protected void done() {
                 try {
                     long deleted = get();
-                    NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_KEY_DELETE_SUCCESS, deleted));
+                    NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_REDIS_KEY_DELETE_SUCCESS, deleted));
                     loadKeysAsync();
                 } catch (Exception ex) {
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
                 }
             }
         };
@@ -905,7 +907,7 @@ public class RedisPanel extends JPanel {
 
     private void executeCommand() {
         if (!connected || jedis == null) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_NOT_CONNECTED));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_NOT_CONNECTED));
             return;
         }
 
@@ -915,7 +917,7 @@ public class RedisPanel extends JPanel {
         String value = valueEditor.getText();
 
         if (commandNeedsKey(command) && key.isBlank()) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_KEY_REQUIRED));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_KEY_REQUIRED));
             return;
         }
 
@@ -946,7 +948,7 @@ public class RedisPanel extends JPanel {
                     }
                 } catch (Exception ex) {
                     respStatusLabel.setText(t(MessageKeys.TOOLBOX_REDIS_STATUS_ERROR, cost));
-                    NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
+                    NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_EXECUTE_FAILED, extractErr(ex)));
                 }
             }
         };
@@ -1066,7 +1068,7 @@ public class RedisPanel extends JPanel {
             valueEditor.setText(JsonUtil.toJsonPrettyStr(text));
             valueEditor.setCaretPosition(0);
         } catch (Exception e) {
-            NotificationUtil.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_INVALID_JSON));
+            NotificationCenter.showError(t(MessageKeys.TOOLBOX_REDIS_ERR_INVALID_JSON));
         }
     }
 
@@ -1322,7 +1324,7 @@ public class RedisPanel extends JPanel {
                 .build();
         connectionProfileStore.upsertProfile(newProfile);
         loadSavedConnectionProfiles(newProfile.getId());
-        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_PROFILE_SAVED, newProfile.getName()));
+        NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_REDIS_PROFILE_SAVED, newProfile.getName()));
         hostField.requestFocusInWindow();
     }
 
@@ -1331,7 +1333,7 @@ public class RedisPanel extends JPanel {
         ParsedHostPort parsed = parseHostAndPort(hostInput, portSpinner.getCommittedIntValue());
         String host = parsed.host();
         if (host.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
             return;
         }
         int port = parsed.port();
@@ -1351,7 +1353,7 @@ public class RedisPanel extends JPanel {
         ParsedHostPort parsed = parseHostAndPort(hostInput, portSpinner.getCommittedIntValue());
         String host = parsed.host();
         if (host.isBlank()) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_REDIS_ERR_HOST_REQUIRED));
             return;
         }
         int port = parsed.port();
@@ -1393,19 +1395,19 @@ public class RedisPanel extends JPanel {
         connectionProfileStore.upsertProfile(savedProfile);
         loadSavedConnectionProfiles(savedProfile.getId());
         if (notify) {
-            NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_PROFILE_SAVED, savedProfile.getName()));
+            NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_REDIS_PROFILE_SAVED, savedProfile.getName()));
         }
     }
 
     private void deleteSelectedConnectionProfile() {
         RedisConnectionProfile profile = connectionProfilesByName.get(getProfileNameText());
         if (profile == null) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_REDIS_PROFILE_NOT_SELECTED));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_REDIS_PROFILE_NOT_SELECTED));
             return;
         }
         if (isDefaultProfile(profile)) {
             updateDeleteProfileButton(profile);
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_REDIS_PROFILE_DEFAULT_NOT_DELETABLE));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_REDIS_PROFILE_DEFAULT_NOT_DELETABLE));
             return;
         }
         int option = JOptionPane.showConfirmDialog(
@@ -1420,7 +1422,7 @@ public class RedisPanel extends JPanel {
         }
         connectionProfileStore.deleteProfile(profile.getId());
         loadSavedConnectionProfiles(null);
-        NotificationUtil.showSuccess(t(MessageKeys.TOOLBOX_REDIS_PROFILE_DELETED, profile.getName()));
+        NotificationCenter.showSuccess(t(MessageKeys.TOOLBOX_REDIS_PROFILE_DELETED, profile.getName()));
     }
 
     private String getProfileNameText() {
@@ -1444,7 +1446,7 @@ public class RedisPanel extends JPanel {
         }
         String profileName = input.get();
         if (connectionProfilesByName.containsKey(profileName)) {
-            NotificationUtil.showWarning(t(MessageKeys.TOOLBOX_REDIS_PROFILE_NAME_EXISTS, profileName));
+            NotificationCenter.showWarning(t(MessageKeys.TOOLBOX_REDIS_PROFILE_NAME_EXISTS, profileName));
             return Optional.empty();
         }
         return Optional.of(profileName);

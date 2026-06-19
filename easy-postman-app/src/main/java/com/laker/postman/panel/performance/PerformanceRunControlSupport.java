@@ -20,7 +20,7 @@ import com.laker.postman.performance.core.threadgroup.PerformanceRequestEstimate
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -97,7 +97,7 @@ final class PerformanceRunControlSupport {
                 efficientModeSetter.accept(true);
                 efficientCheckBox.setSelected(true);
                 propertyPanelSupport.saveAllPropertyPanelData();
-                NotificationUtil.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT_ENABLED));
+                NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.PERFORMANCE_RESULT_DETAIL_COMPACT_ENABLED));
             }
         }
 
@@ -156,7 +156,7 @@ final class PerformanceRunControlSupport {
             detail = error.getCause().getMessage();
         }
         String message = I18nUtil.getMessage(MessageKeys.PERFORMANCE_MSG_EXECUTION_INTERRUPTED, detail);
-        SwingUtilities.invokeLater(() -> NotificationUtil.showError(message));
+        SwingUtilities.invokeLater(() -> NotificationCenter.showError(message));
     }
 
     private void finishRunUi() {
@@ -181,7 +181,7 @@ final class PerformanceRunControlSupport {
                 successCount,
                 totalTime / 1000.0
         );
-        NotificationUtil.showSuccess(message);
+        NotificationCenter.showSuccess(message);
     }
 
     private void flushUiAfterStop() {

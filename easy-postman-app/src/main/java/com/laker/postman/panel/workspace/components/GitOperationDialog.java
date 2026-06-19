@@ -1,5 +1,7 @@
 package com.laker.postman.panel.workspace.components;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.AppToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -1054,7 +1056,7 @@ public class GitOperationDialog extends JDialog {
                         get();
                         updateStatus(I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_COMPLETED), "icons/check.svg", ModernColors.getSuccess());
 
-                        NotificationUtil.showSuccess(
+                        NotificationCenter.showSuccess(
                                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_SUCCESS_MESSAGE, operation.getDisplayName())
                         );
 
@@ -1069,7 +1071,7 @@ public class GitOperationDialog extends JDialog {
                             errorMessage = ex.getCause().getMessage();
                         }
 
-                        NotificationUtil.showError(
+                        NotificationCenter.showError(
                                 I18nUtil.getMessage(MessageKeys.GIT_DIALOG_OPERATION_FAILED_MESSAGE, errorMessage)
                         );
                     }
@@ -1149,7 +1151,7 @@ public class GitOperationDialog extends JDialog {
             if (operation == GitOperation.COMMIT) {
                 String message = commitMessageArea.getText().trim();
                 if (message.isEmpty()) {
-                    NotificationUtil.showWarning(
+                    NotificationCenter.showWarning(
                             I18nUtil.getMessage(MessageKeys.GIT_DIALOG_VALIDATION_COMMIT_MESSAGE_EMPTY)
                     );
                     return false;

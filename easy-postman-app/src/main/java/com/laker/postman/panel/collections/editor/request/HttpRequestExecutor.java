@@ -15,7 +15,7 @@ import com.laker.postman.http.runtime.sse.SseResponseCallback;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -114,7 +114,7 @@ final class HttpRequestExecutor {
                                     return;
                                 }
                                 executionState.clearAutoDetectedHttpSseOpen();
-                                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
+                                NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
                                 requestExecutionUiUpdater.updateUIForResponse(response);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(response);
@@ -137,7 +137,7 @@ final class HttpRequestExecutor {
                         String userMessage = toInterruptedRequestUserMessage(ex, resp);
                         ConsolePanel.appendLog("[Error] " + userMessage, ConsolePanel.LogType.ERROR);
                         if (!executionState.isDisposed()) {
-                            NotificationUtil.showError(userMessage);
+                            NotificationCenter.showError(userMessage);
                         }
                     }
                 } catch (Exception ex) {
@@ -151,7 +151,7 @@ final class HttpRequestExecutor {
                     String userFriendlyMessage = resolveResponseErrorMessage(resp, ex);
                     ConsolePanel.appendLog("[Error] " + userFriendlyMessage, ConsolePanel.LogType.ERROR);
                     if (!executionState.isDisposed()) {
-                        NotificationUtil.showError(userFriendlyMessage);
+                        NotificationCenter.showError(userFriendlyMessage);
                     }
                 }
                 return null;

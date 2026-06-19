@@ -11,7 +11,7 @@ import com.laker.postman.panel.update.PluginUpdateNotification;
 import com.laker.postman.service.update.AppUpdateCenter;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -111,7 +111,7 @@ public class PluginUpdateCheckCoordinator {
         }
         SwingUtilities.invokeLater(() -> {
             if (result.failed()) {
-                NotificationUtil.showError(I18nUtil.getMessage(
+                NotificationCenter.showError(I18nUtil.getMessage(
                         MessageKeys.PLUGIN_UPDATE_CHECK_FAILED,
                         result.errorMessage()
                 ));

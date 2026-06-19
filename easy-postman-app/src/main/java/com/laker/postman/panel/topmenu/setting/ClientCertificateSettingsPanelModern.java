@@ -14,7 +14,7 @@ import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.Getter;
 
 import javax.swing.*;
@@ -303,7 +303,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         if (dialog.isConfirmed()) {
             getCertificateService().addCertificate(cert);
             loadCertificates();
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_ADD_SUCCESS));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_ADD_SUCCESS));
         }
     }
 
@@ -319,7 +319,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
         if (dialog.isConfirmed()) {
             getCertificateService().updateCertificate(cert);
             loadCertificates();
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_EDIT_SUCCESS));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_EDIT_SUCCESS));
         }
     }
 
@@ -346,7 +346,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
             getCertificateService().deleteCertificate(cert.getId());
             loadCertificates();
             updateButtonStates();
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_DELETE_SUCCESS));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_DELETE_SUCCESS));
         }
     }
 
@@ -441,7 +441,7 @@ public class ClientCertificateSettingsPanelModern extends ModernSettingsPanel {
                 cert.setEnabled((Boolean) aValue);
                 ClientCertificatePluginAccess.requireService().updateCertificate(cert);
                 fireTableCellUpdated(rowIndex, columnIndex);
-                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_STATUS_UPDATED));
+                NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.CERT_STATUS_UPDATED));
             }
         }
     }

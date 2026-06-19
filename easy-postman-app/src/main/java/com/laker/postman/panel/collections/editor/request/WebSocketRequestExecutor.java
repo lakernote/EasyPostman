@@ -12,7 +12,7 @@ import com.laker.postman.http.runtime.transport.RealtimeWebSocketConnection;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
 import okhttp3.WebSocket;
@@ -215,7 +215,7 @@ final class WebSocketRequestExecutor {
                         String errorMsg = response != null
                                 ? I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage() + " (" + response.code() + ")")
                                 : I18nUtil.getMessage(MessageKeys.WEBSOCKET_FAILED, t.getMessage());
-                        NotificationUtil.showError(errorMsg);
+                        NotificationCenter.showError(errorMsg);
                     });
                 }
             };
@@ -239,7 +239,7 @@ final class WebSocketRequestExecutor {
                     return;
                 }
                 webSocketConnectionUi.updateUIForResponse(null);
-                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
+                NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.WEBSOCKET_ERROR, ex.getMessage()));
                 webSocketConnectionUi.setWebSocketConnected(false);
             });
         }

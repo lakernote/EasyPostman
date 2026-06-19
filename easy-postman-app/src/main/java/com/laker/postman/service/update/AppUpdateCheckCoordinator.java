@@ -9,7 +9,7 @@ import com.laker.postman.platform.update.model.UpdateTarget;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import com.laker.postman.util.SystemUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -221,14 +221,14 @@ public class AppUpdateCheckCoordinator {
      * 显示无更新消息
      */
     private void showNoUpdateMessage(UpdateInfo updateInfo) {
-        NotificationUtil.showInfo(updateInfo.getMessage());
+        NotificationCenter.showInfo(updateInfo.getMessage());
     }
 
     /**
      * 显示检查失败消息
      */
     private void showCheckFailedMessage(UpdateInfo updateInfo) {
-        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.ERROR_UPDATE_FAILED, updateInfo.getMessage()));
+        NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.ERROR_UPDATE_FAILED, updateInfo.getMessage()));
     }
 
 }

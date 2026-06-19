@@ -8,7 +8,7 @@ import com.laker.postman.util.AsyncClipboardUtil;
 import com.laker.postman.util.ClipboardUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
@@ -91,7 +91,7 @@ final class RequestEditorPlusTabController {
             clearClipboardAsync();
             return true;
         } catch (Exception ex) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.PARSE_CURL_ERROR, ex.getMessage()));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.PARSE_CURL_ERROR, ex.getMessage()));
             return true;
         }
     }

@@ -14,7 +14,7 @@ import com.laker.postman.http.runtime.sse.SseStreamCallback;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -108,7 +108,7 @@ final class SseRequestExecutor {
                                 if (executionState.isDisposed()) {
                                     return;
                                 }
-                                NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
+                                NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SSE_FAILED, errorMsg));
                                 requestExecutionUiUpdater.updateUIForResponse(r);
                                 responsePanel.setRequestDetails(req);
                                 responsePanel.setResponseDetails(r);
@@ -136,7 +136,7 @@ final class SseRequestExecutor {
                             return;
                         }
                         responsePanel.setStatus(0);
-                        NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SSE_ERROR, userFriendlyMessage));
+                        NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SSE_ERROR, userFriendlyMessage));
                     });
                 }
                 return null;

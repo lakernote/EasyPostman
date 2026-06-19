@@ -15,7 +15,7 @@
         插件版本单独维护。
         初始独立版本从 5.3.16 起步，后续只在该插件有变更时单独递增。
      -->
-    <version>6.0.3</version>
+    <version>6.0.7</version>
     <artifactId>easy-postman-plugin-redis</artifactId>
     <packaging>jar</packaging>
 
@@ -34,7 +34,7 @@
         <plugin.name>Redis Plugin</plugin.name>
         <plugin.entryClass>com.laker.postman.plugin.redis.RedisPlugin</plugin.entryClass>
         <plugin.description>Redis toolbox panel, pm.plugin("redis") script API, completions and snippets.</plugin.description>
-        <plugin.minAppVersion>6.0.3</plugin.minAppVersion>
+        <plugin.minAppVersion>6.0.7</plugin.minAppVersion>
         <!--
             运行时插件平台兼容范围，匹配的是 runtime/SPI 装配边界，不是宿主发行版 revision。
             这里不要直接跟随 ${revision}：

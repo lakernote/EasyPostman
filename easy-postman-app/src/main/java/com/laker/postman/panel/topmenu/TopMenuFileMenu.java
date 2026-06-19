@@ -12,7 +12,7 @@ import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 
@@ -73,7 +73,7 @@ class TopMenuFileMenu {
             File fileToSave = fileChooser.getSelectedFile();
             try {
                 leftPanel.getCollectionTreePersistence().exportCurrentTree(fileToSave);
-                NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS));
+                NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.COLLECTIONS_EXPORT_SUCCESS));
             } catch (Exception ex) {
                 log.error("Export error", ex);
                 JOptionPane.showMessageDialog(parent,

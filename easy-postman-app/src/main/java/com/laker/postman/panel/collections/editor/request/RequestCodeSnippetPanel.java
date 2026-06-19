@@ -14,7 +14,7 @@ import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.*;
@@ -140,6 +140,6 @@ final class RequestCodeSnippetPanel extends JPanel {
         Toolkit.getDefaultToolkit()
                 .getSystemClipboard()
                 .setContents(new StringSelection(code), null);
-        NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.REQUEST_ASSISTANT_CODE_COPIED));
+        NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.REQUEST_ASSISTANT_CODE_COPIED));
     }
 }

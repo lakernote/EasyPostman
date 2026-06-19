@@ -21,7 +21,7 @@ import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 
 public class PluginRuntimeTest {
-    private static final String CURRENT_PLUGIN_PLATFORM_VERSION = "3.0.0";
+    private static final String CURRENT_PLUGIN_PLATFORM_VERSION = "4.0.0";
 
     private Path dataDir;
 
@@ -107,7 +107,7 @@ public class PluginRuntimeTest {
     }
 
     @Test
-    public void shouldRejectOldPluginPlatformAfterBreakingSpiChange() {
+    public void shouldRejectPreviousPluginPlatformAfterSharedUiBreakingChange() {
         PluginDescriptor descriptor = new PluginDescriptor(
                 "plugin-client-cert",
                 "Client Certificate Plugin",
@@ -117,8 +117,8 @@ public class PluginRuntimeTest {
                 "",
                 "",
                 "",
-                "1.0.0",
-                "1.0.0"
+                "3.0.0",
+                "3.0.0"
         );
 
         PluginCompatibility compatibility = PluginRuntime.evaluateCompatibility(descriptor);
@@ -127,7 +127,7 @@ public class PluginRuntimeTest {
         assertTrue(compatibility.appVersionCompatible());
         assertFalse(compatibility.platformVersionCompatible());
         assertEquals(compatibility.currentPlatformVersion(), CURRENT_PLUGIN_PLATFORM_VERSION);
-        assertEquals(compatibility.maxPlatformVersion(), "1.0.0");
+        assertEquals(compatibility.maxPlatformVersion(), "3.0.0");
     }
 
     @Test

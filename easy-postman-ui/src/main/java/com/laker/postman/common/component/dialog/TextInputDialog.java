@@ -6,7 +6,7 @@ import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.util.CommonI18n;
 import com.laker.postman.util.CommonMessageKeys;
 import com.laker.postman.util.FontsUtil;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -65,7 +65,7 @@ public final class TextInputDialog {
             String value = nameField.getText() == null ? "" : nameField.getText().trim();
             if (value.isEmpty()) {
                 if (emptyWarningMessage != null && !emptyWarningMessage.isBlank()) {
-                    NotificationUtil.showWarning(emptyWarningMessage);
+                    NotificationCenter.showWarning(emptyWarningMessage);
                 }
                 nameField.requestFocusInWindow();
                 return;

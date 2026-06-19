@@ -20,7 +20,7 @@ import static org.testng.Assert.assertTrue;
 
 public class PluginUpdateCheckerTest {
 
-    private static final String CURRENT_PLUGIN_PLATFORM_VERSION = "3.0.0";
+    private static final String CURRENT_PLUGIN_PLATFORM_VERSION = "4.0.0";
 
     private Path dataDir;
     private Path appDir;
@@ -76,7 +76,7 @@ public class PluginUpdateCheckerTest {
     public void shouldIgnoreCatalogUpdatesBuiltForOldPluginPlatform() {
         List<PluginUpdateCandidate> candidates = PluginUpdateChecker.findUpdateCandidates(
                 List.of(installedPlugin("plugin-kafka", "Kafka Plugin", "5.3.18")),
-                List.of(catalogEntry("plugin-kafka", "Kafka Plugin", "5.5.28", "", "", "1.0.0", "1.0.0"))
+                List.of(catalogEntry("plugin-kafka", "Kafka Plugin", "5.5.28", "", "", "3.0.0", "3.0.0"))
         );
 
         assertTrue(candidates.isEmpty());

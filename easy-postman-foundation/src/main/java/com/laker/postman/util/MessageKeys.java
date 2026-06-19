@@ -60,6 +60,8 @@ public final class MessageKeys {
     public static final String UPDATE_NO_INSTALLER_FOUND = "update.no_installer_found";
     public static final String UPDATE_WHATS_NEW = "update.whats_new";
     public static final String UPDATE_SAVE_TIP = "update.save_tip";
+    public static final String UPDATE_VERSION_PREFIX = "update.version_prefix";
+    public static final String UPDATE_RELEASED_ON = "update.released_on";
     public static final String UPDATE_NO_CHANGELOG = "update.no_changelog";
     public static final String UPDATE_DEFAULT_CHANGELOG = "update.default_changelog";
     public static final String UPDATE_CODE_EXAMPLE = "update.code_example";
@@ -77,6 +79,11 @@ public final class MessageKeys {
     public static final String UPDATE_AVAILABLE_NO_ASSET = "update.available_no_asset";
     public static final String UPDATE_AVAILABLE_NO_ASSET_TITLE = "update.available_no_asset.title";
     public static final String UPDATE_AVAILABLE_NO_ASSET_GO_GITHUB = "update.available_no_asset.go_github";
+    public static final String UPDATE_AVAILABLE_NO_ASSET_HINT = "update.available_no_asset.hint";
+    public static final String UPDATE_AVAILABLE_NO_ASSET_TIP = "update.available_no_asset.tip";
+    public static final String UPDATE_NOTIFICATION_NO_ASSET_DESCRIPTION = "update.notification.no_asset_description";
+    public static final String UPDATE_NOTIFICATION_VIEW_DETAILS_DESCRIPTION = "update.notification.view_details_description";
+    public static final String UPDATE_NOTIFICATION_DEFAULT_DESCRIPTION = "update.notification.default_description";
     // ============ 更新日志相关 ============
     public static final String CHANGELOG_TITLE = "changelog.title";
     public static final String CHANGELOG_CURRENT_VERSION = "changelog.current_version";

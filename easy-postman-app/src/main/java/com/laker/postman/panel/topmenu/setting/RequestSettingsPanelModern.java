@@ -6,7 +6,7 @@ import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -305,12 +305,12 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
 
     private void saveSettings(boolean closeAfterSave) {
         if (!validateAllFields()) {
-            NotificationUtil.showError(
+            NotificationCenter.showError(
                     I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
             return;
         }
         if (!hasAnyRequestEditorTabSelected()) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_REQUEST_EDITOR_TABS_ERROR));
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_REQUEST_EDITOR_TABS_ERROR));
             return;
         }
 
@@ -352,7 +352,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(remoteScriptMaxSizeField);
             setHasUnsavedChanges(false);
 
-            NotificationUtil.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
+            NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
 
             if (closeAfterSave) {
                 Window window = SwingUtilities.getWindowAncestor(this);
@@ -361,7 +361,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
                 }
             }
         } catch (Exception ex) {
-            NotificationUtil.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
+            NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_ERROR_MESSAGE) + ": " + ex.getMessage());
         }
     }
 

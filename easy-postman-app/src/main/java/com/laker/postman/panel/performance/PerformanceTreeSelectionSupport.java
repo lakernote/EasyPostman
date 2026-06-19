@@ -20,7 +20,7 @@ import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
-import com.laker.postman.util.NotificationUtil;
+import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
@@ -79,7 +79,7 @@ final class PerformanceTreeSelectionSupport {
     private final String wsCloseCard;
 
     private DefaultMutableTreeNode lastNode;
-    private Consumer<String> requestDataMissingAction = NotificationUtil::showError;
+    private Consumer<String> requestDataMissingAction = NotificationCenter::showError;
 
     void install() {
         performanceTree.addTreeSelectionListener(e -> handleSelectionChange());
@@ -90,7 +90,7 @@ final class PerformanceTreeSelectionSupport {
 
     void setRequestDataMissingAction(Consumer<String> requestDataMissingAction) {
         this.requestDataMissingAction = requestDataMissingAction == null
-                ? NotificationUtil::showError
+                ? NotificationCenter::showError
                 : requestDataMissingAction;
     }
 

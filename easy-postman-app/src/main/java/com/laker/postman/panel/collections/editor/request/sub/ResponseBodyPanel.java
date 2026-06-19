@@ -1,5 +1,7 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.notification.NotificationCenter;
+
 import cn.hutool.core.util.XmlUtil;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.UiSingletonFactory;
@@ -244,9 +246,9 @@ public class ResponseBodyPanel extends JPanel {
                         }
                     }
                 }
-                NotificationUtil.showInfo("File saved successfully: " + destFile.getAbsolutePath());
+                NotificationCenter.showInfo("File saved successfully: " + destFile.getAbsolutePath());
             } catch (Exception ex) {
-                NotificationUtil.showError("Save File Error: " + ex.getMessage());
+                NotificationCenter.showError("Save File Error: " + ex.getMessage());
             }
         }
     }
@@ -297,7 +299,7 @@ public class ResponseBodyPanel extends JPanel {
                 responseBodyPane.setCaretPosition(0);
             }
         } catch (Exception ex) {
-            NotificationUtil.showError("Format Error: " + ex.getMessage());
+            NotificationCenter.showError("Format Error: " + ex.getMessage());
         }
     }
 
@@ -318,9 +320,9 @@ public class ResponseBodyPanel extends JPanel {
         try {
             Toolkit.getDefaultToolkit().getSystemClipboard()
                     .setContents(new StringSelection(text), null);
-            NotificationUtil.showInfo("Content copied to clipboard");
+            NotificationCenter.showInfo("Content copied to clipboard");
         } catch (Exception ex) {
-            NotificationUtil.showError("Copy Error: " + ex.getMessage());
+            NotificationCenter.showError("Copy Error: " + ex.getMessage());
         }
     }
 

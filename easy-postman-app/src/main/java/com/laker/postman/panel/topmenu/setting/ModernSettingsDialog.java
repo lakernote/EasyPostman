@@ -25,7 +25,7 @@ public class ModernSettingsDialog extends JDialog {
     private static final int MIN_WIDTH = 600;
     private static final int MIN_HEIGHT = 300;
     private static final int PREFERRED_WIDTH = 820;
-    private static final int PREFERRED_HEIGHT = 600;
+    private static final int PREFERRED_HEIGHT = 640;
     private static final int SIDE_TAB_WIDTH = 176;
 
     private final JTabbedPane tabbedPane;

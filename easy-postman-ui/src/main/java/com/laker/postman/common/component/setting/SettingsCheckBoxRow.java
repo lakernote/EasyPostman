@@ -20,19 +20,15 @@ import java.awt.event.MouseEvent;
 public class SettingsCheckBoxRow extends JPanel {
 
     public static final int DEFAULT_ROW_HEIGHT = 36;
+    private JCheckBox checkBox;
 
     public SettingsCheckBoxRow(JCheckBox checkBox, String tooltip) {
+        this.checkBox = checkBox;
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
-        setOpaque(false);
-        setBackground(ModernColors.getBackgroundColor());
         setAlignmentX(Component.LEFT_ALIGNMENT);
         setMaximumSize(new Dimension(Integer.MAX_VALUE, DEFAULT_ROW_HEIGHT));
 
-        checkBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        checkBox.setForeground(ModernColors.getTextPrimary());
-        checkBox.setBackground(ModernColors.getBackgroundColor());
-        checkBox.setOpaque(false);
-        checkBox.setFocusPainted(false);
+        applySettingsSurface();
         if (tooltip != null && !tooltip.isEmpty()) {
             checkBox.setToolTipText(tooltip);
         }
@@ -52,5 +48,25 @@ public class SettingsCheckBoxRow extends JPanel {
 
         add(checkBox);
         add(Box.createHorizontalGlue());
+    }
+
+    @Override
+    public void updateUI() {
+        super.updateUI();
+        applySettingsSurface();
+    }
+
+    private void applySettingsSurface() {
+        setOpaque(false);
+        setBackground(ModernColors.getDialogChromeBackgroundColor());
+        if (checkBox == null) {
+            return;
+        }
+        checkBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        checkBox.setForeground(ModernColors.getTextPrimary());
+        checkBox.setBackground(ModernColors.getDialogChromeBackgroundColor());
+        checkBox.setOpaque(false);
+        checkBox.setContentAreaFilled(false);
+        checkBox.setFocusPainted(true);
     }
 }

@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.setting.SettingsFieldRow;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
@@ -21,6 +22,9 @@ import java.util.List;
 public class RequestSettingsPanelModern extends ModernSettingsPanel {
     private static final int FIELD_SPACING = 8;
     private static final int SECTION_SPACING = 12;
+    private static final int COMPACT_SECTION_SPACING = 4;
+    private static final int COMPACT_SECTION_BOTTOM_PADDING = 8;
+    private static final int SCRIPT_FIELD_WIDTH = SettingsFieldRow.DEFAULT_FIELD_WIDTH;
     private static final int BYTES_PER_KB = 1024;
 
     private JTextField maxBodySizeField;
@@ -42,6 +46,10 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
     private JTextField remoteScriptConnectTimeoutField;
     private JTextField remoteScriptReadTimeoutField;
     private JTextField remoteScriptMaxSizeField;
+    private SettingsFieldRow remoteScriptAllowedHostsRow;
+    private SettingsFieldRow remoteScriptConnectTimeoutRow;
+    private SettingsFieldRow remoteScriptReadTimeoutRow;
+    private SettingsFieldRow remoteScriptMaxSizeRow;
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -159,9 +167,10 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
                 settingsTabVisibleCheckBox,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_EDITOR_TABS_TOOLTIP)
         ));
+        requestEditorTabSection.setBorder(BorderFactory.createEmptyBorder(0, 0, COMPACT_SECTION_BOTTOM_PADDING, 0));
 
         contentPanel.add(requestEditorTabSection);
-        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+        contentPanel.add(createVerticalSpace(COMPACT_SECTION_SPACING));
 
         JPanel scriptSection = createModernSection(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_TITLE),
@@ -188,40 +197,54 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
         ));
         scriptSection.add(createVerticalSpace(FIELD_SPACING));
 
+        int scriptFieldLabelWidth = calculateScriptFieldLabelWidth();
+
         remoteScriptAllowedHostsField = new JTextField(10);
         remoteScriptAllowedHostsField.setText(SettingManager.getRemoteJsRequireAllowedHosts());
-        scriptSection.add(createFieldRow(
+        remoteScriptAllowedHostsRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS_TOOLTIP),
-                remoteScriptAllowedHostsField
-        ));
+                remoteScriptAllowedHostsField,
+                scriptFieldLabelWidth,
+                SCRIPT_FIELD_WIDTH
+        );
+        scriptSection.add(remoteScriptAllowedHostsRow);
         scriptSection.add(createVerticalSpace(FIELD_SPACING));
 
         remoteScriptConnectTimeoutField = new JTextField(10);
         remoteScriptConnectTimeoutField.setText(String.valueOf(SettingManager.getRemoteJsRequireConnectTimeoutMs()));
-        scriptSection.add(createFieldRow(
+        remoteScriptConnectTimeoutRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT_TOOLTIP),
-                remoteScriptConnectTimeoutField
-        ));
+                remoteScriptConnectTimeoutField,
+                scriptFieldLabelWidth,
+                SCRIPT_FIELD_WIDTH
+        );
+        scriptSection.add(remoteScriptConnectTimeoutRow);
         scriptSection.add(createVerticalSpace(FIELD_SPACING));
 
         remoteScriptReadTimeoutField = new JTextField(10);
         remoteScriptReadTimeoutField.setText(String.valueOf(SettingManager.getRemoteJsRequireReadTimeoutMs()));
-        scriptSection.add(createFieldRow(
+        remoteScriptReadTimeoutRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT_TOOLTIP),
-                remoteScriptReadTimeoutField
-        ));
+                remoteScriptReadTimeoutField,
+                scriptFieldLabelWidth,
+                SCRIPT_FIELD_WIDTH
+        );
+        scriptSection.add(remoteScriptReadTimeoutRow);
         scriptSection.add(createVerticalSpace(FIELD_SPACING));
 
         remoteScriptMaxSizeField = new JTextField(10);
         remoteScriptMaxSizeField.setText(String.valueOf(SettingManager.getRemoteJsRequireMaxBytes() / BYTES_PER_KB));
-        scriptSection.add(createFieldRow(
+        remoteScriptMaxSizeRow = createFieldRow(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_MAX_SIZE),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_MAX_SIZE_TOOLTIP),
-                remoteScriptMaxSizeField
-        ));
+                remoteScriptMaxSizeField,
+                scriptFieldLabelWidth,
+                SCRIPT_FIELD_WIDTH
+        );
+        scriptSection.add(remoteScriptMaxSizeRow);
 
         contentPanel.add(scriptSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
@@ -290,17 +313,7 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
                 }
             }
         });
-
-        InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        ActionMap actionMap = getActionMap();
-
-        inputMap.put(KeyStroke.getKeyStroke("control S"), "save");
-        actionMap.put("save", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                saveSettings(false);
-            }
-        });
+        registerSaveShortcut(() -> saveSettings(false));
     }
 
     private void saveSettings(boolean closeAfterSave) {
@@ -368,10 +381,23 @@ public class RequestSettingsPanelModern extends ModernSettingsPanel {
     private void updateRemoteScriptControls() {
         boolean remoteEnabled = remoteScriptRequireEnabledCheckBox.isSelected();
         remoteScriptRequireAllowHttpCheckBox.setEnabled(remoteEnabled);
-        remoteScriptAllowedHostsField.setEnabled(remoteEnabled);
-        remoteScriptConnectTimeoutField.setEnabled(remoteEnabled);
-        remoteScriptReadTimeoutField.setEnabled(remoteEnabled);
-        remoteScriptMaxSizeField.setEnabled(remoteEnabled);
+        setRemoteScriptFieldRowsEnabled(remoteEnabled);
+    }
+
+    private void setRemoteScriptFieldRowsEnabled(boolean enabled) {
+        remoteScriptAllowedHostsRow.setEnabled(enabled);
+        remoteScriptConnectTimeoutRow.setEnabled(enabled);
+        remoteScriptReadTimeoutRow.setEnabled(enabled);
+        remoteScriptMaxSizeRow.setEnabled(enabled);
+    }
+
+    private int calculateScriptFieldLabelWidth() {
+        return calculateFieldLabelWidth(List.of(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_ALLOWED_HOSTS),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_CONNECT_TIMEOUT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_READ_TIMEOUT),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_REQUEST_SCRIPT_REMOTE_REQUIRE_MAX_SIZE)
+        ));
     }
 
     private boolean isStrictlyPositiveInteger(String value) {

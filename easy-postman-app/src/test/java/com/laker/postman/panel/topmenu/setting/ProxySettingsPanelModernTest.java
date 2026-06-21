@@ -1,6 +1,7 @@
 package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.component.EasyPasswordField;
+import com.laker.postman.common.component.setting.SettingsFieldRow;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
@@ -9,6 +10,7 @@ import org.testng.annotations.Test;
 
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 import java.awt.Component;
@@ -20,6 +22,56 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class ProxySettingsPanelModernTest extends AbstractSwingUiTest {
+
+    @Test
+    public void shouldDimProxyFieldRowsWhenProxyIsDisabled() throws Exception {
+        boolean oldProxyEnabled = SettingManager.isProxyEnabled();
+        String oldProxyMode = SettingManager.getProxyMode();
+
+        try {
+            SettingManager.setProxyEnabled(false);
+            SettingManager.setProxyMode(SettingManager.PROXY_MODE_MANUAL);
+
+            AtomicReference<ProxySettingsPanelModern> panelRef = new AtomicReference<>();
+            SwingUtilities.invokeAndWait(() -> {
+                ProxySettingsPanelModern panel = new ProxySettingsPanelModern();
+                panel.getPreferredSize();
+                panelRef.set(panel);
+            });
+
+            ProxySettingsPanelModern panel = panelRef.get();
+            SettingsFieldRow modeRow = findFieldRow(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_MODE)
+            );
+            SettingsFieldRow hostRow = findFieldRow(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_HOST)
+            );
+            SettingsFieldRow usernameRow = findFieldRow(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_USERNAME)
+            );
+
+            assertRowDisabled(modeRow);
+            assertRowDisabled(hostRow);
+            assertRowDisabled(usernameRow);
+
+            JCheckBox enabledCheckBox = findCheckBox(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_ENABLED_CHECKBOX)
+            );
+            assertNotNull(enabledCheckBox);
+            SwingUtilities.invokeAndWait(() -> enabledCheckBox.setSelected(true));
+
+            assertRowEnabled(modeRow);
+            assertRowEnabled(hostRow);
+            assertRowEnabled(usernameRow);
+        } finally {
+            SettingManager.setProxyEnabled(oldProxyEnabled);
+            SettingManager.setProxyMode(oldProxyMode);
+        }
+    }
 
     @Test
     public void shouldUseRevealablePasswordFieldAndOnlyShowSystemPreviewInSystemMode() throws Exception {
@@ -76,6 +128,50 @@ public class ProxySettingsPanelModernTest extends AbstractSwingUiTest {
             }
         }
         return null;
+    }
+
+    private static SettingsFieldRow findFieldRow(Container container, String labelText) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof SettingsFieldRow row && labelText.equals(row.label().getText())) {
+                return row;
+            }
+            if (component instanceof Container child) {
+                SettingsFieldRow found = findFieldRow(child, labelText);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static JCheckBox findCheckBox(Container container, String text) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof JCheckBox checkBox && text.equals(checkBox.getText())) {
+                return checkBox;
+            }
+            if (component instanceof Container child) {
+                JCheckBox found = findCheckBox(child, text);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static void assertRowDisabled(SettingsFieldRow row) {
+        assertNotNull(row);
+        assertFalse(row.isEnabled());
+        assertFalse(row.label().isEnabled());
+        assertFalse(row.inputComponent().isEnabled());
+    }
+
+    private static void assertRowEnabled(SettingsFieldRow row) {
+        assertNotNull(row);
+        assertTrue(row.isEnabled());
+        assertTrue(row.label().isEnabled());
+        assertTrue(row.inputComponent().isEnabled());
     }
 
     private static JLabel findLabel(Container container, String text) {

@@ -277,19 +277,7 @@ public class PerformanceSettingsPanelModern extends ModernSettingsPanel {
                 }
             }
         });
-
-        // 键盘快捷键
-        InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
-        ActionMap actionMap = getActionMap();
-
-        inputMap.put(KeyStroke.getKeyStroke("control S"), "save");
-        actionMap.put("save", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                saveSettings(false);
-            }
-        });
-
+        registerSaveShortcut(() -> saveSettings(false));
     }
 
     private void saveSettings(boolean closeAfterSave) {

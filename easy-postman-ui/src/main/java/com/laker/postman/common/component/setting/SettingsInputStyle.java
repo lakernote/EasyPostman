@@ -25,8 +25,7 @@ public class SettingsInputStyle {
             return;
         }
         component.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        component.setBackground(ModernColors.getInputBackgroundColor());
-        component.setForeground(ModernColors.getTextPrimary());
+        applyEnabledState(component, component.isEnabled());
 
         if (component instanceof JTextField field) {
             if (field instanceof EasyPasswordField passwordField) {
@@ -38,6 +37,20 @@ public class SettingsInputStyle {
         } else if (component instanceof JComboBox<?> comboBox) {
             comboBox.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             comboBox.putClientProperty(FlatClientProperties.STYLE, "arc: 8");
+        }
+    }
+
+    public static void applyEnabledState(JComponent component, boolean enabled) {
+        if (component == null) {
+            return;
+        }
+        component.setEnabled(enabled);
+        component.setBackground(enabled
+                ? ModernColors.getInputBackgroundColor()
+                : ModernColors.getInputDisabledBackgroundColor());
+        component.setForeground(enabled ? ModernColors.getTextPrimary() : ModernColors.getTextDisabled());
+        if (component instanceof JTextField field) {
+            field.setDisabledTextColor(ModernColors.getTextDisabled());
         }
     }
 }

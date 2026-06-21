@@ -458,6 +458,14 @@ public final class ModernColors {
     }
 
     /**
+     * 获取输入框禁用状态背景色。
+     * 优先跟随 FlatLaf 文本框自身 token，避免复用按钮禁用色导致表单块过重。
+     */
+    public static Color getInputDisabledBackgroundColor() {
+        return uiColor("TextField.disabledBackground", new Color(241, 243, 246), new Color(40, 42, 46));
+    }
+
+    /**
      * 获取 Tab 区域未选中背景色 - 根据主题自适应。
      */
     public static Color getTabBackgroundColor() {

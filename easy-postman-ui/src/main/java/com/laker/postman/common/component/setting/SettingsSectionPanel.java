@@ -18,6 +18,7 @@ import java.awt.Font;
 public class SettingsSectionPanel extends JPanel {
 
     public static final int DEFAULT_DESCRIPTION_WIDTH = 640;
+    private JLabel titleLabel;
 
     public SettingsSectionPanel(String title, String description) {
         this(title, description, DEFAULT_DESCRIPTION_WIDTH);
@@ -25,15 +26,12 @@ public class SettingsSectionPanel extends JPanel {
 
     public SettingsSectionPanel(String title, String description, int descriptionWidth) {
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setOpaque(false);
-        setBackground(ModernColors.getBackgroundColor());
         setBorder(new EmptyBorder(0, 0, 18, 0));
         setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        titleLabel.setForeground(ModernColors.getTextPrimary());
+        titleLabel = new JLabel(title);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        applySettingsSurface();
 
         if (description == null || description.isEmpty()) {
             titleLabel.setBorder(new EmptyBorder(0, 0, 8, 0));
@@ -51,8 +49,17 @@ public class SettingsSectionPanel extends JPanel {
     @Override
     public void updateUI() {
         super.updateUI();
+        applySettingsSurface();
+    }
+
+    private void applySettingsSurface() {
         setOpaque(false);
-        setBackground(ModernColors.getBackgroundColor());
+        setBackground(ModernColors.getDialogChromeBackgroundColor());
+        if (titleLabel == null) {
+            return;
+        }
+        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
+        titleLabel.setForeground(ModernColors.getTextPrimary());
     }
 
     @Override

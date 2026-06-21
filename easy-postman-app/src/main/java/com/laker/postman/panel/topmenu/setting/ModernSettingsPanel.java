@@ -20,6 +20,7 @@ import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -29,6 +30,9 @@ import java.util.function.Predicate;
  * 提供统一的现代化UI风格和交互体验
  */
 public abstract class ModernSettingsPanel extends JPanel {
+    protected static final int COMPACT_FIELD_LABEL_MIN_WIDTH = 120;
+    protected static final int FIELD_LABEL_TEXT_PADDING = 12;
+
     protected JButton saveBtn;
     @Getter
     protected JButton cancelBtn;
@@ -43,24 +47,10 @@ public abstract class ModernSettingsPanel extends JPanel {
     private boolean initialized;
 
     /**
-     * 检查当前是否为暗色主题
-     */
-    protected boolean isDarkTheme() {
-        return ModernColors.isDarkTheme();
-    }
-
-    /**
-     * 获取主题适配的主背景色
+     * 获取主题适配的设置对话框背景色
      */
     protected Color getBackgroundColor() {
-        return ModernColors.getBackgroundColor();
-    }
-
-    /**
-     * 获取主题适配的卡片/区域背景色
-     */
-    protected Color getCardBackgroundColor() {
-        return ModernColors.getCardBackgroundColor();
+        return ModernColors.getDialogChromeBackgroundColor();
     }
 
     /**
@@ -85,34 +75,6 @@ public abstract class ModernSettingsPanel extends JPanel {
     }
 
     /**
-     * 获取主题适配的边框颜色（浅色）
-     */
-    protected Color getBorderLightColor() {
-        return ModernColors.getBorderLightColor();
-    }
-
-    /**
-     * 获取主题适配的边框颜色（中等）
-     */
-    protected Color getBorderMediumColor() {
-        return ModernColors.getBorderMediumColor();
-    }
-
-    /**
-     * 获取主题适配的悬停背景色
-     */
-    protected Color getHoverBackgroundColor() {
-        return ModernColors.getHoverBackgroundColor();
-    }
-
-    /**
-     * 获取主题适配的按钮背景色（暗色，pressed状态）
-     */
-    protected Color getButtonDarkColor() {
-        return ModernColors.getButtonPressedColor();
-    }
-
-    /**
      * 获取主题适配的滚动条轨道颜色
      */
     protected Color getScrollbarTrackColor() {
@@ -131,13 +93,6 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     protected Color getScrollbarThumbHoverColor() {
         return ModernColors.getScrollbarThumbHoverColor();
-    }
-
-    /**
-     * 获取主题适配的阴影颜色
-     */
-    protected Color getShadowColor(int alpha) {
-        return ModernColors.getShadowColor(alpha);
     }
 
     protected ModernSettingsPanel() {
@@ -249,11 +204,42 @@ public abstract class ModernSettingsPanel extends JPanel {
     /**
      * 创建现代化的字段行（标签 + 输入框）
      */
-    protected JPanel createFieldRow(String labelText, String tooltip, JComponent inputComponent) {
+    protected SettingsFieldRow createFieldRow(String labelText, String tooltip, JComponent inputComponent) {
         styleInputComponent(inputComponent);
         inputComponent.setPreferredSize(new Dimension(SettingsFieldRow.DEFAULT_FIELD_WIDTH, 34));
         inputComponent.setMaximumSize(new Dimension(SettingsFieldRow.DEFAULT_FIELD_WIDTH, 34));
         return new SettingsFieldRow(labelText, tooltip, inputComponent);
+    }
+
+    /**
+     * 创建自定义列宽的字段行，用于局部表单在不截断当前语言标签的前提下收紧输入列。
+     */
+    protected SettingsFieldRow createFieldRow(String labelText,
+                                              String tooltip,
+                                              JComponent inputComponent,
+                                              int labelWidth,
+                                              int fieldWidth) {
+        styleInputComponent(inputComponent);
+        return new SettingsFieldRow(labelText, tooltip, inputComponent, labelWidth, fieldWidth);
+    }
+
+    protected int calculateFieldLabelWidth(Collection<String> labelTexts) {
+        return calculateFieldLabelWidth(
+                labelTexts,
+                COMPACT_FIELD_LABEL_MIN_WIDTH,
+                SettingsFieldRow.DEFAULT_LABEL_WIDTH
+        );
+    }
+
+    protected int calculateFieldLabelWidth(Collection<String> labelTexts, int minWidth, int maxWidth) {
+        FontMetrics metrics = getFontMetrics(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        int maxTextWidth = 0;
+        for (String labelText : labelTexts) {
+            if (labelText != null) {
+                maxTextWidth = Math.max(maxTextWidth, metrics.stringWidth(labelText));
+            }
+        }
+        return Math.min(maxWidth, Math.max(minWidth, maxTextWidth + FIELD_LABEL_TEXT_PADDING));
     }
 
     /**
@@ -313,6 +299,18 @@ public abstract class ModernSettingsPanel extends JPanel {
      */
     protected Component createVerticalSpace(int height) {
         return Box.createVerticalStrut(height);
+    }
+
+    protected void registerSaveShortcut(Runnable saveAction) {
+        InputMap inputMap = getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = getActionMap();
+        inputMap.put(KeyStroke.getKeyStroke("control S"), "save");
+        actionMap.put("save", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveAction.run();
+            }
+        });
     }
 
     /**
@@ -400,17 +398,6 @@ public abstract class ModernSettingsPanel extends JPanel {
 
     protected boolean isPositiveInteger(String s) {
         return isInteger(s) && Integer.parseInt(s) >= 0;
-    }
-
-    /**
-     * 检查字段是否有验证错误
-     */
-    protected boolean hasValidationError(JTextField field) {
-        SettingsTextFieldValidator validator = validators.get(field);
-        if (validator == null) {
-            return false;
-        }
-        return validator.hasValidationError();
     }
 
     // ==================== 状态管理方法 ====================

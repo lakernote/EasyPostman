@@ -186,12 +186,4 @@ public final class SettingsContributionRegistry {
                 .findFirst();
     }
 
-    public int indexOf(String id) {
-        for (int i = 0; i < contributions.size(); i++) {
-            if (contributions.get(i).id().equals(id)) {
-                return i;
-            }
-        }
-        return -1;
-    }
 }

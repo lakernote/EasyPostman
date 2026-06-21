@@ -26,6 +26,9 @@ import java.awt.*;
  * 包含协议选择和名称输入
  */
 public class AddRequestDialog {
+    static final int DIALOG_WIDTH = 400;
+    static final int DIALOG_HEIGHT = 280;
+
     private final DefaultMutableTreeNode groupNode;
     private final CollectionTreePanel leftPanel;
     private JDialog dialog;
@@ -49,7 +52,8 @@ public class AddRequestDialog {
                 I18nUtil.getMessage(MessageKeys.COLLECTIONS_DIALOG_ADD_REQUEST_TITLE),
                 true
         );
-        dialog.setSize(400, 260);
+        dialog.setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
+        dialog.setMinimumSize(new Dimension(DIALOG_WIDTH, DIALOG_HEIGHT));
         dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);

@@ -9,6 +9,19 @@ import static org.testng.Assert.assertTrue;
 public class SettingsHintLabelTest {
 
     @Test
+    public void hintShouldWrapOnWordBoundaries() {
+        SettingsHintLabel label = new SettingsHintLabel(
+                "Disabled by default. Enable it only when outbound access is restricted or requests need a corporate proxy.",
+                320
+        );
+
+        assertTrue(label.getLineWrap(),
+                "Hint text should wrap within the configured width");
+        assertTrue(label.getWrapStyleWord(),
+                "English hint text should wrap on word boundaries instead of splitting words");
+    }
+
+    @Test
     public void longHintShouldWrapWithinConfiguredWidth() {
         SettingsHintLabel label = new SettingsHintLabel(sidebarHint(), 320);
 

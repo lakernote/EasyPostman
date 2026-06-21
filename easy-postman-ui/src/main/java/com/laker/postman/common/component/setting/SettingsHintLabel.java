@@ -25,7 +25,7 @@ public class SettingsHintLabel extends JTextArea {
         setFocusable(false);
         setOpaque(false);
         setLineWrap(true);
-        setWrapStyleWord(false);
+        setWrapStyleWord(true);
         setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         setForeground(ModernColors.getTextSecondary());
         setAlignmentX(Component.LEFT_ALIGNMENT);

@@ -1,7 +1,6 @@
 package com.laker.postman.common.component.notification;
 
 import com.laker.postman.model.NotificationPosition;
-import com.laker.postman.util.FontsUtil;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,10 +14,12 @@ class ToastWindow extends JWindow {
     private final NotificationCenter.NotificationType type;
     private final NotificationPosition position;
     private final String fullMessage;
+    private final String title;
     private final Consumer<ToastWindow> onClosed;
     private final Runnable onLayoutChanged;
 
     private int stackOffset = 0;
+    private int toastWidth;
     private boolean hovered = false;
     private boolean expanded = false;
     private boolean closed = false;
@@ -53,12 +54,14 @@ class ToastWindow extends JWindow {
         this.onLayoutChanged = onLayoutChanged;
 
         configureWindow();
-        String title = customTitle != null && !customTitle.isBlank() ? customTitle : type.getDefaultTitle();
-        rootPanel = buildRootPanel(message, title, seconds);
+        title = customTitle != null && !customTitle.isBlank() ? customTitle : type.getDefaultTitle();
+        String displayMessage = ToastTextFormatter.displayText(message, false);
+        toastWidth = ToastStyle.preferredWidth(title, displayMessage);
+        rootPanel = buildRootPanel(displayMessage, seconds);
         setContentPane(rootPanel);
-        setSize(ToastStyle.MAX_WIDTH, 1);
-        bodyLabel.setSize(ToastStyle.bodyWidth(), 1);
-        setSize(ToastStyle.MAX_WIDTH, rootPanel.getPreferredSize().height);
+        setSize(toastWidth, 1);
+        bodyLabel.setSize(ToastStyle.bodyWidth(toastWidth), 1);
+        setSize(toastWidth, rootPanel.getPreferredSize().height);
         targetPosition = calculatePosition(stackOffset);
     }
 
@@ -108,58 +111,36 @@ class ToastWindow extends JWindow {
         getLayeredPane().setOpaque(false);
     }
 
-    private JPanel buildRootPanel(String message, String title, int seconds) {
-        JPanel wrapper = ToastStyle.createCardPanel();
+    private JPanel buildRootPanel(String displayMessage, int seconds) {
+        JPanel wrapper = ToastStyle.createCardPanel(type);
 
-        JPanel card = new JPanel(new BorderLayout());
-        card.setOpaque(false);
+        JPanel card = ToastStyle.createContentPanel();
+        JLabel iconLabel = ToastStyle.createTypeIcon(type);
+        JLabel titleLabel = ToastStyle.createTitleLabel(title, type);
+        JTextArea bodyText = buildBodyText(displayMessage);
+        JPanel textPanel = ToastStyle.createTextPanel();
+        textPanel.add(titleLabel, BorderLayout.NORTH);
+        textPanel.add(bodyText, BorderLayout.CENTER);
 
-        JPanel header = buildHeaderPanel(title);
-        JPanel body = buildBodyPanel(message);
-        card.add(header, BorderLayout.NORTH);
-        card.add(body, BorderLayout.CENTER);
+        closeButton = ToastStyle.createCloseButton(this::startFadeOut);
+        closeButton.setOpaque(false);
+        JPanel closePanel = ToastStyle.createClosePanel(closeButton);
+
+        card.add(iconLabel, BorderLayout.WEST);
+        card.add(textPanel, BorderLayout.CENTER);
+        card.add(closePanel, BorderLayout.EAST);
         wrapper.add(card, BorderLayout.CENTER);
 
-        for (JPanel panel : new JPanel[]{wrapper, card, header, body}) {
-            installHoverListener(panel);
+        for (Component component : new Component[]{wrapper, card, iconLabel, titleLabel, bodyText, textPanel, closePanel}) {
+            installHoverListener(component);
         }
 
         totalDuration = seconds * 1000;
         return wrapper;
     }
 
-    private JPanel buildHeaderPanel(String title) {
-        JPanel header = ToastStyle.createHeaderPanel(type);
-        JLabel iconLabel = ToastStyle.createTypeIcon(type);
-
-        JLabel titleLabel = new JLabel(title);
-        titleLabel.setForeground(ToastStyle.titleColor(type));
-        titleLabel.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-
-        closeButton = ToastStyle.createCloseButton(this::startFadeOut);
-        closeButton.setOpaque(false);
-
-        header.add(iconLabel, BorderLayout.WEST);
-        header.add(titleLabel, BorderLayout.CENTER);
-        header.add(closeButton, BorderLayout.EAST);
-        return header;
-    }
-
-    private JPanel buildBodyPanel(String message) {
-        JPanel body = new JPanel(new BorderLayout());
-        body.setOpaque(false);
-        body.setBorder(BorderFactory.createEmptyBorder(
-                ToastStyle.VERTICAL_PADDING,
-                ToastStyle.HORIZONTAL_PADDING,
-                ToastStyle.VERTICAL_PADDING,
-                ToastStyle.HORIZONTAL_PADDING
-        ));
-
-        bodyLabel = ToastStyle.createBodyTextArea(
-                ToastTextFormatter.displayText(message, false)
-        );
-        body.add(bodyLabel, BorderLayout.CENTER);
-
+    private JTextArea buildBodyText(String displayMessage) {
+        bodyLabel = ToastStyle.createBodyTextArea(displayMessage);
         MouseAdapter clickListener = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -170,9 +151,8 @@ class ToastWindow extends JWindow {
                 }
             }
         };
-        body.addMouseListener(clickListener);
         bodyLabel.addMouseListener(clickListener);
-        return body;
+        return bodyLabel;
     }
 
     private void handleBodySingleClick() {
@@ -183,8 +163,8 @@ class ToastWindow extends JWindow {
         }
     }
 
-    private void installHoverListener(JPanel panel) {
-        panel.addMouseListener(new MouseAdapter() {
+    private void installHoverListener(Component component) {
+        component.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
                 onHoverEnter();
@@ -286,9 +266,14 @@ class ToastWindow extends JWindow {
 
     private void toggleExpand() {
         expanded = !expanded;
-        bodyLabel.setText(ToastTextFormatter.displayText(fullMessage, expanded));
-        bodyLabel.setSize(ToastStyle.bodyWidth(), 1);
-        setSize(ToastStyle.MAX_WIDTH, rootPanel.getPreferredSize().height);
+        String displayMessage = ToastTextFormatter.displayText(fullMessage, expanded);
+        bodyLabel.setText(displayMessage);
+        toastWidth = ToastStyle.preferredWidth(title, displayMessage);
+        setSize(toastWidth, 1);
+        bodyLabel.setSize(ToastStyle.bodyWidth(toastWidth), 1);
+        rootPanel.revalidate();
+        rootPanel.repaint();
+        setSize(toastWidth, rootPanel.getPreferredSize().height);
         targetPosition = calculatePosition(stackOffset);
         setLocation(targetPosition);
         onLayoutChanged.run();

@@ -9,6 +9,7 @@ import org.testng.annotations.Test;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.util.Map;
 
 import static com.laker.postman.test.ThemeTokenTestSupport.remember;
@@ -43,6 +44,56 @@ public class NotificationCenterTest {
         UIManager.put(ThemeColors.SUCCESS, success);
 
         assertEquals(NotificationCenter.toastTitleColor(NotificationCenter.NotificationType.SUCCESS), success);
+    }
+
+    @Test
+    public void shortToastWidthShouldUseCompactMinimumInsteadOfMaxWidth() {
+        Font titleFont = new Font(Font.DIALOG, Font.BOLD, 13);
+        Font bodyFont = new Font(Font.DIALOG, Font.PLAIN, 13);
+
+        int width = ToastStyle.preferredWidth("成功", "设置保存成功", titleFont, bodyFont);
+
+        assertEquals(width, ToastStyle.MIN_WIDTH);
+        assertTrue(width < ToastStyle.MAX_WIDTH);
+    }
+
+    @Test
+    public void longToastWidthShouldCapAtMaxWidth() {
+        Font titleFont = new Font(Font.DIALOG, Font.BOLD, 13);
+        Font bodyFont = new Font(Font.DIALOG, Font.PLAIN, 13);
+
+        int width = ToastStyle.preferredWidth(
+                "错误",
+                "Request execution failed because the upstream service returned an invalid gateway response.",
+                titleFont,
+                bodyFont
+        );
+
+        assertEquals(width, ToastStyle.MAX_WIDTH);
+    }
+
+    @Test
+    public void toastSurfaceShouldReadNotificationBackgroundToken() {
+        Color background = new Color(250, 251, 252);
+        UIManager.put(ThemeColors.NOTIFICATION_BACKGROUND, background);
+
+        assertEquals(ToastStyle.surfaceColor(), background);
+    }
+
+    @Test
+    public void toastCardShouldNotPaintAStatusStripe() {
+        Color background = new Color(250, 251, 252);
+        UIManager.put(ThemeColors.NOTIFICATION_BACKGROUND, background);
+        UIManager.put(ThemeColors.SUCCESS, new Color(22, 178, 96));
+        JPanel card = ToastStyle.createCardPanel(NotificationCenter.NotificationType.SUCCESS);
+        card.setSize(80, 40);
+
+        BufferedImage image = new BufferedImage(80, 40, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        card.paint(graphics);
+        graphics.dispose();
+
+        assertEquals(new Color(image.getRGB(2, 20), true), background);
     }
 
     @Test

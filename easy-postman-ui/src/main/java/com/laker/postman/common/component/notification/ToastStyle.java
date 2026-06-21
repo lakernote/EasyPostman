@@ -13,11 +13,16 @@ import java.awt.geom.RoundRectangle2D;
 
 @UtilityClass
 class ToastStyle {
-    static final int MAX_WIDTH = 392;
+    static final int MIN_WIDTH = 280;
+    static final int MAX_WIDTH = 360;
     static final int CORNER_RADIUS = 8;
     static final int HEADER_HEIGHT = 30;
+    static final int ICON_SIZE = 18;
+    static final int CLOSE_BUTTON_SIZE = 26;
     static final int HORIZONTAL_PADDING = 14;
     static final int VERTICAL_PADDING = 10;
+    private static final int CONTENT_GAP = 10;
+    private static final int TITLE_BODY_GAP = 3;
     static final int COLLAPSED_MAX_LINES = 4;
     static final int COLLAPSED_MAX_LENGTH = 120;
     static final int STACK_GAP = 6;
@@ -27,7 +32,32 @@ class ToastStyle {
     static final int FADE_INTERVAL = 18;
 
     static int bodyWidth() {
-        return MAX_WIDTH - HORIZONTAL_PADDING * 2;
+        return bodyWidth(MAX_WIDTH);
+    }
+
+    static int bodyWidth(int toastWidth) {
+        return Math.max(1, toastWidth - HORIZONTAL_PADDING * 2
+                - ICON_SIZE
+                - CLOSE_BUTTON_SIZE
+                - CONTENT_GAP * 2);
+    }
+
+    static int preferredWidth(String title, String message) {
+        return preferredWidth(title, message, titleFont(), bodyFont());
+    }
+
+    static int preferredWidth(String title, String message, Font titleFont, Font bodyFont) {
+        int textWidth = Math.max(maxLineWidth(title, titleFont), maxLineWidth(message, bodyFont));
+        int width = textWidth
+                + HORIZONTAL_PADDING * 2
+                + ICON_SIZE
+                + CLOSE_BUTTON_SIZE
+                + CONTENT_GAP * 2;
+        return Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, width));
+    }
+
+    static Color surfaceColor() {
+        return ModernColors.getNotificationBackground();
     }
 
     static Color titleColor(NotificationCenter.NotificationType type) {
@@ -36,7 +66,7 @@ class ToastStyle {
 
     static Color headerBackgroundColor(NotificationCenter.NotificationType type) {
         float ratio = ModernColors.isDarkTheme() ? 0.14f : 0.07f;
-        return ModernColors.blendColors(ModernColors.getNotificationBackground(), type.getColor(), ratio);
+        return ModernColors.blendColors(surfaceColor(), type.getColor(), ratio);
     }
 
     static Color borderColor() {
@@ -44,6 +74,10 @@ class ToastStyle {
     }
 
     static JPanel createCardPanel() {
+        return createCardPanel(null);
+    }
+
+    static JPanel createCardPanel(NotificationCenter.NotificationType ignoredType) {
         JPanel wrapper = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -52,7 +86,7 @@ class ToastStyle {
                 int height = getHeight();
                 Shape card = new RoundRectangle2D.Float(0, 0, width, height,
                         CORNER_RADIUS, CORNER_RADIUS);
-                g2.setColor(ModernColors.getNotificationBackground());
+                g2.setColor(surfaceColor());
                 g2.fill(card);
                 g2.setColor(borderColor());
                 g2.setStroke(new BasicStroke(1f));
@@ -64,6 +98,38 @@ class ToastStyle {
         wrapper.setOpaque(false);
         wrapper.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
         return wrapper;
+    }
+
+    static JPanel createContentPanel() {
+        JPanel panel = new JPanel(new BorderLayout(CONTENT_GAP, 0));
+        panel.setOpaque(false);
+        panel.setBorder(BorderFactory.createEmptyBorder(
+                VERTICAL_PADDING,
+                HORIZONTAL_PADDING,
+                VERTICAL_PADDING,
+                HORIZONTAL_PADDING
+        ));
+        return panel;
+    }
+
+    static JPanel createTextPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, TITLE_BODY_GAP));
+        panel.setOpaque(false);
+        return panel;
+    }
+
+    static JPanel createClosePanel(JButton closeButton) {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setOpaque(false);
+        panel.add(closeButton, BorderLayout.NORTH);
+        return panel;
+    }
+
+    static JLabel createTitleLabel(String title, NotificationCenter.NotificationType type) {
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setForeground(titleColor(type));
+        titleLabel.setFont(titleFont());
+        return titleLabel;
     }
 
     static JPanel createHeaderPanel(NotificationCenter.NotificationType type) {
@@ -110,7 +176,7 @@ class ToastStyle {
         iconLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -2));
         iconLabel.setHorizontalAlignment(SwingConstants.CENTER);
         iconLabel.setVerticalAlignment(SwingConstants.CENTER);
-        iconLabel.setPreferredSize(new Dimension(18, 18));
+        iconLabel.setPreferredSize(new Dimension(ICON_SIZE, ICON_SIZE));
         return iconLabel;
     }
 
@@ -123,12 +189,7 @@ class ToastStyle {
         body.setOpaque(false);
         body.setBorder(null);
         body.setForeground(ModernColors.getNotificationBodyForeground());
-        Font labelFont = UIManager.getFont("Label.font");
-        if (labelFont != null) {
-            body.setFont(labelFont.deriveFont(Font.PLAIN, labelFont.getSize2D()));
-        } else {
-            body.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        }
+        body.setFont(bodyFont());
         return body;
     }
 
@@ -138,7 +199,7 @@ class ToastStyle {
         button.setBorderPainted(false);
         button.setFocusPainted(false);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        button.setPreferredSize(new Dimension(26, 26));
+        button.setPreferredSize(new Dimension(CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE));
         button.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseEntered(MouseEvent e) {
@@ -178,5 +239,25 @@ class ToastStyle {
 
     private Icon closeIcon(Color color) {
         return IconUtil.createColored("icons/close.svg", 14, 14, color);
+    }
+
+    private Font titleFont() {
+        return FontsUtil.getDefaultFont(Font.BOLD);
+    }
+
+    private Font bodyFont() {
+        return FontsUtil.getDefaultFont(Font.PLAIN);
+    }
+
+    private int maxLineWidth(String text, Font font) {
+        if (text == null || text.isBlank()) {
+            return 0;
+        }
+        FontMetrics metrics = new JLabel().getFontMetrics(font);
+        int width = 0;
+        for (String line : text.split("\n", -1)) {
+            width = Math.max(width, metrics.stringWidth(line));
+        }
+        return width;
     }
 }

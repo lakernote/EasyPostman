@@ -9,6 +9,7 @@ import com.laker.postman.platform.update.model.UpdatePolicy;
 import com.laker.postman.platform.update.model.UpdateTarget;
 import com.laker.postman.settings.PreferencesStore;
 import com.laker.postman.settings.SettingKey;
+import com.laker.postman.service.sync.WebDavSyncSettings;
 import com.laker.postman.common.component.notification.NotificationCenter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -759,6 +760,39 @@ public class SettingManager {
         put(AppSettingKeys.PROXY_SSL_VERIFICATION_DISABLED, disabled);
         // 清除客户端缓存以应用新的 SSL 设置
         OkHttpClientManager.clearClientCache();
+    }
+
+    // ===== WebDAV 同步设置 =====
+
+    public static WebDavSyncSettings getWebDavSyncSettings() {
+        return new WebDavSyncSettings(
+                get(AppSettingKeys.WEBDAV_SYNC_ENABLED),
+                get(AppSettingKeys.WEBDAV_SYNC_SERVER_URL),
+                get(AppSettingKeys.WEBDAV_SYNC_REMOTE_DIRECTORY),
+                get(AppSettingKeys.WEBDAV_SYNC_USERNAME),
+                get(AppSettingKeys.WEBDAV_SYNC_PASSWORD)
+        );
+    }
+
+    public static void setWebDavSyncSettings(WebDavSyncSettings settings) {
+        WebDavSyncSettings normalized = settings == null
+                ? new WebDavSyncSettings(false, "", WebDavSyncSettings.DEFAULT_REMOTE_DIRECTORY, "", "")
+                : settings;
+        updateAndSaveProperties(properties -> {
+            AppSettingKeys.WEBDAV_SYNC_ENABLED.write(properties, normalized.enabled());
+            AppSettingKeys.WEBDAV_SYNC_SERVER_URL.write(properties, normalized.serverUrl());
+            AppSettingKeys.WEBDAV_SYNC_REMOTE_DIRECTORY.write(properties, normalized.remoteDirectory());
+            AppSettingKeys.WEBDAV_SYNC_USERNAME.write(properties, normalized.username());
+            AppSettingKeys.WEBDAV_SYNC_PASSWORD.write(properties, normalized.password());
+        });
+    }
+
+    public static long getWebDavSyncLastSyncTime() {
+        return get(AppSettingKeys.WEBDAV_SYNC_LAST_SYNC_TIME);
+    }
+
+    public static void setWebDavSyncLastSyncTime(long timestamp) {
+        put(AppSettingKeys.WEBDAV_SYNC_LAST_SYNC_TIME, timestamp);
     }
 
     // ===== UI 字体设置 =====

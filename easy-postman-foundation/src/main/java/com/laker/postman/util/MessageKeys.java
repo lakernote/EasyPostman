@@ -2251,6 +2251,53 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_STATUS_UNAVAILABLE = "settings.proxy.status.unavailable";
     public static final String NETWORK_ERROR_PROXY_SOCKS_MALFORMED = "network.error.proxy.socks.malformed";
 
+    // WebDAV 同步设置
+    public static final String SETTINGS_WEBDAV_SYNC_TITLE = "settings.webdav_sync.title";
+    public static final String SETTINGS_WEBDAV_SYNC_DESCRIPTION = "settings.webdav_sync.description";
+    public static final String SETTINGS_WEBDAV_SYNC_ENABLED_CHECKBOX = "settings.webdav_sync.enabled.checkbox";
+    public static final String SETTINGS_WEBDAV_SYNC_ENABLED_TOOLTIP = "settings.webdav_sync.enabled.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_SERVER_URL = "settings.webdav_sync.server_url";
+    public static final String SETTINGS_WEBDAV_SYNC_SERVER_URL_TOOLTIP = "settings.webdav_sync.server_url.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_REMOTE_DIRECTORY = "settings.webdav_sync.remote_directory";
+    public static final String SETTINGS_WEBDAV_SYNC_REMOTE_DIRECTORY_TOOLTIP = "settings.webdav_sync.remote_directory.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_USERNAME = "settings.webdav_sync.username";
+    public static final String SETTINGS_WEBDAV_SYNC_USERNAME_TOOLTIP = "settings.webdav_sync.username.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_PASSWORD = "settings.webdav_sync.password";
+    public static final String SETTINGS_WEBDAV_SYNC_PASSWORD_TOOLTIP = "settings.webdav_sync.password.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_LAST_SYNC_TIME = "settings.webdav_sync.last_sync_time";
+    public static final String SETTINGS_WEBDAV_SYNC_LAST_SYNC_TIME_TOOLTIP = "settings.webdav_sync.last_sync_time.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_NEVER_SYNCED = "settings.webdav_sync.never_synced";
+    public static final String SETTINGS_WEBDAV_SYNC_ACTION_TEST = "settings.webdav_sync.action.test";
+    public static final String SETTINGS_WEBDAV_SYNC_ACTION_TEST_TOOLTIP = "settings.webdav_sync.action.test.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_ACTION_UPLOAD = "settings.webdav_sync.action.upload";
+    public static final String SETTINGS_WEBDAV_SYNC_ACTION_UPLOAD_TOOLTIP = "settings.webdav_sync.action.upload.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_ACTION_RESTORE = "settings.webdav_sync.action.restore";
+    public static final String SETTINGS_WEBDAV_SYNC_ACTION_RESTORE_TOOLTIP = "settings.webdav_sync.action.restore.tooltip";
+    public static final String SETTINGS_WEBDAV_SYNC_STATUS_DISABLED = "settings.webdav_sync.status.disabled";
+    public static final String SETTINGS_WEBDAV_SYNC_STATUS_NOT_CONFIGURED = "settings.webdav_sync.status.not_configured";
+    public static final String SETTINGS_WEBDAV_SYNC_STATUS_READY = "settings.webdav_sync.status.ready";
+    public static final String SETTINGS_WEBDAV_SYNC_STATUS_TESTING = "settings.webdav_sync.status.testing";
+    public static final String SETTINGS_WEBDAV_SYNC_STATUS_CHECKING_REMOTE = "settings.webdav_sync.status.checking_remote";
+    public static final String SETTINGS_WEBDAV_SYNC_STATUS_UPLOADING = "settings.webdav_sync.status.uploading";
+    public static final String SETTINGS_WEBDAV_SYNC_STATUS_RESTORING = "settings.webdav_sync.status.restoring";
+    public static final String SETTINGS_WEBDAV_SYNC_TEST_SUCCESS = "settings.webdav_sync.test.success";
+    public static final String SETTINGS_WEBDAV_SYNC_UPLOAD_SUCCESS = "settings.webdav_sync.upload.success";
+    public static final String SETTINGS_WEBDAV_SYNC_RESTORE_SUCCESS = "settings.webdav_sync.restore.success";
+    public static final String SETTINGS_WEBDAV_SYNC_RESTORE_SUCCESS_SHORT = "settings.webdav_sync.restore.success.short";
+    public static final String SETTINGS_WEBDAV_SYNC_RESTORE_RESTART_TITLE = "settings.webdav_sync.restore.restart.title";
+    public static final String SETTINGS_WEBDAV_SYNC_RESTORE_RESTART_MESSAGE = "settings.webdav_sync.restore.restart.message";
+    public static final String SETTINGS_WEBDAV_SYNC_ACTION_FAILED = "settings.webdav_sync.action.failed";
+    public static final String SETTINGS_WEBDAV_SYNC_VALIDATION_REQUIRED = "settings.webdav_sync.validation.required";
+    public static final String SETTINGS_WEBDAV_SYNC_VALIDATION_URL = "settings.webdav_sync.validation.url";
+    public static final String SETTINGS_WEBDAV_SYNC_VALIDATION_HTTP_WARNING = "settings.webdav_sync.validation.http_warning";
+    public static final String SETTINGS_WEBDAV_SYNC_REMOTE_SNAPSHOT_DETAIL = "settings.webdav_sync.remote_snapshot.detail";
+    public static final String SETTINGS_WEBDAV_SYNC_REMOTE_SNAPSHOT_NONE = "settings.webdav_sync.remote_snapshot.none";
+    public static final String SETTINGS_WEBDAV_SYNC_REMOTE_SNAPSHOT_UNKNOWN = "settings.webdav_sync.remote_snapshot.unknown";
+    public static final String SETTINGS_WEBDAV_SYNC_UPLOAD_CONFIRM_TITLE = "settings.webdav_sync.upload.confirm.title";
+    public static final String SETTINGS_WEBDAV_SYNC_UPLOAD_CONFIRM_MESSAGE = "settings.webdav_sync.upload.confirm.message";
+    public static final String SETTINGS_WEBDAV_SYNC_RESTORE_CONFIRM_TITLE = "settings.webdav_sync.restore.confirm.title";
+    public static final String SETTINGS_WEBDAV_SYNC_RESTORE_CONFIRM_MESSAGE = "settings.webdav_sync.restore.confirm.message";
+
     // ============ 工具箱相关 ============
     public static final String TOOLBOX_ENCODER = "toolbox.encoder";
     public static final String TOOLBOX_ENCODER_TITLE = "toolbox.encoder.title";

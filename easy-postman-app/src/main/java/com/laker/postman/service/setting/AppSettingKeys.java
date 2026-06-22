@@ -3,6 +3,7 @@ package com.laker.postman.service.setting;
 import cn.hutool.json.JSONUtil;
 import com.laker.postman.certificate.TrustedCertificateEntry;
 import com.laker.postman.model.NotificationPosition;
+import com.laker.postman.service.sync.WebDavSyncSettings;
 import com.laker.postman.settings.SettingKey;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -308,6 +309,31 @@ class AppSettingKeys {
             "proxy_ssl_verification_disabled",
             true
     );
+    static final SettingKey<Boolean> WEBDAV_SYNC_ENABLED = SettingKey.booleanKey(
+            "webdav_sync_enabled",
+            false
+    );
+    static final SettingKey<String> WEBDAV_SYNC_SERVER_URL = SettingKey.stringKey(
+            "webdav_sync_server_url",
+            ""
+    ).normalized(AppSettingKeys::normalizeNullableText);
+    static final SettingKey<String> WEBDAV_SYNC_REMOTE_DIRECTORY = SettingKey.stringKey(
+            "webdav_sync_remote_directory",
+            WebDavSyncSettings.DEFAULT_REMOTE_DIRECTORY
+    ).normalized(AppSettingKeys::normalizeWebDavRemoteDirectory);
+    static final SettingKey<String> WEBDAV_SYNC_USERNAME = SettingKey.stringKey(
+            "webdav_sync_username",
+            ""
+    ).normalized(AppSettingKeys::normalizeNullableText);
+    static final SettingKey<String> WEBDAV_SYNC_PASSWORD = SettingKey.stringKey(
+            "webdav_sync_password",
+            ""
+    ).normalized(value -> value == null ? "" : value);
+    static final SettingKey<Long> WEBDAV_SYNC_LAST_SYNC_TIME = SettingKey.longKey(
+            "webdav_sync_last_sync_time",
+            0L,
+            value -> Math.max(0L, value)
+    );
     static final SettingKey<String> UI_FONT_NAME = SettingKey.stringKey(
             "ui_font_name",
             ""
@@ -481,5 +507,17 @@ class AppSettingKeys {
         return SettingManager.PROXY_MODE_SYSTEM.equalsIgnoreCase(mode)
                 ? SettingManager.PROXY_MODE_SYSTEM
                 : SettingManager.PROXY_MODE_MANUAL;
+    }
+
+    private static String normalizeNullableText(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private static String normalizeWebDavRemoteDirectory(String value) {
+        String normalized = normalizeNullableText(value).replace('\\', '/');
+        while (normalized.startsWith("/")) {
+            normalized = normalized.substring(1);
+        }
+        return normalized.isBlank() ? WebDavSyncSettings.DEFAULT_REMOTE_DIRECTORY : normalized;
     }
 }

@@ -38,6 +38,7 @@ import java.util.function.Supplier;
  */
 @Slf4j
 public class ToolboxPanel extends UiSingletonPanel {
+    private static final int DEFAULT_NAV_WIDTH = 240;
 
     private static final class ToolEntry {
         private final String id;
@@ -150,8 +151,6 @@ public class ToolboxPanel extends UiSingletonPanel {
         // 工具箱搜索不需要大小写/整词按钮，移除 trailing 组件使其更简洁
         searchField = new SearchTextField();
         searchField.putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT, null);
-        searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
-        searchField.setPreferredSize(new Dimension(Integer.MAX_VALUE, 28));
         searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) {
                 applyFilter();
@@ -183,7 +182,7 @@ public class ToolboxPanel extends UiSingletonPanel {
         JSplitPane split = AppToolWindowChrome.createHorizontalCardSplitPane(
                 leftPanel,
                 contentArea,
-                AppToolWindowChrome.DEFAULT_SIDE_WIDTH
+                DEFAULT_NAV_WIDTH
         );
         add(split, BorderLayout.CENTER);
 

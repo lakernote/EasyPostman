@@ -7,7 +7,6 @@ import com.laker.postman.common.component.button.SegmentedButtonBar;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
-import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import net.miginfocom.swing.MigLayout;
@@ -24,7 +23,7 @@ import java.util.List;
 public class ThreadGroupPropertyPanel extends JPanel {
     private static final int CONFIG_PANEL_WIDTH = 460;
     private static final int MODE_CARD_HEIGHT = 112;
-    private static final int PREVIEW_PANEL_HEIGHT = 220;
+    private static final int PREVIEW_PANEL_HEIGHT = 200;
     private static final int FORM_CONTROL_HEIGHT = 28;
     private static final int SPINNER_WIDTH = 80;
     private static final int LABEL_FIELD_GAP = 8;
@@ -175,7 +174,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         // 预览图表区域
         previewPanel = new ThreadLoadPreviewPanel();
         previewPanel.setPreferredSize(new Dimension(560, PREVIEW_PANEL_HEIGHT));
-        previewPanel.setMinimumSize(new Dimension(380, 200));  // 设置最小尺寸防止过度压缩
+        previewPanel.setMinimumSize(new Dimension(380, PREVIEW_PANEL_HEIGHT));  // 设置最小尺寸防止过度压缩
         previewPanel.setOpaque(false);
         previewPanel.setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
@@ -201,16 +200,12 @@ public class ThreadGroupPropertyPanel extends JPanel {
         configPanel.setPreferredSize(new Dimension(CONFIG_PANEL_WIDTH, 150));
 
         JPanel previewSection = new JPanel(new MigLayout(
-                "insets 0, fillx, novisualpadding, gap 0",
+                "insets 0, fill, novisualpadding, gap 0",
                 "[grow,fill]",
-                "[]6[" + PREVIEW_PANEL_HEIGHT + "!,fill]"
+                "[" + PREVIEW_PANEL_HEIGHT + "!,fill]"
         ));
         previewSection.setOpaque(false);
-        JLabel previewTitle = new JLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_TITLE));
-        previewTitle.setFont(FontsUtil.getDefaultFont(Font.BOLD));
-        previewTitle.setForeground(ModernColors.getTextPrimary());
-        previewSection.add(previewTitle, "wrap");
-        previewSection.add(previewPanel, "growx");
+        previewSection.add(previewPanel, "grow");
 
         // 添加到主面板
         mainPanel.add(configPanel, "top, growx");

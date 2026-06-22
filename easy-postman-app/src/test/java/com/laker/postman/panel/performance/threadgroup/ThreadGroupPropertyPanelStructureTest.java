@@ -29,19 +29,29 @@ import java.util.ResourceBundle;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
     @Test
-    public void previewChartShouldBeWrappedByAVisibleSectionTitle() throws Exception {
+    public void previewChartShouldNotReserveASeparateTitleRow() throws Exception {
         ThreadGroupPropertyPanel panel = new ThreadGroupPropertyPanel();
+
+        JLabel previewTitle = findLabel(panel, I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_TITLE));
+
+        assertNull(previewTitle, "preview chart should not spend vertical space on a separate title row");
+    }
+
+    @Test
+    public void previewChartShouldFitDefaultPropertySplitHeight() throws Exception {
+        ThreadGroupPropertyPanel panel = panel();
+        panel.setSize(new Dimension(1400, 220));
+        layoutRecursively(panel);
         Component previewPanel = fieldValue(panel, "previewPanel", Component.class);
 
-        JLabel previewTitle = findLabel(
-                previewPanel.getParent(),
-                I18nUtil.getMessage(MessageKeys.THREADGROUP_PREVIEW_TITLE)
-        );
+        int previewBottom = verticalEnd(panel, previewPanel);
 
-        assertNotNull(previewTitle);
+        assertTrue(previewBottom <= panel.getHeight() - 8,
+                "preview chart should fit the default property split height, bottom: " + previewBottom);
     }
 
     @Test
@@ -299,6 +309,15 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
 
     private static int verticalStart(Component root, Component component) {
         return SwingUtilities.convertPoint(component.getParent(), component.getX(), component.getY(), root).y;
+    }
+
+    private static int verticalEnd(Component root, Component component) {
+        return SwingUtilities.convertPoint(
+                component.getParent(),
+                component.getX(),
+                component.getY() + component.getHeight(),
+                root
+        ).y;
     }
 
     private static void layoutRecursively(Component component) {

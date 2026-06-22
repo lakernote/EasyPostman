@@ -32,6 +32,19 @@ public class WebDavSnapshotService {
     private static final String MANAGED_WORKSPACES_DIR = "workspaces";
     private static final String EXTERNAL_WORKSPACES_DIR = "workspaces/synced-external";
     private static final int MAX_SYNC_BACKUP_COUNT = 3;
+    private static final List<String> GIT_WORKSPACE_FIELDS = List.of(
+            "gitRepoSource",
+            "gitRemoteUrl",
+            "currentBranch",
+            "remoteBranch",
+            "lastCommitId",
+            "gitUsername",
+            "gitPassword",
+            "gitToken",
+            "gitAuthType",
+            "sshPrivateKeyPath",
+            "sshPassphrase"
+    );
 
     private final WebDavSnapshotPolicy policy;
 
@@ -274,6 +287,7 @@ public class WebDavSnapshotService {
             int index = 0;
             for (JsonNode node : arrayNode) {
                 if (node instanceof ObjectNode objectNode && objectNode.has("path")) {
+                    normalizeWorkspaceForWebDavSnapshot(objectNode);
                     JsonNode pathNode = objectNode.get("path");
                     if (pathNode != null && pathNode.isTextual()) {
                         objectNode.put("path", transformer.transform(objectNode, index, pathNode.asText()));
@@ -284,6 +298,17 @@ public class WebDavSnapshotService {
             return JsonUtil.toJsonPrettyStr(arrayNode);
         } catch (Exception e) {
             return content;
+        }
+    }
+
+    private void normalizeWorkspaceForWebDavSnapshot(ObjectNode workspaceNode) {
+        JsonNode typeNode = workspaceNode.get("type");
+        if (typeNode == null || !typeNode.isTextual() || !"GIT".equalsIgnoreCase(typeNode.asText())) {
+            return;
+        }
+        workspaceNode.put("type", "LOCAL");
+        for (String field : GIT_WORKSPACE_FIELDS) {
+            workspaceNode.remove(field);
         }
     }
 

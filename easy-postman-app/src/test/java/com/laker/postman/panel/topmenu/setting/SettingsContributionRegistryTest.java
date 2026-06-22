@@ -42,6 +42,7 @@ public class SettingsContributionRegistryTest extends AbstractSwingUiTest {
                         "request",
                         "proxy",
                         "trusted-material",
+                        "webdav-sync",
                         "auto-update",
                         "performance",
                         "client-certificates",
@@ -55,6 +56,7 @@ public class SettingsContributionRegistryTest extends AbstractSwingUiTest {
                         MessageKeys.SETTINGS_REQUEST_TITLE,
                         MessageKeys.SETTINGS_PROXY_TITLE,
                         MessageKeys.SETTINGS_REQUEST_TRUSTED_MATERIAL_TITLE,
+                        MessageKeys.SETTINGS_WEBDAV_SYNC_TITLE,
                         MessageKeys.SETTINGS_AUTO_UPDATE_TITLE,
                         MessageKeys.SETTINGS_PERFORMANCE_TITLE,
                         MessageKeys.CERT_TITLE,
@@ -63,7 +65,7 @@ public class SettingsContributionRegistryTest extends AbstractSwingUiTest {
         );
         assertTrue(contributions.get(0).createPanel(new SettingsContributionContext(null))
                 instanceof UISettingsPanelModern);
-        assertTrue(contributions.get(6).createPanel(new SettingsContributionContext(null))
+        assertTrue(contributions.get(7).createPanel(new SettingsContributionContext(null))
                 instanceof ClientCertificateSettingsPanelModern);
     }
 
@@ -78,6 +80,7 @@ public class SettingsContributionRegistryTest extends AbstractSwingUiTest {
         assertFalse(source.contains("new RequestSettingsPanelModern()"));
         assertFalse(source.contains("new ProxySettingsPanelModern()"));
         assertFalse(source.contains("new TrustedCertificatesSettingsPanelModern()"));
+        assertFalse(source.contains("new WebDavSyncSettingsPanel()"));
         assertFalse(source.contains("new AutoUpdateSettingsPanel()"));
         assertFalse(source.contains("new PerformanceSettingsPanelModern()"));
         assertFalse(source.contains("new ClientCertificateSettingsPanelModern(this)"));

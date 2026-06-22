@@ -666,6 +666,7 @@ public final class MessageKeys {
     public static final String GIT_DIFF_SIZE_HEAD = "git.diff.size.head";
     public static final String GIT_DIFF_SIZE_STAGED = "git.diff.size.staged";
     public static final String GIT_DIFF_SIZE_WORKTREE = "git.diff.size.worktree";
+    public static final String GIT_WORKSPACE_REPOSITORY_MISSING = "git.workspace.repository_missing";
 
     // Git Branch Dialog
     public static final String GIT_BRANCH_TITLE = "git.branch.title";

@@ -406,6 +406,23 @@ public class GitWorkspacePluginServiceTest {
     }
 
     @Test
+    public void gitOperationsShouldExplainWhenWorkspaceRepositoryMetadataIsMissing() throws Exception {
+        Path workspacePath = tempDir.resolve("webdav-restored-without-git");
+        Files.createDirectories(workspacePath);
+
+        try {
+            service.listWorkingTreeChanges(workspace(workspacePath, GitRepoSource.INITIALIZED));
+        } catch (IllegalStateException e) {
+            assertTrue(e.getMessage().contains("Git"));
+            assertTrue(e.getMessage().contains(workspacePath.getFileName().toString()));
+            assertFalse(e.getMessage().contains("RepositoryNotFoundException"));
+            return;
+        }
+
+        throw new AssertionError("Git operations should fail clearly when .git metadata is missing");
+    }
+
+    @Test
     public void getWorkingTreeDiffShouldRenderTrackedAndUntrackedPatch() throws Exception {
         Path workspacePath = initRepositoryWithInitialCommit("diff-content-workspace");
         Files.writeString(workspacePath.resolve("README.md"), "changed", StandardCharsets.UTF_8);

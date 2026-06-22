@@ -80,7 +80,7 @@ public class GitWorkspacePluginService implements GitPluginService {
 
     @Override
     public void prepareGitWorkspace(Workspace workspace) throws Exception {
-        ensureGitWorkspace(workspace);
+        ensureGitWorkspaceType(workspace);
         if (workspace.getGitRepoSource() == GitRepoSource.CLONED) {
             cloneRepository(workspace);
         } else if (workspace.getGitRepoSource() == GitRepoSource.INITIALIZED) {
@@ -1480,8 +1480,23 @@ public class GitWorkspacePluginService implements GitPluginService {
     }
 
     private void ensureGitWorkspace(Workspace workspace) {
+        ensureGitWorkspaceType(workspace);
+        ensureGitRepositoryMetadata(workspace);
+    }
+
+    private void ensureGitWorkspaceType(Workspace workspace) {
         if (workspace.getType() != WorkspaceType.GIT) {
             throw new IllegalStateException("Not a Git workspace");
+        }
+    }
+
+    private void ensureGitRepositoryMetadata(Workspace workspace) {
+        Path workspacePath = Paths.get(workspace.getPath()).toAbsolutePath().normalize();
+        if (!Files.exists(workspacePath.resolve(".git"))) {
+            throw new IllegalStateException(I18nUtil.getMessage(
+                    MessageKeys.GIT_WORKSPACE_REPOSITORY_MISSING,
+                    workspacePath
+            ));
         }
     }
 

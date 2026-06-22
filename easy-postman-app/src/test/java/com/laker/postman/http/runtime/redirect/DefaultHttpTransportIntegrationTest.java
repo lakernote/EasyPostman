@@ -1143,6 +1143,7 @@ public class DefaultHttpTransportIntegrationTest {
         request.body = "{\"hello\":\"world\"}";
         request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
         request.followRedirects = true;
+        request.enableNetworkLog = true;
         request.networkLogSink = events::add;
 
         HttpResponse response = new HttpRedirectExecutor().executeWithRedirects(request, 10, null);

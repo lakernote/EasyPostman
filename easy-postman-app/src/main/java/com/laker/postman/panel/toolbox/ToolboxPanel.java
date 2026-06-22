@@ -38,7 +38,8 @@ import java.util.function.Supplier;
  */
 @Slf4j
 public class ToolboxPanel extends UiSingletonPanel {
-    private static final int DEFAULT_NAV_WIDTH = 240;
+    private static final int COMPACT_NAV_WIDTH = 240;
+    private static final int DEFAULT_NAV_WIDTH = Math.min(COMPACT_NAV_WIDTH, AppToolWindowChrome.DEFAULT_SIDE_WIDTH);
 
     private static final class ToolEntry {
         private final String id;

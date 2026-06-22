@@ -119,6 +119,70 @@ public class WebDavSnapshotServiceTest {
     }
 
     @Test
+    public void restoreShouldDowngradeGitWorkspacesBecauseGitMetadataIsNotSynced() throws Exception {
+        Path snapshot = Files.createTempFile("webdav-snapshot-git-restore", ".zip");
+        try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(snapshot))) {
+            zip.putNextEntry(new ZipEntry("workspaces.json"));
+            zip.write("""
+                    [{
+                      "id":"api",
+                      "name":"API",
+                      "type":"GIT",
+                      "gitRepoSource":"INITIALIZED",
+                      "path":"$EASY_POSTMAN_DATA$/workspaces/api/",
+                      "gitRemoteUrl":"https://example.com/team/api.git",
+                      "currentBranch":"main",
+                      "remoteBranch":"origin/main",
+                      "lastCommitId":"1234567890abcdef",
+                      "gitUsername":"user",
+                      "gitToken":"secret"
+                    }]
+                    """.getBytes(StandardCharsets.UTF_8));
+            zip.closeEntry();
+            zip.putNextEntry(new ZipEntry("workspaces/api/collections.json"));
+            zip.write("{}".getBytes(StandardCharsets.UTF_8));
+            zip.closeEntry();
+        }
+        Path targetRoot = Files.createTempDirectory("webdav-snapshot-git-restore-target");
+
+        new WebDavSnapshotService().restoreSnapshot(snapshot, targetRoot);
+
+        String restoredWorkspaces = Files.readString(targetRoot.resolve("workspaces.json"))
+                .replaceAll("\\s+", "");
+        assertTrue(restoredWorkspaces.contains("\"type\":\"LOCAL\""));
+        assertFalse(restoredWorkspaces.contains("\"type\":\"GIT\""));
+        assertFalse(restoredWorkspaces.contains("gitRemoteUrl"));
+        assertFalse(restoredWorkspaces.contains("gitToken"));
+    }
+
+    @Test
+    public void snapshotShouldDowngradeGitWorkspacesBecauseGitMetadataIsExcluded() throws Exception {
+        Path dataRoot = Files.createTempDirectory("webdav-snapshot-git-source");
+        write(dataRoot.resolve("workspaces/api/collections.json"), "{}");
+        write(dataRoot.resolve("workspaces/api/.git/config"), "[core]");
+        write(dataRoot.resolve("workspaces.json"), """
+                [{
+                  "id":"api",
+                  "name":"API",
+                  "type":"GIT",
+                  "gitRepoSource":"INITIALIZED",
+                  "path":"%s",
+                  "gitRemoteUrl":"https://example.com/team/api.git",
+                  "currentBranch":"main",
+                  "lastCommitId":"1234567890abcdef"
+                }]
+                """.formatted(dataRoot.resolve("workspaces/api").toString()));
+
+        Path snapshot = Files.createTempFile("webdav-snapshot-git", ".zip");
+        new WebDavSnapshotService().createSnapshot(dataRoot, snapshot);
+
+        String workspaceEntry = zipEntries(snapshot).get("workspaces.json").replaceAll("\\s+", "");
+        assertTrue(workspaceEntry.contains("\"type\":\"LOCAL\""));
+        assertFalse(workspaceEntry.contains("\"type\":\"GIT\""));
+        assertFalse(workspaceEntry.contains("gitRemoteUrl"));
+    }
+
+    @Test
     public void snapshotShouldIncludeExternalWorkspacesAndRestoreThemUnderDataRoot() throws Exception {
         Path dataRoot = Files.createTempDirectory("webdav-snapshot-external-root");
         Path externalWorkspace = Files.createTempDirectory("webdav-snapshot-external-workspace");

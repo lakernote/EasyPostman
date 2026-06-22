@@ -46,6 +46,7 @@ public class WebDavSyncSettingsPanel extends ModernSettingsPanel {
     private SettingsFieldRow remoteDirectoryRow;
     private SettingsFieldRow usernameRow;
     private SettingsFieldRow passwordRow;
+    private boolean busy;
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -243,6 +244,9 @@ public class WebDavSyncSettingsPanel extends ModernSettingsPanel {
     }
 
     private void runTestConnection() {
+        if (busy) {
+            return;
+        }
         if (!validateEndpoint()) {
             return;
         }
@@ -264,6 +268,9 @@ public class WebDavSyncSettingsPanel extends ModernSettingsPanel {
     }
 
     private void runUpload() {
+        if (busy) {
+            return;
+        }
         if (!validateEndpoint()) {
             return;
         }
@@ -301,6 +308,9 @@ public class WebDavSyncSettingsPanel extends ModernSettingsPanel {
     }
 
     private void runRestore() {
+        if (busy) {
+            return;
+        }
         if (!validateEndpoint()) {
             return;
         }
@@ -493,13 +503,19 @@ public class WebDavSyncSettingsPanel extends ModernSettingsPanel {
     }
 
     private void setBusy(boolean busy) {
-        boolean actionsEnabled = !busy && enabledCheckBox.isSelected() && formSettings().hasEndpoint();
-        testConnectionButton.setEnabled(actionsEnabled);
-        uploadButton.setEnabled(actionsEnabled);
-        restoreButton.setEnabled(actionsEnabled);
+        this.busy = busy;
+        markActionBusy(testConnectionButton, busy);
+        markActionBusy(uploadButton, busy);
+        markActionBusy(restoreButton, busy);
         saveBtn.setEnabled(!busy);
         cancelBtn.setEnabled(!busy);
         applyBtn.setEnabled(!busy && hasUnsavedChanges());
+    }
+
+    private void markActionBusy(JButton button, boolean busy) {
+        if (button != null) {
+            button.putClientProperty("webdav.busy", busy ? Boolean.TRUE : null);
+        }
     }
 
     private WebDavSyncSettings formSettings() {

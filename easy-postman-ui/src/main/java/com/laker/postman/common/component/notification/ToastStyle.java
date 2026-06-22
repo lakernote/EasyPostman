@@ -70,7 +70,7 @@ class ToastStyle {
     }
 
     static Color borderColor() {
-        return ModernColors.withAlpha(ModernColors.getNotificationBorder(), ModernColors.isDarkTheme() ? 150 : 95);
+        return ModernColors.withAlpha(ModernColors.getNotificationBorder(), ModernColors.isDarkTheme() ? 170 : 125);
     }
 
     static JPanel createCardPanel() {
@@ -194,7 +194,7 @@ class ToastStyle {
     }
 
     static JButton createCloseButton(Runnable onClose) {
-        JButton button = new JButton(closeIcon(ModernColors.withAlpha(ModernColors.getTextHint(), 0)));
+        JButton button = new JButton(closeIcon(ModernColors.withAlpha(ModernColors.getTextHint(), 135)));
         button.setContentAreaFilled(false);
         button.setBorderPainted(false);
         button.setFocusPainted(false);
@@ -220,11 +220,11 @@ class ToastStyle {
     }
 
     static void showCloseButton(AbstractButton button) {
-        button.setIcon(closeIcon(ModernColors.getTextHint()));
+        button.setIcon(closeIcon(ModernColors.getTextSecondary()));
     }
 
     static void hideCloseButton(AbstractButton button) {
-        button.setIcon(closeIcon(ModernColors.withAlpha(ModernColors.getTextHint(), 0)));
+        button.setIcon(closeIcon(ModernColors.withAlpha(ModernColors.getTextHint(), 135)));
     }
 
     static Graphics2D createGraphics(Graphics g) {

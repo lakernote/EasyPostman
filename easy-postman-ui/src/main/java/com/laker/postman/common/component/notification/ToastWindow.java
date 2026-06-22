@@ -131,7 +131,7 @@ class ToastWindow extends JWindow {
         card.add(closePanel, BorderLayout.EAST);
         wrapper.add(card, BorderLayout.CENTER);
 
-        for (Component component : new Component[]{wrapper, card, iconLabel, titleLabel, bodyText, textPanel, closePanel}) {
+        for (Component component : new Component[]{wrapper, card, iconLabel, titleLabel, bodyText, textPanel, closePanel, closeButton}) {
             installHoverListener(component);
         }
 

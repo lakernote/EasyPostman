@@ -97,6 +97,19 @@ public class NotificationCenterTest {
     }
 
     @Test
+    public void toastBorderShouldRemainVisibleOnLightTheme() {
+        assertTrue(ToastStyle.borderColor().getAlpha() >= 120);
+    }
+
+    @Test
+    public void toastCloseButtonShouldBeDiscoverableBeforeHover() {
+        JButton closeButton = ToastStyle.createCloseButton(() -> {
+        });
+
+        assertTrue(iconHasVisiblePixels(closeButton.getIcon()));
+    }
+
+    @Test
     public void bottomRightPlacementShouldReserveToolWindowStripes() {
         Rectangle anchor = new Rectangle(100, 80, 1000, 700);
         Rectangle screen = new Rectangle(0, 0, 1400, 1000);
@@ -106,5 +119,20 @@ public class NotificationCenterTest {
 
         assertTrue(point.x <= anchor.x + anchor.width - ToolWindowStripeMetrics.STRIPE_THICKNESS - toastSize.width);
         assertTrue(point.y <= anchor.y + anchor.height - ToolWindowStripeMetrics.STRIPE_THICKNESS - toastSize.height);
+    }
+
+    private static boolean iconHasVisiblePixels(Icon icon) {
+        BufferedImage image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        icon.paintIcon(null, graphics, 0, 0);
+        graphics.dispose();
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                if (((image.getRGB(x, y) >>> 24) & 0xff) > 0) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

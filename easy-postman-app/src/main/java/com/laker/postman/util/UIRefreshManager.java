@@ -108,7 +108,6 @@ public class UIRefreshManager {
      * 此方法会：
      * <ul>
      *   <li>递归刷新实现了 IRefreshable 接口的组件（包括窗口标题更新）</li>
-     *   <li>更新组件树 UI</li>
      *   <li>重新验证布局和重绘</li>
      * </ul>
      * <p>
@@ -126,13 +125,10 @@ public class UIRefreshManager {
                     // 1. 递归刷新所有实现了 IRefreshable 的组件
                     refreshComponentRecursively(window);
 
-                    // 2. 更新组件树 UI（确保 UI 样式正确）
-                    SwingUtilities.updateComponentTreeUI(window);
-
-                    // 3. 重新验证布局
+                    // 2. 重新验证布局
                     window.validate();
 
-                    // 4. 重绘窗口
+                    // 3. 重绘窗口
                     window.repaint();
 
                     refreshedCount++;

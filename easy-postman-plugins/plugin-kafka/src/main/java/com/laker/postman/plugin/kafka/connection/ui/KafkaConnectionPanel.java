@@ -3,7 +3,6 @@ package com.laker.postman.plugin.kafka.connection.ui;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
 import com.laker.postman.plugin.kafka.MessageKeys;
 import net.miginfocom.swing.MigLayout;
@@ -18,11 +17,10 @@ public class KafkaConnectionPanel extends JPanel {
     private static final String CARD_CONNECT = "connect";
     private static final String CARD_DISCONNECT = "disconnect";
     private static final int KAFKA_LABEL_WIDTH = 64;
-    private static final int KAFKA_WIDE_LABEL_WIDTH = 112;
     private static final int BOOTSTRAP_FIELD_WIDTH = 240;
     private static final int CLIENT_ID_FIELD_WIDTH = BOOTSTRAP_FIELD_WIDTH;
+    private static final int SECURITY_FIELD_WIDTH = 180;
     private static final int AUTH_FIELD_WIDTH = 150;
-    private static final int CONNECTION_BUTTON_WIDTH = 78;
 
     public final JComboBox<String> profileCombo;
     public final JButton newProfileBtn;
@@ -36,7 +34,7 @@ public class KafkaConnectionPanel extends JPanel {
     public final JTextField usernameField;
     public final JPasswordField passwordField;
     public final JPanel optionsRow;
-    public final SecondaryButton connectBtn;
+    public final JButton connectBtn;
     public final CardLayout btnCardLayout;
     public final JPanel btnCard;
 
@@ -90,13 +88,13 @@ public class KafkaConnectionPanel extends JPanel {
         ConnectionToolbarUi.compactControl(passwordField);
         passwordField.addActionListener(e -> connectAction.run());
 
-        connectBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_KAFKA_CONNECT), "icons/connect.svg");
-        ConnectionToolbarUi.compactButton(connectBtn, CONNECTION_BUTTON_WIDTH);
-        connectBtn.addActionListener(e -> connectAction.run());
+        connectBtn = ConnectionToolbarUi.iconButton(
+                t(MessageKeys.TOOLBOX_KAFKA_CONNECT),
+                "icons/connect.svg", e -> connectAction.run());
 
-        SecondaryButton disconnectBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_KAFKA_DISCONNECT), "icons/ws-close.svg");
-        ConnectionToolbarUi.compactButton(disconnectBtn, CONNECTION_BUTTON_WIDTH);
-        disconnectBtn.addActionListener(e -> disconnectAction.run());
+        JButton disconnectBtn = ConnectionToolbarUi.iconButton(
+                t(MessageKeys.TOOLBOX_KAFKA_DISCONNECT),
+                "icons/ws-close.svg", e -> disconnectAction.run());
 
         btnCardLayout = new CardLayout();
         btnCard = new JPanel(btnCardLayout);
@@ -109,7 +107,7 @@ public class KafkaConnectionPanel extends JPanel {
                 "insets 0, fillx, novisualpadding, gapx 0",
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, BOOTSTRAP_FIELD_WIDTH) + "4"
-                        + ConnectionToolbarUi.autoConnectionFieldColumns(KAFKA_LABEL_WIDTH)
+                        + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, SECURITY_FIELD_WIDTH)
                         + "6[]push",
                 "[]"
         ));
@@ -124,7 +122,9 @@ public class KafkaConnectionPanel extends JPanel {
                 "w 1!, h " + ConnectionToolbarUi.VERTICAL_SEPARATOR_HEIGHT + "!");
         mainRow.add(ConnectionToolbarUi.label(t(MessageKeys.TOOLBOX_KAFKA_HOST)));
         mainRow.add(bootstrapField);
-        mainRow.add(ConnectionToolbarUi.label(t(MessageKeys.TOOLBOX_KAFKA_SECURITY_PROTOCOL)));
+        mainRow.add(compactLabel(
+                MessageKeys.TOOLBOX_KAFKA_SECURITY_PROTOCOL_SHORT,
+                MessageKeys.TOOLBOX_KAFKA_SECURITY_PROTOCOL));
         mainRow.add(securityProtocolCombo);
         mainRow.add(btnCard, "h " + ConnectionToolbarUi.CONNECTION_BUTTON_HEIGHT + "!");
 
@@ -132,7 +132,7 @@ public class KafkaConnectionPanel extends JPanel {
                 "insets 2 0 2 0, fillx, novisualpadding, gapx 0",
                 ConnectionToolbarUi.profileActionColumns()
                         + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, CLIENT_ID_FIELD_WIDTH) + "4"
-                        + ConnectionToolbarUi.autoConnectionFieldColumns(KAFKA_WIDE_LABEL_WIDTH) + "4"
+                        + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, SECURITY_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, AUTH_FIELD_WIDTH) + "4"
                         + ConnectionToolbarUi.connectionFieldColumns(KAFKA_LABEL_WIDTH, AUTH_FIELD_WIDTH) + "push",
                 "[]"
@@ -140,7 +140,9 @@ public class KafkaConnectionPanel extends JPanel {
         optionsRow.setOpaque(false);
         optionsRow.add(ConnectionToolbarUi.label(t(MessageKeys.TOOLBOX_KAFKA_CLIENT_ID)), "skip 7");
         optionsRow.add(clientIdField);
-        optionsRow.add(ConnectionToolbarUi.label(t(MessageKeys.TOOLBOX_KAFKA_SASL_MECHANISM)));
+        optionsRow.add(compactLabel(
+                MessageKeys.TOOLBOX_KAFKA_SASL_MECHANISM_SHORT,
+                MessageKeys.TOOLBOX_KAFKA_SASL_MECHANISM));
         optionsRow.add(saslMechanismCombo);
         optionsRow.add(ConnectionToolbarUi.label(t(MessageKeys.TOOLBOX_KAFKA_USER)));
         optionsRow.add(usernameField);
@@ -151,6 +153,12 @@ public class KafkaConnectionPanel extends JPanel {
         form.add(optionsRow);
         add(form, BorderLayout.CENTER);
         ConnectionToolbarUi.lockConnectionPanelHeight(this, true);
+    }
+
+    private static JLabel compactLabel(String shortKey, String fullKey) {
+        JLabel label = ConnectionToolbarUi.label(t(shortKey));
+        label.setToolTipText(t(fullKey));
+        return label;
     }
 
     public void setOptionsVisible(boolean visible) {

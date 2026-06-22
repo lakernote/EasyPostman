@@ -12,9 +12,8 @@ import com.laker.postman.common.component.ToolWindowSidebarHeader;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
-import com.laker.postman.common.component.button.PrimaryButton;
+import com.laker.postman.common.component.button.CompactPrimaryButton;
 import com.laker.postman.common.component.button.RefreshButton;
-import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
 import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.ModernColors;
@@ -48,12 +47,11 @@ public class RedisPanel extends JPanel {
     private static final int MAX_HISTORY = 30;
     private static final String CONNECT_CARD = "connect";
     private static final String DISCONNECT_CARD = "disconnect";
-    private static final int HOST_FIELD_WIDTH = 280;
+    private static final int HOST_FIELD_WIDTH = 220;
     private static final int PORT_FIELD_WIDTH = 78;
     private static final int DB_FIELD_WIDTH = 58;
     private static final int AUTH_MODE_WIDTH = 100;
     private static final int AUTH_FIELD_WIDTH = HOST_FIELD_WIDTH;
-    private static final int CONNECTION_BUTTON_WIDTH = 78;
 
     private static final String CMD_GET = "GET";
     private static final String CMD_SET = "SET";
@@ -113,8 +111,8 @@ public class RedisPanel extends JPanel {
     private JPanel connectionPanel;
     private JPanel connectionForm;
     private JPanel authRow;
-    private SecondaryButton connectBtn;
-    private SecondaryButton disconnectBtn;
+    private JButton connectBtn;
+    private JButton disconnectBtn;
     private CardLayout btnCardLayout;
     private JPanel btnCard;
 
@@ -135,7 +133,7 @@ public class RedisPanel extends JPanel {
     private SearchableTextArea searchableResultArea;
     private JLabel keyMetaLabel;
     private JLabel respStatusLabel;
-    private PrimaryButton executeBtn;
+    private CompactPrimaryButton executeBtn;
 
     private final Deque<HistoryEntry> requestHistory = new ArrayDeque<>();
     private DefaultListModel<HistoryEntry> historyListModel;
@@ -242,13 +240,13 @@ public class RedisPanel extends JPanel {
         compactRedisControl(authModeCombo);
         authModeCombo.addActionListener(e -> setAuthOptionsVisible(getSelectedAuthMode() == AuthMode.BASIC));
 
-        connectBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_REDIS_CONNECT), "icons/connect.svg");
-        compactRedisButton(connectBtn);
-        connectBtn.addActionListener(e -> doConnect());
+        connectBtn = ConnectionToolbarUi.iconButton(
+                t(MessageKeys.TOOLBOX_REDIS_CONNECT),
+                "icons/connect.svg", e -> doConnect());
 
-        disconnectBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_REDIS_DISCONNECT), "icons/ws-close.svg");
-        compactRedisButton(disconnectBtn);
-        disconnectBtn.addActionListener(e -> doDisconnect());
+        disconnectBtn = ConnectionToolbarUi.iconButton(
+                t(MessageKeys.TOOLBOX_REDIS_DISCONNECT),
+                "icons/ws-close.svg", e -> doDisconnect());
 
         btnCardLayout = new CardLayout();
         btnCard = new JPanel(btnCardLayout);
@@ -338,10 +336,6 @@ public class RedisPanel extends JPanel {
         return component;
     }
 
-    private void compactRedisButton(JButton button) {
-        ConnectionToolbarUi.compactButton(button, CONNECTION_BUTTON_WIDTH);
-    }
-
     private AuthMode getSelectedAuthMode() {
         Object selected = authModeCombo == null ? null : authModeCombo.getSelectedItem();
         return selected instanceof AuthMode authMode ? authMode : AuthMode.NONE;
@@ -355,7 +349,8 @@ public class RedisPanel extends JPanel {
 
         JTabbedPane leftTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         ToolWindowSurfaceStyle.applyTabbedPaneCard(leftTabs);
-        leftTabs.addTab(t(MessageKeys.TOOLBOX_REDIS_KEYS_MANAGEMENT), buildKeyPanel());
+        leftTabs.addTab(t(MessageKeys.TOOLBOX_REDIS_KEYS_TAB), buildKeyPanel());
+        leftTabs.setToolTipTextAt(0, t(MessageKeys.TOOLBOX_REDIS_KEYS_MANAGEMENT));
         leftTabs.addTab(t(MessageKeys.TOOLBOX_REDIS_HISTORY), buildHistoryPanel());
         wrapper.add(leftTabs, BorderLayout.CENTER);
         return wrapper;
@@ -500,9 +495,9 @@ public class RedisPanel extends JPanel {
         });
         ConnectionToolbarUi.compactControl(templateCombo);
 
-        SecondaryButton loadTplBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_REDIS_LOAD_TEMPLATE), "icons/load.svg");
-        loadTplBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_LOAD_TEMPLATE));
-        loadTplBtn.addActionListener(e -> loadTemplate(templateCombo.getSelectedIndex()));
+        JButton loadTplBtn = ConnectionToolbarUi.iconButton(
+                t(MessageKeys.TOOLBOX_REDIS_LOAD_TEMPLATE),
+                "icons/load.svg", e -> loadTemplate(templateCombo.getSelectedIndex()));
 
         commandCombo = new EasyComboBox<>(COMMANDS, EasyComboBox.WidthMode.FIXED_MAX);
         ConnectionToolbarUi.compactControl(commandCombo);
@@ -515,7 +510,8 @@ public class RedisPanel extends JPanel {
         argsField = new JTextField();
         argsField.addActionListener(e -> executeCommand());
 
-        executeBtn = new PrimaryButton(t(MessageKeys.TOOLBOX_REDIS_EXECUTE), "icons/send.svg");
+        executeBtn = new CompactPrimaryButton(t(MessageKeys.TOOLBOX_REDIS_EXECUTE_SHORT), "icons/send.svg");
+        executeBtn.setToolTipText(t(MessageKeys.TOOLBOX_REDIS_EXECUTE));
         executeBtn.addActionListener(e -> executeCommand());
 
         JPanel row1 = new JPanel(new MigLayout(
@@ -524,7 +520,7 @@ public class RedisPanel extends JPanel {
                 "[]"
         ));
         row1.setOpaque(false);
-        row1.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_LOAD_TEMPLATE)));
+        row1.add(new JLabel(t(MessageKeys.TOOLBOX_REDIS_TEMPLATE)));
         row1.add(templateCombo, "growx");
         row1.add(loadTplBtn);
 

@@ -19,7 +19,7 @@ public final class ModernButtonFactory {
     static final int COMPACT_BUTTON_MIN_WIDTH = 72;
     private static final Dimension DEFAULT_SIZE = new Dimension(100, 34);
     private static final int DEFAULT_ICON_SIZE = 16;
-    private static final int COMPACT_ICON_SIZE = 14;
+    static final int COMPACT_ICON_SIZE = 14;
     private static final int COMPACT_HORIZONTAL_PADDING = 24;
 
     private ModernButtonFactory() {
@@ -48,7 +48,7 @@ public final class ModernButtonFactory {
         return button;
     }
 
-    private static void configureCompactButton(AbstractButton button) {
+    static void configureCompactButton(AbstractButton button) {
         button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         Dimension size = new Dimension(
                 compactButtonWidth(textWidth(button), iconWidth(button), button.getIconTextGap()),
@@ -72,7 +72,7 @@ public final class ModernButtonFactory {
         return button;
     }
 
-    private static void configureBaseButton(AbstractButton button, String styleClass) {
+    static void configureBaseButton(AbstractButton button, String styleClass) {
         button.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         button.setPreferredSize(DEFAULT_SIZE);
         button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
@@ -80,7 +80,7 @@ public final class ModernButtonFactory {
         button.putClientProperty(FlatClientProperties.STYLE_CLASS, styleClass);
     }
 
-    private static void configureButtonIcon(AbstractButton button, boolean primary, String iconPath, int iconSize) {
+    static void configureButtonIcon(AbstractButton button, boolean primary, String iconPath, int iconSize) {
         if (iconPath == null || iconPath.isBlank()) {
             return;
         }

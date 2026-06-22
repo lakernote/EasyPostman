@@ -164,7 +164,8 @@ public class KafkaPanel extends JPanel {
 
         JTabbedPane sideTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         ToolWindowSurfaceStyle.applyTabbedPaneCard(sideTabs);
-        sideTabs.addTab(t(MessageKeys.TOOLBOX_KAFKA_TOPIC_MANAGEMENT), topicPanel);
+        sideTabs.addTab(t(MessageKeys.TOOLBOX_KAFKA_TOPIC_TAB), topicPanel);
+        sideTabs.setToolTipTextAt(0, t(MessageKeys.TOOLBOX_KAFKA_TOPIC_MANAGEMENT));
         wrapper.add(sideTabs, BorderLayout.CENTER);
         return wrapper;
     }
@@ -174,12 +175,12 @@ public class KafkaPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTabbedPaneCard(workTabs);
         workTabs.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         workTabs.addTab(
-                t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_TITLE),
+                t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_TAB),
                 IconUtil.createThemed("icons/send.svg", 16, 16),
                 producerPanel,
                 t(MessageKeys.TOOLBOX_KAFKA_PRODUCER_TITLE));
         workTabs.addTab(
-                t(MessageKeys.TOOLBOX_KAFKA_CONSUMER_TITLE),
+                t(MessageKeys.TOOLBOX_KAFKA_CONSUMER_TAB),
                 IconUtil.createThemed("icons/start.svg", 16, 16),
                 consumerPanel,
                 t(MessageKeys.TOOLBOX_KAFKA_CONSUMER_TITLE));
@@ -207,7 +208,7 @@ public class KafkaPanel extends JPanel {
     private void registerConnectionProfileShortcuts(JComponent component) {
         KeyStroke saveKey = KeyStroke.getKeyStroke(
                 java.awt.event.KeyEvent.VK_S,
-                Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()
+                menuShortcutMask()
         );
         component.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT)
                 .put(saveKey, "saveKafkaConnectionProfile");
@@ -217,6 +218,14 @@ public class KafkaPanel extends JPanel {
                 saveCurrentConnectionProfile(true);
             }
         });
+    }
+
+    private static int menuShortcutMask() {
+        try {
+            return Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        } catch (HeadlessException e) {
+            return java.awt.event.InputEvent.CTRL_DOWN_MASK;
+        }
     }
 
     private void loadSavedConnectionProfiles(String preferredProfileId) {

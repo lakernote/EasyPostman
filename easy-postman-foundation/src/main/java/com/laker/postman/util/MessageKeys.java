@@ -2569,6 +2569,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_ES_INDEX_LIST_EMPTY = "toolbox.es.index.list_empty";
     // 索引管理
     public static final String TOOLBOX_ES_INDEX_MANAGEMENT = "toolbox.es.index.management";
+    public static final String TOOLBOX_ES_INDEX_TAB = "toolbox.es.index.tab";
     public static final String TOOLBOX_ES_INDEX_DELETE = "toolbox.es.index.delete";
     public static final String TOOLBOX_ES_INDEX_CREATE = "toolbox.es.index.create";
     public static final String TOOLBOX_ES_INDEX_NAME = "toolbox.es.index.name";
@@ -2600,6 +2601,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_ES_COPY_RESULT = "toolbox.es.copy_result";
     public static final String TOOLBOX_ES_CLEAR = "toolbox.es.clear";
     public static final String TOOLBOX_ES_EXECUTE = "toolbox.es.execute";
+    public static final String TOOLBOX_ES_EXECUTE_SHORT = "toolbox.es.execute.short";
     public static final String TOOLBOX_ES_PATH_PLACEHOLDER = "toolbox.es.path.placeholder";
     public static final String TOOLBOX_ES_DSL_TITLE = "toolbox.es.dsl.title";
     public static final String TOOLBOX_ES_RESPONSE_TITLE = "toolbox.es.response.title";
@@ -2661,11 +2663,27 @@ public final class MessageKeys {
     public static final String TOOLBOX_INFLUX_STATUS_OK = "toolbox.influx.status.ok";
     public static final String TOOLBOX_INFLUX_STATUS_ERROR = "toolbox.influx.status.error";
     public static final String TOOLBOX_INFLUX_EXECUTE = "toolbox.influx.execute";
+    public static final String TOOLBOX_INFLUX_EXECUTE_SHORT = "toolbox.influx.execute.short";
     public static final String TOOLBOX_INFLUX_EXECUTE_V1 = "toolbox.influx.execute.v1";
     public static final String TOOLBOX_INFLUX_EXECUTE_V2 = "toolbox.influx.execute.v2";
     public static final String TOOLBOX_INFLUX_RELOAD_META = "toolbox.influx.reload_meta";
     public static final String TOOLBOX_INFLUX_LOAD_TEMPLATE = "toolbox.influx.load_template";
     public static final String TOOLBOX_INFLUX_FIELD = "toolbox.influx.field";
+    public static final String TOOLBOX_INFLUX_TAGS = "toolbox.influx.tags";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_FLUX_LATEST_100 = "toolbox.influx.template.flux.latest_100";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_FLUX_COUNT_BY_MEASUREMENT = "toolbox.influx.template.flux.count_by_measurement";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_MEAN_BY_1M = "toolbox.influx.template.mean_by_1m";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_FLUX_TOP_10_VALUES = "toolbox.influx.template.flux.top_10_values";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_FLUX_GROUP_BY_TAG = "toolbox.influx.template.flux.group_by_tag";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_FLUX_FIELD_SELECTOR = "toolbox.influx.template.flux.field_selector";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_FLUX_PIVOT_VIEW = "toolbox.influx.template.flux.pivot_view";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_INFLUXQL_LATEST_100 = "toolbox.influx.template.influxql.latest_100";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_INFLUXQL_COUNT_LAST_1H = "toolbox.influx.template.influxql.count_last_1h";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_INFLUXQL_TAG_VALUES = "toolbox.influx.template.influxql.tag_values";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_INFLUXQL_FIELD_KEYS = "toolbox.influx.template.influxql.field_keys";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_INFLUXQL_SERIES_CARDINALITY = "toolbox.influx.template.influxql.series_cardinality";
+    public static final String TOOLBOX_INFLUX_TEMPLATE_INFLUXQL_LAST_POINT_PER_HOST = "toolbox.influx.template.influxql.last_point_per_host";
+    public static final String TOOLBOX_INFLUX_MEASUREMENT_TAB = "toolbox.influx.measurement.tab";
     public static final String TOOLBOX_INFLUX_MEASUREMENT_MANAGEMENT = "toolbox.influx.measurement.management";
     public static final String TOOLBOX_INFLUX_HISTORY = "toolbox.influx.history";
     public static final String TOOLBOX_INFLUX_HISTORY_CLEAR = "toolbox.influx.history.clear";

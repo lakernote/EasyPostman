@@ -52,6 +52,7 @@ final class MessageKeys {
     static final String TOOLBOX_REDIS_STATUS_OK = "toolbox.redis.status.ok";
     static final String TOOLBOX_REDIS_STATUS_ERROR = "toolbox.redis.status.error";
     static final String TOOLBOX_REDIS_KEYS_MANAGEMENT = "toolbox.redis.keys.management";
+    static final String TOOLBOX_REDIS_KEYS_TAB = "toolbox.redis.keys.tab";
     static final String TOOLBOX_REDIS_KEYS_SEARCH_PLACEHOLDER = "toolbox.redis.keys.search.placeholder";
     static final String TOOLBOX_REDIS_KEYS_REFRESH = "toolbox.redis.keys.refresh";
     static final String TOOLBOX_REDIS_KEY_COPY = "toolbox.redis.key.copy";
@@ -64,8 +65,10 @@ final class MessageKeys {
     static final String TOOLBOX_REDIS_HISTORY = "toolbox.redis.history";
     static final String TOOLBOX_REDIS_HISTORY_CLEAR = "toolbox.redis.history.clear";
     static final String TOOLBOX_REDIS_HISTORY_EMPTY = "toolbox.redis.history.empty";
+    static final String TOOLBOX_REDIS_TEMPLATE = "toolbox.redis.template";
     static final String TOOLBOX_REDIS_LOAD_TEMPLATE = "toolbox.redis.load_template";
     static final String TOOLBOX_REDIS_EXECUTE = "toolbox.redis.execute";
+    static final String TOOLBOX_REDIS_EXECUTE_SHORT = "toolbox.redis.execute.short";
     static final String TOOLBOX_REDIS_COMMAND = "toolbox.redis.command";
     static final String TOOLBOX_REDIS_KEY = "toolbox.redis.key";
     static final String TOOLBOX_REDIS_ARGS = "toolbox.redis.args";

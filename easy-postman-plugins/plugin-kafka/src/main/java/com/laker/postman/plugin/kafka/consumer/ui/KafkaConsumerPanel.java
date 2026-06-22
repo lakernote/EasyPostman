@@ -9,9 +9,10 @@ import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
 import com.laker.postman.common.component.button.CloseButton;
+import com.laker.postman.common.component.button.CompactPrimaryButton;
 import com.laker.postman.common.component.button.CopyButton;
-import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.SecondaryButton;
+import com.laker.postman.common.component.connection.ConnectionToolbarUi;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.plugin.kafka.MessageKeys;
@@ -109,10 +110,13 @@ public class KafkaConsumerPanel extends JPanel {
         topicField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, t(MessageKeys.TOOLBOX_KAFKA_TOPIC_PLACEHOLDER));
         topicField.setPreferredSize(new Dimension(0, 30));
 
-        PrimaryButton startConsumeBtn = new PrimaryButton(t(MessageKeys.TOOLBOX_KAFKA_START_CONSUME), "icons/start.svg");
+        CompactPrimaryButton startConsumeBtn = new CompactPrimaryButton(t(MessageKeys.TOOLBOX_KAFKA_START_CONSUME_SHORT), "icons/start.svg");
+        startConsumeBtn.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_START_CONSUME));
         startConsumeBtn.addActionListener(e -> startAction.run());
 
-        SecondaryButton stopConsumeBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_KAFKA_STOP_CONSUME), "icons/stop.svg");
+        SecondaryButton stopConsumeBtn = new SecondaryButton(t(MessageKeys.TOOLBOX_KAFKA_STOP_CONSUME_SHORT), "icons/stop.svg");
+        stopConsumeBtn.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_STOP_CONSUME));
+        ConnectionToolbarUi.compactButton(stopConsumeBtn, 74);
         stopConsumeBtn.addActionListener(e -> stopAction.run());
 
         consumeBtnCardLayout = new CardLayout();

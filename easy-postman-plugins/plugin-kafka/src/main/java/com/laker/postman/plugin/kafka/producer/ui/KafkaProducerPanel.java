@@ -8,7 +8,7 @@ import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
-import com.laker.postman.common.component.button.PrimaryButton;
+import com.laker.postman.common.component.button.CompactPrimaryButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
@@ -34,7 +34,7 @@ public class KafkaProducerPanel extends JPanel {
     public final JSpinner partitionSpinner;
     public final RSyntaxTextArea payloadArea;
     public final KafkaPropertiesEditorPanel customPropsPanel;
-    public final PrimaryButton sendBtn;
+    public final CompactPrimaryButton sendBtn;
     public final JLabel statusLabel;
     public final JPanel advancedPanel;
 
@@ -70,7 +70,8 @@ public class KafkaProducerPanel extends JPanel {
         partitionSpinner = new JSpinner(new SpinnerNumberModel(-1, -1, Integer.MAX_VALUE, 1));
         partitionSpinner.setPreferredSize(new Dimension(90, 30));
 
-        sendBtn = new PrimaryButton(t(MessageKeys.TOOLBOX_KAFKA_SEND), "icons/send.svg");
+        sendBtn = new CompactPrimaryButton(t(MessageKeys.TOOLBOX_KAFKA_SEND), "icons/send.svg");
+        sendBtn.setToolTipText(t(MessageKeys.TOOLBOX_KAFKA_SEND));
         sendBtn.addActionListener(e -> sendAction.run());
 
         form.add(new JLabel(t(MessageKeys.TOOLBOX_KAFKA_TOPIC)));

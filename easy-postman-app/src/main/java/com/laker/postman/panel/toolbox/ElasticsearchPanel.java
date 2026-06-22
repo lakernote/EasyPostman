@@ -9,11 +9,11 @@ import com.laker.postman.common.component.ToolWindowSidebarHeader;
 import com.laker.postman.common.component.ToolWindowSidebarToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ClearButton;
+import com.laker.postman.common.component.button.CompactPrimaryButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.button.FormatButton;
 import com.laker.postman.common.component.button.PrimaryButton;
 import com.laker.postman.common.component.button.RefreshButton;
-import com.laker.postman.common.component.button.SecondaryButton;
 import com.laker.postman.common.component.connection.ConnectionToolbarUi;
 import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
@@ -143,7 +143,7 @@ public class ElasticsearchPanel extends JPanel {
     private JTabbedPane resultTabs;
     private JLabel respStatusLabel;
     private JLabel hitsInfoLabel;
-    private PrimaryButton executeBtn;
+    private CompactPrimaryButton executeBtn;
 
     // ===== 请求历史 =====
     private static final int MAX_HISTORY = 20;
@@ -180,7 +180,6 @@ public class ElasticsearchPanel extends JPanel {
     private static final int HOST_FIELD_WIDTH = 280;
     private static final int AUTH_MODE_WIDTH = 100;
     private static final int AUTH_FIELD_WIDTH = HOST_FIELD_WIDTH;
-    private static final int CONNECTION_BUTTON_WIDTH = 78;
 
     // ===== 内置 DSL 模板 =====
     private static final String[][] DSL_TEMPLATES = {
@@ -313,15 +312,13 @@ public class ElasticsearchPanel extends JPanel {
                 I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_PASS_PLACEHOLDER));
         passwordField.addActionListener(e -> doConnect());
 
-        connectBtn = new SecondaryButton(
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_CONNECT), "icons/connect.svg");
-        ConnectionToolbarUi.compactButton(connectBtn, CONNECTION_BUTTON_WIDTH);
-        connectBtn.addActionListener(e -> doConnect());
+        connectBtn = ConnectionToolbarUi.iconButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_CONNECT),
+                "icons/connect.svg", e -> doConnect());
 
-        disconnectBtn = new SecondaryButton(
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_DISCONNECT), "icons/ws-close.svg");
-        ConnectionToolbarUi.compactButton(disconnectBtn, CONNECTION_BUTTON_WIDTH);
-        disconnectBtn.addActionListener(e -> doDisconnect());
+        disconnectBtn = ConnectionToolbarUi.iconButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_DISCONNECT),
+                "icons/ws-close.svg", e -> doDisconnect());
 
         // 用 CardLayout 将 connectBtn / disconnectBtn 叠放在同一格，切换时不留空白
         btnCardLayout = new CardLayout();
@@ -636,7 +633,8 @@ public class ElasticsearchPanel extends JPanel {
 
         JTabbedPane leftTabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         ToolWindowSurfaceStyle.applyTabbedPaneCard(leftTabs);
-        leftTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_MANAGEMENT), buildIndexPanel());
+        leftTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_TAB), buildIndexPanel());
+        leftTabs.setToolTipTextAt(0, I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_INDEX_MANAGEMENT));
         leftTabs.addTab(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_HISTORY), buildHistoryPanel());
 
         wrapper.add(leftTabs, BorderLayout.CENTER);
@@ -1011,11 +1009,9 @@ public class ElasticsearchPanel extends JPanel {
         templateCombo = new JComboBox<>();
         for (String[] t : DSL_TEMPLATES) templateCombo.addItem(I18nUtil.getMessage(t[0]));
         templateCombo.setPreferredSize(new Dimension(180, ConnectionToolbarUi.FORM_CONTROL_HEIGHT));
-        SecondaryButton loadTplBtn = new SecondaryButton(
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_LOAD_TEMPLATE), "icons/load.svg");
-        ConnectionToolbarUi.compactButton(loadTplBtn, 104);
-        loadTplBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_LOAD_TEMPLATE));
-        loadTplBtn.addActionListener(e -> applyTemplate(templateCombo.getSelectedIndex()));
+        JButton loadTplBtn = ConnectionToolbarUi.iconButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_LOAD_TEMPLATE),
+                "icons/load.svg", e -> applyTemplate(templateCombo.getSelectedIndex()));
 
         FormatButton formatBtn = new FormatButton();
         formatBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_FORMAT_JSON));
@@ -1059,9 +1055,9 @@ public class ElasticsearchPanel extends JPanel {
         // 路径框回车执行
         pathField.addActionListener(e -> executeRequest());
 
-        executeBtn = new PrimaryButton(
-                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_EXECUTE), "icons/send.svg");
-        ConnectionToolbarUi.compactButton(executeBtn, 72);
+        executeBtn = new CompactPrimaryButton(
+                I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_EXECUTE_SHORT), "icons/send.svg");
+        executeBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.TOOLBOX_ES_EXECUTE));
         executeBtn.addActionListener(e -> executeRequest());
         registerCtrlEnterShortcut(executeBtn);
 

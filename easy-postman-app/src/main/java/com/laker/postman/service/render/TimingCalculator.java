@@ -20,8 +20,8 @@ public class TimingCalculator {
     }
 
     public long getStalled() {
-        return info.getStalledCost() > 0 ? info.getStalledCost() :
-                calculateDuration(info.getCallStart(), info.getConnectStart());
+        long calculated = calculateDuration(info.getCallStart(), firstPhaseStartAfterCall());
+        return calculated >= 0 ? calculated : (info.getStalledCost() > 0 ? info.getStalledCost() : -1);
     }
 
     public long getDns() {
@@ -29,7 +29,13 @@ public class TimingCalculator {
     }
 
     public long getConnect() {
-        return calculateDuration(info.getConnectStart(), info.getConnectEnd());
+        long connectEnd = info.getConnectEnd();
+        if (info.getSecureConnectStart() > info.getConnectStart()
+                && info.getSecureConnectEnd() > info.getSecureConnectStart()
+                && info.getSecureConnectEnd() <= info.getConnectEnd()) {
+            connectEnd = info.getSecureConnectStart();
+        }
+        return calculateDuration(info.getConnectStart(), connectEnd);
     }
 
     public long getTls() {
@@ -93,5 +99,29 @@ public class TimingCalculator {
         }
 
         return duration;
+    }
+
+    private long firstPhaseStartAfterCall() {
+        long callStart = info.getCallStart();
+        if (callStart <= 0) {
+            return -1;
+        }
+        long earliest = Long.MAX_VALUE;
+        earliest = minPositiveAtOrAfter(earliest, callStart, info.getProxySelectStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, info.getDnsStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, info.getConnectStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, info.getConnectionAcquired());
+        earliest = minPositiveAtOrAfter(earliest, callStart, info.getRequestHeadersStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, info.getRequestBodyStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, info.getResponseHeadersStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, info.getResponseBodyStart());
+        return earliest == Long.MAX_VALUE ? -1 : earliest;
+    }
+
+    private long minPositiveAtOrAfter(long current, long lowerBound, long value) {
+        if (value <= 0 || value < lowerBound) {
+            return current;
+        }
+        return Math.min(current, value);
     }
 }

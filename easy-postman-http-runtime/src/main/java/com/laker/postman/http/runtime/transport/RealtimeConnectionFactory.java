@@ -1,7 +1,8 @@
 package com.laker.postman.http.runtime.transport;
 
-import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.observation.HttpLifecycleLogSink;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
 import com.laker.postman.http.runtime.observation.NetworkLogSupport;
@@ -101,7 +102,7 @@ public final class RealtimeConnectionFactory {
                                                             PreparedRequest request) {
         EventSourceListener resolvedListener = listener == null ? new EventSourceListener() {
         } : listener;
-        if (request == null || !request.notifyCookieChanges) {
+        if (request == null || !HttpCaptureProfiles.resolve(request).notifyCookieChanges()) {
             return resolvedListener;
         }
         return new EventSourceListener() {
@@ -135,7 +136,7 @@ public final class RealtimeConnectionFactory {
                                                                PreparedRequest request) {
         WebSocketListener resolvedListener = listener == null ? new WebSocketListener() {
         } : listener;
-        if (request == null || !request.notifyCookieChanges) {
+        if (request == null || !HttpCaptureProfiles.resolve(request).notifyCookieChanges()) {
             return resolvedListener;
         }
         return new WebSocketListener() {

@@ -1,5 +1,7 @@
 package com.laker.postman.http.runtime.okhttp;
 
+import com.laker.postman.http.runtime.model.HttpCapturePolicy;
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.observation.NetworkLogEventStage;
@@ -47,11 +49,10 @@ public class OkHttpExchangeEventListener extends EventListener {
         // EventListener 可能在发起线程构造，真实 callStart 在 OkHttp 线程触发；ThreadLocal 只绑定真实回调线程。
         eventInfoThreadLocal.remove();
         HttpExchangeTraceSupport.bindToRequest(preparedRequest, info);
-        this.collectMetricsInfo = preparedRequest.collectMetricsInfo
-                || preparedRequest.collectEventInfo
-                || preparedRequest.enableNetworkLog;
-        this.collectEventInfo = preparedRequest.collectEventInfo;
-        this.enableNetworkLog = preparedRequest.enableNetworkLog;
+        HttpCapturePolicy capturePolicy = HttpCaptureProfiles.resolve(preparedRequest);
+        this.collectMetricsInfo = capturePolicy.collectMetrics();
+        this.collectEventInfo = capturePolicy.collectEventDetails();
+        this.enableNetworkLog = capturePolicy.emitNetworkLog();
     }
 
     /**

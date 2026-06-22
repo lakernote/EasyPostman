@@ -3,7 +3,8 @@ package com.laker.postman.performance.execution;
 import com.laker.postman.performance.core.plan.PerformanceAssertionElement;
 import com.laker.postman.performance.core.plan.PerformanceExtractorElement;
 
-
+import com.laker.postman.http.runtime.model.HttpCaptureProfile;
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import lombok.experimental.UtilityClass;
 
@@ -13,11 +14,9 @@ import java.util.List;
 class PerformanceRequestPreparationSupport {
 
     void configurePreparedRequest(PreparedRequest request, boolean eventLoggingEnabled) {
-        request.collectBasicInfo = true;
-        request.collectMetricsInfo = true;
-        request.collectEventInfo = eventLoggingEnabled;
-        request.enableNetworkLog = false;
-        request.notifyCookieChanges = false;
+        HttpCaptureProfiles.apply(request, eventLoggingEnabled
+                ? HttpCaptureProfile.PERFORMANCE_EVENT_TRACE
+                : HttpCaptureProfile.PERFORMANCE_METRICS);
     }
 
     PreparedRequest.ResponseBodyMode resolveHttpResponseBodyModeForAssertionElements(

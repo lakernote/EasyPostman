@@ -17,6 +17,7 @@ import java.util.Map;
 
 import static com.laker.postman.test.ThemeTokenTestSupport.remember;
 import static com.laker.postman.test.ThemeTokenTestSupport.restore;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -154,6 +155,33 @@ public class HttpHtmlRendererTest {
     }
 
     @Test
+    public void shouldCalculateTimelinePhasesWithoutNestedDoubleCounting() {
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setCallStart(1_000L);
+        eventInfo.setDnsStart(1_010L);
+        eventInfo.setDnsEnd(1_143L);
+        eventInfo.setConnectStart(1_143L);
+        eventInfo.setSecureConnectStart(1_173L);
+        eventInfo.setSecureConnectEnd(1_529L);
+        eventInfo.setConnectEnd(1_529L);
+        eventInfo.setRequestHeadersStart(1_530L);
+        eventInfo.setRequestHeadersEnd(1_533L);
+        eventInfo.setResponseHeadersStart(2_144L);
+        eventInfo.setResponseBodyStart(2_144L);
+        eventInfo.setResponseBodyEnd(2_144L);
+        eventInfo.setCallEnd(2_353L);
+
+        TimingCalculator calculator = new TimingCalculator(eventInfo);
+
+        assertEquals(calculator.getStalled(), 10L);
+        assertEquals(calculator.getDns(), 133L);
+        assertEquals(calculator.getConnect(), 30L);
+        assertEquals(calculator.getTls(), 356L);
+        assertEquals(calculator.getRequestSent(), 3L);
+        assertEquals(calculator.getServerCost(), 611L);
+    }
+
+    @Test
     public void shouldRenderConfiguredRequestWhenSentSnapshotMissing() {
         PreparedRequest request = new PreparedRequest();
         request.url = "https://example.test/api";
@@ -192,6 +220,23 @@ public class HttpHtmlRendererTest {
         assertTrue(html.contains("Sent Body"));
         assertTrue(html.contains("sent body"));
         assertFalse(html.contains("configured body"));
+    }
+
+    @Test
+    public void shouldPreferSentUrlAndMethodInRequestDetails() {
+        PreparedRequest request = new PreparedRequest();
+        request.url = "https://example.test/start";
+        request.method = "POST";
+        request.sentUrl = "https://example.test/target?trace=1";
+        request.sentMethod = "GET";
+        request.sentHeadersList = List.of(new HttpHeader(true, "Host", "example.test"));
+
+        String html = HttpHtmlRenderer.renderRequest(request);
+
+        assertTrue(html.contains("https://example.test/target?trace=1"));
+        assertTrue(html.contains("GET"));
+        assertFalse(html.contains("https://example.test/start"));
+        assertFalse(html.contains(">POST<"));
     }
 
     @Test

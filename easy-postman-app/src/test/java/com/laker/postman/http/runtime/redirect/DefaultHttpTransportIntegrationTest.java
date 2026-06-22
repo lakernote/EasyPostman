@@ -462,6 +462,37 @@ public class DefaultHttpTransportIntegrationTest {
     }
 
     @Test
+    public void shouldCaptureSentSnapshotForDetailedRequestsWithoutNetworkLog() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .setBody("ok"));
+
+        PreparedRequest request = createRequest("POST", serverUrl("/details"));
+        request.body = "{\"payload\":\"hello\"}";
+        request.headersList.add(new HttpHeader(true, "Content-Type", "application/json"));
+        request.collectBasicInfo = true;
+        request.collectEventInfo = true;
+        request.enableNetworkLog = false;
+        List<NetworkLogEvent> events = Collections.synchronizedList(new ArrayList<>());
+        request.networkLogSink = events::add;
+
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
+        RecordedRequest recordedRequest = takeRecordedRequest();
+
+        assertEquals(response.code, 200);
+        assertEquals(recordedRequest.getBody().readUtf8(), request.body);
+        assertNotNull(request.sentHeadersList);
+        assertEquals(request.sentUrl, serverUrl("/details"));
+        assertEquals(request.sentMethod, "POST");
+        assertEquals(request.sentRequestBody, request.body);
+        assertEquals(findHeaderValue(request.sentHeadersList, "Content-Type"), "application/json");
+        assertEquals(findHeaderValue(request.sentHeadersList, "Content-Length"),
+                String.valueOf(request.body.getBytes(StandardCharsets.UTF_8).length));
+        assertTrue(events.isEmpty());
+    }
+
+    @Test
     public void shouldNotCaptureSnapshotsOrNetworkLogForMetricsOnlyRequests() throws Exception {
         server = createServer();
         server.enqueue(new MockResponse()

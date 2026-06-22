@@ -2,6 +2,8 @@ package com.laker.postman.http.runtime.transport;
 
 import com.laker.postman.http.runtime.config.HttpRuntimeSettings;
 import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
+import com.laker.postman.http.runtime.model.HttpCaptureProfile;
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.request.model.HttpRequestProxyPolicy;
@@ -11,6 +13,8 @@ import org.testng.annotations.Test;
 import java.net.Proxy;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 public class HttpClientResolverTest {
 
@@ -42,6 +46,27 @@ public class HttpClientResolverTest {
             HttpRuntimeSettingsProvider.reset();
             OkHttpClientManager.clearClientCache();
         }
+    }
+
+    @Test
+    public void functionalDiagnosticShouldInstallRequestSnapshotInterceptorWithoutNetworkLog() {
+        PreparedRequest request = requestWithProxyPolicy(HttpRequestProxyPolicy.DEFAULT);
+        HttpCaptureProfiles.apply(request, HttpCaptureProfile.FUNCTIONAL_DIAGNOSTIC);
+
+        OkHttpClient client = new HttpClientResolver().resolveClient(request, ignored -> new OkHttpClient());
+
+        assertTrue(hasNetworkInterceptor(client, RequestSnapshotNetworkInterceptor.class));
+        assertFalse(HttpCaptureProfiles.resolve(request).emitNetworkLog());
+    }
+
+    @Test
+    public void performanceMetricsShouldNotInstallRequestSnapshotInterceptor() {
+        PreparedRequest request = requestWithProxyPolicy(HttpRequestProxyPolicy.DEFAULT);
+        HttpCaptureProfiles.apply(request, HttpCaptureProfile.PERFORMANCE_METRICS);
+
+        OkHttpClient client = new HttpClientResolver().resolveClient(request, ignored -> new OkHttpClient());
+
+        assertFalse(hasNetworkInterceptor(client, RequestSnapshotNetworkInterceptor.class));
     }
 
     @Test
@@ -94,5 +119,9 @@ public class HttpClientResolverTest {
                 return 8080;
             }
         };
+    }
+
+    private static boolean hasNetworkInterceptor(OkHttpClient client, Class<?> interceptorType) {
+        return client.networkInterceptors().stream().anyMatch(interceptorType::isInstance);
     }
 }

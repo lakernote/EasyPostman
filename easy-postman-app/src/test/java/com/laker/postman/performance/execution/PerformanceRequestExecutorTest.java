@@ -1,6 +1,7 @@
 package com.laker.postman.performance.execution;
 
 import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
+import com.laker.postman.http.runtime.model.HttpCaptureProfile;
 import com.laker.postman.model.Environment;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
@@ -45,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceRequestExecutorTest {
@@ -170,6 +172,8 @@ public class PerformanceRequestExecutorTest {
         PerformanceRequestPreparationSupport.configurePreparedRequest(eventLoggingDisabled, false);
         PerformanceRequestPreparationSupport.configurePreparedRequest(eventLoggingEnabled, true);
 
+        assertSame(eventLoggingDisabled.captureProfile, HttpCaptureProfile.PERFORMANCE_METRICS);
+        assertSame(eventLoggingEnabled.captureProfile, HttpCaptureProfile.PERFORMANCE_EVENT_TRACE);
         assertTrue(eventLoggingDisabled.collectMetricsInfo);
         assertTrue(eventLoggingEnabled.collectMetricsInfo);
         assertFalse(eventLoggingDisabled.collectEventInfo);
@@ -201,6 +205,7 @@ public class PerformanceRequestExecutorTest {
             );
 
             assertFalse(result.executionFailed, result.errorMsg);
+            assertSame(result.request.captureProfile, HttpCaptureProfile.PERFORMANCE_EVENT_TRACE);
             assertTrue(result.request.collectMetricsInfo);
             assertTrue(result.request.collectEventInfo);
             assertEquals(result.request.responseBodyPreviewLimitBytes, 1024);

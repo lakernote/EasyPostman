@@ -97,9 +97,34 @@ public class HttpExchangeTraceSupport {
         if (httpEventInfo.getCallStart() > 0) {
             httpEventInfo.setQueueingCost(httpEventInfo.getCallStart() - queueStartMs);
         }
-        if (httpEventInfo.getConnectStart() > 0 && httpEventInfo.getCallStart() > 0) {
-            httpEventInfo.setStalledCost(httpEventInfo.getConnectStart() - httpEventInfo.getCallStart());
+        long stalledEnd = firstPhaseStartAfterCall(httpEventInfo);
+        if (stalledEnd > 0 && httpEventInfo.getCallStart() > 0) {
+            httpEventInfo.setStalledCost(stalledEnd - httpEventInfo.getCallStart());
         }
+    }
+
+    private static long firstPhaseStartAfterCall(HttpEventInfo httpEventInfo) {
+        long callStart = httpEventInfo.getCallStart();
+        if (callStart <= 0) {
+            return -1L;
+        }
+        long earliest = Long.MAX_VALUE;
+        earliest = minPositiveAtOrAfter(earliest, callStart, httpEventInfo.getProxySelectStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, httpEventInfo.getDnsStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, httpEventInfo.getConnectStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, httpEventInfo.getConnectionAcquired());
+        earliest = minPositiveAtOrAfter(earliest, callStart, httpEventInfo.getRequestHeadersStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, httpEventInfo.getRequestBodyStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, httpEventInfo.getResponseHeadersStart());
+        earliest = minPositiveAtOrAfter(earliest, callStart, httpEventInfo.getResponseBodyStart());
+        return earliest == Long.MAX_VALUE ? -1L : earliest;
+    }
+
+    private static long minPositiveAtOrAfter(long current, long lowerBound, long value) {
+        if (value <= 0 || value < lowerBound) {
+            return current;
+        }
+        return Math.min(current, value);
     }
 
     private static boolean isBlank(String value) {

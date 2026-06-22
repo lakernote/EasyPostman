@@ -134,8 +134,8 @@ public class HttpHtmlRenderer {
         if (req == null) return htmlDoc(noData("无请求信息"));
         StringBuilder sb = new StringBuilder();
 
-        sb.append(kvRow(colorPrimary(), "URL",    escapeHtml(safeStr(req.url)),    false));
-        sb.append(kvRow(colorPrimary(), "Method", escapeHtml(safeStr(req.method)), true));
+        sb.append(kvRow(colorPrimary(), "URL",    escapeHtml(safeStr(resolveSentOrConfigured(req.sentUrl, req.url))),    false));
+        sb.append(kvRow(colorPrimary(), "Method", escapeHtml(safeStr(resolveSentOrConfigured(req.sentMethod, req.method))), true));
 
         boolean hasSentHeaders = hasHeaders(req.sentHeadersList);
         List<HttpHeader> displayHeaders = hasSentHeaders
@@ -516,6 +516,9 @@ public class HttpHtmlRenderer {
 
     private static String safeStr(String s) { return s != null ? s : "-"; }
     private static boolean isNotEmpty(String s) { return s != null && !s.isEmpty(); }
+    private static String resolveSentOrConfigured(String sentValue, String configuredValue) {
+        return sentValue != null && !sentValue.isBlank() ? sentValue : configuredValue;
+    }
 
     private static boolean hasHeaders(List<HttpHeader> headers) {
         return headers != null && !headers.isEmpty();

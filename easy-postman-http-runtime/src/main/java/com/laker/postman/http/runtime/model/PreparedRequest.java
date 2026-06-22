@@ -43,6 +43,7 @@ public class PreparedRequest {
     public TransportAuth transportAuth; // 发送阶段需要的传输层认证元数据（例如 Digest challenge 认证）
 
     // 事件监听控制（精细化控制）
+    public HttpCaptureProfile captureProfile; // 执行场景采集策略；为空时兼容旧布尔字段组合
     public boolean collectBasicInfo = true; // 收集基本信息（headers、body），默认开启
     public boolean collectMetricsInfo = false; // 仅采集压测统计需要的轻量指标（时间戳、发送/接收字节）
     public boolean collectEventInfo = true; // 收集完整事件信息（DNS、连接、SSL等），默认开启
@@ -93,6 +94,7 @@ public class PreparedRequest {
         copy.httpVersion = this.httpVersion;
         copy.requestTimeoutMs = this.requestTimeoutMs;
         copy.transportAuth = this.transportAuth != null ? this.transportAuth.shallowCopy() : null;
+        copy.captureProfile = this.captureProfile;
         copy.collectBasicInfo = this.collectBasicInfo;
         copy.collectMetricsInfo = this.collectMetricsInfo;
         copy.collectEventInfo = this.collectEventInfo;

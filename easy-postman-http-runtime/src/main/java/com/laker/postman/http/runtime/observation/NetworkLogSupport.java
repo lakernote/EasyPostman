@@ -1,5 +1,6 @@
 package com.laker.postman.http.runtime.observation;
 
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import lombok.experimental.UtilityClass;
 
@@ -12,7 +13,7 @@ import lombok.experimental.UtilityClass;
 public class NetworkLogSupport {
 
     public static boolean isEnabled(PreparedRequest request) {
-        return request != null && request.enableNetworkLog;
+        return request != null && HttpCaptureProfiles.resolve(request).emitNetworkLog();
     }
 
     public static NetworkLogSink resolveSink(PreparedRequest request) {

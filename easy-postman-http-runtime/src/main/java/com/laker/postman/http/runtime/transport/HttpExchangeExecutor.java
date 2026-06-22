@@ -1,6 +1,7 @@
 package com.laker.postman.http.runtime.transport;
 
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.OkHttpResponseHandler;
@@ -76,7 +77,7 @@ public final class HttpExchangeExecutor {
         long elapsedMs = stopwatch.elapsedMs();
         httpResponse.costMs = elapsedMs;
         httpResponse.endTime = queueStartMs + elapsedMs;
-        if (request.notifyCookieChanges) {
+        if (HttpCaptureProfiles.resolve(request).notifyCookieChanges()) {
             HttpCookieStore.notifyCookieChanged();
         }
         return httpResponse;

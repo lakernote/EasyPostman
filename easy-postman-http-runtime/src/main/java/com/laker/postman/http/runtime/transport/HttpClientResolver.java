@@ -2,6 +2,8 @@ package com.laker.postman.http.runtime.transport;
 
 import com.laker.postman.http.runtime.config.HttpRequestRuntimeSettingsResolver;
 import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
+import com.laker.postman.http.runtime.model.HttpCapturePolicy;
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.DigestAuthenticator;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
@@ -86,15 +88,17 @@ public final class HttpClientResolver {
                                             PreparedRequest preparedRequest,
                                             int timeoutMs) {
         OkHttpClient.Builder builder = baseClient.newBuilder();
-        boolean needEventListener = preparedRequest.collectBasicInfo
-                || preparedRequest.collectMetricsInfo
-                || preparedRequest.collectEventInfo
-                || preparedRequest.enableNetworkLog;
+        HttpCapturePolicy capturePolicy = HttpCaptureProfiles.resolve(preparedRequest);
+        boolean needEventListener = capturePolicy.collectMetrics()
+                || capturePolicy.collectEventDetails()
+                || capturePolicy.emitNetworkLog();
         if (CookieHeaderMergeNetworkInterceptor.hasEnabledExplicitCookieHeader(preparedRequest)) {
             builder.addNetworkInterceptor(new CookieHeaderMergeNetworkInterceptor(preparedRequest));
         }
-        if (preparedRequest.enableNetworkLog) {
-            builder.addNetworkInterceptor(new RequestSnapshotNetworkInterceptor(preparedRequest));
+        if (capturePolicy.captureSentRequest()) {
+            builder.addNetworkInterceptor(
+                    new RequestSnapshotNetworkInterceptor(preparedRequest, capturePolicy.captureSentRequestBody())
+            );
         }
         builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
 

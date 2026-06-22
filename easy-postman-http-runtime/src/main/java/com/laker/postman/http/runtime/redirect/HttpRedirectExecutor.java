@@ -47,11 +47,6 @@ public class HttpRedirectExecutor {
         // 创建工作副本
         PreparedRequest workingReq = req.shallowCopy();
 
-        // Collection 场景：启用完整的事件收集和日志输出
-        workingReq.collectBasicInfo = true;  // 收集基本信息（headers、body）
-        workingReq.collectEventInfo = true;  // 收集完整事件信息（DNS、连接等）
-        workingReq.enableNetworkLog = true;  // 启用网络日志面板输出
-
         if (!workingReq.followRedirects || maxRedirects <= 0) {
             return executeAndSyncRequestMetadata(req, workingReq, callback, callTracker);
         }

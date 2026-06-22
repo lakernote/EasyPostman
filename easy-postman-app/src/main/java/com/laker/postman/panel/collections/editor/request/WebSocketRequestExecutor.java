@@ -1,5 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.http.runtime.model.HttpCaptureProfile;
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.stream.MessageType;
 import com.laker.postman.http.runtime.model.PreparedRequest;
@@ -65,10 +67,7 @@ final class WebSocketRequestExecutor {
     }
 
     SwingWorker<Void, Void> createWorker(PreparedRequest req, ScriptExecutionPipeline pipeline) {
-        req.collectBasicInfo = true;
-        req.collectMetricsInfo = true;
-        req.collectEventInfo = true;
-        req.enableNetworkLog = true;
+        HttpCaptureProfiles.apply(req, HttpCaptureProfile.COLLECTION_DIAGNOSTIC);
         WebSocketSession session = new WebSocketSession(req, pipeline);
         requestExecutionState.beginWebSocketConnection(session.connectionId());
 

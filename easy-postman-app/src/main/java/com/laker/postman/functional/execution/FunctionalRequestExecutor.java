@@ -3,6 +3,8 @@ package com.laker.postman.functional.execution;
 import com.laker.postman.functional.model.AssertionResult;
 import com.laker.postman.functional.model.RunnerRowData;
 import com.laker.postman.http.request.PreparedRequestFactory;
+import com.laker.postman.http.runtime.model.HttpCaptureProfile;
+import com.laker.postman.http.runtime.model.HttpCaptureProfiles;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.transport.DefaultHttpTransport;
@@ -43,9 +45,7 @@ public final class FunctionalRequestExecutor {
         long start = System.currentTimeMillis();
         HttpRequestItem item = row.requestItem;
         PreparedRequest request = PreparedRequestFactory.build(item);
-        request.collectBasicInfo = true;
-        request.collectEventInfo = true;
-        request.enableNetworkLog = false;
+        HttpCaptureProfiles.apply(request, HttpCaptureProfile.FUNCTIONAL_DIAGNOSTIC);
 
         ScriptExecutionPipeline pipeline = ScriptExecutionPipeline.forRequestExecution(
                 item,

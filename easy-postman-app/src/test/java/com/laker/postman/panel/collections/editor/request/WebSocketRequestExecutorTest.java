@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request;
 
+import com.laker.postman.http.runtime.model.HttpCaptureProfile;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
@@ -26,6 +27,7 @@ import java.util.function.BooleanSupplier;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 public class WebSocketRequestExecutorTest {
@@ -42,6 +44,7 @@ public class WebSocketRequestExecutorTest {
                 new RequestExecutionState()
         ).createWorker(request, null);
 
+        assertSame(request.captureProfile, HttpCaptureProfile.COLLECTION_DIAGNOSTIC);
         assertTrue(request.collectBasicInfo);
         assertTrue(request.collectMetricsInfo);
         assertTrue(request.collectEventInfo);

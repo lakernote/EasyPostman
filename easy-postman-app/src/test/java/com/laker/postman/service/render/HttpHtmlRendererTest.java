@@ -155,6 +155,76 @@ public class HttpHtmlRendererTest {
     }
 
     @Test
+    public void shouldRenderTimelinePhasesAsPeerRowsWithoutTreeGlyphs() {
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setCallStart(1_000L);
+        eventInfo.setDnsStart(1_010L);
+        eventInfo.setDnsEnd(1_020L);
+        eventInfo.setConnectStart(1_020L);
+        eventInfo.setSecureConnectStart(1_030L);
+        eventInfo.setSecureConnectEnd(1_050L);
+        eventInfo.setConnectEnd(1_050L);
+        eventInfo.setResponseHeadersStart(1_080L);
+        eventInfo.setCallEnd(1_100L);
+
+        HttpResponse response = new HttpResponse();
+        response.httpEventInfo = eventInfo;
+
+        String html = HttpHtmlRenderer.renderTimingInfo(response);
+
+        assertTrue(html.contains("DNS Lookup"));
+        assertTrue(html.contains("TCP Connect"));
+        assertTrue(html.contains("TLS Handshake"));
+        assertFalse(html.contains("↳"));
+        assertFalse(html.contains("SSL/TLS"));
+    }
+
+    @Test
+    public void shouldRenderTimelinePercentBesideBarTrack() {
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setCallStart(1_000L);
+        eventInfo.setDnsStart(1_000L);
+        eventInfo.setDnsEnd(1_025L);
+        eventInfo.setResponseHeadersStart(1_050L);
+        eventInfo.setCallEnd(1_100L);
+
+        HttpResponse response = new HttpResponse();
+        response.httpEventInfo = eventInfo;
+
+        String html = HttpHtmlRenderer.renderTimingInfo(response);
+
+        assertTrue(html.contains("<td width='88%' style='padding:0;'>"));
+        assertTrue(html.contains("<td width='12%' style='padding:0 0 0 6px;text-align:right;white-space:nowrap;"));
+        assertFalse(html.contains("</table><span style='color:"));
+    }
+
+    @Test
+    public void shouldRenderOtherPhaseSoDisplayedTimelineAddsUpToTotal() {
+        HttpEventInfo eventInfo = new HttpEventInfo();
+        eventInfo.setCallStart(1_000L);
+        eventInfo.setRequestHeadersStart(1_005L);
+        eventInfo.setRequestHeadersEnd(1_013L);
+        eventInfo.setResponseHeadersStart(1_275L);
+        eventInfo.setResponseBodyStart(1_279L);
+        eventInfo.setResponseBodyEnd(1_279L);
+        eventInfo.setCallEnd(1_279L);
+
+        HttpResponse response = new HttpResponse();
+        response.httpEventInfo = eventInfo;
+
+        String html = HttpHtmlRenderer.renderTimingInfo(response);
+
+        assertTrue(html.contains("Total"));
+        assertTrue(html.contains("279 ms"));
+        assertTrue(html.contains("Other"));
+        assertTrue(html.contains("4 ms"));
+        assertTrue(html.contains(">2%</td>"));
+        assertTrue(html.contains(">3%</td>"));
+        assertTrue(html.contains(">94%</td>"));
+        assertTrue(html.contains(">1%</td>"));
+    }
+
+    @Test
     public void shouldCalculateTimelinePhasesWithoutNestedDoubleCounting() {
         HttpEventInfo eventInfo = new HttpEventInfo();
         eventInfo.setCallStart(1_000L);

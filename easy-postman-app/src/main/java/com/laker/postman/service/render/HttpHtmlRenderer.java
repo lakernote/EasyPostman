@@ -15,6 +15,7 @@ import com.laker.postman.service.setting.SettingManager;
 import lombok.experimental.UtilityClass;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -387,15 +388,12 @@ public class HttpHtmlRenderer {
                 .append("</tr>");
 
         // Total 行不显示 bar（它是基准，显示 100% bar 没意义）
-        timingRow(sb, "Total",               calc.getTotal(),        colorError(),   true,  total, true);
-        timingRow(sb, "Queueing",            calc.getQueueing(),     timelineQueueColor(),    false, total, false);
-        timingRow(sb, "Stalled",             calc.getStalled(),      timelineQueueColor(),    false, total, false);
-        timingRow(sb, "  ↳ DNS Lookup",      calc.getDns(),          timelineDnsColor(),      false, total, false);
-        timingRow(sb, "TCP Connection",      calc.getConnect(),      timelineTcpColor(),      false, total, false);
-        timingRow(sb, "  ↳ SSL/TLS",         calc.getTls(),          timelineSslColor(),      false, total, false);
-        timingRow(sb, "Request Sent",        calc.getRequestSent(),  timelineRequestColor(),  false, total, false);
-        timingRow(sb, "Waiting (TTFB)",      calc.getServerCost(),   timelineTtfbColor(),     true,  total, false);
-        timingRow(sb, "Content Download",    calc.getResponseBody(), timelineDownloadColor(), false, total, false);
+        // These are peer phases. TimingCalculator already removes nested TCP/TLS overlap,
+        // so avoid tree-like labels that imply parent/child durations.
+        timingRow(sb, "Total", calc.getTotal(), colorError(), true, total, true, -1);
+        for (TimingPhase phase : buildTimingPhases(calc, total)) {
+            timingRow(sb, phase.name, phase.value, phase.color, phase.bold, total, false, phase.percent);
+        }
 
         sb.append("<tr><td colspan='3' style='padding:5px 0 3px 0;border-top:1px solid ")
                 .append(rowDividerColor()).append("'></td></tr>");
@@ -407,9 +405,84 @@ public class HttpHtmlRenderer {
         return sb.toString();
     }
 
-    private static void timingRow(StringBuilder sb, String name, long val, String color, boolean bold, long total, boolean hideBar) {
+    private static List<TimingPhase> buildTimingPhases(TimingCalculator calc, long total) {
+        List<TimingPhase> phases = new ArrayList<>();
+        phases.add(new TimingPhase("Queueing", calc.getQueueing(), timelineQueueColor(), false));
+        phases.add(new TimingPhase("Stalled", calc.getStalled(), timelineQueueColor(), false));
+        phases.add(new TimingPhase("DNS Lookup", calc.getDns(), timelineDnsColor(), false));
+        phases.add(new TimingPhase("TCP Connect", calc.getConnect(), timelineTcpColor(), false));
+        phases.add(new TimingPhase("TLS Handshake", calc.getTls(), timelineSslColor(), false));
+        phases.add(new TimingPhase("Request Sent", calc.getRequestSent(), timelineRequestColor(), false));
+        phases.add(new TimingPhase("Waiting (TTFB)", calc.getServerCost(), timelineTtfbColor(), true));
+        phases.add(new TimingPhase("Content Download", calc.getResponseBody(), timelineDownloadColor(), false));
+
+        long known = sumPositivePhaseValues(phases);
+        if (total > known) {
+            phases.add(new TimingPhase("Other", total - known, timelineQueueColor(), false));
+        }
+        assignTimelinePercentages(phases, total);
+        return phases;
+    }
+
+    private static long sumPositivePhaseValues(List<TimingPhase> phases) {
+        long sum = 0;
+        for (TimingPhase phase : phases) {
+            if (phase.value > 0) {
+                sum += phase.value;
+            }
+        }
+        return sum;
+    }
+
+    private static void assignTimelinePercentages(List<TimingPhase> phases, long total) {
+        if (total <= 0) {
+            return;
+        }
+
+        int floorSum = 0;
+        double[] remainders = new double[phases.size()];
+        for (int i = 0; i < phases.size(); i++) {
+            TimingPhase phase = phases.get(i);
+            if (phase.value <= 0) {
+                phase.percent = -1;
+                continue;
+            }
+            double rawPercent = phase.value * 100.0 / total;
+            phase.percent = (int) Math.floor(rawPercent);
+            remainders[i] = rawPercent - phase.percent;
+            floorSum += phase.percent;
+        }
+
+        int remaining = Math.max(0, 100 - floorSum);
+        while (remaining-- > 0) {
+            int index = indexOfLargestRemainder(phases, remainders);
+            if (index < 0) {
+                return;
+            }
+            phases.get(index).percent++;
+            remainders[index] = -1;
+        }
+    }
+
+    private static int indexOfLargestRemainder(List<TimingPhase> phases, double[] remainders) {
+        int index = -1;
+        double max = -1;
+        for (int i = 0; i < phases.size(); i++) {
+            if (phases.get(i).value <= 0) {
+                continue;
+            }
+            if (remainders[i] > max) {
+                max = remainders[i];
+                index = i;
+            }
+        }
+        return index;
+    }
+
+    private static void timingRow(StringBuilder sb, String name, long val, String color, boolean bold,
+                                  long total, boolean hideBar, int percent) {
         appendTimingRow(sb, name, val >= 0 ? val + " ms" : "-", color, bold,
-                hideBar ? -1 : (val > 0 ? val : -1), total);
+                hideBar ? -1 : (val > 0 ? val : -1), total, percent);
     }
 
     /**
@@ -419,6 +492,11 @@ public class HttpHtmlRenderer {
      */
     private static void appendTimingRow(StringBuilder sb, String name, String val,
                                         String color, boolean bold, long barVal, long total) {
+        appendTimingRow(sb, name, val, color, bold, barVal, total, -1);
+    }
+
+    private static void appendTimingRow(StringBuilder sb, String name, String val,
+                                        String color, boolean bold, long barVal, long total, int displayPercent) {
         String nameStyle = (bold ? "font-weight:bold;" : "")
                 + (color != null ? "color:" + color + ";" : "color:" + textColor() + ";");
         String valStyle = (color != null ? "color:" + color + ";" : "color:" + textColor() + ";")
@@ -427,17 +505,23 @@ public class HttpHtmlRenderer {
         // 进度条：用 table 实现，两列：filled + empty，宽度用整数 px 近似
         String bar = "";
         if (barVal > 0 && total > 0) {
-            int pct = (int) Math.min(100, Math.round(barVal * 100.0 / total));
+            int pct = displayPercent >= 0
+                    ? displayPercent
+                    : (int) Math.min(100, Math.round(barVal * 100.0 / total));
             int emptyPct = 100 - pct;
             String barColor = color != null ? color : colorPrimary();
             // 用 table 宽度百分比：JTextPane 对 table width=% 支持良好。
             // 空轨道使用 hover background，亮色下是轻灰蓝，暗色下是比 surface 稍亮的灰。
-            bar = "<table style='border-collapse:collapse;width:100%;' cellpadding='0' cellspacing='0'><tr>"
+            String barTrack = "<table style='border-collapse:collapse;width:100%;' cellpadding='0' cellspacing='0'><tr>"
                     + "<td width='" + pct + "%' style='background:" + barColor
                     + ";height:8px;border-radius:2px 0 0 2px;'></td>"
                     + (emptyPct > 0 ? "<td width='" + emptyPct + "%' style='background:" + timelineTrackColor() + ";height:8px;'></td>" : "")
-                    + "</tr></table>"
-                    + "<span style='color:" + colorGray() + ";font-size:" + fsSmall() + ";'>" + pct + "%</span>";
+                    + "</tr></table>";
+            bar = "<table style='border-collapse:collapse;width:100%;' cellpadding='0' cellspacing='0'><tr>"
+                    + "<td width='88%' style='padding:0;'>" + barTrack + "</td>"
+                    + "<td width='12%' style='padding:0 0 0 6px;text-align:right;white-space:nowrap;color:"
+                    + colorGray() + ";font-size:" + fsSmall() + ";'>" + pct + "%</td>"
+                    + "</tr></table>";
         }
 
         sb.append("<tr>")
@@ -445,6 +529,21 @@ public class HttpHtmlRenderer {
                 .append("<td style='padding:3px 6px;text-align:right;").append(valStyle).append("'>").append(val).append("</td>")
                 .append("<td style='padding:3px 6px;'>").append(bar).append("</td>")
                 .append("</tr>");
+    }
+
+    private static final class TimingPhase {
+        private final String name;
+        private final long value;
+        private final String color;
+        private final boolean bold;
+        private int percent = -1;
+
+        private TimingPhase(String name, long value, String color, boolean bold) {
+            this.name = name;
+            this.value = value;
+            this.color = color;
+            this.bold = bold;
+        }
     }
 
     private static String buildEventInfoHtml(HttpEventInfo info) {

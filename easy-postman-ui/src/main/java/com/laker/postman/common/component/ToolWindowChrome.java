@@ -44,7 +44,12 @@ public final class ToolWindowChrome {
         /**
          * Explicit app opt-in: a 5px background-colored drag target with a centered 1px separator line.
          */
-        DRAG_GAP
+        DRAG_GAP,
+
+        /**
+         * 4px drag target inside a card without a visible separator line.
+         */
+        INVISIBLE
     }
 
     public static JComponent wrapLeftToolWindow(Component content) {
@@ -129,6 +134,11 @@ public final class ToolWindowChrome {
         return createHorizontalInnerSplitPane(left, right, dividerLocation, SplitDividerStyle.DEFAULT);
     }
 
+    public static JSplitPane createHorizontalInvisibleInnerSplitPane(Component left, Component right,
+                                                                    int dividerLocation) {
+        return createHorizontalInnerSplitPane(left, right, dividerLocation, SplitDividerStyle.INVISIBLE);
+    }
+
     static JSplitPane createHorizontalInnerSplitPane(Component left, Component right, int dividerLocation,
                                                     SplitDividerStyle dividerStyle) {
         return createInnerSplitPane(JSplitPane.HORIZONTAL_SPLIT, left, right, dividerLocation, dividerStyle);
@@ -136,6 +146,11 @@ public final class ToolWindowChrome {
 
     public static JSplitPane createVerticalInnerSplitPane(Component top, Component bottom, int dividerLocation) {
         return createVerticalInnerSplitPane(top, bottom, dividerLocation, SplitDividerStyle.DEFAULT);
+    }
+
+    public static JSplitPane createVerticalInvisibleInnerSplitPane(Component top, Component bottom,
+                                                                  int dividerLocation) {
+        return createVerticalInnerSplitPane(top, bottom, dividerLocation, SplitDividerStyle.INVISIBLE);
     }
 
     static JSplitPane createVerticalInnerSplitPane(Component top, Component bottom, int dividerLocation,
@@ -249,6 +264,9 @@ public final class ToolWindowChrome {
     private static int dividerSize(SplitDividerStyle dividerStyle, boolean inner) {
         if (normalizeStyle(dividerStyle) == SplitDividerStyle.DRAG_GAP) {
             return DRAG_GAP_DIVIDER_SIZE;
+        }
+        if (normalizeStyle(dividerStyle) == SplitDividerStyle.INVISIBLE) {
+            return DIVIDER_SIZE;
         }
         return inner ? INNER_DIVIDER_SIZE : DIVIDER_SIZE;
     }
@@ -412,6 +430,11 @@ public final class ToolWindowChrome {
                                 int y = Math.max(0, getHeight() / 2);
                                 g2.drawLine(0, y, getWidth(), y);
                             }
+                            return;
+                        }
+                        if (dividerStyle == SplitDividerStyle.INVISIBLE) {
+                            g2.setColor(ModernColors.getCardBackgroundColor());
+                            g2.fillRect(0, 0, getWidth(), getHeight());
                             return;
                         }
                         g2.setColor(ModernColors.getCardBackgroundColor());

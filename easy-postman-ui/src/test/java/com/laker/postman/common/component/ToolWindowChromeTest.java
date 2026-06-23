@@ -160,6 +160,23 @@ public class ToolWindowChromeTest {
     }
 
     @Test
+    public void shouldCreateInvisibleHorizontalInnerSplitPaneWithFourPixelDivider() {
+        JLabel left = new JLabel("left");
+        JLabel right = new JLabel("right");
+
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInvisibleInnerSplitPane(
+                left,
+                right,
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
+
+        assertEquals(splitPane.getDividerLocation(), ToolWindowChrome.DEFAULT_SIDE_WIDTH);
+        assertEquals(splitPane.getDividerSize(), ToolWindowChrome.DIVIDER_SIZE);
+        assertSame(splitPane.getLeftComponent(), left);
+        assertSame(splitPane.getRightComponent(), right);
+    }
+
+    @Test
     public void shouldCreateHorizontalCardSplitPaneWithMatchingToolWindowGaps() {
         JLabel left = new JLabel("left");
         JLabel right = new JLabel("right");
@@ -393,6 +410,34 @@ public class ToolWindowChromeTest {
         int centerX = ToolWindowChrome.DRAG_GAP_DIVIDER_SIZE / 2;
         assertEquals(new Color(image.getRGB(centerX, 20), true), line);
         assertEquals(new Color(image.getRGB(0, 20), true), surface);
+    }
+
+    @Test
+    public void invisibleHorizontalInnerSplitDividerShouldPaintOnlyCardBackground() {
+        Color surface = new Color(255, 255, 255);
+        Color line = new Color(214, 218, 226);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put(ThemeColors.BORDER_LIGHT, line);
+        UIManager.put(ThemeColors.TAB_SEPARATOR, line);
+
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInvisibleInnerSplitPane(
+                new JLabel("left"),
+                new JLabel("right"),
+                ToolWindowChrome.DEFAULT_SIDE_WIDTH
+        );
+        BasicSplitPaneDivider divider = ((BasicSplitPaneUI) splitPane.getUI()).getDivider();
+        divider.setSize(ToolWindowChrome.DIVIDER_SIZE, 40);
+
+        BufferedImage image = new BufferedImage(ToolWindowChrome.DIVIDER_SIZE, 40, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics();
+        divider.paint(graphics);
+        graphics.dispose();
+
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                assertEquals(new Color(image.getRGB(x, y), true), surface);
+            }
+        }
     }
 
     @Test

@@ -6,6 +6,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.util.I18nUtil;
 import java.awt.Component;
 import java.awt.Container;
@@ -13,6 +14,7 @@ import java.awt.Dimension;
 import java.util.Locale;
 import javax.swing.JButton;
 import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
 import javax.swing.JTree;
 import javax.swing.border.EmptyBorder;
 import org.testng.annotations.Test;
@@ -56,6 +58,17 @@ public class DecompilerPanelLayoutTest {
         assertTrue(sortBySizeButton.getX() <= 160,
                 "sort by size button should stay near the leading toolbar actions, actual x="
                         + sortBySizeButton.getX());
+    }
+
+    @Test
+    public void contentSplitShouldKeepFourPixelInvisibleDragTarget() {
+        DecompilerPanel panel = layoutPanel(Locale.ENGLISH);
+
+        JSplitPane splitPane = findSplitPane(panel);
+
+        assertNotNull(splitPane, "content split pane should be present");
+        assertEquals(splitPane.getDividerSize(), ToolWindowChrome.DIVIDER_SIZE,
+                "hidden split divider should keep a 4px drag target");
     }
 
     private static void assertActionsUseCompactTextAndIconButtons(Locale locale) {
@@ -143,6 +156,21 @@ public class DecompilerPanelLayoutTest {
         if (component instanceof Container container) {
             for (Component child : container.getComponents()) {
                 JScrollPane found = findScrollPaneWithView(child, viewType);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static JSplitPane findSplitPane(Component component) {
+        if (component instanceof JSplitPane splitPane) {
+            return splitPane;
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JSplitPane found = findSplitPane(child);
                 if (found != null) {
                     return found;
                 }

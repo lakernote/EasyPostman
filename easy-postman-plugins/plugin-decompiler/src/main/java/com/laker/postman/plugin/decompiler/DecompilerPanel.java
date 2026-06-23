@@ -86,7 +86,7 @@ public class DecompilerPanel extends JPanel {
 
         add(createFileSelectionPanel(), BorderLayout.NORTH);
 
-        JSplitPane splitPane = ToolWindowChrome.createHorizontalInnerSplitPane(
+        JSplitPane splitPane = ToolWindowChrome.createHorizontalInvisibleInnerSplitPane(
                 createTreePanel(),
                 createCodePanel(),
                 ToolWindowChrome.DEFAULT_SIDE_WIDTH

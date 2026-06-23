@@ -91,7 +91,7 @@ class ToolboxWorkbench {
     }
 
     JSplitPane horizontalSplit(Component left, Component right, int dividerLocation) {
-        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInnerSplitPane(left, right, dividerLocation);
+        JSplitPane splitPane = AppToolWindowChrome.createHorizontalInvisibleInnerSplitPane(left, right, dividerLocation);
         splitPane.setResizeWeight(0.5);
         return splitPane;
     }

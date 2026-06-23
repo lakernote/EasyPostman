@@ -242,13 +242,11 @@ public class DecompilerPanel extends JPanel {
                 "icons/collapse.svg",
                 () -> collapseTree(fileTree));
 
-        // 分隔符
-        JSeparator separator1 = new JSeparator(SwingConstants.VERTICAL);
-        separator1.setPreferredSize(new Dimension(2, 20));
+        JComponent separator1 = createToolbarSeparator();
 
         JButton sortByNameBtn = createToolbarIconButton(
                 DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME),
-                "icons/text-file.svg",
+                "icons/words.svg",
                 this::sortTreeByName);
 
         JButton sortBySizeBtn = createToolbarIconButton(
@@ -355,6 +353,17 @@ public class DecompilerPanel extends JPanel {
             button.addActionListener(e -> action.run());
         }
         return button;
+    }
+
+    private JComponent createToolbarSeparator() {
+        JPanel separator = new JPanel();
+        Dimension size = new Dimension(1, 20);
+        separator.setOpaque(true);
+        separator.setBackground(ModernColors.getDividerBorderColor());
+        separator.setPreferredSize(size);
+        separator.setMinimumSize(size);
+        separator.setMaximumSize(size);
+        return separator;
     }
 
     /**

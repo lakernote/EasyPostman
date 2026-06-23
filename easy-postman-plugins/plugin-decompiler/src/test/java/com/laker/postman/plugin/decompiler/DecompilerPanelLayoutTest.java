@@ -41,6 +41,23 @@ public class DecompilerPanelLayoutTest {
                 "file tree should keep the plain tree card border instead of stacking a framed card border");
     }
 
+    @Test
+    public void fileTreeToolbarActionsShouldStayGroupedAtLeadingEdge() {
+        DecompilerPanel panel = layoutPanel(Locale.ENGLISH);
+
+        JButton sortByNameButton = findButtonByTooltip(panel, t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME));
+        JButton sortBySizeButton = findButtonByTooltip(panel, t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_SIZE));
+
+        assertNotNull(sortByNameButton, "sort by name button should be present");
+        assertNotNull(sortBySizeButton, "sort by size button should be present");
+        assertTrue(sortByNameButton.getX() <= 120,
+                "sort by name button should stay near the leading toolbar actions, actual x="
+                        + sortByNameButton.getX());
+        assertTrue(sortBySizeButton.getX() <= 160,
+                "sort by size button should stay near the leading toolbar actions, actual x="
+                        + sortBySizeButton.getX());
+    }
+
     private static void assertActionsUseCompactTextAndIconButtons(Locale locale) {
         DecompilerPanel panel = layoutPanel(locale);
 

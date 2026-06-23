@@ -4,6 +4,8 @@ import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.*;
@@ -29,23 +31,23 @@ public class ResponseTooltipBuilder {
         root.setBorder(new EmptyBorder(10, 12, 10, 14));
 
         // ── Response ──────────────────────────
-        root.add(sectionHeader("Response"));
+        root.add(sectionHeader(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_SECTION_RESPONSE)));
         root.add(Box.createVerticalStrut(4));
-        root.add(row("Headers",
+        root.add(row(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_RESPONSE_HEADERS),
                 ResponseSizeCalculator.formatBytes(info.getHeaderBytesReceived()),
                 ModernColors.getTextPrimary()));
 
         if (sizeInfo.isCompressed()) {
             String enc = sizeInfo.getEncoding() != null ? sizeInfo.getEncoding() : "compressed";
-            root.add(row("Body (" + enc + ")",
+            root.add(row(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_RESPONSE_BODY_COMPRESSED, enc),
                     ResponseSizeCalculator.formatBytes(info.getBodyBytesReceived()),
                     ModernColors.getSuccess()));
-            root.add(subRow("Uncompressed",
+            root.add(subRow(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_UNCOMPRESSED),
                     ResponseSizeCalculator.formatBytes(uncompressedBytes)));
             root.add(Box.createVerticalStrut(6));
             root.add(compressionBadge(sizeInfo));
         } else {
-            root.add(row("Body",
+            root.add(row(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_RESPONSE_BODY),
                     ResponseSizeCalculator.formatBytes(uncompressedBytes),
                     ModernColors.getTextPrimary()));
         }
@@ -56,12 +58,12 @@ public class ResponseTooltipBuilder {
         root.add(Box.createVerticalStrut(8));
 
         // ── Request ───────────────────────────
-        root.add(sectionHeader("Request"));
+        root.add(sectionHeader(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_SECTION_REQUEST)));
         root.add(Box.createVerticalStrut(4));
-        root.add(row("Headers",
+        root.add(row(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_REQUEST_HEADERS),
                 ResponseSizeCalculator.formatBytes(info.getHeaderBytesSent()),
                 ModernColors.getTextPrimary()));
-        root.add(row("Body",
+        root.add(row(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_REQUEST_BODY),
                 ResponseSizeCalculator.formatBytes(info.getBodyBytesSent()),
                 ModernColors.getTextPrimary()));
 
@@ -145,14 +147,14 @@ public class ResponseTooltipBuilder {
         Font fb = FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1);
 
         String enc = sizeInfo.getEncoding() != null ? sizeInfo.getEncoding() : "compressed";
-        JLabel ratioKey = new JLabel(enc + " ratio");
+        JLabel ratioKey = new JLabel(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_COMPRESSION_RATIO, enc));
         ratioKey.setFont(f);
         ratioKey.setForeground(ModernColors.getSuccessDark());
         JLabel ratioVal = new JLabel(String.format("%.1f%%", sizeInfo.getCompressionRatio()));
         ratioVal.setFont(fb);
         ratioVal.setForeground(ModernColors.getSuccess());
 
-        JLabel savedKey = new JLabel("saved");
+        JLabel savedKey = new JLabel(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_COMPRESSION_SAVED));
         savedKey.setFont(f);
         savedKey.setForeground(ModernColors.getSuccessDark());
         JLabel savedVal = new JLabel(ResponseSizeCalculator.formatBytes(sizeInfo.getSavedBytes()));

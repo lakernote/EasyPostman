@@ -5,6 +5,8 @@ import com.laker.postman.http.runtime.model.HttpEventInfo;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.HttpHeaderConstants;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import com.laker.postman.util.TimeDisplayUtil;
 
 import javax.swing.*;
@@ -71,7 +73,8 @@ final class ResponseStatusBar extends JPanel {
         String encoding = responseEncoding(httpResponse);
         HttpEventInfo httpEventInfo = httpResponse != null ? httpResponse.httpEventInfo : null;
         ResponseSizeCalculator.SizeInfo sizeInfo = ResponseSizeCalculator.calculate(bytes, httpEventInfo, encoding);
-        updateSizeLabel(sizeInfo);
+        boolean hasSizeDetails = httpEventInfo != null;
+        updateSizeLabel(sizeInfo, hasSizeDetails);
         if (httpEventInfo != null) {
             attachSizeTooltip(bytes, httpEventInfo, sizeInfo);
         }
@@ -80,10 +83,10 @@ final class ResponseStatusBar extends JPanel {
     void clear() {
         setStatus(0);
         responseTimeLabel.setText("");
-        responseSizeLabel.setText("");
         separatorAfterTime.setVisible(false);
-        updateSizeLabel(ResponseSizeCalculator.calculate(0, null, null));
+        updateSizeLabel(ResponseSizeCalculator.calculate(0, null, null), false);
         responseSizeLabel.setText("");
+        responseSizeLabel.setToolTipText(null);
     }
 
     private JLabel createStatusLabel() {
@@ -110,7 +113,7 @@ final class ResponseStatusBar extends JPanel {
         label.setFont(FontsUtil.getDefaultFont(Font.BOLD));
         label.setOpaque(false);
         label.setBorder(BorderFactory.createEmptyBorder(1, 8, 1, 8));
-        label.setToolTipText("HTTP Status Code");
+        label.setToolTipText(I18nUtil.getMessage(MessageKeys.RESPONSE_STATUS_TOOLTIP));
         return label;
     }
 
@@ -118,7 +121,7 @@ final class ResponseStatusBar extends JPanel {
         JLabel label = new JLabel();
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         label.setForeground(ModernColors.getTextHint());
-        label.setToolTipText("Response Time");
+        label.setToolTipText(I18nUtil.getMessage(MessageKeys.RESPONSE_TIME_TOOLTIP));
         return label;
     }
 
@@ -126,8 +129,8 @@ final class ResponseStatusBar extends JPanel {
         JLabel label = new JLabel();
         label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         label.setForeground(ModernColors.getTextHint());
-        label.setToolTipText("Response Size");
-        label.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        label.setToolTipText(I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_BODY_TOOLTIP));
+        label.setCursor(Cursor.getDefaultCursor());
         return label;
     }
 
@@ -147,11 +150,12 @@ final class ResponseStatusBar extends JPanel {
         return encodings != null && !encodings.isEmpty() ? encodings.get(0) : null;
     }
 
-    private void updateSizeLabel(ResponseSizeCalculator.SizeInfo sizeInfo) {
+    private void updateSizeLabel(ResponseSizeCalculator.SizeInfo sizeInfo, boolean hasSizeDetails) {
+        ResponseSizeTooltipWindow.hideTooltip();
         responseSizeLabel.setText(sizeInfo.getDisplayText());
         responseSizeLabel.setForeground(sizeInfo.getNormalColor());
-        responseSizeLabel.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        responseSizeLabel.setToolTipText(null);
+        responseSizeLabel.setCursor(Cursor.getPredefinedCursor(hasSizeDetails ? Cursor.HAND_CURSOR : Cursor.DEFAULT_CURSOR));
+        responseSizeLabel.setToolTipText(hasSizeDetails ? null : I18nUtil.getMessage(MessageKeys.RESPONSE_SIZE_BODY_TOOLTIP));
 
         for (MouseListener listener : responseSizeLabel.getMouseListeners()) {
             responseSizeLabel.removeMouseListener(listener);

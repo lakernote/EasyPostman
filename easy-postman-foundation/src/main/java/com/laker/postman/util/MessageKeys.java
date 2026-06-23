@@ -1565,6 +1565,19 @@ public final class MessageKeys {
     public static final String RESPONSE_SAVE_NO_RESPONSE = "response.save.no_response";
     public static final String RESPONSE_SAVE_REQUEST_NOT_SAVED = "response.save.request_not_saved";
     public static final String RESPONSE_SAVE_REQUEST_NOT_FOUND = "response.save.request_not_found";
+    public static final String RESPONSE_STATUS_TOOLTIP = "response.status.tooltip";
+    public static final String RESPONSE_TIME_TOOLTIP = "response.time.tooltip";
+    public static final String RESPONSE_SIZE_BODY_TOOLTIP = "response.size.body.tooltip";
+    public static final String RESPONSE_SIZE_SECTION_RESPONSE = "response.size.section.response";
+    public static final String RESPONSE_SIZE_SECTION_REQUEST = "response.size.section.request";
+    public static final String RESPONSE_SIZE_RESPONSE_HEADERS = "response.size.response.headers";
+    public static final String RESPONSE_SIZE_RESPONSE_BODY = "response.size.response.body";
+    public static final String RESPONSE_SIZE_RESPONSE_BODY_COMPRESSED = "response.size.response.body.compressed";
+    public static final String RESPONSE_SIZE_REQUEST_HEADERS = "response.size.request.headers";
+    public static final String RESPONSE_SIZE_REQUEST_BODY = "response.size.request.body";
+    public static final String RESPONSE_SIZE_UNCOMPRESSED = "response.size.uncompressed";
+    public static final String RESPONSE_SIZE_COMPRESSION_RATIO = "response.size.compression.ratio";
+    public static final String RESPONSE_SIZE_COMPRESSION_SAVED = "response.size.compression.saved";
 
     // ============ CSV Data Panel related ============
     public static final String CSV_STATUS_NO_DATA = "csv.status.no_data";

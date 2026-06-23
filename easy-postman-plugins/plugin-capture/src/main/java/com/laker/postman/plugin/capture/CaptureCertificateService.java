@@ -74,9 +74,6 @@ final class CaptureCertificateService {
     private volatile X509Certificate rootCertificate;
 
     CaptureCertificateService() {
-        if (Security.getProvider(BC) == null) {
-            Security.addProvider(new BouncyCastleProvider());
-        }
         caDirectory = new File(SystemUtil.getEasyPostmanPath(), "capture-ca");
         caCertFile = new File(caDirectory, "easy-postman-capture-root-ca.crt");
         caKeyFile = new File(caDirectory, "easy-postman-capture-root-ca.key");
@@ -115,6 +112,7 @@ final class CaptureCertificateService {
         if (rootCertificate != null && rootKeyPair != null) {
             return;
         }
+        ensureBouncyCastleProvider();
         if (!caDirectory.exists() && !caDirectory.mkdirs()) {
             throw new IllegalStateException("Failed to create CA directory: " + caDirectory);
         }
@@ -122,6 +120,12 @@ final class CaptureCertificateService {
              FileChannel lockChannel = lockHandle.getChannel();
              FileLock ignored = lockChannel.lock()) {
             loadOrCreateRootCa();
+        }
+    }
+
+    private static synchronized void ensureBouncyCastleProvider() {
+        if (Security.getProvider(BC) == null) {
+            Security.addProvider(new BouncyCastleProvider());
         }
     }
 

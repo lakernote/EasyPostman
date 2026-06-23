@@ -23,10 +23,25 @@ public class CaptureRuntimeTest {
         assertNull(readProxyService());
     }
 
+    @Test
+    public void shouldNotInitializeCertificateServiceWhenCreatingProxyRuntime() throws Exception {
+        setProxyService(null);
+
+        CaptureProxyService service = CaptureRuntime.proxyService();
+
+        assertNull(readCertificateService(service));
+    }
+
     private static CaptureProxyService readProxyService() throws Exception {
         Field field = CaptureRuntime.class.getDeclaredField("proxyService");
         field.setAccessible(true);
         return (CaptureProxyService) field.get(null);
+    }
+
+    private static CaptureCertificateService readCertificateService(CaptureProxyService service) throws Exception {
+        Field field = CaptureProxyService.class.getDeclaredField("certificateService");
+        field.setAccessible(true);
+        return (CaptureCertificateService) field.get(service);
     }
 
     private static void setProxyService(CaptureProxyService value) throws Exception {

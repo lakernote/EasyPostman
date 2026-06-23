@@ -9,8 +9,8 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 final class CaptureProxyService {
     private final CaptureSessionStore sessionStore = new CaptureSessionStore();
-    private final CaptureCertificateService certificateService = new CaptureCertificateService();
     private final SystemProxyService systemProxyService = new SystemProxyService();
+    private volatile CaptureCertificateService certificateService;
 
     private volatile EventLoopGroup bossGroup;
     private volatile EventLoopGroup workerGroup;
@@ -40,7 +40,7 @@ final class CaptureProxyService {
                     .channel(NioServerSocketChannel.class)
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true)
-                    .childHandler(new CaptureServerInitializer(sessionStore, certificateService, captureRequestFilter));
+                    .childHandler(new CaptureServerInitializer(sessionStore, certificateService(), captureRequestFilter));
             serverChannel = bootstrap.bind(listenHost, listenPort).sync().channel();
             if (syncSystemProxy) {
                 systemProxyService.enable(listenHost, listenPort);
@@ -94,7 +94,7 @@ final class CaptureProxyService {
     }
 
     String rootCertificatePath() throws Exception {
-        return certificateService.rootCertificatePath();
+        return certificateService().rootCertificatePath();
     }
 
     boolean isSystemProxySyncSupported() {
@@ -115,5 +115,20 @@ final class CaptureProxyService {
 
     String captureFilterSummary() {
         return captureRequestFilter.summary();
+    }
+
+    private CaptureCertificateService certificateService() {
+        CaptureCertificateService current = certificateService;
+        if (current != null) {
+            return current;
+        }
+        synchronized (this) {
+            current = certificateService;
+            if (current == null) {
+                current = new CaptureCertificateService();
+                certificateService = current;
+            }
+            return current;
+        }
     }
 }

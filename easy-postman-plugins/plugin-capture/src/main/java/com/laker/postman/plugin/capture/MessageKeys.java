@@ -57,7 +57,9 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_STATUS_STARTING = "toolbox.capture.status.starting";
     public static final String TOOLBOX_CAPTURE_STATUS_STOPPING = "toolbox.capture.status.stopping";
     public static final String TOOLBOX_CAPTURE_CA_PATH = "toolbox.capture.ca_path";
+    public static final String TOOLBOX_CAPTURE_CA_PATH_CHECKING = "toolbox.capture.ca_path.checking";
     public static final String TOOLBOX_CAPTURE_CA_PATH_UNAVAILABLE = "toolbox.capture.ca_path.unavailable";
+    public static final String TOOLBOX_CAPTURE_CA_TRUST_CHECKING = "toolbox.capture.ca_trust.checking";
     public static final String TOOLBOX_CAPTURE_CA_TRUST_UNKNOWN = "toolbox.capture.ca_trust.unknown";
     public static final String TOOLBOX_CAPTURE_CA_TRUST_UNSUPPORTED = "toolbox.capture.ca_trust.unsupported";
     public static final String TOOLBOX_CAPTURE_CA_TRUST_TRUSTED = "toolbox.capture.ca_trust.trusted";

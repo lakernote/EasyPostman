@@ -40,6 +40,23 @@ public class EasyLafThemePropertiesTest {
             "[style]Button.easyPostmanSecondary",
             "[style]ToggleButton.easyPostmanToggle"
     );
+    private static final List<String> REQUIRED_DEFAULT_COMPONENT_FOCUS_KEYS = List.of(
+            "Component.focusColor",
+            "Component.focusedBorderColor",
+            "Component.focusWidth",
+            "Component.innerFocusWidth",
+            "Component.innerOutlineWidth"
+    );
+    private static final List<String> REQUIRED_DEFAULT_BUTTON_CHROME_KEYS = List.of(
+            "Button.borderWidth",
+            "Button.innerFocusWidth",
+            "Button.margin",
+            "Button.background",
+            "Button.borderColor",
+            "Button.hoverBorderColor",
+            "Button.pressedBorderColor",
+            "Button.focusedBorderColor"
+    );
 
     private LookAndFeel previousLookAndFeel;
 
@@ -72,6 +89,30 @@ public class EasyLafThemePropertiesTest {
     public void shouldDefineModernButtonStyleClassesForBuiltInThemes() throws Exception {
         assertDefinesButtonStyleClasses("com/laker/postman/common/themes/EasyLightLaf.properties");
         assertDefinesButtonStyleClasses("com/laker/postman/common/themes/EasyDarkLaf.properties");
+    }
+
+    @Test
+    public void shouldDefineCleanDefaultButtonChromeForBuiltInThemes() throws Exception {
+        assertDefinesDefaultButtonChrome("com/laker/postman/common/themes/EasyLightLaf.properties");
+        assertDefinesDefaultButtonChrome("com/laker/postman/common/themes/EasyDarkLaf.properties");
+    }
+
+    @Test
+    public void shouldAvoidDuplicatingToggleButtonBorderChromeDefaults() throws Exception {
+        assertAvoidsDuplicatedToggleButtonBorderChrome("com/laker/postman/common/themes/EasyLightLaf.properties");
+        assertAvoidsDuplicatedToggleButtonBorderChrome("com/laker/postman/common/themes/EasyDarkLaf.properties");
+    }
+
+    @Test
+    public void shouldAvoidUnsupportedButtonFocusWidthDefaults() throws Exception {
+        assertAvoidsUnsupportedButtonFocusWidthDefaults("com/laker/postman/common/themes/EasyLightLaf.properties");
+        assertAvoidsUnsupportedButtonFocusWidthDefaults("com/laker/postman/common/themes/EasyDarkLaf.properties");
+    }
+
+    @Test
+    public void shouldDefineQuietDefaultComponentFocusChromeForBuiltInThemes() throws Exception {
+        assertDefinesDefaultComponentFocusChrome("com/laker/postman/common/themes/EasyLightLaf.properties");
+        assertDefinesDefaultComponentFocusChrome("com/laker/postman/common/themes/EasyDarkLaf.properties");
     }
 
     @Test
@@ -138,6 +179,24 @@ public class EasyLafThemePropertiesTest {
         assertReadableDisabledButtonContrast();
     }
 
+    @Test
+    public void defaultButtonsShouldUseSingleLineFocusChromeAfterLafSetup() {
+        assertTrue(EasyLightLaf.setup());
+        assertDefaultButtonChrome();
+
+        assertTrue(EasyDarkLaf.setup());
+        assertDefaultButtonChrome();
+    }
+
+    @Test
+    public void defaultComponentsShouldUseSingleLineFocusChromeAfterLafSetup() {
+        assertTrue(EasyLightLaf.setup());
+        assertDefaultComponentFocusChrome();
+
+        assertTrue(EasyDarkLaf.setup());
+        assertDefaultComponentFocusChrome();
+    }
+
     private void assertDefinesThemeColors(String resourcePath) throws Exception {
         Properties properties = loadProperties(resourcePath);
 
@@ -171,6 +230,54 @@ public class EasyLafThemePropertiesTest {
         }
     }
 
+    private void assertDefinesDefaultComponentFocusChrome(String resourcePath) throws Exception {
+        Properties properties = loadProperties(resourcePath);
+
+        for (String key : REQUIRED_DEFAULT_COMPONENT_FOCUS_KEYS) {
+            assertTrue(properties.containsKey(key), resourcePath + " must define " + key);
+        }
+        assertEquals(properties.getProperty("Component.focusWidth"), "0",
+                resourcePath + " should avoid thick outer focus rings on text fields and combo boxes");
+        assertEquals(properties.getProperty("Component.innerFocusWidth"), "0",
+                resourcePath + " should keep default component focus chrome single-line");
+        assertEquals(properties.getProperty("Component.innerOutlineWidth"), "0",
+                resourcePath + " should keep warning/error outlines visually consistent");
+    }
+
+    private void assertDefinesDefaultButtonChrome(String resourcePath) throws Exception {
+        Properties properties = loadProperties(resourcePath);
+
+        for (String key : REQUIRED_DEFAULT_BUTTON_CHROME_KEYS) {
+            assertTrue(properties.containsKey(key), resourcePath + " must define " + key);
+        }
+        assertEquals(properties.getProperty("Button.innerFocusWidth"), "0",
+                resourcePath + " should keep plain JButton focus chrome single-line");
+        assertEquals(properties.getProperty("Button.borderWidth"), "1",
+                resourcePath + " should keep plain JButton borders quiet");
+        assertEquals(properties.getProperty("Button.margin"), "4,12,4,12",
+                resourcePath + " should keep plain JButton spacing consistent with shared secondary buttons");
+    }
+
+    private void assertAvoidsDuplicatedToggleButtonBorderChrome(String resourcePath) throws Exception {
+        Properties properties = loadProperties(resourcePath);
+
+        assertTrue(!properties.containsKey("ToggleButton.arc"),
+                resourcePath + " should let FlatButtonBorder use Button.arc for default toggle button corners");
+        assertTrue(!properties.containsKey("ToggleButton.borderWidth"),
+                resourcePath + " should let FlatButtonBorder use Button.borderWidth for default toggle button borders");
+    }
+
+    private void assertAvoidsUnsupportedButtonFocusWidthDefaults(String resourcePath) throws Exception {
+        Properties properties = loadProperties(resourcePath);
+
+        assertTrue(!properties.containsKey("Button.focusWidth"),
+                resourcePath + " should use Component.focusWidth for default button outer focus width");
+        assertTrue(!properties.containsKey("Button.default.focusWidth"),
+                resourcePath + " should not define unsupported default button focus width keys");
+        assertTrue(!properties.containsKey("Button.default.innerFocusWidth"),
+                resourcePath + " should use Button.innerFocusWidth for default button inner focus width");
+    }
+
     private void clearThemeAssertionKeys() {
         for (String key : REQUIRED_COMPONENT_SURFACE_KEYS) {
             UIManager.getDefaults().remove(key);
@@ -193,6 +300,12 @@ public class EasyLafThemePropertiesTest {
                 "Component.accentColor",
                 "Component.focusColor",
                 "Component.focusedBorderColor",
+                "Component.focusWidth",
+                "Component.innerFocusWidth",
+                "Component.innerOutlineWidth",
+                "Button.innerFocusWidth",
+                "Button.borderWidth",
+                "Button.focusedBorderColor",
                 "MenuBar.background",
                 "TitlePane.background",
                 "TitlePane.inactiveBackground",
@@ -278,6 +391,19 @@ public class EasyLafThemePropertiesTest {
 
         assertTrue(contrastRatio(background, foreground) >= 2.0,
                 "Disabled button background should not collapse into disabled text");
+    }
+
+    private void assertDefaultButtonChrome() {
+        assertEquals(UIManager.getInt("Button.innerFocusWidth"), 0);
+        assertEquals(UIManager.getInt("Button.borderWidth"), 1);
+        assertEquals(UIManager.getColor("Button.focusedBorderColor"), UIManager.getColor("Component.accentColor"));
+    }
+
+    private void assertDefaultComponentFocusChrome() {
+        assertEquals(UIManager.getInt("Component.focusWidth"), 0);
+        assertEquals(UIManager.getInt("Component.innerFocusWidth"), 0);
+        assertEquals(UIManager.getInt("Component.innerOutlineWidth"), 0);
+        assertEquals(UIManager.getColor("Component.focusedBorderColor"), UIManager.getColor("Component.accentColor"));
     }
 
     private double contrastRatio(Color first, Color second) {

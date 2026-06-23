@@ -1,7 +1,6 @@
 package com.laker.postman.common.component;
 
-import com.laker.postman.common.component.button.PlusButton;
-import com.laker.postman.common.component.button.RefreshButton;
+import com.formdev.flatlaf.FlatClientProperties;
 import org.testng.annotations.Test;
 
 import javax.swing.Box;
@@ -13,6 +12,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -20,8 +20,8 @@ public class ToolWindowActionToolbarTest {
 
     @Test
     public void shouldUseConsistentInsetsAndButtonSizes() {
-        PlusButton plusButton = new PlusButton();
-        RefreshButton refreshButton = new RefreshButton();
+        JButton plusButton = new JButton();
+        JButton refreshButton = new JButton();
 
         ToolWindowActionToolbar toolbar = ToolWindowActionToolbar.left(plusButton, refreshButton);
 
@@ -47,7 +47,7 @@ public class ToolWindowActionToolbarTest {
 
     @Test
     public void shouldSupportRightAlignedActionRows() {
-        RefreshButton refreshButton = new RefreshButton();
+        JButton refreshButton = new JButton();
 
         ToolWindowActionToolbar toolbar = ToolWindowActionToolbar.right(refreshButton);
 
@@ -86,5 +86,30 @@ public class ToolWindowActionToolbarTest {
         ));
         assertEquals(textButton.getPreferredSize().height, ToolWindowActionToolbar.ACTION_SIZE);
         assertEquals(checkBox.getPreferredSize(), checkBoxSize);
+    }
+
+    @Test
+    public void shouldLeavePlainTextButtonChromeToThemeDefaults() {
+        JButton textButton = new JButton("Format");
+
+        ToolWindowActionToolbar.inlineLeft(textButton);
+
+        assertNull(textButton.getClientProperty(FlatClientProperties.STYLE_CLASS));
+        assertNull(textButton.getClientProperty(FlatClientProperties.STYLE));
+        assertEquals(textButton.getPreferredSize().height, ToolWindowActionToolbar.ACTION_SIZE);
+        assertTrue(textButton.isFocusPainted(), "keyboard focus visibility should remain enabled");
+    }
+
+    @Test
+    public void shouldPreserveExplicitButtonChrome() {
+        JButton toolbarButton = new JButton("Open");
+        toolbarButton.putClientProperty(FlatClientProperties.BUTTON_TYPE,
+                FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+
+        ToolWindowActionToolbar.inlineLeft(toolbarButton);
+
+        assertEquals(toolbarButton.getClientProperty(FlatClientProperties.BUTTON_TYPE),
+                FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        assertNull(toolbarButton.getClientProperty(FlatClientProperties.STYLE_CLASS));
     }
 }

@@ -11,6 +11,7 @@ import com.laker.postman.util.UiMessageKeys;
 import lombok.Getter;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.text.Document;
 import javax.swing.undo.CannotRedoException;
 import javax.swing.undo.CannotUndoException;
@@ -27,8 +28,15 @@ import java.awt.event.MouseEvent;
  * 使用 FlatLaf 官方的图标样式。
  */
 public class SearchTextField extends FlatTextField {
+    static final int DEFAULT_WIDTH = 220;
+    static final int DEFAULT_HEIGHT = 30;
+    static final int MAX_WIDTH = 300;
+    static final int MIN_WIDTH = 50;
+    static final int OPTION_BUTTON_SIZE = 22;
+
     private static final String USER_ACTIVATED_FOCUS_INSTALLED =
             SearchTextField.class.getName() + ".userActivatedFocusInstalled";
+    private static final String IN_TEXT_FIELD_STYLE_CLASS = "inTextField";
 
     private final UndoManager undoManager = new UndoManager();
     /**
@@ -49,9 +57,9 @@ public class SearchTextField extends FlatTextField {
         setLeadingIcon(IconUtil.createThemed("icons/search.svg", 16, 16));
         setPlaceholderText(CommonI18n.get(CommonMessageKeys.BUTTON_SEARCH));
         setShowClearButton(true);
-        setPreferredSize(new Dimension(220, 28));
-        setMaximumSize(new Dimension(300, 28));
-        setMinimumSize(new Dimension(50, 28));
+        setPreferredSize(new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT));
+        setMaximumSize(new Dimension(MAX_WIDTH, DEFAULT_HEIGHT));
+        setMinimumSize(new Dimension(MIN_WIDTH, DEFAULT_HEIGHT));
 
         // 创建选项按钮工具栏
         initOptionsToolbar();
@@ -96,23 +104,23 @@ public class SearchTextField extends FlatTextField {
      * 使用 JToolBar 和 SVG 图标，与 FlatLaf 官方 Demo 一致
      */
     private void initOptionsToolbar() {
-        JToggleButton wholeWordButton;
-        JToggleButton caseSensitiveButton;
-        // 大小写敏感按钮 (Cc 图标)
-        caseSensitiveButton = new JToggleButton(new FlatSVGIcon("icons/matchCase.svg"));
-        caseSensitiveButton.setRolloverIcon(new FlatSVGIcon("icons/matchCaseHovered.svg"));
-        caseSensitiveButton.setSelectedIcon(new FlatSVGIcon("icons/matchCaseSelected.svg"));
-        caseSensitiveButton.setToolTipText(UiI18n.get(UiMessageKeys.SEARCH_MATCH_CASE));
+        JToggleButton caseSensitiveButton = createOptionButton(
+                "icons/matchCase.svg",
+                "icons/matchCaseHovered.svg",
+                "icons/matchCaseSelected.svg",
+                UiI18n.get(UiMessageKeys.SEARCH_MATCH_CASE)
+        );
         caseSensitiveButton.addActionListener(e -> {
             caseSensitive = caseSensitiveButton.isSelected();
             firePropertyChange("caseSensitive", !caseSensitive, caseSensitive);
         });
 
-        // 整词匹配按钮 (W 图标)
-        wholeWordButton = new JToggleButton(new FlatSVGIcon("icons/words.svg"));
-        wholeWordButton.setRolloverIcon(new FlatSVGIcon("icons/wordsHovered.svg"));
-        wholeWordButton.setSelectedIcon(new FlatSVGIcon("icons/wordsSelected.svg"));
-        wholeWordButton.setToolTipText(UiI18n.get(UiMessageKeys.SEARCH_MATCH_WHOLE_WORD));
+        JToggleButton wholeWordButton = createOptionButton(
+                "icons/words.svg",
+                "icons/wordsHovered.svg",
+                "icons/wordsSelected.svg",
+                UiI18n.get(UiMessageKeys.SEARCH_MATCH_WHOLE_WORD)
+        );
         wholeWordButton.addActionListener(e -> {
             wholeWord = wholeWordButton.isSelected();
             firePropertyChange("wholeWord", !wholeWord, wholeWord);
@@ -121,12 +129,30 @@ public class SearchTextField extends FlatTextField {
         // 使用 JToolBar 作为容器，这是 FlatLaf 官方推荐的方式
         JToolBar toolbar = new JToolBar();
         toolbar.setFloatable(false);
-        toolbar.setBorder(null);
+        toolbar.setOpaque(false);
+        toolbar.setBorder(new EmptyBorder(0, 2, 0, 4));
+        toolbar.putClientProperty(FlatClientProperties.STYLE_CLASS, IN_TEXT_FIELD_STYLE_CLASS);
         toolbar.add(caseSensitiveButton);
         toolbar.add(wholeWordButton);
 
         // 设置为 trailing component
         putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT, toolbar);
+    }
+
+    private JToggleButton createOptionButton(String iconPath, String rolloverIconPath, String selectedIconPath,
+                                             String tooltipText) {
+        JToggleButton button = new JToggleButton(new FlatSVGIcon(iconPath, 16, 16));
+        button.setRolloverIcon(new FlatSVGIcon(rolloverIconPath, 16, 16));
+        button.setSelectedIcon(new FlatSVGIcon(selectedIconPath, 16, 16));
+        button.setToolTipText(tooltipText);
+        button.setFocusable(false);
+        button.setPreferredSize(new Dimension(OPTION_BUTTON_SIZE, OPTION_BUTTON_SIZE));
+        button.setMinimumSize(new Dimension(OPTION_BUTTON_SIZE, OPTION_BUTTON_SIZE));
+        button.setMaximumSize(new Dimension(OPTION_BUTTON_SIZE, OPTION_BUTTON_SIZE));
+        button.putClientProperty(FlatClientProperties.BUTTON_TYPE,
+                FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        button.putClientProperty(FlatClientProperties.STYLE_CLASS, IN_TEXT_FIELD_STYLE_CLASS);
+        return button;
     }
 
     /**

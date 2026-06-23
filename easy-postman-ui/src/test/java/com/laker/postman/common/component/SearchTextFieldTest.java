@@ -1,11 +1,18 @@
 package com.laker.postman.common.component;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import org.testng.annotations.Test;
 
+import javax.swing.AbstractButton;
+import javax.swing.JToolBar;
+import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseEvent;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class SearchTextFieldTest {
@@ -60,5 +67,31 @@ public class SearchTextFieldTest {
         }
 
         assertFalse(searchField.isFocusable());
+    }
+
+    @Test
+    public void shouldUseCompactInTextFieldOptionButtons() {
+        SearchTextField searchField = new SearchTextField();
+
+        Object trailingComponent = searchField.getClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT);
+
+        assertTrue(trailingComponent instanceof JToolBar);
+        JToolBar toolbar = (JToolBar) trailingComponent;
+        assertFalse(toolbar.isOpaque());
+        assertEquals(toolbar.getClientProperty(FlatClientProperties.STYLE_CLASS), "inTextField");
+        assertEquals(toolbar.getComponentCount(), 2);
+        for (Component component : toolbar.getComponents()) {
+            assertTrue(component instanceof AbstractButton);
+            AbstractButton button = (AbstractButton) component;
+            assertEquals(button.getClientProperty(FlatClientProperties.BUTTON_TYPE),
+                    FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+            assertEquals(button.getClientProperty(FlatClientProperties.STYLE_CLASS), "inTextField");
+            assertEquals(button.getPreferredSize(), new Dimension(
+                    SearchTextField.OPTION_BUTTON_SIZE,
+                    SearchTextField.OPTION_BUTTON_SIZE
+            ));
+            assertFalse(button.isFocusable());
+            assertNotNull(button.getToolTipText());
+        }
     }
 }

@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class SharedComponentThemeConventionsTest {
@@ -38,6 +39,31 @@ public class SharedComponentThemeConventionsTest {
 
         assertTrue(svg.contains("stroke=\"currentColor\""),
                 "Shared neutral plus icon must use currentColor so IconUtil.createThemed can follow the active theme");
+    }
+
+    @Test
+    public void searchReplaceActionIconsShouldUseLucideThemeableStrokes() {
+        for (String icon : List.of("replace.svg", "replace-all.svg")) {
+            String svg = read("easy-postman-ui/src/main/resources/icons/" + icon);
+
+            assertTrue(svg.contains("fill=\"none\""), icon + " should not carry filled artwork");
+            assertTrue(svg.contains("stroke=\"currentColor\""),
+                    icon + " must follow IconUtil.createThemed foreground color");
+            assertTrue(svg.contains("stroke-width=\"2\""),
+                    icon + " should keep the shared Lucide 24px/2px stroke convention");
+            assertTrue(svg.contains("<rect "), icon + " should preserve the Lucide replace glyph structure");
+            assertFalse(svg.contains("#"), icon + " should not hard-code colors");
+        }
+    }
+
+    @Test
+    public void searchOverlayCloseIconShouldBePlainX() {
+        String svg = read("easy-postman-ui/src/main/resources/icons/x.svg");
+
+        assertTrue(svg.contains("stroke=\"currentColor\""),
+                "x.svg must follow IconUtil.createThemed foreground color");
+        assertTrue(svg.contains("stroke-width=\"2\""), "x.svg should match Lucide stroke weight");
+        assertFalse(svg.contains("<circle"), "Search overlay close icon should not add a heavy circular outline");
     }
 
     private static boolean containsLegacyThemeFallback(String relativePath) {

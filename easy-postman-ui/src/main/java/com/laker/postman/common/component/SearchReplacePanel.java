@@ -27,19 +27,26 @@ public class SearchReplacePanel extends JPanel {
     private static final String ICON_EXPAND = "icons/chevron-right.svg";
     private static final String ICON_COLLAPSE = "icons/chevron-down.svg";
 
-    // 现代化设计常量
-    private static final int CORNER_RADIUS = 12;  // 圆角半径
-    private static final int SHADOW_SIZE = 8;     // 阴影大小
-
-    // 布局间距常量
-    private static final int TOGGLE_BUTTON_SIZE = 20;  // 切换按钮尺寸
-    private static final int HORIZONTAL_STRUT_SMALL = 2;  // 小间距
+    private static final int CORNER_RADIUS = 8;
+    private static final int FIELD_WIDTH = 180;
+    private static final int FIELD_MAX_WIDTH = 200;
+    private static final int FIELD_HEIGHT = SearchTextField.DEFAULT_HEIGHT;
+    private static final int TOOL_BUTTON_SIZE = 22;
+    private static final int STATUS_WIDTH = 82;
+    private static final int STATUS_MAX_WIDTH = 96;
+    private static final int ROW_GAP = 4;
+    private static final int GROUP_GAP = 6;
+    private static final int PANEL_HORIZONTAL_PADDING = 7;
+    private static final int PANEL_VERTICAL_PADDING = 5;
+    private static final String TOOL_BUTTON_STYLE = "arc: 6; margin: 0,0,0,0";
+    private static final String TEXT_FIELD_STYLE = "arc: 8; margin: 4,8,4,8";
 
     private final RSyntaxTextArea textArea;
     private final SearchTextField searchField;
     private final FlatTextField replaceField;
-    private final JToggleButton toggleReplaceBtn;
+    private final JButton toggleReplaceBtn;
     private final JPanel replacePanel;
+    private final Component replaceGap;
     private final JLabel statusLabel;  // 搜索结果状态标签
     private final boolean enableReplace;  // 是否启用替换功能
 
@@ -64,9 +71,13 @@ public class SearchReplacePanel extends JPanel {
         this.enableReplace = enableReplace;
 
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        // 使用现代化的圆角边框和内边距
-        setBorder(new EmptyBorder(8, 10, 8, 10));
-        // 设置为不透明，以便自定义绘制背景
+        setBorder(new EmptyBorder(
+                PANEL_VERTICAL_PADDING,
+                PANEL_HORIZONTAL_PADDING,
+                PANEL_VERTICAL_PADDING,
+                PANEL_HORIZONTAL_PADDING
+        ));
+        // 保持透明，背景和边框由 paintComponent 绘制。
         setOpaque(false);
         // 搜索面板
         JPanel searchPanel = new JPanel();
@@ -75,19 +86,20 @@ public class SearchReplacePanel extends JPanel {
         searchPanel.setOpaque(false);  // 透明以显示父面板的圆角背景
 
         // 展开/收起替换面板的按钮（放在最左边，类似 Postman）
-        toggleReplaceBtn = new JToggleButton(IconUtil.createThemed(ICON_EXPAND, 16, 16));
+        toggleReplaceBtn = new JButton(IconUtil.createThemed(ICON_EXPAND, 16, 16));
         toggleReplaceBtn.setToolTipText(UiI18n.get(UiMessageKeys.SEARCH_TOGGLE_REPLACE));
         toggleReplaceBtn.setFocusable(false);
-        toggleReplaceBtn.setPreferredSize(new Dimension(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE));
-        toggleReplaceBtn.setMaximumSize(new Dimension(TOGGLE_BUTTON_SIZE, TOGGLE_BUTTON_SIZE));
+        setFixedSize(toggleReplaceBtn, TOOL_BUTTON_SIZE, TOOL_BUTTON_SIZE);
         toggleReplaceBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         toggleReplaceBtn.setVisible(enableReplace);
         toggleReplaceBtn.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        toggleReplaceBtn.putClientProperty(FlatClientProperties.STYLE, TOOL_BUTTON_STYLE);
+        Component toggleGap = Box.createHorizontalStrut(ROW_GAP);
+        toggleGap.setVisible(enableReplace);
 
         // 搜索输入框 - 使用 SearchTextField 复用大小写敏感和整词匹配功能
         searchField = new SearchTextField();
-        searchField.setPreferredSize(new Dimension(180, 28));
-        searchField.setMaximumSize(new Dimension(220, 28));
+        configureOverlayTextField(searchField);
         searchField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -138,27 +150,27 @@ public class SearchReplacePanel extends JPanel {
 
 
         // 状态标签
-        statusLabel = new JLabel(UiI18n.get(UiMessageKeys.SEARCH_NO_RESULTS));
+        statusLabel = new JLabel("");
         statusLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
-        statusLabel.setForeground(ModernColors.getTextDisabled());
-        statusLabel.setPreferredSize(new Dimension(70, 24));
-        statusLabel.setMaximumSize(new Dimension(90, 24));
+        statusLabel.setForeground(ModernColors.getTextHint());
+        statusLabel.setPreferredSize(new Dimension(STATUS_WIDTH, TOOL_BUTTON_SIZE));
+        statusLabel.setMaximumSize(new Dimension(STATUS_MAX_WIDTH, TOOL_BUTTON_SIZE));
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         // 关闭按钮
-        JButton closeBtn = createIconButton("icons/close.svg", UiI18n.get(UiMessageKeys.SEARCH_CLOSE), e -> hidePanel());
+        JButton closeBtn = createIconButton("icons/x.svg", UiI18n.get(UiMessageKeys.SEARCH_CLOSE), e -> hidePanel());
 
 
         // 组装搜索面板
         searchPanel.add(toggleReplaceBtn);
-        searchPanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
+        searchPanel.add(toggleGap);
         searchPanel.add(searchField);
-        searchPanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
+        searchPanel.add(Box.createHorizontalStrut(ROW_GAP));
         searchPanel.add(findPrevBtn);
         searchPanel.add(findNextBtn);
-        searchPanel.add(Box.createHorizontalStrut(4));
+        searchPanel.add(Box.createHorizontalStrut(GROUP_GAP));
         searchPanel.add(statusLabel);
-        searchPanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
+        searchPanel.add(Box.createHorizontalStrut(ROW_GAP));
         searchPanel.add(closeBtn);
         searchPanel.add(Box.createHorizontalGlue());
 
@@ -172,17 +184,15 @@ public class SearchReplacePanel extends JPanel {
         replacePanel.setOpaque(false);  // 透明以显示父面板的圆角背景
 
         // 左侧占位符，保持与搜索框对齐（切换按钮宽度 + 水平间距）
-        int spacerWidth = TOGGLE_BUTTON_SIZE + HORIZONTAL_STRUT_SMALL;
+        int spacerWidth = TOOL_BUTTON_SIZE + ROW_GAP;
         JPanel spacer = new JPanel();
         spacer.setOpaque(false);
-        spacer.setPreferredSize(new Dimension(spacerWidth, TOGGLE_BUTTON_SIZE));
-        spacer.setMaximumSize(new Dimension(spacerWidth, TOGGLE_BUTTON_SIZE));
+        setFixedSize(spacer, spacerWidth, TOOL_BUTTON_SIZE);
 
         // 替换输入框
         replaceField = new FlatTextField();
         replaceField.setPlaceholderText(UiI18n.get(UiMessageKeys.SEARCH_REPLACE_PLACEHOLDER));
-        replaceField.setPreferredSize(new Dimension(180, 28));
-        replaceField.setMaximumSize(new Dimension(220, 28));
+        configureOverlayTextField(replaceField);
         replaceField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -201,39 +211,20 @@ public class SearchReplacePanel extends JPanel {
         // 组装替换面板
         replacePanel.add(spacer);  // 左侧占位符（已包含按钮宽度+间距）
         replacePanel.add(replaceField);
-        replacePanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
+        replacePanel.add(Box.createHorizontalStrut(ROW_GAP));
         replacePanel.add(replaceBtn);
-        replacePanel.add(Box.createHorizontalStrut(HORIZONTAL_STRUT_SMALL));
+        replacePanel.add(Box.createHorizontalStrut(ROW_GAP));
         replacePanel.add(replaceAllBtn);
         replacePanel.add(Box.createHorizontalGlue());
 
-        add(Box.createVerticalStrut(2));
+        replaceGap = Box.createVerticalStrut(ROW_GAP);
+        replaceGap.setVisible(false);
+        add(replaceGap);
         add(replacePanel);
 
         // 设置 toggleReplaceBtn 的 actionListener（现在 replacePanel 已经初始化）
         toggleReplaceBtn.addActionListener(e -> {
-            boolean selected = toggleReplaceBtn.isSelected();
-            replacePanel.setVisible(selected);
-            // 更新图标
-            if (selected) {
-                toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_COLLAPSE, 16, 16));
-            } else {
-                toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_EXPAND, 16, 16));
-            }
-            // 先标记需要重新布局
-            invalidate();
-            // 强制重新计算 PreferredSize
-            revalidate();
-            // 触发父容器重新布局以调整面板大小和位置
-            Container parent = getParent();
-            if (parent != null) {
-                parent.revalidate();
-                parent.repaint();
-            }
-            // 直接触发 ComponentListener 的 resize 事件
-            // 通过改变 bounds 来触发
-            Rectangle bounds = getBounds();
-            setBounds(bounds.x, bounds.y, bounds.width, getPreferredSize().height);
+            setReplaceVisible(!replacePanel.isVisible());
         });
 
         // 默认隐藏
@@ -250,40 +241,24 @@ public class SearchReplacePanel extends JPanel {
         int width = getWidth();
         int height = getHeight();
 
-        // 绘制柔和的阴影
-        for (int i = 0; i < SHADOW_SIZE; i++) {
-            int alpha = (int) (30 * (1.0 - (float) i / SHADOW_SIZE));
-            g2.setColor(new Color(0, 0, 0, alpha));
-            g2.draw(new RoundRectangle2D.Float(
-                    i,
-                    i,
-                    width - 1.0f - i * 2.0f,
-                    height - 1.0f - i * 2.0f,
-                    CORNER_RADIUS + SHADOW_SIZE - (float) i,
-                    CORNER_RADIUS + SHADOW_SIZE - (float) i
-            ));
-        }
-
         // 绘制圆角背景
-        Color background = getBackground() != null ? getBackground() : ModernColors.getCardBackgroundColor();
-        g2.setColor(background);
+        g2.setColor(ModernColors.getCardBackgroundColor());
         g2.fill(new RoundRectangle2D.Float(
-                SHADOW_SIZE / 2.0f,
-                SHADOW_SIZE / 2.0f,
-                width - (float) SHADOW_SIZE,
-                height - (float) SHADOW_SIZE,
+                0,
+                0,
+                width - 1.0f,
+                height - 1.0f,
                 CORNER_RADIUS,
                 CORNER_RADIUS
         ));
 
         // 绘制细微的边框
-        Color borderColor = UIManager.getColor("Component.borderColor");
-        g2.setColor(borderColor != null ? borderColor : ModernColors.getDividerBorderColor());
+        g2.setColor(ModernColors.getBorderLightColor());
         g2.draw(new RoundRectangle2D.Float(
-                SHADOW_SIZE / 2.0f,
-                SHADOW_SIZE / 2.0f,
-                width - SHADOW_SIZE - 1.0f,
-                height - SHADOW_SIZE - 1.0f,
+                0,
+                0,
+                width - 1.0f,
+                height - 1.0f,
                 CORNER_RADIUS,
                 CORNER_RADIUS
         ));
@@ -294,11 +269,11 @@ public class SearchReplacePanel extends JPanel {
     @Override
     public Dimension getPreferredSize() {
         Dimension size = super.getPreferredSize();
-        // 确保宽度足够显示所有控件
-        int minWidth = 280;  // 减小最小宽度以匹配更紧凑的设计
-        // 高度根据是否显示替换面板动态调整，增加阴影空间
-        int height = replacePanel.isVisible() ? 70 + SHADOW_SIZE : 36 + SHADOW_SIZE;
-        return new Dimension(Math.max(size.width, minWidth), Math.max(size.height, height));
+        int rowHeight = replacePanel.isVisible()
+                ? FIELD_HEIGHT + ROW_GAP + FIELD_HEIGHT
+                : FIELD_HEIGHT;
+        int height = rowHeight + PANEL_VERTICAL_PADDING * 2;
+        return new Dimension(size.width, Math.max(size.height, height));
     }
 
     /**
@@ -307,15 +282,45 @@ public class SearchReplacePanel extends JPanel {
     private JButton createIconButton(String iconPath, String tooltip, java.awt.event.ActionListener listener) {
         JButton btn = new JButton(IconUtil.createThemed(iconPath, 16, 16));
         btn.setToolTipText(tooltip);
-        btn.setPreferredSize(new Dimension(24, 24));
-        btn.setMaximumSize(new Dimension(24, 24));
+        setFixedSize(btn, TOOL_BUTTON_SIZE, TOOL_BUTTON_SIZE);
         btn.setFocusable(false);
         btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         btn.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        btn.putClientProperty(FlatClientProperties.STYLE, TOOL_BUTTON_STYLE);
         if (listener != null) {
             btn.addActionListener(listener);
         }
         return btn;
+    }
+
+    private static void configureOverlayTextField(JComponent field) {
+        field.setPreferredSize(new Dimension(FIELD_WIDTH, FIELD_HEIGHT));
+        field.setMaximumSize(new Dimension(FIELD_MAX_WIDTH, FIELD_HEIGHT));
+        field.setMinimumSize(new Dimension(FIELD_WIDTH, FIELD_HEIGHT));
+        field.putClientProperty(FlatClientProperties.STYLE, TEXT_FIELD_STYLE);
+    }
+
+    private static void setFixedSize(Component component, int width, int height) {
+        Dimension size = new Dimension(width, height);
+        component.setPreferredSize(size);
+        component.setMinimumSize(size);
+        component.setMaximumSize(size);
+    }
+
+    private void setReplaceVisible(boolean visible) {
+        replacePanel.setVisible(visible);
+        replaceGap.setVisible(visible);
+        toggleReplaceBtn.setIcon(IconUtil.createThemed(visible ? ICON_COLLAPSE : ICON_EXPAND, 16, 16));
+
+        invalidate();
+        revalidate();
+        Container parent = getParent();
+        if (parent != null) {
+            parent.revalidate();
+            parent.repaint();
+        }
+        Rectangle bounds = getBounds();
+        setBounds(bounds.x, bounds.y, bounds.width, getPreferredSize().height);
     }
 
 
@@ -323,9 +328,7 @@ public class SearchReplacePanel extends JPanel {
      * 显示搜索面板（仅搜索模式）
      */
     public void showSearch() {
-        replacePanel.setVisible(false);
-        toggleReplaceBtn.setSelected(false);
-        toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_EXPAND, 16, 16));
+        setReplaceVisible(false);
         setVisible(true);
 
         // 如果有选中文本，将其作为搜索内容
@@ -347,9 +350,7 @@ public class SearchReplacePanel extends JPanel {
             showSearch();
             return;
         }
-        replacePanel.setVisible(true);
-        toggleReplaceBtn.setSelected(true);
-        toggleReplaceBtn.setIcon(IconUtil.createThemed(ICON_COLLAPSE, 16, 16));
+        setReplaceVisible(true);
         setVisible(true);
 
         // 如果有选中文本，将其作为搜索内容

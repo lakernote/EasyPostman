@@ -15,8 +15,8 @@ public final class ToolWindowSidebarToolbar extends JPanel {
     public static final int HORIZONTAL_PADDING = 8;
     public static final int VERTICAL_PADDING = 6;
     public static final int ACTION_SIZE = ToolWindowStripeMetrics.ACTION_SIZE;
-    public static final int SEARCH_HEIGHT = 28;
-    public static final int CONTROL_GAP = 6;
+    public static final int SEARCH_HEIGHT = SearchTextField.DEFAULT_HEIGHT;
+    public static final int CONTROL_GAP = 8;
 
     public ToolWindowSidebarToolbar(AbstractButton leadingAction, SearchTextField searchField) {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
@@ -42,10 +42,10 @@ public final class ToolWindowSidebarToolbar extends JPanel {
 
     private static void configureSearchField(SearchTextField searchField) {
         Dimension preferredSize = searchField.getPreferredSize();
-        int preferredWidth = Math.max(preferredSize.width, 220);
+        int preferredWidth = Math.max(preferredSize.width, SearchTextField.DEFAULT_WIDTH);
         searchField.setPreferredSize(new Dimension(preferredWidth, SEARCH_HEIGHT));
         searchField.setMaximumSize(new Dimension(Integer.MAX_VALUE, SEARCH_HEIGHT));
-        searchField.setMinimumSize(new Dimension(50, SEARCH_HEIGHT));
+        searchField.setMinimumSize(new Dimension(SearchTextField.MIN_WIDTH, SEARCH_HEIGHT));
         searchField.setAlignmentY(Component.CENTER_ALIGNMENT);
         searchField.installUserActivatedFocus();
     }

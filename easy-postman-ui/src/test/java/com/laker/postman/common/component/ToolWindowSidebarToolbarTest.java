@@ -38,8 +38,10 @@ public class ToolWindowSidebarToolbarTest {
         ));
         assertEquals(ToolWindowSidebarToolbar.ACTION_SIZE, ToolWindowStripeMetrics.ACTION_SIZE);
         assertEquals(ToolWindowStripeMetrics.STRIPE_THICKNESS, ToolWindowStripeMetrics.ACTION_SIZE);
+        assertEquals(ToolWindowSidebarToolbar.SEARCH_HEIGHT, 30);
         assertEquals(searchField.getPreferredSize().height, ToolWindowSidebarToolbar.SEARCH_HEIGHT);
         assertEquals(searchField.getMaximumSize().height, ToolWindowSidebarToolbar.SEARCH_HEIGHT);
+        assertTrue(toolbar.getPreferredSize().width <= ToolWindowChrome.DEFAULT_SIDE_WIDTH);
         assertEquals(plusButton.getAlignmentY(), Component.CENTER_ALIGNMENT);
         assertEquals(searchField.getAlignmentY(), Component.CENTER_ALIGNMENT);
         assertFalse(searchField.isFocusable());

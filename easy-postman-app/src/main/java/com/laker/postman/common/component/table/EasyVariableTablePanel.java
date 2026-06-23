@@ -186,11 +186,7 @@ public class EasyVariableTablePanel extends AbstractTablePanel<Variable> {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                        boolean isSelected, boolean hasFocus, int row, int column) {
-            if (isSelected) {
-                setBackground(table.getSelectionBackground());
-            } else {
-                setBackground(table.getBackground());
-            }
+            setBackground(TableUIConstants.getCellBackground(isSelected, row == hoveredRow, false, table, row));
 
             // Set checkbox state
             checkBox.setSelected(value instanceof Boolean && (Boolean) value);

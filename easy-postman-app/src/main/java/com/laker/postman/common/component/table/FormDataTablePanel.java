@@ -35,7 +35,7 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
 
     // Use constants from HttpFormData to avoid duplication
     private static final String[] TYPE_OPTIONS = {HttpFormData.TYPE_TEXT, HttpFormData.TYPE_FILE};
-    private static final int TYPE_COLUMN_WIDTH = 76;
+    private static final int TYPE_COLUMN_WIDTH = 64;
 
     /**
      * 构造函数，创建默认的 Form-Data 表格面板
@@ -148,6 +148,7 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
         column.setPreferredWidth(width);
         column.setMaxWidth(width);
         column.setMinWidth(width);
+        column.setResizable(false);
     }
 
     private void setFlexibleColumnWidth(int columnIndex, int preferredWidth, int minWidth) {
@@ -158,10 +159,11 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
 
     private void installPostmanLikeHeaderGrouping() {
         table.getColumnModel().getColumn(COL_KEY).setHeaderRenderer(
-                new FormDataHeaderRenderer(I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY), false, 10, 0)
+                new FormDataHeaderRenderer(I18nUtil.getMessage(MessageKeys.REQUEST_TABLE_COLUMN_KEY), false,
+                        TableUIConstants.PADDING_LEFT, 0)
         );
         table.getColumnModel().getColumn(COL_TYPE).setHeaderRenderer(
-                new FormDataHeaderRenderer("", true, 0, 10)
+                new FormDataHeaderRenderer("", true, 0, TableUIConstants.PADDING_RIGHT)
         );
     }
 
@@ -249,9 +251,9 @@ public class FormDataTablePanel extends AbstractTablePanel<HttpFormData> {
         private final JLabel arrowLabel;
 
         public TypeColumnRenderer() {
-            setLayout(new BorderLayout(4, 0));
+            setLayout(new BorderLayout(2, 0));
             setOpaque(true);
-            setBorder(BorderFactory.createEmptyBorder(0, 8, 0, 6));
+            setBorder(BorderFactory.createEmptyBorder(0, 6, 0, 4));
 
             // 创建文本标签
             textLabel = new JLabel();

@@ -2,6 +2,8 @@ package com.laker.postman.common.component.table;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.util.CommonI18n;
+import com.laker.postman.util.CommonMessageKeys;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import lombok.Getter;
@@ -26,6 +28,7 @@ import java.util.Objects;
  */
 @Slf4j
 public abstract class AbstractTablePanel<T> extends JPanel {
+    private static final int DELETE_COLUMN_WIDTH = 28;
 
     // ========== 共同字段 ==========
 
@@ -261,6 +264,7 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         table.setIntercellSpacing(new Dimension(1, 1));
         table.setRowMargin(1);
         ToolWindowSurfaceStyle.applyTableCard(table);
+        setColumnRenderer(getEnabledColumnIndex(), new EnabledColumnRenderer());
         table.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         table.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 
@@ -521,9 +525,10 @@ public abstract class AbstractTablePanel<T> extends JPanel {
      */
     protected void setDeleteColumnWidth() {
         int colIndex = getDeleteColumnIndex();
-        table.getColumnModel().getColumn(colIndex).setPreferredWidth(30);
-        table.getColumnModel().getColumn(colIndex).setMaxWidth(40);
-        table.getColumnModel().getColumn(colIndex).setMinWidth(20);
+        table.getColumnModel().getColumn(colIndex).setPreferredWidth(DELETE_COLUMN_WIDTH);
+        table.getColumnModel().getColumn(colIndex).setMaxWidth(DELETE_COLUMN_WIDTH);
+        table.getColumnModel().getColumn(colIndex).setMinWidth(DELETE_COLUMN_WIDTH);
+        table.getColumnModel().getColumn(colIndex).setResizable(false);
     }
 
     /**
@@ -978,9 +983,25 @@ public abstract class AbstractTablePanel<T> extends JPanel {
         });
     }
 
+    protected class EnabledColumnRenderer extends JCheckBox implements TableCellRenderer {
+        private EnabledColumnRenderer() {
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setOpaque(true);
+            setBorderPainted(false);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                       boolean hasFocus, int row, int column) {
+            setSelected(value instanceof Boolean selected && selected);
+            setBackground(TableUIConstants.getCellBackground(isSelected, row == hoveredRow, false, table, row));
+            setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+            return this;
+        }
+    }
+
     /**
-     * 通用删除按钮渲染器
-     * 显示删除图标，对于非空行或非最后一行显示删除按钮
+     * 删除列保留可点击区域，可删除行始终显示图标。
      */
     protected class DeleteButtonRenderer extends JLabel implements TableCellRenderer {
         private final FlatSVGIcon deleteIcon;
@@ -1008,7 +1029,10 @@ public abstract class AbstractTablePanel<T> extends JPanel {
                 modelRow = table.getRowSorter().convertRowIndexToModel(row);
             }
 
-            if (isDeleteActionAvailableAtModelRow(modelRow)) {
+            boolean deleteAvailable = isDeleteActionAvailableAtModelRow(modelRow);
+            setToolTipText(deleteAvailable ? CommonI18n.get(CommonMessageKeys.BUTTON_DELETE) : null);
+
+            if (deleteAvailable) {
                 setIcon(deleteIcon);
                 setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 if (!isSelected && row == hoveredRow && column == hoveredColumn) {

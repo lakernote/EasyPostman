@@ -12,6 +12,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.TableCellRenderer;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
@@ -19,6 +20,7 @@ import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class FormDataTablePanelRendererTest extends AbstractSwingUiTest {
@@ -39,10 +41,33 @@ public class FormDataTablePanelRendererTest extends AbstractSwingUiTest {
 
             Color stripedBackground = TableUIConstants.getRowBackground(table, 1);
 
+            assertEquals(renderedBackground(table, 1, 0), stripedBackground);
+            assertEquals(renderedBackground(table, 1, 1), stripedBackground);
             assertEquals(renderedBackground(table, 1, 2), stripedBackground);
             assertEquals(renderedBackground(table, 1, 3), stripedBackground);
             assertEquals(renderedBackground(table, 1, 4), stripedBackground);
             assertEquals(renderedBackground(table, 1, 5), stripedBackground);
+        });
+    }
+
+    @Test
+    public void formDataHoverShouldUseConsistentRowBackground() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            FormDataTablePanel panel = new FormDataTablePanel(false, false);
+            panel.setFormDataList(List.of(
+                    new HttpFormData(true, "key1", HttpFormData.TYPE_TEXT, "value1"),
+                    new HttpFormData(true, "key2", HttpFormData.TYPE_TEXT, "value2")
+            ));
+
+            JTable table = panel.getTable();
+            table.setSize(960, 120);
+            table.doLayout();
+            dispatchMouseMoved(table, cellCenter(table, 1, table.getColumnCount() - 1));
+
+            Color hoverBackground = TableUIConstants.getHoverColor();
+            for (int column = 0; column < table.getColumnCount(); column++) {
+                assertEquals(renderedBackground(table, 1, column), hoverBackground, "column " + column);
+            }
         });
     }
 
@@ -53,16 +78,38 @@ public class FormDataTablePanelRendererTest extends AbstractSwingUiTest {
             JTable table = panel.getTable();
 
             assertEquals(table.getColumnName(2), "");
-            assertEquals(table.getColumnModel().getColumn(2).getPreferredWidth(), 76);
-            assertEquals(table.getColumnModel().getColumn(2).getMaxWidth(), 76);
-            assertEquals(table.getColumnModel().getColumn(5).getPreferredWidth(), 30);
-            assertEquals(table.getColumnModel().getColumn(5).getMaxWidth(), 40);
+            assertTrue(table.getShowVerticalLines());
+            assertEquals(table.getIntercellSpacing().width, 1);
+            assertEquals(table.getColumnModel().getColumn(2).getPreferredWidth(), 64);
+            assertEquals(table.getColumnModel().getColumn(2).getMaxWidth(), 64);
+            assertEquals(table.getColumnModel().getColumn(5).getPreferredWidth(), 28);
+            assertEquals(table.getColumnModel().getColumn(5).getMaxWidth(), 28);
             assertTrue(table.getColumnModel().getColumn(1).getHeaderRenderer() != null);
             assertTrue(table.getColumnModel().getColumn(2).getHeaderRenderer() != null);
             assertTrue(table.getColumnModel().getColumn(3).getPreferredWidth()
                     > table.getColumnModel().getColumn(1).getPreferredWidth());
             assertTrue(table.getColumnModel().getColumn(4).getPreferredWidth()
                     < table.getColumnModel().getColumn(3).getPreferredWidth());
+        });
+    }
+
+    @Test
+    public void formDataEmptyTextValueShouldKeepStripedRowBackground() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            FormDataTablePanel panel = new FormDataTablePanel(false, false);
+            panel.setFormDataList(List.of(new HttpFormData(true, "key1", HttpFormData.TYPE_TEXT, "value1")));
+
+            JTable table = panel.getTable();
+            table.setBackground(new Color(240, 244, 248));
+            table.setSize(960, 120);
+            table.doLayout();
+
+            Color stripedBackground = TableUIConstants.getRowBackground(table, 1);
+
+            assertEquals(renderedBackground(table, 1, 1), stripedBackground);
+            assertEquals(renderedBackground(table, 1, 2), stripedBackground);
+            assertEquals(renderedBackground(table, 1, 3), stripedBackground);
+            assertEquals(renderedBackground(table, 1, 4), stripedBackground);
         });
     }
 
@@ -87,7 +134,24 @@ public class FormDataTablePanelRendererTest extends AbstractSwingUiTest {
     }
 
     @Test
-    public void deleteActionShouldUseVisibleDeleteColumn() throws Exception {
+    public void formDataValueTextInsetShouldUseStandardPadding() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            FormDataTablePanel panel = new FormDataTablePanel(false, false);
+            panel.setFormDataList(List.of(new HttpFormData(true, "key1", HttpFormData.TYPE_TEXT, "value1")));
+
+            JTable table = panel.getTable();
+            table.setSize(960, 120);
+            table.doLayout();
+
+            Insets valueCellInsets = borderInsets(renderedComponent(table, 0, 3, false));
+
+            assertEquals(valueCellInsets.left, TableUIConstants.PADDING_LEFT);
+            assertEquals(valueCellInsets.right, TableUIConstants.PADDING_RIGHT);
+        });
+    }
+
+    @Test
+    public void deleteActionShouldStayVisibleForDeletableRowsOnly() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             FormDataTablePanel panel = new FormDataTablePanel(false, false);
             panel.setFormDataList(List.of(new HttpFormData(true, "key1", HttpFormData.TYPE_TEXT, "value1")));
@@ -98,12 +162,7 @@ public class FormDataTablePanelRendererTest extends AbstractSwingUiTest {
             int deleteColumn = table.getColumnCount() - 1;
 
             assertNotNull(renderedIcon(table, 0, deleteColumn, false));
-
-            dispatchMouseMoved(table, cellCenter(table, 0, deleteColumn));
-            assertNotNull(renderedIcon(table, 0, deleteColumn, false));
-
-            dispatchMouseExited(table);
-            assertNotNull(renderedIcon(table, 0, deleteColumn, true));
+            assertNull(renderedIcon(table, 1, deleteColumn, false));
         });
     }
 
@@ -173,6 +232,9 @@ public class FormDataTablePanelRendererTest extends AbstractSwingUiTest {
 
     private static Component renderedHeaderComponent(JTable table, int column) {
         TableCellRenderer renderer = table.getColumnModel().getColumn(column).getHeaderRenderer();
+        if (renderer == null) {
+            renderer = table.getTableHeader().getDefaultRenderer();
+        }
         return renderer.getTableCellRendererComponent(
                 table,
                 table.getColumnName(column),
@@ -181,6 +243,13 @@ public class FormDataTablePanelRendererTest extends AbstractSwingUiTest {
                 -1,
                 column
         );
+    }
+
+    private static Insets borderInsets(Component component) {
+        if (component instanceof JComponent jComponent && jComponent.getBorder() != null) {
+            return jComponent.getBorder().getBorderInsets(component);
+        }
+        return new Insets(0, 0, 0, 0);
     }
 
     private static Point cellCenter(JTable table, int row, int column) {

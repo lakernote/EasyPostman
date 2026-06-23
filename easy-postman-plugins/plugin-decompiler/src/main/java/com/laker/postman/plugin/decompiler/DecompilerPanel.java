@@ -8,6 +8,8 @@ import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
+import com.laker.postman.common.component.button.ClearButton;
+import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.*;
@@ -117,18 +119,16 @@ public class DecompilerPanel extends JPanel {
         ToolWindowSurfaceStyle.applyTextComponentInput(filePathField);
         fileInfoPanel.add(filePathField, BorderLayout.CENTER);
 
-        JButton browseButton = ModernButtonFactory.createButton(
+        JButton browseButton = ModernButtonFactory.createCompactButton(
                 DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_BROWSE),
                 false,
                 "icons/file.svg"
         );
+        browseButton.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SELECT_FILE_PROMPT));
         browseButton.addActionListener(e -> browseFile());
 
-        JButton clearButton = ModernButtonFactory.createButton(
-                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLEAR),
-                false,
-                "icons/clear.svg"
-        );
+        JButton clearButton = new ClearButton(IconUtil.SIZE_SMALL);
+        clearButton.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_CLEAR));
         clearButton.addActionListener(e -> clearAll());
 
         JPanel buttonPanel = ToolWindowActionToolbar.inlineRight(browseButton, clearButton);
@@ -227,39 +227,34 @@ public class DecompilerPanel extends JPanel {
 
         JScrollPane scrollPane = new JScrollPane(fileTree);
         ToolWindowSurfaceStyle.applyTreeScrollPaneCard(scrollPane, fileTree);
-        ToolWindowSurfaceStyle.applyFramedScrollPaneCard(scrollPane);
         panel.add(scrollPane, BorderLayout.CENTER);
 
         // 为树面板添加拖拽支持
         setupDragAndDrop(scrollPane);
 
-        // 展开按钮
-        JButton expandAllBtn = new JButton(IconUtil.createThemed("icons/expand.svg", 16, 16));
-        expandAllBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_EXPAND_ALL));
-        expandAllBtn.addActionListener(e -> expandTree(fileTree, 3));
-        expandAllBtn.setFocusPainted(false);
+        JButton expandAllBtn = createToolbarIconButton(
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_EXPAND_ALL),
+                "icons/expand.svg",
+                () -> expandTree(fileTree, 3));
 
-        // 收起按钮
-        JButton collapseAllBtn = new JButton(IconUtil.createThemed("icons/collapse.svg", 16, 16));
-        collapseAllBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COLLAPSE_ALL));
-        collapseAllBtn.addActionListener(e -> collapseTree(fileTree));
-        collapseAllBtn.setFocusPainted(false);
+        JButton collapseAllBtn = createToolbarIconButton(
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COLLAPSE_ALL),
+                "icons/collapse.svg",
+                () -> collapseTree(fileTree));
 
         // 分隔符
         JSeparator separator1 = new JSeparator(SwingConstants.VERTICAL);
         separator1.setPreferredSize(new Dimension(2, 20));
 
-        // 按名称排序按钮
-        JButton sortByNameBtn = new JButton(IconUtil.create("icons/text-file.svg", 16, 16));
-        sortByNameBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME));
-        sortByNameBtn.addActionListener(e -> sortTreeByName());
-        sortByNameBtn.setFocusPainted(false);
+        JButton sortByNameBtn = createToolbarIconButton(
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_NAME),
+                "icons/text-file.svg",
+                this::sortTreeByName);
 
-        // 按大小排序按钮
-        JButton sortBySizeBtn = new JButton(IconUtil.createThemed("icons/detail.svg", 16, 16));
-        sortBySizeBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_SIZE));
-        sortBySizeBtn.addActionListener(e -> sortTreeBySize());
-        sortBySizeBtn.setFocusPainted(false);
+        JButton sortBySizeBtn = createToolbarIconButton(
+                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_SORT_BY_SIZE),
+                "icons/detail.svg",
+                this::sortTreeBySize);
 
         JPanel buttonPanel = ToolWindowActionToolbar.inlineLeft(
                 expandAllBtn,
@@ -289,12 +284,8 @@ public class DecompilerPanel extends JPanel {
         JLabel label = createSectionTitle(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_OUTPUT));
         headerPanel.add(label, BorderLayout.WEST);
 
-        JButton copyBtn = ModernButtonFactory.createButton(
-                DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE),
-                false,
-                "icons/copy.svg",
-                14
-        );
+        JButton copyBtn = new CopyButton();
+        copyBtn.setToolTipText(DecompilerI18n.t(MessageKeys.TOOLBOX_DECOMPILER_COPY_CODE));
         copyBtn.addActionListener(e -> copyCode());
 
         JPanel toolPanel = ToolWindowActionToolbar.inlineRight(copyBtn);
@@ -354,10 +345,25 @@ public class DecompilerPanel extends JPanel {
         return label;
     }
 
+    private JButton createToolbarIconButton(String tooltip, String iconPath, Runnable action) {
+        JButton button = new JButton(IconUtil.createThemed(iconPath, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        button.setToolTipText(tooltip);
+        button.setFocusable(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        if (action != null) {
+            button.addActionListener(e -> action.run());
+        }
+        return button;
+    }
+
     /**
      * 设置拖拽支持
      */
     private void setupDragAndDrop(JComponent component) {
+        if (GraphicsEnvironment.isHeadless()) {
+            return;
+        }
         new DropTarget(component, new DropTargetAdapter() {
             @Override
             public void dragEnter(DropTargetDragEvent dtde) {

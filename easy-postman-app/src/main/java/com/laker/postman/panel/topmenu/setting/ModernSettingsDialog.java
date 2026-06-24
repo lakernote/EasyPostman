@@ -147,9 +147,7 @@ public class ModernSettingsDialog extends JDialog {
         JPanel navigationPanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyDialogSurface(navigationPanel);
         navigationPanel.setPreferredSize(new Dimension(NAVIGATION_WIDTH, PREFERRED_HEIGHT));
-        navigationPanel.setBorder(BorderFactory.createMatteBorder(
-                0, 0, 0, 1, ModernColors.getBorderLightColor()
-        ));
+        ToolWindowSurfaceStyle.applyDialogRightSeparator(navigationPanel);
 
         JPanel searchBar = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyDialogSurface(searchBar);

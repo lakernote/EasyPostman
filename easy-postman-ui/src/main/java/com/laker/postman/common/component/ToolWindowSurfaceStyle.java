@@ -137,6 +137,11 @@ public final class ToolWindowSurfaceStyle {
         installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogBottomSeparator);
     }
 
+    public static void applyDialogRightSeparator(JComponent component) {
+        setDialogRightSeparator(component);
+        installThemeRefresh(component, ToolWindowSurfaceStyle::setDialogRightSeparator);
+    }
+
     public static void applyDialogTopSeparator(JComponent component, int top, int left, int bottom, int right) {
         setDialogTopSeparator(component, top, left, bottom, right);
         installThemeRefresh(component, target -> setDialogTopSeparator(target, top, left, bottom, right));
@@ -497,6 +502,11 @@ public final class ToolWindowSurfaceStyle {
     private static void setDialogBottomSeparator(JComponent component) {
         setDialogChromeBackground(component, true);
         component.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ModernColors.getTabSeparatorColor()));
+    }
+
+    private static void setDialogRightSeparator(JComponent component) {
+        setDialogChromeBackground(component, true);
+        component.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, ModernColors.getTabSeparatorColor()));
     }
 
     private static void setDialogTopSeparator(JComponent component, int top, int left, int bottom, int right) {

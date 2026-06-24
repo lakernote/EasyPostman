@@ -240,6 +240,24 @@ public class ToolWindowSurfaceStyleTest {
     }
 
     @Test
+    public void shouldApplyDialogRightSeparatorWithThemeColor() {
+        Color surface = new Color(246, 247, 249);
+        Color separator = new Color(218, 221, 228);
+        UIManager.put(ThemeColors.DIALOG_CHROME_BACKGROUND, surface);
+        UIManager.put(ThemeColors.TAB_SEPARATOR, separator);
+        JPanel panel = new JPanel();
+
+        ToolWindowSurfaceStyle.applyDialogRightSeparator(panel);
+
+        assertTrue(panel.isOpaque());
+        assertEquals(panel.getBackground(), surface);
+        assertTrue(panel.getBorder() instanceof MatteBorder);
+        MatteBorder border = (MatteBorder) panel.getBorder();
+        assertEquals(border.getBorderInsets(panel).right, 1);
+        assertEquals(border.getMatteColor(), separator);
+    }
+
+    @Test
     public void shouldApplySectionCardWithThinBorderAndPadding() {
         Color surface = new Color(250, 251, 252);
         Color border = new Color(211, 218, 230);

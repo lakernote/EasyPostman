@@ -47,6 +47,14 @@ public class ThemeColors {
     public static final String VARIABLE_ENVIRONMENT = "EasyPostman.color.variable.environment";
     public static final String VARIABLE_GLOBAL = "EasyPostman.color.variable.global";
     public static final String VARIABLE_BUILT_IN = "EasyPostman.color.variable.builtIn";
+    public static final String HTTP_METHOD_GET = "EasyPostman.http.method.get";
+    public static final String HTTP_METHOD_POST = "EasyPostman.http.method.post";
+    public static final String HTTP_METHOD_PUT = "EasyPostman.http.method.put";
+    public static final String HTTP_METHOD_PATCH = "EasyPostman.http.method.patch";
+    public static final String HTTP_METHOD_DELETE = "EasyPostman.http.method.delete";
+    public static final String HTTP_METHOD_DEFAULT = "EasyPostman.http.method.default";
+    public static final String HTTP_PROTOCOL_WS = "EasyPostman.http.protocol.ws";
+    public static final String HTTP_PROTOCOL_SSE = "EasyPostman.http.protocol.sse";
 
     public static final String TEXT_PRIMARY = "EasyPostman.text.primary";
     public static final String TEXT_SECONDARY = "EasyPostman.text.secondary";
@@ -131,6 +139,14 @@ public class ThemeColors {
             VARIABLE_ENVIRONMENT,
             VARIABLE_GLOBAL,
             VARIABLE_BUILT_IN,
+            HTTP_METHOD_GET,
+            HTTP_METHOD_POST,
+            HTTP_METHOD_PUT,
+            HTTP_METHOD_PATCH,
+            HTTP_METHOD_DELETE,
+            HTTP_METHOD_DEFAULT,
+            HTTP_PROTOCOL_WS,
+            HTTP_PROTOCOL_SSE,
             TEXT_PRIMARY,
             TEXT_SECONDARY,
             TEXT_HINT,

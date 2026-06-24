@@ -10,7 +10,7 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.service.collections.CollectionTreeNodes;
-import com.laker.postman.common.component.RequestMethodUiMetadata;
+import com.laker.postman.common.component.HttpRequestDisplayMetadata;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.IconUtil;
 
@@ -173,29 +173,18 @@ public class RequestTreeCellRenderer extends DefaultTreeCellRenderer {
         String method = item.getMethod();
         String name = item.getName();
         RequestItemProtocolEnum protocol = item.getProtocol();
-        String methodColor = RequestMethodUiMetadata.methodColorHex(method);
+        String methodColor = HttpRequestDisplayMetadata.methodColorHex(method);
 
         if (protocol.isWebSocketProtocol()) {
             method = "WS";
-            methodColor = ModernColors.toHtmlColor(ModernColors.getAccent());
+            methodColor = HttpRequestDisplayMetadata.protocolColorHex(method);
         } else if (protocol.isSseProtocol()) {
             method = "SSE";
-            methodColor = ModernColors.toHtmlColor(ModernColors.getSecondaryLight());
+            methodColor = HttpRequestDisplayMetadata.protocolColorHex(method);
         } else {
-            method = abbreviateMethod(method);
+            method = HttpRequestDisplayMetadata.methodLabel(method);
         }
         setText(buildStyledText(method, methodColor, name));
-    }
-
-    private String abbreviateMethod(String method) {
-        if (method == null) return "";
-        return switch (method.toUpperCase()) {
-            case "DELETE" -> "DEL";
-            case "OPTIONS" -> "OPT";
-            case "PATCH" -> "PAT";
-            case "TRACE" -> "TRC";
-            default -> method;
-        };
     }
 
     private void applySavedResponseRendering(SavedResponse savedResponse) {

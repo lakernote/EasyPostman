@@ -5,7 +5,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 
 
-import com.laker.postman.common.component.RequestMethodUiMetadata;
+import com.laker.postman.common.component.HttpRequestDisplayMetadata;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.model.PerformanceTreeNode;
@@ -82,31 +82,20 @@ public class PerformanceTreeCellRenderer extends DefaultTreeCellRenderer {
 
     private String buildRequestText(HttpRequestItem item, String name, boolean disabled) {
         String method = item == null ? "" : item.getMethod();
-        String methodColor = RequestMethodUiMetadata.methodColorHex(method);
+        String methodColor = HttpRequestDisplayMetadata.methodColorHex(method);
         RequestItemProtocolEnum protocol = item != null && item.getProtocol() != null
                 ? item.getProtocol()
                 : RequestItemProtocolEnum.HTTP;
         if (protocol.isSseProtocol() || (protocol.isHttpProtocol() && HttpRequestProtocol.isSse(item))) {
             method = "SSE";
-            methodColor = ModernColors.toHtmlColor(ModernColors.getSecondaryLight());
+            methodColor = HttpRequestDisplayMetadata.protocolColorHex(method);
         } else if (protocol.isWebSocketProtocol()) {
             method = "WS";
-            methodColor = ModernColors.toHtmlColor(ModernColors.getAccent());
+            methodColor = HttpRequestDisplayMetadata.protocolColorHex(method);
         } else {
-            method = abbreviateMethod(method);
+            method = HttpRequestDisplayMetadata.methodLabel(method);
         }
         return buildStyledText(method, methodColor, name, disabled);
-    }
-
-    private String abbreviateMethod(String method) {
-        if (method == null) return "";
-        return switch (method.toUpperCase()) {
-            case "DELETE" -> "DEL";
-            case "OPTIONS" -> "OPT";
-            case "PATCH" -> "PAT";
-            case "TRACE" -> "TRC";
-            default -> method;
-        };
     }
 
     private static String buildStyledText(String method, String methodColor, String name, boolean disabled) {

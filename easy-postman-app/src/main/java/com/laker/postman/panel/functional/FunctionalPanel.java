@@ -31,7 +31,7 @@ import com.laker.postman.panel.functional.table.FunctionalRunnerTableModel;
 import com.laker.postman.panel.functional.table.TableRowTransferHandler;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.FunctionalPersistenceService;
-import com.laker.postman.common.component.RequestMethodUiMetadata;
+import com.laker.postman.common.component.HttpRequestDisplayMetadata;
 import com.laker.postman.service.collections.CollectionRequestLookup;
 import com.laker.postman.service.collections.RequestSaveEventPublisher;
 import com.laker.postman.service.variable.ExecutionVariableContext;
@@ -558,8 +558,7 @@ public class FunctionalPanel extends UiSingletonPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 if (value != null) {
-                    String color = RequestMethodUiMetadata.methodColorHex(value.toString());
-                    c.setForeground(Color.decode(color));
+                    c.setForeground(HttpRequestDisplayMetadata.methodColor(value.toString()));
                 }
                 return c;
             }

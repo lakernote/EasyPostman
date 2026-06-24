@@ -9,7 +9,7 @@ import com.laker.postman.functional.model.AssertionResult;
 import com.laker.postman.functional.model.BatchExecutionHistory;
 import com.laker.postman.functional.model.IterationResult;
 import com.laker.postman.functional.model.RequestResult;
-import com.laker.postman.common.component.RequestMethodUiMetadata;
+import com.laker.postman.common.component.HttpRequestDisplayMetadata;
 import com.laker.postman.service.render.HttpHtmlRenderer;
 import com.laker.postman.util.*;
 
@@ -873,8 +873,7 @@ public class ExecutionResultsPanel extends JPanel {
                                                            boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 if (value != null) {
-                    String color = RequestMethodUiMetadata.methodColorHex(value.toString());
-                    c.setForeground(Color.decode(color));
+                    c.setForeground(HttpRequestDisplayMetadata.methodColor(value.toString()));
                 }
                 setHorizontalAlignment(CENTER);
                 return c;

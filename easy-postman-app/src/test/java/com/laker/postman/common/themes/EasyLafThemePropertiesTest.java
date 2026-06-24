@@ -130,6 +130,16 @@ public class EasyLafThemePropertiesTest {
                 new Color(242, 246, 255),
                 new Color(233, 234, 238)
         );
+        assertHttpSemanticColors(
+                new Color(0x2E7D32),
+                new Color(0xA16207),
+                new Color(0x1565C0),
+                new Color(0x00838F),
+                new Color(0xC62828),
+                new Color(0x475569),
+                new Color(0x00838F),
+                new Color(0x00796B)
+        );
 
         assertTrue(EasyDarkLaf.setup());
         assertThemeBrandColors(new Color(53, 116, 240), new Color(43, 67, 113));
@@ -143,6 +153,16 @@ public class EasyLafThemePropertiesTest {
                 new Color(43, 45, 48),
                 new Color(38, 40, 44),
                 new Color(43, 45, 48)
+        );
+        assertHttpSemanticColors(
+                new Color(0x6AAB73),
+                new Color(0xD5A945),
+                new Color(0x589DF6),
+                new Color(0x2AACB8),
+                new Color(0xF06A6A),
+                new Color(0x9AA0AA),
+                new Color(0x52C7D9),
+                new Color(0x4DB6AC)
         );
 
         assertNotNull(UIManager.getColor(ThemeColors.CONSOLE_SELECTION_BACKGROUND));
@@ -295,6 +315,14 @@ public class EasyLafThemePropertiesTest {
                 ThemeColors.TAB_SEPARATOR,
                 ThemeColors.PRIMARY,
                 ThemeColors.SELECTION_BACKGROUND,
+                ThemeColors.HTTP_METHOD_GET,
+                ThemeColors.HTTP_METHOD_POST,
+                ThemeColors.HTTP_METHOD_PUT,
+                ThemeColors.HTTP_METHOD_PATCH,
+                ThemeColors.HTTP_METHOD_DELETE,
+                ThemeColors.HTTP_METHOD_DEFAULT,
+                ThemeColors.HTTP_PROTOCOL_WS,
+                ThemeColors.HTTP_PROTOCOL_SSE,
                 ThemeColors.BUTTON_DISABLED_BACKGROUND,
                 ThemeColors.CONSOLE_SELECTION_BACKGROUND,
                 "Component.accentColor",
@@ -350,6 +378,24 @@ public class EasyLafThemePropertiesTest {
         assertEquals(UIManager.getColor("Component.focusColor"), primary);
         assertEquals(UIManager.getColor("Component.focusedBorderColor"), primary);
         assertEquals(UIManager.getColor(ThemeColors.SELECTION_BACKGROUND), selectionBackground);
+    }
+
+    private void assertHttpSemanticColors(Color get,
+                                          Color post,
+                                          Color put,
+                                          Color patch,
+                                          Color delete,
+                                          Color defaultColor,
+                                          Color ws,
+                                          Color sse) {
+        assertEquals(UIManager.getColor(ThemeColors.HTTP_METHOD_GET), get);
+        assertEquals(UIManager.getColor(ThemeColors.HTTP_METHOD_POST), post);
+        assertEquals(UIManager.getColor(ThemeColors.HTTP_METHOD_PUT), put);
+        assertEquals(UIManager.getColor(ThemeColors.HTTP_METHOD_PATCH), patch);
+        assertEquals(UIManager.getColor(ThemeColors.HTTP_METHOD_DELETE), delete);
+        assertEquals(UIManager.getColor(ThemeColors.HTTP_METHOD_DEFAULT), defaultColor);
+        assertEquals(UIManager.getColor(ThemeColors.HTTP_PROTOCOL_WS), ws);
+        assertEquals(UIManager.getColor(ThemeColors.HTTP_PROTOCOL_SSE), sse);
     }
 
     private void assertComponentSurfaces(Color surface, Color tableHeaderBackground, Color tabSeparator) {

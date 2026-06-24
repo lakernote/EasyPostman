@@ -28,6 +28,14 @@ public class ModernColorsTest {
             ThemeColors.VARIABLE_ENVIRONMENT,
             ThemeColors.VARIABLE_GLOBAL,
             ThemeColors.VARIABLE_BUILT_IN,
+            ThemeColors.HTTP_METHOD_GET,
+            ThemeColors.HTTP_METHOD_POST,
+            ThemeColors.HTTP_METHOD_PUT,
+            ThemeColors.HTTP_METHOD_PATCH,
+            ThemeColors.HTTP_METHOD_DELETE,
+            ThemeColors.HTTP_METHOD_DEFAULT,
+            ThemeColors.HTTP_PROTOCOL_WS,
+            ThemeColors.HTTP_PROTOCOL_SSE,
             ThemeColors.SEARCH_HIGHLIGHT_BACKGROUND,
             ThemeColors.SEARCH_CURRENT_HIGHLIGHT_BACKGROUND,
             ThemeColors.SPLASH_GRADIENT_START,
@@ -142,6 +150,35 @@ public class ModernColorsTest {
         assertEquals(ModernColors.getVariableEnvironmentColor(), environment);
         assertEquals(ModernColors.getVariableGlobalColor(), global);
         assertEquals(ModernColors.getVariableBuiltInColor(), builtIn);
+    }
+
+    @Test
+    public void shouldReadHttpMethodAndProtocolColorsFromUiDefaults() {
+        Color get = new Color(11, 12, 13);
+        Color post = new Color(21, 22, 23);
+        Color put = new Color(31, 32, 33);
+        Color patch = new Color(41, 42, 43);
+        Color delete = new Color(51, 52, 53);
+        Color defaultColor = new Color(61, 62, 63);
+        Color ws = new Color(71, 72, 73);
+        Color sse = new Color(81, 82, 83);
+        UIManager.put(ThemeColors.HTTP_METHOD_GET, get);
+        UIManager.put(ThemeColors.HTTP_METHOD_POST, post);
+        UIManager.put(ThemeColors.HTTP_METHOD_PUT, put);
+        UIManager.put(ThemeColors.HTTP_METHOD_PATCH, patch);
+        UIManager.put(ThemeColors.HTTP_METHOD_DELETE, delete);
+        UIManager.put(ThemeColors.HTTP_METHOD_DEFAULT, defaultColor);
+        UIManager.put(ThemeColors.HTTP_PROTOCOL_WS, ws);
+        UIManager.put(ThemeColors.HTTP_PROTOCOL_SSE, sse);
+
+        assertEquals(ModernColors.getHttpMethodGet(), get);
+        assertEquals(ModernColors.getHttpMethodPost(), post);
+        assertEquals(ModernColors.getHttpMethodPut(), put);
+        assertEquals(ModernColors.getHttpMethodPatch(), patch);
+        assertEquals(ModernColors.getHttpMethodDelete(), delete);
+        assertEquals(ModernColors.getHttpMethodDefault(), defaultColor);
+        assertEquals(ModernColors.getHttpProtocolWs(), ws);
+        assertEquals(ModernColors.getHttpProtocolSse(), sse);
     }
 
     @Test

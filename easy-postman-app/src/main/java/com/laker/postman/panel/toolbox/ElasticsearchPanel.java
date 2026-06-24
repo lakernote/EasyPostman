@@ -1,7 +1,7 @@
 package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.FlatClientProperties;
-import com.laker.postman.common.component.RequestMethodUiMetadata;
+import com.laker.postman.common.component.HttpRequestDisplayMetadata;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.AppToolWindowChrome;
@@ -800,7 +800,7 @@ public class ElasticsearchPanel extends JPanel {
             JLabel lbl = (JLabel) super.getListCellRendererComponent(
                     list, value, index, isSelected, cellHasFocus);
             if (value instanceof HistoryEntry h) {
-                String color = RequestMethodUiMetadata.methodColorHex(h.method);
+                String color = HttpRequestDisplayMetadata.methodColorHex(h.method);
                 String path = h.path.length() > 32 ? h.path.substring(0, 30) + "…" : h.path;
                 lbl.setText("<html><b><font color='" + color + "'>" + h.method + "</font></b> " + path + "</html>");
                 lbl.setToolTipText(h.method + " " + h.path);

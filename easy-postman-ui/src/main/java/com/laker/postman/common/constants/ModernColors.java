@@ -337,6 +337,40 @@ public final class ModernColors {
         return color(ThemeColors.VARIABLE_BUILT_IN, VARIABLE_BUILT_IN);
     }
 
+    // ==================== HTTP 方法/协议颜色 ====================
+
+    public static Color getHttpMethodGet() {
+        return color(ThemeColors.HTTP_METHOD_GET, new Color(0x2E7D32), new Color(0x6AAB73));
+    }
+
+    public static Color getHttpMethodPost() {
+        return color(ThemeColors.HTTP_METHOD_POST, new Color(0xA16207), new Color(0xD5A945));
+    }
+
+    public static Color getHttpMethodPut() {
+        return color(ThemeColors.HTTP_METHOD_PUT, new Color(0x1565C0), new Color(0x589DF6));
+    }
+
+    public static Color getHttpMethodPatch() {
+        return color(ThemeColors.HTTP_METHOD_PATCH, new Color(0x00838F), new Color(0x2AACB8));
+    }
+
+    public static Color getHttpMethodDelete() {
+        return color(ThemeColors.HTTP_METHOD_DELETE, new Color(0xC62828), new Color(0xF06A6A));
+    }
+
+    public static Color getHttpMethodDefault() {
+        return color(ThemeColors.HTTP_METHOD_DEFAULT, new Color(0x475569), new Color(0x9AA0AA));
+    }
+
+    public static Color getHttpProtocolWs() {
+        return color(ThemeColors.HTTP_PROTOCOL_WS, new Color(0x00838F), new Color(0x52C7D9));
+    }
+
+    public static Color getHttpProtocolSse() {
+        return color(ThemeColors.HTTP_PROTOCOL_SSE, new Color(0x00796B), new Color(0x4DB6AC));
+    }
+
     // ==================== 变量徽标颜色 ====================
 
     /**

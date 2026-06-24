@@ -79,7 +79,7 @@ public class ViewportClippedTokenPainterTest {
     }
 
     @Test
-    public void shouldUseSelectionCompatiblePaintingWhenSelectionIntersectsLongToken() {
+    public void shouldKeepChunkedPaintingWhenSelectionIntersectsLongToken() {
         RSyntaxTextArea host = new RSyntaxTextArea();
         host.setText("a".repeat(600));
         host.select(10, 20);
@@ -87,10 +87,27 @@ public class ViewportClippedTokenPainterTest {
         RecordingGraphics2D graphics = graphicsWithClip(120, 0, 80, 40);
 
         new ViewportClippedTokenPainter()
-                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
+                .paintSelected(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
 
-        assertEquals(graphics.longestDrawCharsLength, 600,
-                "RSTA owns selected-token clipping; intersecting tokens should be painted as a whole under that clip");
+        assertTrue(graphics.drawCharsCalls > 0);
+        assertTrue(graphics.longestDrawCharsLength <= 256,
+                "Selected long-token rendering must stay chunked so horizontal dragging remains responsive");
+    }
+
+    @Test
+    public void shouldConstrainActualClipWhenSelectionIntersectsLongToken() {
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        host.setText("a".repeat(600));
+        host.select(10, 20);
+        Token token = token("a".repeat(600));
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 160, 40);
+
+        new ViewportClippedTokenPainter()
+                .paintSelected(token, graphics, 0f, 20f, host, fixedTabExpander(), 80f, true);
+
+        assertTrue(graphics.drawCharsCalls > 0);
+        assertTrue(graphics.leftMostClipAtDraw >= 80,
+                "Selected-token rendering must still constrain the real Graphics clip to clipStart");
     }
 
     private Token token(String text) {

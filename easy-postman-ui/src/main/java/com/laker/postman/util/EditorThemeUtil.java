@@ -30,9 +30,9 @@ public class EditorThemeUtil {
     private static final Color DARK_CURRENT_LINE_NUMBER = new Color(0xAE, 0xB6, 0xC2);
     private static final Color LIGHT_EDITOR_BACKGROUND = Color.WHITE;
     private static final Color LIGHT_GUTTER_BACKGROUND = Color.WHITE;
-    private static final Color LIGHT_EDITOR_DIVIDER = new Color(0xE0, 0xE0, 0xE0);
-    private static final Color LIGHT_LINE_NUMBER = new Color(0x99, 0x99, 0x99);
-    private static final Color LIGHT_CURRENT_LINE_NUMBER = new Color(0x66, 0x66, 0x66);
+    private static final Color LIGHT_EDITOR_DIVIDER = new Color(0xE5, 0xE7, 0xEB);
+    private static final Color LIGHT_LINE_NUMBER = new Color(0x8A, 0x8F, 0x98);
+    private static final Color LIGHT_CURRENT_LINE_NUMBER = new Color(0x6B, 0x72, 0x80);
 
     private static volatile String configuredThemeResourcePath;
     private static volatile String configuredFallbackThemeResourcePath;

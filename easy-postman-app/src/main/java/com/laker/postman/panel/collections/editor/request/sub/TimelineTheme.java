@@ -7,6 +7,9 @@ import java.awt.Color;
 
 @UtilityClass
 class TimelineTheme {
+    private final Color CONTENT_DOWNLOAD_LIGHT = new Color(0x0D, 0x94, 0x88);
+    private final Color CONTENT_DOWNLOAD_DARK = new Color(0x4D, 0xB6, 0xAC);
+
     Color panelBackground() {
         return ModernColors.getCardBackgroundColor();
     }
@@ -16,7 +19,7 @@ class TimelineTheme {
     }
 
     Color infoBorder() {
-        return ModernColors.getBorderLightColor();
+        return ModernColors.withAlpha(ModernColors.getBorderLightColor(), ModernColors.isDarkTheme() ? 150 : 135);
     }
 
     Color barAreaBackground() {
@@ -28,15 +31,15 @@ class TimelineTheme {
                 ? ModernColors.getBackgroundColor()
                 : ModernColors.getCardBackgroundColor();
         Color border = ModernColors.getDividerBorderColor();
-        return ModernColors.blendColors(base, border, ModernColors.isDarkTheme() ? 0.36f : 0.28f);
+        return ModernColors.blendColors(base, border, ModernColors.isDarkTheme() ? 0.18f : 0.12f);
     }
 
     Color barTrackBorder() {
-        return ModernColors.withAlpha(ModernColors.getDividerBorderColor(), ModernColors.isDarkTheme() ? 170 : 145);
+        return ModernColors.withAlpha(ModernColors.getDividerBorderColor(), ModernColors.isDarkTheme() ? 115 : 90);
     }
 
     Color gridLine() {
-        return ModernColors.withAlpha(ModernColors.getDividerBorderColor(), ModernColors.isDarkTheme() ? 95 : 105);
+        return ModernColors.withAlpha(ModernColors.getDividerBorderColor(), ModernColors.isDarkTheme() ? 55 : 45);
     }
 
     Color labelText() {
@@ -52,7 +55,7 @@ class TimelineTheme {
     }
 
     Color separator() {
-        return ModernColors.getDividerBorderColor();
+        return ModernColors.withAlpha(ModernColors.getDividerBorderColor(), ModernColors.isDarkTheme() ? 105 : 90);
     }
 
     Color certificateWarning() {
@@ -61,13 +64,44 @@ class TimelineTheme {
 
     Color[] barColors() {
         return new Color[]{
-                ModernColors.getPrimary(),
-                ModernColors.getSecondary(),
-                ModernColors.getAccent(),
-                ModernColors.getWarning(),
-                ModernColors.getError(),
-                ModernColors.getSuccess()
+                dnsLookupColor(),
+                socketConnectionColor(),
+                tlsHandshakeColor(),
+                requestSendColor(),
+                timeToFirstByteColor(),
+                contentDownloadColor()
         };
+    }
+
+    Color dnsLookupColor() {
+        return ModernColors.getPrimary();
+    }
+
+    Color socketConnectionColor() {
+        return ModernColors.getSecondary();
+    }
+
+    Color tlsHandshakeColor() {
+        return ModernColors.getAccent();
+    }
+
+    Color requestSendColor() {
+        return ModernColors.getNeutral();
+    }
+
+    Color timeToFirstByteColor() {
+        return ModernColors.getWarningDark();
+    }
+
+    Color contentDownloadColor() {
+        Color transferTeal = ModernColors.isDarkTheme()
+                ? CONTENT_DOWNLOAD_DARK
+                : CONTENT_DOWNLOAD_LIGHT;
+        return ModernColors.blendColors(
+                transferTeal,
+                ModernColors.getTextSecondary(),
+                ModernColors.isDarkTheme() ? 0.10f : 0.06f
+        );
     }
 
     Color hoveredBarBackground() {
@@ -76,10 +110,6 @@ class TimelineTheme {
 
     Color hoveredLabelText() {
         return ModernColors.getTextPrimary();
-    }
-
-    Color barShadow() {
-        return ModernColors.getShadowColor(ModernColors.isDarkTheme() ? 8 : 12);
     }
 
     Color hoveredBarOutline() {
@@ -97,15 +127,11 @@ class TimelineTheme {
         return ModernColors.getTextInverse();
     }
 
-    Color zeroDurationBar() {
-        return ModernColors.getBorderMediumColor();
-    }
-
     private Color sectionBackground() {
         return ModernColors.blendColors(
                 ModernColors.getCardBackgroundColor(),
                 ModernColors.getBackgroundColor(),
-                ModernColors.isDarkTheme() ? 0.45f : 0.35f
+                ModernColors.isDarkTheme() ? 0.32f : 0.18f
         );
     }
 }

@@ -30,14 +30,12 @@ public class IndicatorTabComponentThemeTest {
     }
 
     @Test
-    public void indicatorColorsShouldUseSuccessThemeTokens() {
-        Color success = new Color(21, 122, 23);
-        Color successBorder = new Color(11, 92, 12);
-        UIManager.put(ThemeColors.SUCCESS, success);
-        UIManager.put(ThemeColors.SUCCESS_DARK, successBorder);
+    public void indicatorColorsShouldUseContrastStableSuccessThemeToken() {
+        Color indicator = new Color(11, 92, 12);
+        UIManager.put(ThemeColors.SUCCESS_DARK, indicator);
 
-        assertEquals(IndicatorTabTheme.indicator(), success);
-        assertEquals(IndicatorTabTheme.indicatorBorder(), ModernColors.withAlpha(successBorder, 100));
+        assertEquals(IndicatorTabTheme.indicator(), indicator);
+        assertEquals(IndicatorTabTheme.indicatorBorder(), ModernColors.withAlpha(indicator, 100));
     }
 
     @Test

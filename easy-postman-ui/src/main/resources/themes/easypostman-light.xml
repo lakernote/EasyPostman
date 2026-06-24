@@ -10,83 +10,83 @@
 
 	<!-- General editor colors -->
 	<background color="FFFFFF" />
-	<caret color="000000" />
+	<caret color="111827" />
 	<selection useFG="false" bg="A6D2FF" roundedEdges="true" />
-	<currentLineHighlight color="F2F2F2" fade="true" />
-	<marginLine fg="E0E0E0" />
-	<markAllHighlight color="FFEAA7" />
-	<markOccurrencesHighlight color="E0E0E0" border="true" />
-	<matchedBracket fg="000000" bg="D4D4D4" highlightBoth="true" animate="true" />
-	<hyperlinks fg="0000FF" />
+	<currentLineHighlight color="F5F7FA" fade="true" />
+	<marginLine fg="E5E7EB" />
+	<markAllHighlight color="FFF3BF" />
+	<markOccurrencesHighlight color="E5E7EB" border="true" />
+	<matchedBracket fg="111827" bg="E8EEF7" highlightBoth="true" animate="true" />
+	<hyperlinks fg="1750EB" />
 
 	<!-- Secondary languages -->
 	<secondaryLanguages>
-		<language index="1" bg="F5F5F5" />
-		<language index="2" bg="F0F0F0" />
-		<language index="3" bg="EBEBEB" />
+		<language index="1" bg="F8FAFC" />
+		<language index="2" bg="F3F6FA" />
+		<language index="3" bg="EEF2F7" />
 	</secondaryLanguages>
 
 	<!-- Gutter styling -->
-	<gutterBorder color="E0E0E0" />
-	<lineNumbers fg="999999" />
-	<foldIndicator fg="808080" iconBg="FFFFFF" />
+	<gutterBorder color="E5E7EB" />
+	<lineNumbers fg="8A8F98" currentFG="6B7280" />
+	<foldIndicator fg="8A8F98" armedFg="6B7280" iconBg="FFFFFF" iconArmedBg="F5F7FA" />
 	<iconRowHeader activeLineRange="3592C4" />
 
 	<!-- Syntax tokens -->
 	<tokenStyles>
 		<!-- NULL - 行结束标记 -->
-		<style token="NULL" fg="000000" />
+		<style token="NULL" fg="111827" />
 
 		<!-- 注释 - 绿色系 -->
-		<style token="COMMENT_EOL" fg="008000" italic="true" />
-		<style token="COMMENT_MULTILINE" fg="008000" italic="true" />
-		<style token="COMMENT_DOCUMENTATION" fg="008000" italic="true" />
-		<style token="COMMENT_KEYWORD" fg="008000" bold="true" italic="true" />
-		<style token="COMMENT_MARKUP" fg="008000" italic="true" />
+		<style token="COMMENT_EOL" fg="5F6F64" italic="true" />
+		<style token="COMMENT_MULTILINE" fg="5F6F64" italic="true" />
+		<style token="COMMENT_DOCUMENTATION" fg="5F6F64" italic="true" />
+		<style token="COMMENT_KEYWORD" fg="5F6F64" bold="true" italic="true" />
+		<style token="COMMENT_MARKUP" fg="5F6F64" italic="true" />
 
 		<!-- 关键字 - 蓝色（JavaScript: function, var, const, let, if, else 等）-->
-		<style token="RESERVED_WORD" fg="0033B3" bold="true" />
-		<style token="RESERVED_WORD_2" fg="0033B3" bold="true" />
+		<style token="RESERVED_WORD" fg="5B3FD6" />
+		<style token="RESERVED_WORD_2" fg="5B3FD6" />
 
 		<!-- 函数/方法 - 橙色（JavaScript: console.log, Array.map 等）-->
-		<style token="FUNCTION" fg="FF6600" />
+		<style token="FUNCTION" fg="A35F00" />
 
 		<!-- 字面量 - 布尔值 (true, false) -->
-		<style token="LITERAL_BOOLEAN" fg="0033B3" bold="true" />
+		<style token="LITERAL_BOOLEAN" fg="B45309" />
 
 		<!-- 字面量 - 数字（所有进制）-->
-		<style token="LITERAL_NUMBER_DECIMAL_INT" fg="0000FF" />
-		<style token="LITERAL_NUMBER_FLOAT" fg="0000FF" />
-		<style token="LITERAL_NUMBER_HEXADECIMAL" fg="0000FF" />
+		<style token="LITERAL_NUMBER_DECIMAL_INT" fg="1750EB" />
+		<style token="LITERAL_NUMBER_FLOAT" fg="1750EB" />
+		<style token="LITERAL_NUMBER_HEXADECIMAL" fg="1750EB" />
 
 		<!-- 字符串 - 绿色（JavaScript 支持多种字符串）-->
-		<style token="LITERAL_STRING_DOUBLE_QUOTE" fg="008000" bold="true" />
-		<style token="LITERAL_CHAR" fg="008000" bold="true" />
-		<style token="LITERAL_BACKQUOTE" fg="008000" bold="true" />  <!-- ES6 模板字符串 -->
+		<style token="LITERAL_STRING_DOUBLE_QUOTE" fg="067D17" />
+		<style token="LITERAL_CHAR" fg="067D17" />
+		<style token="LITERAL_BACKQUOTE" fg="067D17" />  <!-- ES6 模板字符串 -->
 
 		<!-- 数据类型 - 深青色（Java: int, String, void 等）-->
 		<style token="DATA_TYPE" fg="000080" bold="true" />
 
 		<!-- 变量 - 紫色（Java: @Autowired, @Override 等相关）-->
-		<style token="VARIABLE" fg="660E7A" bold="true" />
+		<style token="VARIABLE" fg="6F2A8E" />
 
 		<!-- 正则表达式 - 深绿色 -->
-		<style token="REGEX" fg="009900" bold="true" />
+		<style token="REGEX" fg="067D17" />
 
 		<!-- 注解 - 黄褐色（Java: @Override, @Deprecated 等，用于 request、response 等 Postman 属性）-->
-		<style token="ANNOTATION" fg="808000" />
+		<style token="ANNOTATION" fg="8A6D00" />
 
 		<!-- 标识符 - 默认黑色（变量名、函数名等）-->
-		<style token="IDENTIFIER" fg="000000" />
+		<style token="IDENTIFIER" fg="111827" />
 
 		<!-- 空白 -->
-		<style token="WHITESPACE" fg="000000" />
+		<style token="WHITESPACE" fg="111827" />
 
 		<!-- 分隔符 - 黑色（括号、大括号、方括号等：{}[]()）-->
-		<style token="SEPARATOR" fg="000000" />
+		<style token="SEPARATOR" fg="1F2937" />
 
 		<!-- 操作符 - 黑色（+, -, *, /, =, ==, ===, !=, !==, &&, ||, !, ?, : 等）-->
-		<style token="OPERATOR" fg="000000" />
+		<style token="OPERATOR" fg="374151" />
 
 		<!-- 预处理器 - 灰色（C/C++: #include, #define 等）-->
 		<style token="PREPROCESSOR" fg="808080" />

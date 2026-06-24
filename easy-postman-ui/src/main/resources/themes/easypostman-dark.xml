@@ -49,14 +49,14 @@
 		<style token="COMMENT_MARKUP" fg="629755" italic="true" />
 
 		<!-- 关键字 - 橙色系（JavaScript: function, var, const, let, if, else 等）-->
-		<style token="RESERVED_WORD" fg="CF8E6D" bold="true" />
-		<style token="RESERVED_WORD_2" fg="CF8E6D" bold="true" />
+		<style token="RESERVED_WORD" fg="B392F0" />
+		<style token="RESERVED_WORD_2" fg="B392F0" />
 
 		<!-- 函数/方法 - 亮黄色（JavaScript: console.log, Array.map 等）-->
 		<style token="FUNCTION" fg="56A8F5" />
 
 		<!-- 字面量 - 布尔值 (true, false) -->
-		<style token="LITERAL_BOOLEAN" fg="CF8E6D" bold="true" />
+		<style token="LITERAL_BOOLEAN" fg="CF8E6D" />
 
 		<!-- 字面量 - 数字（所有进制）-->
 		<style token="LITERAL_NUMBER_DECIMAL_INT" fg="2AACB8" />

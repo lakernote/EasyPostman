@@ -69,6 +69,21 @@ public class TimelinePanelLayoutTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void zeroDurationStageShouldNotTriggerBarHover() {
+        TimelinePanel panel = new TimelinePanel(List.of(
+                new TimelinePanel.Stage("DNS解析", 0, 0, "DNS")
+        ), new HttpEventInfo());
+        Dimension preferredSize = panel.getPreferredSize();
+        panel.setSize(preferredSize);
+        int barCenterY = preferredSize.height - 36;
+
+        moveMouse(panel, 180, barCenterY);
+
+        assertEquals(panel.getCursor().getType(), Cursor.DEFAULT_CURSOR,
+                "Zero-duration stages should not expose hover affordance when no bar is drawn");
+    }
+
+    @Test
     public void connectionInfoTooltipShouldExposeFullTruncatedValues() {
         HttpEventInfo info = new HttpEventInfo();
         info.setRemoteAddress("very-long-hostname-for-debugging.example.internal/192.168.100.101:443");

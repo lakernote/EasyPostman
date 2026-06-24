@@ -27,10 +27,10 @@ final class ResponseTabBadgeController {
         }
         JButton headersButton = tabButtons[TAB_INDEX_RESPONSE_HEADERS];
         if (count > 0) {
-            String countText = " (" + count + ")";
+            String countText = " &middot; " + count;
             String countHtml = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS) +
-                    "<span style='color:" + ModernColors.toHtmlColor(ModernColors.getSuccess())
-                            + ";font-weight:bold;'>" + countText + "</span>";
+                    "<span style='color:" + ModernColors.toHtmlColor(ModernColors.getTextSecondary())
+                            + ";'>" + countText + "</span>";
             setTabText(headersButton, "<html>" + countHtml + "</html>");
             return;
         }
@@ -44,10 +44,10 @@ final class ResponseTabBadgeController {
         JButton testsButton = tabButtons[TAB_INDEX_TESTS];
         if (testResults != null && !testResults.isEmpty()) {
             boolean allPassed = testResults.stream().allMatch(r -> r.passed);
-            String countText = " (" + testResults.size() + ")";
+            String countText = " &middot; " + testResults.size();
             String color = ModernColors.toHtmlColor(allPassed ? ModernColors.getSuccess() : ModernColors.getError());
             String countHtml = I18nUtil.getMessage(MessageKeys.TAB_TESTS) +
-                    "<span style='color:" + color + ";font-weight:bold;'>" + countText + "</span>";
+                    "<span style='color:" + color + ";'>" + countText + "</span>";
             setTabText(testsButton, "<html>" + countHtml + "</html>");
             return;
         }

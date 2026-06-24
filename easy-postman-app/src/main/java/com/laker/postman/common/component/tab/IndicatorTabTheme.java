@@ -8,7 +8,7 @@ import java.awt.Color;
 @UtilityClass
 class IndicatorTabTheme {
     Color indicator() {
-        return ModernColors.getSuccess();
+        return ModernColors.getSuccessDark();
     }
 
     Color indicatorBorder() {

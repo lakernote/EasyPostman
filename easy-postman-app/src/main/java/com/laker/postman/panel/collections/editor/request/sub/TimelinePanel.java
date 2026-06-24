@@ -123,7 +123,8 @@ public class TimelinePanel extends JPanel {
         for (int i = 0; i < stages.size(); i++) {
             int barBottom = barY + BAR_HEIGHT;
             if (p.y >= barY && p.y <= barBottom) {
-                return i;
+                Stage stage = stages.get(i);
+                return stage.end > stage.start ? i : -1;
             }
             barY += BAR_HEIGHT + BAR_GAP;
         }
@@ -223,31 +224,40 @@ public class TimelinePanel extends JPanel {
         int stageLabelX = sectionX + LABEL_LEFT_PAD;
         int barStartX = stageLabelX + labelMaxWidth + LABEL_RIGHT_PAD;
         int panelW = getWidth();
-        int minBarSum = MIN_BAR_WIDTH * n;
+        int visibleBarCount = 0;
+        for (Stage stage : stages) {
+            if (stage.end > stage.start) {
+                visibleBarCount++;
+            }
+        }
+        int minBarSum = MIN_BAR_WIDTH * visibleBarCount;
         int availableBarSum = Math.max(
                 minBarSum,
                 panelW - barStartX - RIGHT_PAD
         );
         int totalBarSum = 0;
-        long totalDuration = total > 0 ? total : 1;
+        long displayTotalDuration = Math.max(0, total);
+        long ratioTotalDuration = displayTotalDuration > 0 ? displayTotalDuration : 1;
         int[] barWidths = new int[n];
         // 先按比例分配理论宽度
         for (int i = 0; i < n; i++) {
             long duration = Math.max(0, stages.get(i).end - stages.get(i).start);
-            double ratio = (double) duration / totalDuration;
             if (duration == 0) {
-                barWidths[i] = 2;
+                barWidths[i] = 0;
             } else {
+                double ratio = (double) duration / ratioTotalDuration;
                 barWidths[i] = MIN_BAR_WIDTH + (int) Math.round(ratio * (availableBarSum - minBarSum));
             }
             totalBarSum += barWidths[i];
         }
         // 如果总宽度超出可用宽度，则按比例缩小
-        if (totalBarSum > availableBarSum) {
+        if (totalBarSum > availableBarSum && totalBarSum > 0) {
             double scale = (double) availableBarSum / totalBarSum;
             totalBarSum = 0;
             for (int i = 0; i < n; i++) {
-                barWidths[i] = Math.max(MIN_BAR_WIDTH, (int) Math.round(barWidths[i] * scale));
+                if (barWidths[i] > 0) {
+                    barWidths[i] = Math.max(MIN_BAR_WIDTH, (int) Math.round(barWidths[i] * scale));
+                }
                 totalBarSum += barWidths[i];
             }
         }
@@ -258,7 +268,7 @@ public class TimelinePanel extends JPanel {
         int currentX = barStartX;
         int trackRightX = Math.max(barStartX + MIN_BAR_WIDTH, panelW - RIGHT_PAD);
         int trackWidth = Math.max(MIN_BAR_WIDTH, trackRightX - barStartX);
-        drawScaleHeader(g2, stageLabelX, barStartX, trackWidth, barAreaTop, totalDuration);
+        drawScaleHeader(g2, stageLabelX, barStartX, trackWidth, barAreaTop, displayTotalDuration);
 
         // 计算文字垂直居中的位置
         g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -306,36 +316,14 @@ public class TimelinePanel extends JPanel {
                 g2.drawLine(gridX, barY + 2, gridX, barY + BAR_HEIGHT - 2);
             }
 
-            // bar 区域 - 优化渐变和阴影效果
-            if (barW <= 3) {
-                g2.setColor(TimelineTheme.zeroDurationBar());
-                g2.fillRoundRect(currentX, barY + 2, Math.max(2, barW), BAR_HEIGHT - 4, 3, 3);
-            } else {
-                g2.setColor(TimelineTheme.barShadow());
-                g2.fillRoundRect(currentX + 1, barY + 1, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
-
-                // 使用垂直渐变，从稍亮到稍暗
-                float brightnessMultiplier = 1.1f;
-                float darknessMultiplier = 0.85f;
-
-                // 悬停时增强颜色亮度
-                if (isHovered) {
-                    brightnessMultiplier *= 1.1f;
-                    darknessMultiplier *= 0.95f;
-                }
-
-                Color topColor = brighter(color, brightnessMultiplier);
-                Color bottomColor = darker(color, darknessMultiplier);
-
-                GradientPaint gp = new GradientPaint(
-                        currentX, (float) barY, topColor,
-                        currentX, (float) (barY + BAR_HEIGHT), bottomColor
-                );
-                g2.setPaint(gp);
+            // bar 区域：保持扁平语义色，避免把耗时阶段画成过重的状态卡片。
+            long duration = Math.max(0, s.end - s.start);
+            if (duration > 0) {
+                g2.setColor(color);
                 g2.fillRoundRect(currentX, barY, barW, BAR_HEIGHT, BAR_RADIUS, BAR_RADIUS);
 
                 g2.setColor(TimelineTheme.barHighlight(isHovered));
-                g2.fillRoundRect(currentX, barY, barW, 2, BAR_RADIUS, BAR_RADIUS);
+                g2.fillRoundRect(currentX, barY, barW, 1, BAR_RADIUS, BAR_RADIUS);
 
                 // 悬停时添加外边框高亮
                 if (isHovered) {
@@ -346,13 +334,13 @@ public class TimelinePanel extends JPanel {
             }
 
             // 耗时始终在bar内右侧，bar太窄则不显示
-            String ms = (s.end - s.start) + "ms";
+            String ms = duration + "ms";
             g2.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
             int strW = g2.getFontMetrics().stringWidth(ms);
-            if (barW > strW + 12) {
+            if (duration > 0 && barW > strW + 12) {
                 g2.setColor(TimelineTheme.barText());
                 g2.drawString(ms, currentX + barW - strW - 6, barY + textYOffset);
-            } else if (s.end > s.start) {
+            } else if (duration > 0) {
                 g2.setColor(TimelineTheme.infoText());
                 int outsideX = currentX + barW + 6;
                 int maxOutsideX = trackRightX - strW - 4;
@@ -361,7 +349,7 @@ public class TimelinePanel extends JPanel {
                 }
             }
             // 只有非0ms阶段才递增currentX
-            if (barW > 3) {
+            if (duration > 0) {
                 currentX += barW;
             }
         }
@@ -597,26 +585,6 @@ public class TimelinePanel extends JPanel {
                 .replace(">", "&gt;")
                 .replace("\"", "&quot;")
                 .replace("'", "&#39;");
-    }
-
-    /**
-     * 调整颜色使其变亮
-     */
-    private Color brighter(Color color, float factor) {
-        int r = Math.min(255, (int) (color.getRed() * factor));
-        int g = Math.min(255, (int) (color.getGreen() * factor));
-        int b = Math.min(255, (int) (color.getBlue() * factor));
-        return new Color(r, g, b);
-    }
-
-    /**
-     * 调整颜色使其变暗
-     */
-    private Color darker(Color color, float factor) {
-        int r = (int) (color.getRed() * factor);
-        int g = (int) (color.getGreen() * factor);
-        int b = (int) (color.getBlue() * factor);
-        return new Color(r, g, b);
     }
 
     // 计算两列摘要区实际行数（用于动态布局）

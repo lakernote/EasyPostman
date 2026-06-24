@@ -37,6 +37,10 @@ final class RequestTabStateController {
                 addDocumentListener(view.requestBodyPanel.getBodyArea().getDocument(), dirtyAction);
                 view.requestBodyPanel.getBodyArea().getDocument().addDocumentListener(createDocumentListener(this::updateTabIndicators));
             }
+            if (view.requestBodyPanel.getBinaryFilePathField() != null) {
+                addDocumentListener(view.requestBodyPanel.getBinaryFilePathField().getDocument(), dirtyAction);
+                view.requestBodyPanel.getBinaryFilePathField().getDocument().addDocumentListener(createDocumentListener(this::updateTabIndicators));
+            }
             if (view.requestBodyPanel.getFormDataTablePanel() != null) {
                 view.requestBodyPanel.getFormDataTablePanel().addTableModelListener(e -> dirtyAction.run());
                 view.requestBodyPanel.getFormDataTablePanel().addTableModelListener(e -> updateTabIndicators());
@@ -90,7 +94,7 @@ final class RequestTabStateController {
                 .params(view.paramsPanel.getParamsListFromModel())
                 .headers(view.headersPanel.getHeadersListFromModel())
                 .bodyType(view.requestBodyPanel.getBodyType())
-                .body(view.requestBodyPanel.getRawBody())
+                .body(readBody())
                 .formData(readFormDataFromModel())
                 .urlencoded(readUrlencodedFromModel())
                 .authType(view.authTabPanel.getAuthType())
@@ -113,6 +117,10 @@ final class RequestTabStateController {
     private List<HttpFormData> readFormDataFromModel() {
         FormDataTablePanel formDataPanel = view.requestBodyPanel.getFormDataTablePanel();
         return formDataPanel == null ? new ArrayList<>() : formDataPanel.getFormDataListFromModel();
+    }
+
+    private String readBody() {
+        return view.requestBodyPanel.getBodyContent(view.requestBodyPanel.getBodyType());
     }
 
     private List<HttpFormUrlencoded> readUrlencodedFromModel() {

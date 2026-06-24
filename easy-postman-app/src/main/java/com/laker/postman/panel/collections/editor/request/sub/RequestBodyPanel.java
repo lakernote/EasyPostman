@@ -11,6 +11,7 @@ import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.*;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.component.table.FormDataTablePanel;
 import com.laker.postman.common.component.table.FormUrlencodedTablePanel;
 import com.laker.postman.service.variable.VariableResolver;
@@ -32,6 +33,7 @@ import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
 import java.awt.*;
 import java.awt.event.*;
+import java.io.File;
 import java.util.Optional;
 
 /**
@@ -39,10 +41,14 @@ import java.util.Optional;
  */
 @Slf4j
 public class RequestBodyPanel extends JPanel {
+    private static final int BINARY_FILE_FIELD_COLUMNS = 56;
+    private static final int BINARY_FILE_FIELD_MAX_WIDTH = 640;
+
     public static final String BODY_TYPE_NONE = RequestBodyTypes.BODY_TYPE_NONE;
     public static final String BODY_TYPE_FORM_DATA = RequestBodyTypes.BODY_TYPE_FORM_DATA;
     public static final String BODY_TYPE_FORM_URLENCODED = RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
     public static final String BODY_TYPE_RAW = RequestBodyTypes.BODY_TYPE_RAW;
+    public static final String BODY_TYPE_BINARY = RequestBodyTypes.BODY_TYPE_BINARY;
     public static final String RAW_TYPE_JSON = RequestBodyTypes.RAW_TYPE_JSON;
     public static final String RAW_TYPE_TEXT = RequestBodyTypes.RAW_TYPE_TEXT;
     public static final String RAW_TYPE_XML = RequestBodyTypes.RAW_TYPE_XML;
@@ -57,6 +63,17 @@ public class RequestBodyPanel extends JPanel {
     private FormUrlencodedTablePanel formUrlencodedTablePanel;
     @Getter
     private RSyntaxTextArea bodyArea;
+    @Getter
+    private JTextField binaryFilePathField;
+    @Getter
+    private JButton binaryBrowseButton;
+    @Getter
+    private JButton binaryClearButton;
+    @Getter
+    private JLabel binaryFileSummaryLabel;
+    private Icon binaryEmptyIcon;
+    private Icon binaryFileIcon;
+    private Icon binaryWarningIcon;
     private CardLayout bodyCardLayout;
     private JPanel bodyCardPanel;
     private String currentBodyType = BODY_TYPE_NONE;
@@ -107,7 +124,7 @@ public class RequestBodyPanel extends JPanel {
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.X_AXIS));
         topPanel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 0));
 
-        String[] bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW};
+        String[] bodyTypes = new String[]{BODY_TYPE_NONE, BODY_TYPE_FORM_DATA, BODY_TYPE_FORM_URLENCODED, BODY_TYPE_RAW, BODY_TYPE_BINARY};
         bodyTypeComboBox = new EasyComboBox<>(bodyTypes, EasyComboBox.WidthMode.DYNAMIC);
         bodyTypeComboBox.setSelectedItem(currentBodyType);
         bodyTypeComboBox.addActionListener(e -> switchBodyType((String) bodyTypeComboBox.getSelectedItem()));
@@ -167,6 +184,7 @@ public class RequestBodyPanel extends JPanel {
         bodyCardPanel.add(createFormDataPanel(), BODY_TYPE_FORM_DATA);
         bodyCardPanel.add(createFormUrlencodedPanel(), BODY_TYPE_FORM_URLENCODED);
         bodyCardPanel.add(createRawPanel(), BODY_TYPE_RAW);
+        bodyCardPanel.add(createBinaryPanel(), BODY_TYPE_BINARY);
         add(bodyCardPanel, BorderLayout.CENTER);
         bulkEditSupport = new RequestBodyBulkEditSupport(this, formDataTablePanel, formUrlencodedTablePanel);
         bodyCardLayout.show(bodyCardPanel, currentBodyType);
@@ -364,6 +382,104 @@ public class RequestBodyPanel extends JPanel {
             });
         }
         return panel;
+    }
+
+    private JPanel createBinaryPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        ToolWindowSurfaceStyle.applyCard(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(10, 12, 12, 12));
+
+        JPanel filePickerPanel = new JPanel(new GridBagLayout());
+        filePickerPanel.setOpaque(false);
+
+        binaryFilePathField = new JTextField();
+        binaryFilePathField.setColumns(BINARY_FILE_FIELD_COLUMNS);
+        binaryFilePathField.getAccessibleContext().setAccessibleName(
+                I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_FILE));
+        binaryFilePathField.putClientProperty("JTextField.placeholderText",
+                I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_PLACEHOLDER));
+        capBinaryFilePathFieldWidth();
+
+        binaryBrowseButton = new JButton(
+                I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_BROWSE),
+                IconUtil.createThemed("icons/file.svg", 16, 16)
+        );
+        binaryBrowseButton.setToolTipText(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_SELECT_FILE));
+        binaryBrowseButton.addActionListener(e -> chooseBinaryFile());
+
+        binaryClearButton = new ClearButton(16);
+        binaryClearButton.setToolTipText(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_CLEAR_TOOLTIP));
+        binaryClearButton.getAccessibleContext().setAccessibleName(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_CLEAR));
+        binaryClearButton.addActionListener(e -> setBinaryFilePath(""));
+
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        actionPanel.setOpaque(false);
+        actionPanel.add(binaryBrowseButton);
+        actionPanel.add(binaryClearButton);
+
+        binaryFileSummaryLabel = new JLabel();
+        binaryFileSummaryLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        binaryEmptyIcon = IconUtil.createThemed("icons/info.svg", 14, 14);
+        binaryFileIcon = IconUtil.createPrimary("icons/file.svg", 14, 14);
+        binaryWarningIcon = IconUtil.createColored("icons/warning.svg", 14, 14, ModernColors.getError());
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        filePickerPanel.add(binaryFilePathField, gbc);
+
+        gbc = new GridBagConstraints();
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.anchor = GridBagConstraints.EAST;
+        gbc.insets = new Insets(0, 8, 0, 0);
+        filePickerPanel.add(actionPanel, gbc);
+
+        gbc = new GridBagConstraints();
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        gbc.weightx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        filePickerPanel.add(Box.createHorizontalGlue(), gbc);
+
+        gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(6, 0, 0, 0);
+        filePickerPanel.add(binaryFileSummaryLabel, gbc);
+
+        binaryFilePathField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateBinaryFileSummary();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateBinaryFileSummary();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateBinaryFileSummary();
+            }
+        });
+        updateBinaryFileSummary();
+
+        panel.add(filePickerPanel, BorderLayout.NORTH);
+        return panel;
+    }
+
+    private void capBinaryFilePathFieldWidth() {
+        Dimension preferredSize = binaryFilePathField.getPreferredSize();
+        if (preferredSize.width <= BINARY_FILE_FIELD_MAX_WIDTH) {
+            return;
+        }
+        binaryFilePathField.setPreferredSize(new Dimension(BINARY_FILE_FIELD_MAX_WIDTH, preferredSize.height));
     }
 
     private class VariableAwareSyntaxTextArea extends RSyntaxTextArea {
@@ -610,6 +726,81 @@ public class RequestBodyPanel extends JPanel {
         return bodyArea != null ? bodyArea.getText() : null;
     }
 
+    public String getBodyContent(String bodyType) {
+        if (BODY_TYPE_RAW.equals(bodyType)) {
+            return getRawBody();
+        }
+        if (BODY_TYPE_BINARY.equals(bodyType)) {
+            return getBinaryFilePath();
+        }
+        return "";
+    }
+
+    public String getBinaryFilePath() {
+        return binaryFilePathField != null ? binaryFilePathField.getText() : "";
+    }
+
+    public void setBinaryFilePath(String filePath) {
+        if (binaryFilePathField != null) {
+            binaryFilePathField.setText(filePath == null ? "" : filePath);
+            binaryFilePathField.setCaretPosition(binaryFilePathField.getDocument().getLength());
+            updateBinaryFileSummary();
+        }
+    }
+
+    private void chooseBinaryFile() {
+        Optional<File> selectedFile = FileChooserUtil.showOpenFile(
+                this,
+                "request.body.binary",
+                I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_SELECT_FILE)
+        );
+        selectedFile.ifPresent(file -> setBinaryFilePath(file.getAbsolutePath()));
+    }
+
+    private void updateBinaryFileSummary() {
+        if (binaryFilePathField == null || binaryFileSummaryLabel == null) {
+            return;
+        }
+        String filePath = binaryFilePathField.getText();
+        String trimmedPath = filePath == null ? "" : filePath.trim();
+        boolean hasPath = CharSequenceUtil.isNotBlank(trimmedPath);
+        if (binaryClearButton != null) {
+            binaryClearButton.setEnabled(editable && hasPath);
+        }
+        binaryFilePathField.setToolTipText(hasPath
+                ? trimmedPath
+                : I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_PLACEHOLDER));
+        binaryFileSummaryLabel.setToolTipText(hasPath ? trimmedPath : null);
+        if (!hasPath) {
+            binaryFileSummaryLabel.setText(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_NO_FILE));
+            binaryFileSummaryLabel.setForeground(ModernColors.getTextHint());
+            binaryFileSummaryLabel.setIcon(binaryEmptyIcon);
+            return;
+        }
+        File file = FileMimeTypeUtil.toFile(trimmedPath);
+        if (FileMimeTypeUtil.isReadableRegularFile(file)) {
+            binaryFileSummaryLabel.setText(I18nUtil.getMessage(
+                    MessageKeys.REQUEST_BODY_BINARY_FILE_SUMMARY,
+                    file.getName(),
+                    formatBinaryFileSize(file.length()),
+                    FileMimeTypeUtil.detectMimeType(file)
+            ));
+            binaryFileSummaryLabel.setForeground(ModernColors.getTextSecondary());
+            binaryFileSummaryLabel.setIcon(binaryFileIcon);
+            return;
+        }
+        binaryFileSummaryLabel.setText(I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_FILE_MISSING));
+        binaryFileSummaryLabel.setForeground(ModernColors.getError());
+        binaryFileSummaryLabel.setIcon(binaryWarningIcon);
+    }
+
+    private static String formatBinaryFileSize(long sizeBytes) {
+        if (sizeBytes <= Integer.MAX_VALUE) {
+            return FileSizeDisplayUtil.formatSize((int) sizeBytes);
+        }
+        return String.format("%.2f GB", sizeBytes / (1024.0 * 1024 * 1024));
+    }
+
     /**
      * 程序性加载请求体内容时必须重置撤销历史。
      * <p>
@@ -643,6 +834,16 @@ public class RequestBodyPanel extends JPanel {
         }
         if (bodyArea != null) {
             bodyArea.setEditable(editable);
+        }
+        if (binaryFilePathField != null) {
+            binaryFilePathField.setEditable(editable);
+            binaryFilePathField.setEnabled(editable);
+        }
+        if (binaryBrowseButton != null) {
+            binaryBrowseButton.setEnabled(editable);
+        }
+        if (binaryClearButton != null) {
+            binaryClearButton.setEnabled(editable && CharSequenceUtil.isNotBlank(getBinaryFilePath()));
         }
         if (bulkEditButton != null) {
             bulkEditButton.setVisible(editable && (BODY_TYPE_FORM_DATA.equals(currentBodyType)

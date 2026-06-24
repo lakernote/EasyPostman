@@ -30,6 +30,12 @@ class CurlDataMapper {
             return;
         }
 
+        if (options.binaryDataFilePath != null && !options.binaryDataFilePath.isBlank()) {
+            req.binaryBody = true;
+            req.body = options.binaryDataFilePath;
+            return;
+        }
+
         String contentType = CurlHeaderSupport.findEnabledHeaderValue(req.headersList, CONTENT_TYPE);
         if (contentType == null || contentType.isEmpty()) {
             if (allDataParamsAreKeyValue(options)) {

@@ -58,6 +58,10 @@ final class RequestEditorDefaultTabSelector {
             RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsTabPanel, view.requestBodyPanel);
             return;
         }
+        if (RequestBodyPanel.BODY_TYPE_BINARY.equals(bodyType)) {
+            RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsTabPanel);
+            return;
+        }
         if (CharSequenceUtil.isNotBlank(body) && !RequestBodyPanel.BODY_TYPE_NONE.equals(bodyType)) {
             RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsTabPanel);
             return;

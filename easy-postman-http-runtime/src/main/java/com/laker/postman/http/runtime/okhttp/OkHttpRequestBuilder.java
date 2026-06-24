@@ -5,7 +5,7 @@ import com.laker.postman.request.model.HttpHeader;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpFormUrlencoded;
 
-
+import com.laker.postman.util.FileMimeTypeUtil;
 import com.laker.postman.util.JsonUtil;
 import lombok.experimental.UtilityClass;
 import okhttp3.*;
@@ -13,7 +13,6 @@ import okhttp3.*;
 import java.io.File;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.util.List;
 
 /**
@@ -25,12 +24,11 @@ public class OkHttpRequestBuilder {
     private static final String CONTENT_TYPE = "Content-Type";
     private static final String DEFAULT_JSON_CONTENT_TYPE = "application/json; charset=utf-8";
     private static final String DEFAULT_FORM_CONTENT_TYPE = "application/x-www-form-urlencoded; charset=UTF-8";
-    private static final String DEFAULT_MIME_TYPE = "application/octet-stream";
+    private static final String DEFAULT_MIME_TYPE = FileMimeTypeUtil.DEFAULT_MIME_TYPE;
     private static final String APPLICATION_JSON = "application/json";
     private static final String METHOD_GET = "GET";
     private static final String METHOD_HEAD = "HEAD";
     private static final byte[] EMPTY_BODY = new byte[0];
-
 
     /**
      * 构建普通请求
@@ -39,6 +37,23 @@ public class OkHttpRequestBuilder {
         String methodUpper = req.method.toUpperCase();
         String contentType = extractContentType(req.headersList);
         RequestBody requestBody = buildRequestBody(req.body, methodUpper, contentType);
+
+        Request.Builder builder = new Request.Builder()
+                .url(req.url)
+                .method(methodUpper, requestBody);
+
+        addHeadersFromList(builder, req.headersList);
+
+        return builder.build();
+    }
+
+    /**
+     * 构建 binary 请求。req.body 保存本地文件路径，HTTP body 发送文件原始字节。
+     */
+    public static Request buildBinaryRequest(PreparedRequest req) {
+        String methodUpper = req.method.toUpperCase();
+        String contentType = extractContentType(req.headersList);
+        RequestBody requestBody = buildBinaryRequestBody(req.body, methodUpper, contentType);
 
         Request.Builder builder = new Request.Builder()
                 .url(req.url)
@@ -119,6 +134,24 @@ public class OkHttpRequestBuilder {
         }
 
         return createEmptyRequestBody(contentType);
+    }
+
+    private static RequestBody buildBinaryRequestBody(String filePath, String method, String contentType) {
+        if (METHOD_GET.equals(method) || METHOD_HEAD.equals(method)) {
+            return null;
+        }
+
+        if (filePath == null || filePath.isBlank()) {
+            return createEmptyRequestBody(contentType != null ? contentType : DEFAULT_MIME_TYPE);
+        }
+
+        File file = FileMimeTypeUtil.toFile(filePath);
+        if (!FileMimeTypeUtil.isReadableRegularFile(file)) {
+            throw new IllegalArgumentException("Binary request body file does not exist: " + filePath);
+        }
+
+        String actualContentType = contentType != null ? contentType : detectMimeType(file);
+        return RequestBody.create(file, MediaType.parse(actualContentType));
     }
 
     /**
@@ -207,14 +240,8 @@ public class OkHttpRequestBuilder {
      * 检测文件 MIME 类型
      */
     private static String detectMimeType(File file) {
-        try {
-            String mimeType = Files.probeContentType(file.toPath());
-            return mimeType != null ? mimeType : DEFAULT_MIME_TYPE;
-        } catch (Exception e) {
-            return DEFAULT_MIME_TYPE;
-        }
+        return FileMimeTypeUtil.detectMimeType(file);
     }
-
 
     /**
      * 判断 header name 是否为合法的 ASCII 字符且不包含非法字符
@@ -287,8 +314,8 @@ public class OkHttpRequestBuilder {
             } else if (formData.isFile()) {
                 String filePath = formData.getValue();
                 if (filePath != null && !filePath.isEmpty()) {
-                    File file = new File(filePath);
-                    if (file.exists() && file.isFile()) {
+                    File file = FileMimeTypeUtil.toFile(filePath);
+                    if (FileMimeTypeUtil.isReadableRegularFile(file)) {
                         String mimeType = detectMimeType(file);
                         builder.addFormDataPart(
                                 key,

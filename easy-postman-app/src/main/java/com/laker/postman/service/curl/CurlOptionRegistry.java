@@ -19,7 +19,7 @@ class CurlOptionRegistry {
         register("data", 'd', CurlOptionValueMode.REQUIRED, CurlOptionAction.DATA);
         register("data-ascii", null, CurlOptionValueMode.REQUIRED, CurlOptionAction.DATA);
         register("data-raw", null, CurlOptionValueMode.REQUIRED, CurlOptionAction.DATA);
-        register("data-binary", null, CurlOptionValueMode.REQUIRED, CurlOptionAction.DATA);
+        register("data-binary", null, CurlOptionValueMode.REQUIRED, CurlOptionAction.DATA_BINARY);
         register("data-urlencode", null, CurlOptionValueMode.REQUIRED, CurlOptionAction.DATA_URLENCODE);
         register("json", null, CurlOptionValueMode.REQUIRED, CurlOptionAction.DATA);
         register("form", 'F', CurlOptionValueMode.REQUIRED, CurlOptionAction.FORM);

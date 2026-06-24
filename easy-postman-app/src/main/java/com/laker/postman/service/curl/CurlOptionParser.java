@@ -142,6 +142,15 @@ class CurlOptionParser {
                     }
                 }
             }
+            case DATA_BINARY -> {
+                if (value != null) {
+                    if (value.startsWith("@") && value.length() > 1) {
+                        options.binaryDataFilePath = value.substring(1);
+                    } else {
+                        options.dataParams.add(value);
+                    }
+                }
+            }
             case DATA_URLENCODE -> {
                 if (value != null) {
                     options.dataUrlencodeParams.add(value);

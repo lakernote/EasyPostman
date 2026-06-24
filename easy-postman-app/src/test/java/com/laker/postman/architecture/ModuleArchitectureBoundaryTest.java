@@ -441,6 +441,7 @@ public class ModuleArchitectureBoundaryTest {
         Path root = repositoryRoot();
         List<String> utilityFiles = List.of(
                 "FileExtensionUtil.java",
+                "FileMimeTypeUtil.java",
                 "FileSizeDisplayUtil.java",
                 "HttpHeaderConstants.java",
                 "CronExpressionUtil.java",

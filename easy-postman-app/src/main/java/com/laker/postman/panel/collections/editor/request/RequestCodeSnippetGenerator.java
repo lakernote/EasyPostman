@@ -10,6 +10,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestAuthTypes;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.request.util.HttpUrlUtil;
+import com.laker.postman.util.FileMimeTypeUtil;
 import lombok.experimental.UtilityClass;
 
 import java.nio.charset.StandardCharsets;
@@ -19,6 +20,9 @@ import java.util.List;
 
 @UtilityClass
 class RequestCodeSnippetGenerator {
+    private static final String CONTENT_TYPE = "Content-Type";
+    private static final String FORM_URLENCODED_CONTENT_TYPE = "application/x-www-form-urlencoded";
+
     static String generate(HttpRequestItem request, RequestCodeSnippetLanguage language) {
         if (request == null) {
             return "";
@@ -45,7 +49,9 @@ class RequestCodeSnippetGenerator {
             code.append(" \\\n  -H ").append(shellQuote(header.getKey() + ": " + nullToEmpty(header.getValue())));
         }
 
-        if (RequestBodyTypes.BODY_TYPE_FORM_DATA.equals(request.getBodyType())) {
+        if (hasBinaryBody(request)) {
+            code.append(" \\\n  --data-binary ").append(shellQuote("@" + request.getBody()));
+        } else if (isFormDataBody(request)) {
             for (HttpFormData item : enabledFormData(request)) {
                 String value = item.isFile()
                         ? item.getKey() + "=@" + nullToEmpty(item.getValue())
@@ -70,7 +76,15 @@ class RequestCodeSnippetGenerator {
 
         String bodyVariable = "null";
         String bodyType = request.getBodyType();
-        if (RequestBodyTypes.BODY_TYPE_FORM_DATA.equals(bodyType) && !enabledFormData(request).isEmpty()) {
+        if (hasBinaryBody(request)) {
+            code.append("MediaType mediaType = MediaType.parse(")
+                    .append(javaString(contentType(request)))
+                    .append(");\n")
+                    .append("RequestBody body = RequestBody.create(new File(")
+                    .append(javaString(request.getBody()))
+                    .append("), mediaType);\n");
+            bodyVariable = "body";
+        } else if (RequestBodyTypes.BODY_TYPE_FORM_DATA.equals(bodyType) && !enabledFormData(request).isEmpty()) {
             code.append("RequestBody body = new MultipartBody.Builder().setType(MultipartBody.FORM)");
             for (HttpFormData item : enabledFormData(request)) {
                 if (item.isFile()) {
@@ -80,7 +94,9 @@ class RequestCodeSnippetGenerator {
                             .append(javaString(nullToEmpty(item.getValue())))
                             .append(", RequestBody.create(new File(")
                             .append(javaString(nullToEmpty(item.getValue())))
-                            .append("), MediaType.parse(\"application/octet-stream\")))");
+                            .append("), MediaType.parse(")
+                            .append(javaString(FileMimeTypeUtil.detectMimeType(item.getValue())))
+                            .append(")))");
                 } else {
                     code.append("\n    .addFormDataPart(")
                             .append(javaString(item.getKey()))
@@ -127,7 +143,7 @@ class RequestCodeSnippetGenerator {
 
     private static String generateJavaScriptFetch(HttpRequestItem request) {
         StringBuilder code = new StringBuilder();
-        if (RequestBodyTypes.BODY_TYPE_FORM_DATA.equals(request.getBodyType()) && !enabledFormData(request).isEmpty()) {
+        if (hasFormDataBody(request)) {
             code.append("const formData = new FormData();\n");
             for (HttpFormData item : enabledFormData(request)) {
                 if (item.isFile()) {
@@ -142,6 +158,11 @@ class RequestCodeSnippetGenerator {
                         .append(");\n");
             }
             code.append("\n");
+        } else if (hasBinaryBody(request)) {
+            code.append("// Node.js: import { readFile } from \"node:fs/promises\";\n")
+                    .append("const binaryBody = await readFile(")
+                    .append(jsString(request.getBody()))
+                    .append(");\n\n");
         }
 
         code.append("const response = await fetch(")
@@ -165,8 +186,10 @@ class RequestCodeSnippetGenerator {
             }
             code.append("  }");
         }
-        if (RequestBodyTypes.BODY_TYPE_FORM_DATA.equals(request.getBodyType()) && !enabledFormData(request).isEmpty()) {
+        if (hasFormDataBody(request)) {
             code.append(",\n  body: formData");
+        } else if (hasBinaryBody(request)) {
+            code.append(",\n  body: binaryBody");
         } else if (CharSequenceUtil.isNotBlank(bodyPayload(request))) {
             code.append(",\n  body: ").append(jsString(bodyPayload(request)));
         }
@@ -190,7 +213,8 @@ class RequestCodeSnippetGenerator {
             code.append("}\n");
         }
 
-        boolean hasFormData = RequestBodyTypes.BODY_TYPE_FORM_DATA.equals(request.getBodyType()) && !enabledFormData(request).isEmpty();
+        boolean hasBinaryBody = hasBinaryBody(request);
+        boolean hasFormData = hasFormDataBody(request);
         if (hasFormData) {
             List<HttpFormData> textParts = enabledFormData(request).stream().filter(HttpFormData::isText).toList();
             List<HttpFormData> fileParts = enabledFormData(request).stream().filter(HttpFormData::isFile).toList();
@@ -216,6 +240,10 @@ class RequestCodeSnippetGenerator {
                 }
                 code.append("}\n");
             }
+        } else if (hasBinaryBody) {
+            code.append("payload = open(")
+                    .append(pyString(request.getBody()))
+                    .append(", \"rb\")\n");
         } else if (CharSequenceUtil.isNotBlank(bodyPayload(request))) {
             code.append("payload = ").append(pyString(bodyPayload(request))).append("\n");
         }
@@ -235,6 +263,8 @@ class RequestCodeSnippetGenerator {
             if (enabledFormData(request).stream().anyMatch(HttpFormData::isFile)) {
                 code.append(",\n    files=files");
             }
+        } else if (hasBinaryBody) {
+            code.append(",\n    data=payload");
         } else if (CharSequenceUtil.isNotBlank(bodyPayload(request))) {
             code.append(",\n    data=payload");
         }
@@ -259,11 +289,12 @@ class RequestCodeSnippetGenerator {
                 && headers.stream().noneMatch(header -> authHeader.getKey().equalsIgnoreCase(header.getKey()))) {
             headers.add(authHeader);
         }
-        if (headers.stream().noneMatch(header -> "Content-Type".equalsIgnoreCase(header.getKey()))) {
+        if (headers.stream().noneMatch(header -> CONTENT_TYPE.equalsIgnoreCase(header.getKey()))) {
             String payload = bodyPayload(request);
             if (CharSequenceUtil.isNotBlank(payload)
-                    || RequestBodyTypes.BODY_TYPE_FORM_URLENCODED.equals(request.getBodyType())) {
-                headers.add(new HttpHeader(true, "Content-Type", contentType(request), ""));
+                    || RequestBodyTypes.BODY_TYPE_FORM_URLENCODED.equals(request.getBodyType())
+                    || hasBinaryBody(request)) {
+                headers.add(new HttpHeader(true, CONTENT_TYPE, contentType(request), ""));
             }
         }
         return headers;
@@ -307,9 +338,22 @@ class RequestCodeSnippetGenerator {
         return "";
     }
 
+    private static boolean hasBinaryBody(HttpRequestItem request) {
+        return RequestBodyTypes.BODY_TYPE_BINARY.equals(request.getBodyType())
+                && CharSequenceUtil.isNotBlank(request.getBody());
+    }
+
+    private static boolean isFormDataBody(HttpRequestItem request) {
+        return RequestBodyTypes.BODY_TYPE_FORM_DATA.equals(request.getBodyType());
+    }
+
+    private static boolean hasFormDataBody(HttpRequestItem request) {
+        return isFormDataBody(request) && !enabledFormData(request).isEmpty();
+    }
+
     private static String contentType(HttpRequestItem request) {
         String existing = effectiveHeadersWithoutDefaults(request).stream()
-                .filter(header -> "Content-Type".equalsIgnoreCase(header.getKey()))
+                .filter(header -> CONTENT_TYPE.equalsIgnoreCase(header.getKey()))
                 .map(HttpHeader::getValue)
                 .filter(CharSequenceUtil::isNotBlank)
                 .findFirst()
@@ -318,7 +362,10 @@ class RequestCodeSnippetGenerator {
             return existing;
         }
         if (RequestBodyTypes.BODY_TYPE_FORM_URLENCODED.equals(request.getBodyType())) {
-            return "application/x-www-form-urlencoded";
+            return FORM_URLENCODED_CONTENT_TYPE;
+        }
+        if (RequestBodyTypes.BODY_TYPE_BINARY.equals(request.getBodyType())) {
+            return FileMimeTypeUtil.detectMimeType(request.getBody());
         }
         return "application/json";
     }

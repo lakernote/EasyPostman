@@ -15,6 +15,7 @@ public class CurlRequest {
     public String method;
     public List<HttpHeader> headersList;
     public String body;
+    public boolean binaryBody;
     public List<HttpParam> paramsList;
     // 用于存储解析出的表单数据 (multipart/form-data)
     public List<HttpFormData> formDataList;

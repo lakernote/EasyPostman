@@ -8,4 +8,5 @@ public class RequestImportBodyTypes {
     public static final String FORM_DATA = "form-data";
     public static final String FORM_URLENCODED = "x-www-form-urlencoded";
     public static final String RAW = "raw";
+    public static final String BINARY = "binary";
 }

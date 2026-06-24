@@ -51,6 +51,7 @@ class RequestImportDraftMapper {
             case RequestImportBodyTypes.RAW -> RequestBodyTypes.BODY_TYPE_RAW;
             case RequestImportBodyTypes.FORM_DATA -> RequestBodyTypes.BODY_TYPE_FORM_DATA;
             case RequestImportBodyTypes.FORM_URLENCODED -> RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
+            case RequestImportBodyTypes.BINARY -> RequestBodyTypes.BODY_TYPE_BINARY;
             default -> RequestBodyTypes.BODY_TYPE_NONE;
         };
     }

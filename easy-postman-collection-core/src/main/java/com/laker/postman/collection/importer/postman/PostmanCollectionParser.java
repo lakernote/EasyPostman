@@ -28,6 +28,7 @@ import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_API_KEY
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_BINARY;
 import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
 import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
 import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
@@ -533,15 +534,10 @@ public class PostmanCollectionParser {
                         req.setBody(graphql.toString());
                     }
                 } else if ("file".equals(mode)) {
-                    req.setBodyType(BODY_TYPE_RAW);
+                    req.setBodyType(BODY_TYPE_BINARY);
                     JSONObject file = body.getJSONObject("file");
                     if (file != null) {
-                        String content = file.getStr("content", "");
-                        if (!content.isBlank()) {
-                            req.setBody(content);
-                        } else {
-                            req.setBody(file.getStr("src", ""));
-                        }
+                        req.setBody(file.getStr("src", ""));
                     }
                 }
             }
@@ -721,10 +717,15 @@ public class PostmanCollectionParser {
             JSONObject body = originalRequest.getJSONObject("body");
             if (body != null) {
                 String mode = body.getStr("mode", "");
-                origReq.setBodyType(mode);
+                origReq.setBodyType("file".equals(mode) ? BODY_TYPE_BINARY : mode);
 
                 if ("raw".equals(mode)) {
                     origReq.setBody(body.getStr("raw", ""));
+                } else if ("file".equals(mode)) {
+                    JSONObject file = body.getJSONObject("file");
+                    if (file != null) {
+                        origReq.setBody(file.getStr("src", ""));
+                    }
                 } else if (MODE_FORMDATA.equals(mode)) {
                     List<HttpFormData> formDataList = parseFormData(body.getJSONArray(MODE_FORMDATA));
                     if (!formDataList.isEmpty()) {

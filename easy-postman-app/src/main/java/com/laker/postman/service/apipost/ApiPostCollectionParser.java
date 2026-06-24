@@ -25,6 +25,7 @@ import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_BINARY;
 import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
 import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
 import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
@@ -387,9 +388,27 @@ public class ApiPostCollectionParser {
         }
 
         if ("binary".equals(mode)) {
-            req.setBodyType(BODY_TYPE_RAW);
-            req.setBody("");
+            req.setBodyType(BODY_TYPE_BINARY);
+            req.setBody(firstNonBlank(
+                    body.getStr("src", ""),
+                    body.getStr("file", ""),
+                    body.getStr("file_name", ""),
+                    body.getStr(KEY_VALUE, ""),
+                    body.getStr("raw", "")
+            ));
         }
+    }
+
+    private static String firstNonBlank(String... values) {
+        if (values == null) {
+            return "";
+        }
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 
     private static void parseApiPostScripts(JSONObject request, HttpRequestItem req) {

@@ -2,7 +2,9 @@ package com.laker.postman.http.request;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.util.FileMimeTypeUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.experimental.UtilityClass;
@@ -24,6 +26,19 @@ public class HttpRequestValidator {
         }
         if (req.method == null || req.method.isEmpty()) {
             return HttpRequestValidationResult.error(I18nUtil.getMessage(MessageKeys.REQUEST_VALIDATION_METHOD_REQUIRED), false);
+        }
+        if (RequestBodyTypes.BODY_TYPE_BINARY.equals(req.bodyType)) {
+            if (req.body == null || req.body.isBlank()) {
+                return HttpRequestValidationResult.error(I18nUtil.getMessage(
+                        MessageKeys.REQUEST_VALIDATION_BINARY_FILE_REQUIRED
+                ), false);
+            }
+            if (!FileMimeTypeUtil.isReadableRegularFile(req.body)) {
+                return HttpRequestValidationResult.error(I18nUtil.getMessage(
+                        MessageKeys.REQUEST_VALIDATION_BINARY_FILE_NOT_FOUND,
+                        req.body
+                ), false);
+            }
         }
 
         List<String> unresolved = findUnresolvedVariables(req.url);

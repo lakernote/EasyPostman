@@ -26,6 +26,10 @@ import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_BEARER;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_DIGEST;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_INHERIT;
 import static com.laker.postman.request.model.RequestAuthTypes.AUTH_TYPE_NONE;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_BINARY;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_DATA;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_FORM_URLENCODED;
+import static com.laker.postman.request.model.RequestBodyTypes.BODY_TYPE_RAW;
 
 /**
  * Postman Collection导出器
@@ -268,7 +272,14 @@ public class PostmanCollectionExporter {
             request.put("header", headerArr);
         }
         // body
-        if (item.getBody() != null && !item.getBody().isEmpty()) {
+        if (BODY_TYPE_BINARY.equals(item.getBodyType()) && item.getBody() != null && !item.getBody().isEmpty()) {
+            JSONObject body = new JSONObject();
+            body.put("mode", "file");
+            JSONObject file = new JSONObject();
+            file.put("src", item.getBody());
+            body.put("file", file);
+            request.put("body", body);
+        } else if (item.getBody() != null && !item.getBody().isEmpty()) {
             JSONObject body = new JSONObject();
             body.put("mode", "raw");
             body.put("raw", item.getBody());
@@ -522,11 +533,16 @@ public class PostmanCollectionExporter {
             // 请求体
             if (origReq.getBodyType() != null && !origReq.getBodyType().isEmpty()) {
                 JSONObject body = new JSONObject();
-                body.put("mode", origReq.getBodyType());
+                String bodyType = origReq.getBodyType();
+                body.put("mode", BODY_TYPE_BINARY.equals(bodyType) ? "file" : bodyType);
 
-                if ("raw".equals(origReq.getBodyType()) && origReq.getBody() != null) {
+                if (BODY_TYPE_BINARY.equals(bodyType) && origReq.getBody() != null) {
+                    JSONObject file = new JSONObject();
+                    file.put("src", origReq.getBody());
+                    body.put("file", file);
+                } else if (BODY_TYPE_RAW.equals(bodyType) && origReq.getBody() != null) {
                     body.put("raw", origReq.getBody());
-                } else if ("formdata".equals(origReq.getBodyType()) && origReq.getFormDataList() != null) {
+                } else if (BODY_TYPE_FORM_DATA.equals(bodyType) && origReq.getFormDataList() != null) {
                     JSONArray formDataArray = new JSONArray();
                     for (HttpFormData formData : origReq.getFormDataList()) {
                         JSONObject formDataObj = new JSONObject();
@@ -544,7 +560,7 @@ public class PostmanCollectionExporter {
                         formDataArray.add(formDataObj);
                     }
                     body.put("formdata", formDataArray);
-                } else if ("urlencoded".equals(origReq.getBodyType()) && origReq.getUrlencodedList() != null) {
+                } else if (BODY_TYPE_FORM_URLENCODED.equals(bodyType) && origReq.getUrlencodedList() != null) {
                     JSONArray urlencodedArray = new JSONArray();
                     for (HttpFormUrlencoded encoded : origReq.getUrlencodedList()) {
                         JSONObject encodedObj = new JSONObject();

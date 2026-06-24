@@ -2,6 +2,7 @@ package com.laker.postman.http.runtime.transport;
 
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.http.runtime.okhttp.OkHttpRequestBuilder;
+import com.laker.postman.request.model.RequestBodyTypes;
 import lombok.experimental.UtilityClass;
 import okhttp3.Request;
 
@@ -14,6 +15,9 @@ class PreparedOkHttpRequestFactory {
         }
         if (req.urlencodedList != null && !req.urlencodedList.isEmpty()) {
             return OkHttpRequestBuilder.buildFormRequest(req);
+        }
+        if (RequestBodyTypes.BODY_TYPE_BINARY.equals(req.bodyType)) {
+            return OkHttpRequestBuilder.buildBinaryRequest(req);
         }
         return OkHttpRequestBuilder.buildRequest(req);
     }

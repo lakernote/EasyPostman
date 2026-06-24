@@ -75,7 +75,9 @@ public class CurlImportUtil {
             item.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_URLENCODED);
         }
 
-        if (curlRequest.body != null && !curlRequest.body.isEmpty()
+        if (curlRequest.binaryBody) {
+            item.setBodyType(RequestBodyTypes.BODY_TYPE_BINARY);
+        } else if (curlRequest.body != null && !curlRequest.body.isEmpty()
                 && CollUtil.isEmpty(curlRequest.formDataList)
                 && CollUtil.isEmpty(curlRequest.urlencodedList)) {
             item.setBodyType(RequestBodyTypes.BODY_TYPE_RAW);

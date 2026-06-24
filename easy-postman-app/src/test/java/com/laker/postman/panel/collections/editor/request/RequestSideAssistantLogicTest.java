@@ -16,6 +16,8 @@ import com.laker.postman.service.variable.VariablesService;
 import com.laker.postman.variable.VariableType;
 import org.testng.annotations.Test;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +90,34 @@ public class RequestSideAssistantLogicTest {
         String snippet = RequestCodeSnippetGenerator.generate(item, RequestCodeSnippetLanguage.PYTHON_REQUESTS);
 
         assertTrue(snippet.contains("payload = 'grant%20type=a%26b%3Dc'"));
+    }
+
+    @Test
+    public void curlSnippetShouldUseDataBinaryForBinaryBody() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setMethod("PUT");
+        item.setUrl("https://example.com/upload");
+        item.setBodyType(RequestBodyTypes.BODY_TYPE_BINARY);
+        item.setBody("/tmp/upload.bin");
+
+        String snippet = RequestCodeSnippetGenerator.generate(item, RequestCodeSnippetLanguage.CURL);
+
+        assertTrue(snippet.contains("--data-binary '@/tmp/upload.bin'"));
+    }
+
+    @Test
+    public void curlSnippetShouldDetectBinaryContentTypeFromLocalFile() throws Exception {
+        Path file = Files.createTempFile("easy-postman-snippet-binary-", ".png");
+        Files.write(file, new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47});
+        HttpRequestItem item = new HttpRequestItem();
+        item.setMethod("PUT");
+        item.setUrl("https://example.com/upload");
+        item.setBodyType(RequestBodyTypes.BODY_TYPE_BINARY);
+        item.setBody(file.toString());
+
+        String snippet = RequestCodeSnippetGenerator.generate(item, RequestCodeSnippetLanguage.CURL);
+
+        assertTrue(snippet.contains("-H 'Content-Type: image/png'"));
     }
 
     @Test

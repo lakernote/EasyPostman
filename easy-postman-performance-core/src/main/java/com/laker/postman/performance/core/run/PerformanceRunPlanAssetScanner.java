@@ -15,6 +15,7 @@ import java.util.Map;
 
 @UtilityClass
 public class PerformanceRunPlanAssetScanner {
+    private static final String BODY_TYPE_BINARY = "binary";
 
     public List<PerformanceRunAsset> scan(PerformanceCorePlanDocument document) {
         Map<String, PerformanceRunAsset> assets = new LinkedHashMap<>();
@@ -46,6 +47,9 @@ public class PerformanceRunPlanAssetScanner {
     private void addRequestAssets(PerformanceRequestSnapshot snapshot, Map<String, PerformanceRunAsset> assets) {
         if (snapshot == null) {
             return;
+        }
+        if (BODY_TYPE_BINARY.equals(snapshot.getBodyType()) && !snapshot.getBody().isBlank()) {
+            addAsset(assets, PerformanceRunAsset.TYPE_FILE, snapshot.getBody());
         }
         for (PerformanceRequestFormDataPart part : snapshot.getFormData()) {
             if (part != null && part.isFile() && !part.getValue().isBlank()) {

@@ -330,6 +330,8 @@ public final class MessageKeys {
     public static final String REQUEST_VALIDATION_WEBSOCKET_PROTOCOL = "request.validation.websocket_protocol";
     public static final String REQUEST_VALIDATION_GET_BODY_CONFIRM = "request.validation.get_body.confirm";
     public static final String REQUEST_VALIDATION_GET_BODY_CONFIRM_TITLE = "request.validation.get_body.confirm_title";
+    public static final String REQUEST_VALIDATION_BINARY_FILE_REQUIRED = "request.validation.binary.file_required";
+    public static final String REQUEST_VALIDATION_BINARY_FILE_NOT_FOUND = "request.validation.binary.file_not_found";
     public static final String SELECT_GROUP = "select.group";
     public static final String PLEASE_ENTER_REQUEST_NAME = "please.enter.request.name";
     public static final String PLEASE_SELECT_GROUP = "please.select.group";
@@ -1555,6 +1557,15 @@ public final class MessageKeys {
 
     // ============ 请求Body相关 ============
     public static final String REQUEST_BODY_NONE = "request.body.none";
+    public static final String REQUEST_BODY_BINARY_FILE = "request.body.binary.file";
+    public static final String REQUEST_BODY_BINARY_BROWSE = "request.body.binary.browse";
+    public static final String REQUEST_BODY_BINARY_SELECT_FILE = "request.body.binary.select_file";
+    public static final String REQUEST_BODY_BINARY_PLACEHOLDER = "request.body.binary.placeholder";
+    public static final String REQUEST_BODY_BINARY_CLEAR = "request.body.binary.clear";
+    public static final String REQUEST_BODY_BINARY_CLEAR_TOOLTIP = "request.body.binary.clear.tooltip";
+    public static final String REQUEST_BODY_BINARY_NO_FILE = "request.body.binary.no_file";
+    public static final String REQUEST_BODY_BINARY_FILE_SUMMARY = "request.body.binary.file_summary";
+    public static final String REQUEST_BODY_BINARY_FILE_MISSING = "request.body.binary.file_missing";
     public static final String REQUEST_BODY_FORMAT_ONLY_RAW = "request.body.format.only_raw";
     public static final String REQUEST_BODY_FORMAT_EMPTY = "request.body.format.empty";
     public static final String REQUEST_BODY_FORMAT_INVALID = "request.body.format.invalid";

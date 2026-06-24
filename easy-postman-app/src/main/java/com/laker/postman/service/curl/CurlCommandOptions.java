@@ -14,6 +14,7 @@ class CurlCommandOptions {
     String authType;
     String authUsername;
     String authPassword;
+    String binaryDataFilePath;
     final List<HttpHeader> headersList = new ArrayList<>();
     final List<String> dataParams = new ArrayList<>();
     final List<String> dataUrlencodeParams = new ArrayList<>();
@@ -53,7 +54,9 @@ class CurlCommandOptions {
     }
 
     boolean hasDataParams() {
-        return !dataParams.isEmpty() || !dataUrlencodeParams.isEmpty();
+        return !dataParams.isEmpty()
+                || !dataUrlencodeParams.isEmpty()
+                || (binaryDataFilePath != null && !binaryDataFilePath.isBlank());
     }
 
     boolean hasFormData() {

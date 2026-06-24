@@ -1629,6 +1629,17 @@ public class CurlParserTest {
         assertEquals(item.getBodyType(), RequestBodyTypes.BODY_TYPE_RAW);
     }
 
+    @Test(description = "导入 --data-binary @file cURL 时应设置 binary bodyType")
+    public void testCurlImportUtilSetsBinaryBodyTypeForDataBinaryFile() {
+        String curl = "curl -X PUT 'https://example.com/upload' --data-binary '@/tmp/upload.bin'";
+
+        HttpRequestItem item = CurlImportUtil.fromCurl(curl);
+
+        assertNotNull(item);
+        assertEquals(item.getBody(), "/tmp/upload.bin");
+        assertEquals(item.getBodyType(), RequestBodyTypes.BODY_TYPE_BINARY);
+    }
+
     @Test(description = "导入解析出 form-data 的 multipart cURL 时 bodyType 不应被 raw body 覆盖")
     public void testCurlImportUtilKeepsFormDataBodyTypeWhenMultipartBodyIsParsed() {
         String curl = "curl -X POST 'http://example.com/upload' " +

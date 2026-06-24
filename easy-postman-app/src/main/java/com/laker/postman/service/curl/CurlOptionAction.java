@@ -6,6 +6,7 @@ enum CurlOptionAction {
     HEADER,
     COOKIE,
     DATA,
+    DATA_BINARY,
     DATA_URLENCODE,
     FORM,
     GET,

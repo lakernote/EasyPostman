@@ -7,6 +7,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Tab 拖拽排序处理器（IDEA 风格）
@@ -28,7 +31,7 @@ public class TabbedPaneDragHandler {
     // ── 拖拽过程中的瞬态状态（集中管理，方便 reset）────────────────────────
     private static class DragState {
         int draggedTabIndex = -1;   // 被拖动的 Tab 索引
-        int dropTargetIndex = -1;   // 当前悬停目标索引
+        int dropSlotIndex = -1;     // 当前悬停插入槽位，范围为 0..普通 Tab 数量
         Point pressPointInPane;     // 按下时在 tabbedPane 坐标系的位置
         boolean active = false;     // 是否已超过阈值、进入真正拖拽
 
@@ -38,7 +41,7 @@ public class TabbedPaneDragHandler {
 
         void reset() {
             draggedTabIndex = -1;
-            dropTargetIndex = -1;
+            dropSlotIndex = -1;
             pressPointInPane = null;
             active = false;
         }
@@ -126,18 +129,17 @@ public class TabbedPaneDragHandler {
             showDropIndicator();
         }
 
-        int target = calcDropTarget(panePoint.x);
-        if (target != state.dropTargetIndex) {
-            state.dropTargetIndex = target;
-            updateDropIndicator(target);
+        int slot = dropSlotAt(panePoint);
+        if (slot != state.dropSlotIndex) {
+            state.dropSlotIndex = slot;
+            updateDropIndicator(slot);
         }
     }
 
     private void onRelease() {
         try {
-            if (state.active && state.dropTargetIndex >= 0
-                    && state.dropTargetIndex != state.draggedTabIndex) {
-                moveTab(state.draggedTabIndex, state.dropTargetIndex);
+            if (state.active && state.dropSlotIndex >= 0) {
+                moveTabToSlot(state.draggedTabIndex, state.dropSlotIndex);
             }
         } finally {
             endDrag();
@@ -164,17 +166,66 @@ public class TabbedPaneDragHandler {
     }
 
     /**
-     * 根据鼠标 X 坐标计算落点索引（不包含 "+" Tab）。
+     * 根据鼠标位置计算插入槽位（不包含 "+" Tab）。
      * 鼠标在某 Tab 左半部分 → 落在该 Tab 前；右半部分 → 落在该 Tab 后。
      */
-    private int calcDropTarget(int paneX) {
-        int count = tabbedPane.getTabCount() - 1; // 排除 "+" Tab
-        if (count <= 0) return -1;
+    int dropSlotAt(Point panePoint) {
+        int count = normalTabCount();
+        if (count <= 0) {
+            return -1;
+        }
+
+        Rectangle rowReference = nearestRowReference(panePoint.y, count);
+        if (rowReference == null) {
+            return -1;
+        }
+
+        List<Integer> rowIndices = new ArrayList<>();
         for (int i = 0; i < count; i++) {
             Rectangle b = tabbedPane.getBoundsAt(i);
-            if (b != null && paneX < b.x + b.width / 2) return i;
+            if (b != null && sameVisualRow(rowReference, b)) {
+                rowIndices.add(i);
+            }
         }
-        return count - 1; // 鼠标在所有 Tab 右侧，落到最后
+        rowIndices.sort(Comparator.comparingInt(index -> tabbedPane.getBoundsAt(index).x));
+
+        for (Integer index : rowIndices) {
+            Rectangle b = tabbedPane.getBoundsAt(index);
+            if (panePoint.x < b.x + b.width / 2) {
+                return index;
+            }
+        }
+        return rowIndices.isEmpty() ? -1 : rowIndices.get(rowIndices.size() - 1) + 1;
+    }
+
+    private Rectangle nearestRowReference(int paneY, int normalTabCount) {
+        Rectangle nearest = null;
+        int nearestDistance = Integer.MAX_VALUE;
+        for (int i = 0; i < normalTabCount; i++) {
+            Rectangle b = tabbedPane.getBoundsAt(i);
+            if (b == null) {
+                continue;
+            }
+            if (paneY >= b.y && paneY <= b.y + b.height) {
+                return b;
+            }
+            int distance = paneY < b.y ? b.y - paneY : paneY - (b.y + b.height);
+            if (distance < nearestDistance) {
+                nearest = b;
+                nearestDistance = distance;
+            }
+        }
+        return nearest;
+    }
+
+    private boolean sameVisualRow(Rectangle rowReference, Rectangle bounds) {
+        int referenceCenter = rowReference.y + rowReference.height / 2;
+        int boundsCenter = bounds.y + bounds.height / 2;
+        return Math.abs(referenceCenter - boundsCenter) <= Math.max(rowReference.height, bounds.height) / 2;
+    }
+
+    private int normalTabCount() {
+        return Math.max(0, tabbedPane.getTabCount() - 1);
     }
 
     // ── GlassPane 指示线 ─────────────────────────────────────────────────────
@@ -188,17 +239,37 @@ public class TabbedPaneDragHandler {
         dropIndicator.setVisible(true);
     }
 
-    private void updateDropIndicator(int targetIdx) {
+    private void updateDropIndicator(int dropSlot) {
         if (dropIndicator == null) return;
-        if (targetIdx < 0) { dropIndicator.clearLine(); return; }
+        if (dropSlot < 0) { dropIndicator.clearLine(); return; }
 
-        Rectangle b = tabbedPane.getBoundsAt(targetIdx);
-        if (b == null) { dropIndicator.clearLine(); return; }
+        Rectangle line = dropIndicatorLine(dropSlot);
+        if (line == null) {
+            dropIndicator.clearLine();
+            return;
+        }
 
-        // 拖动方向决定指示线贴左边还是右边
-        int lineX = (targetIdx <= state.draggedTabIndex) ? b.x : (b.x + b.width);
-        Point p = SwingUtilities.convertPoint(tabbedPane, lineX, b.y, dropIndicator);
-        dropIndicator.show(p.x, p.y, b.height);
+        Point p = SwingUtilities.convertPoint(tabbedPane, line.x, line.y, dropIndicator);
+        dropIndicator.show(p.x, p.y, line.height);
+    }
+
+    private Rectangle dropIndicatorLine(int dropSlot) {
+        int normalTabCount = normalTabCount();
+        if (normalTabCount <= 0) {
+            return null;
+        }
+
+        if (dropSlot <= 0) {
+            Rectangle first = tabbedPane.getBoundsAt(0);
+            return first == null ? null : new Rectangle(first.x, first.y, 0, first.height);
+        }
+        if (dropSlot >= normalTabCount) {
+            Rectangle last = tabbedPane.getBoundsAt(normalTabCount - 1);
+            return last == null ? null : new Rectangle(last.x + last.width, last.y, 0, last.height);
+        }
+
+        Rectangle target = tabbedPane.getBoundsAt(dropSlot);
+        return target == null ? null : new Rectangle(target.x, target.y, 0, target.height);
     }
 
     private void endDrag() {
@@ -219,13 +290,26 @@ public class TabbedPaneDragHandler {
     // ── Tab 移动 ──────────────────────────────────────────────────────────────
 
     /**
-     * 将 from 位置的 Tab 移动到 to 位置。
+     * 将 from 位置的 Tab 移动到指定插入槽位。
      * 完整保留 tabComponent（ClosableTabComponent）、content、title、icon、tooltip、enabled，
      * 并同步 selectedIndex 与 previewTabIndex。
      */
-    private void moveTab(int from, int to) {
+    void moveTabToSlot(int from, int dropSlot) {
+        int normalTabCount = normalTabCount();
+        if (from < 0 || from >= normalTabCount || dropSlot < 0 || dropSlot > normalTabCount) {
+            return;
+        }
+        if (dropSlot == from || dropSlot == from + 1) {
+            return;
+        }
+
+        int insertAt = dropSlot > from ? dropSlot - 1 : dropSlot;
+        moveTabToInsertIndex(from, insertAt);
+    }
+
+    private void moveTabToInsertIndex(int from, int insertAt) {
         int tabCount = tabbedPane.getTabCount();
-        if (from == to || from < 0 || to < 0 || from >= tabCount || to >= tabCount) return;
+        if (from == insertAt || from < 0 || insertAt < 0 || from >= tabCount || insertAt >= tabCount) return;
 
         // 1. 读取 from 位置 Tab 的全部数据
         String title      = tabbedPane.getTitleAt(from);
@@ -239,7 +323,7 @@ public class TabbedPaneDragHandler {
 
         // 2. 删除原位置，再插入目标位置
         tabbedPane.removeTabAt(from);
-        int insertAt = Math.min(to, tabbedPane.getTabCount()); // 防止越界
+        insertAt = Math.min(insertAt, tabbedPane.getTabCount()); // 防止越界
         tabbedPane.insertTab(title, icon, content, tooltip, insertAt);
         tabbedPane.setEnabledAt(insertAt, enabled);
         if (tabComp != null) tabbedPane.setTabComponentAt(insertAt, tabComp);
@@ -248,7 +332,7 @@ public class TabbedPaneDragHandler {
         tabbedPane.setSelectedIndex(recalcIndex(selectedIndex, from, insertAt));
         if (previewIdx >= 0) previewIndexSetter.set(recalcIndex(previewIdx, from, insertAt));
 
-        log.debug("Tab moved: {} → {} (insertAt={})", from, to, insertAt);
+        log.debug("Tab moved: {} → {}", from, insertAt);
     }
 
     /**

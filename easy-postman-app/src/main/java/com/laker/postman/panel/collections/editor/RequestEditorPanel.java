@@ -11,6 +11,7 @@ import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.service.collections.RequestSaveEventPublisher;
+import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -173,14 +174,34 @@ public class RequestEditorPanel extends UiSingletonPanel {
     }
 
     private JTabbedPane createRequestTabbedPane() {
-        JTabbedPane tabs = new JTabbedPane(SwingConstants.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
+        JTabbedPane tabs = new RequestEditorTabbedPane(SwingConstants.TOP, requestTabsLayoutPolicy());
         ToolWindowSurfaceStyle.applyTabbedPaneCard(tabs);
         tabs.putClientProperty(TABBED_PANE_TAB_AREA_INSETS, REQUEST_TAB_AREA_INSETS);
         tabs.putClientProperty(TABBED_PANE_TAB_INSETS, REQUEST_TAB_INSETS);
         tabs.putClientProperty(TABBED_PANE_TAB_HEIGHT, REQUEST_TAB_HEIGHT);
+        tabs.putClientProperty(TABBED_PANE_TAB_WIDTH_MODE, TABBED_PANE_TAB_WIDTH_MODE_PREFERRED);
+        tabs.putClientProperty(TABBED_PANE_TAB_AREA_ALIGNMENT, TABBED_PANE_ALIGN_LEADING);
+        tabs.putClientProperty(TABBED_PANE_TAB_ALIGNMENT, TABBED_PANE_ALIGN_LEADING);
         tabs.putClientProperty(TABBED_PANE_HAS_FULL_BORDER, false);
         tabs.putClientProperty(TABBED_PANE_SHOW_CONTENT_SEPARATOR, true);
         return tabs;
+    }
+
+    private static final class RequestEditorTabbedPane extends JTabbedPane {
+        private RequestEditorTabbedPane(int tabPlacement, int tabLayoutPolicy) {
+            super(tabPlacement, tabLayoutPolicy);
+        }
+
+        @Override
+        public void updateUI() {
+            setUI(new RequestEditorTabbedPaneUi());
+        }
+    }
+
+    static int requestTabsLayoutPolicy() {
+        return SettingManager.isRequestEditorTabsMultiLineEnabled()
+                ? JTabbedPane.WRAP_TAB_LAYOUT
+                : JTabbedPane.SCROLL_TAB_LAYOUT;
     }
 
     private void installDeferredTabInitialization() {
@@ -337,6 +358,15 @@ public class RequestEditorPanel extends UiSingletonPanel {
 
     public void updateAllRequestEditorTabsVisibility() {
         tabStateController.updateAllRequestEditorTabsVisibility();
+    }
+
+    public void updateRequestEditorTabsLayoutPolicy() {
+        if (tabbedPane == null) {
+            return;
+        }
+        tabbedPane.setTabLayoutPolicy(requestTabsLayoutPolicy());
+        tabbedPane.revalidate();
+        tabbedPane.repaint();
     }
 
     /**

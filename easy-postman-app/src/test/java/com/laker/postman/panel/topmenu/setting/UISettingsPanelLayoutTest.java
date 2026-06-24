@@ -29,4 +29,25 @@ public class UISettingsPanelLayoutTest {
         assertTrue(source.contains("ToolWindowSurfaceStyle.applyDialogListScrollPane(scrollPane, sidebarTabList)"));
         assertFalse(source.contains("ToolWindowSurfaceStyle.applyListScrollPaneCard(scrollPane, sidebarTabList)"));
     }
+
+    @Test
+    public void generalSettingsShouldKeepRelatedOptionsGrouped() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/topmenu/setting/UISettingsPanelModern.java"
+        ));
+
+        assertBefore(source, "maxOpenedRequestsCountField = new JTextField", "requestEditorTabsMultiLineCheckBox = new JCheckBox");
+        assertBefore(source, "requestEditorTabsMultiLineCheckBox = new JCheckBox", "maxHistoryCountField = new JTextField");
+        assertBefore(source, "sidebarExpandedCheckBox = new JCheckBox", "JPanel sidebarTabsRow = createSidebarTabsRow");
+        assertBefore(source, "JPanel sidebarTabsRow = createSidebarTabsRow", "notificationPositionComboBox = new JComboBox");
+        assertBefore(source, "notificationPositionComboBox = new JComboBox", "gitDiffLargeFileThresholdField = new JTextField");
+    }
+
+    private static void assertBefore(String source, String first, String second) {
+        int firstIndex = source.indexOf(first);
+        int secondIndex = source.indexOf(second);
+        assertTrue(firstIndex >= 0, "Missing source marker: " + first);
+        assertTrue(secondIndex >= 0, "Missing source marker: " + second);
+        assertTrue(firstIndex < secondIndex, first + " should appear before " + second);
+    }
 }

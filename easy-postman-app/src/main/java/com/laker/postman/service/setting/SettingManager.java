@@ -369,6 +369,14 @@ public class SettingManager {
         return normalized.isEmpty() || !getHiddenRequestEditorTabs().contains(normalized);
     }
 
+    public static boolean isRequestEditorTabsMultiLineEnabled() {
+        return get(AppSettingKeys.REQUEST_EDITOR_TABS_MULTILINE);
+    }
+
+    public static void setRequestEditorTabsMultiLineEnabled(boolean enabled) {
+        put(AppSettingKeys.REQUEST_EDITOR_TABS_MULTILINE, enabled);
+    }
+
     private static String normalizeRequestEditorTabId(String tabId) {
         return tabId == null ? "" : tabId.trim().toUpperCase(Locale.ROOT);
     }

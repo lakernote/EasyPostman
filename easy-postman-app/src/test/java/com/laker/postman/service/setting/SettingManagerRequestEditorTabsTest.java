@@ -29,6 +29,7 @@ public class SettingManagerRequestEditorTabsTest {
 
             assertTrue(SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_DOCS));
             assertTrue(SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_PARAMS));
+            assertFalse(SettingManager.isRequestEditorTabsMultiLineEnabled());
 
             SettingManager.setHiddenRequestEditorTabs(List.of(
                     SettingManager.REQUEST_EDITOR_TAB_DOCS,
@@ -46,6 +47,14 @@ public class SettingManagerRequestEditorTabsTest {
             SettingManager.setHiddenRequestEditorTabs(List.of());
             assertTrue(SettingManager.isRequestEditorTabVisible(SettingManager.REQUEST_EDITOR_TAB_DOCS));
             assertFalse(props.containsKey("request_editor_hidden_tabs"));
+
+            SettingManager.setRequestEditorTabsMultiLineEnabled(true);
+            assertTrue(SettingManager.isRequestEditorTabsMultiLineEnabled());
+            assertEquals(props.getProperty("request_editor_tabs_multiline"), "true");
+
+            SettingManager.setRequestEditorTabsMultiLineEnabled(false);
+            assertFalse(SettingManager.isRequestEditorTabsMultiLineEnabled());
+            assertEquals(props.getProperty("request_editor_tabs_multiline"), "false");
         } finally {
             props.clear();
             props.putAll(backup);

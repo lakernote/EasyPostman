@@ -1392,6 +1392,13 @@ public final class MessageKeys {
     public static final String SETTINGS_DIALOG_SAVE = "settings.dialog.save";
     public static final String SETTINGS_DIALOG_CANCEL = "settings.dialog.cancel";
     public static final String SETTINGS_DIALOG_APPLY = "settings.dialog.apply";
+    public static final String SETTINGS_SEARCH_PLACEHOLDER = "settings.search.placeholder";
+    public static final String SETTINGS_SEARCH_NO_RESULTS = "settings.search.no_results";
+    public static final String SETTINGS_CATEGORY_APPLICATION = "settings.category.application";
+    public static final String SETTINGS_CATEGORY_NETWORK = "settings.category.network";
+    public static final String SETTINGS_CATEGORY_RUNTIME = "settings.category.runtime";
+    public static final String SETTINGS_CATEGORY_EXTENSIONS = "settings.category.extensions";
+    public static final String SETTINGS_CATEGORY_OTHER = "settings.category.other";
 
     // Unsaved changes warnings
     public static final String SETTINGS_UNSAVED_CHANGES_WARNING = "settings.unsaved_changes.warning";
@@ -1490,6 +1497,8 @@ public final class MessageKeys {
     public static final String SETTINGS_GENERAL_MAX_HISTORY_TOOLTIP = "settings.general.max_history.tooltip";
     public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS = "settings.general.max_opened_requests";
     public static final String SETTINGS_GENERAL_MAX_OPENED_REQUESTS_TOOLTIP = "settings.general.max_opened_requests.tooltip";
+    public static final String SETTINGS_GENERAL_REQUEST_TABS_MULTILINE = "settings.general.request_tabs_multiline";
+    public static final String SETTINGS_GENERAL_REQUEST_TABS_MULTILINE_TOOLTIP = "settings.general.request_tabs_multiline.tooltip";
     public static final String SETTINGS_GIT_DIFF_LARGE_FILE_THRESHOLD = "settings.git.diff.large_file_threshold";
     public static final String SETTINGS_GIT_DIFF_LARGE_FILE_THRESHOLD_TOOLTIP = "settings.git.diff.large_file_threshold.tooltip";
     public static final String SETTINGS_GENERAL_AUTO_FORMAT_RESPONSE = "settings.general.auto_format_response";

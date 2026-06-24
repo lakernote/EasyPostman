@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class RequestSettingsPanelModernTest extends AbstractSwingUiTest {
@@ -59,6 +60,21 @@ public class RequestSettingsPanelModernTest extends AbstractSwingUiTest {
         } finally {
             SettingManager.setRemoteJsRequireEnabled(oldRemoteEnabled);
         }
+    }
+
+    @Test
+    public void requestTabsMultiLineToggleShouldNotLiveWithRequestEditorInnerTabs() throws Exception {
+        AtomicReference<RequestSettingsPanelModern> panelRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> {
+            RequestSettingsPanelModern panel = new RequestSettingsPanelModern();
+            panel.getPreferredSize();
+            panelRef.set(panel);
+        });
+
+        assertNull(findCheckBox(
+                panelRef.get(),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_REQUEST_TABS_MULTILINE)
+        ));
     }
 
     private static SettingsFieldRow findFieldRow(Container container, String labelText) {

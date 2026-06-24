@@ -82,6 +82,31 @@ public class UISettingsPanelModernTest extends AbstractSwingUiTest {
         assertEquals(label.getAlignmentY(), Component.TOP_ALIGNMENT);
     }
 
+    @Test
+    public void requestTabsMultiLineToggleShouldLiveWithGeneralOpenRequestSettings() throws Exception {
+        boolean oldMultiLine = SettingManager.isRequestEditorTabsMultiLineEnabled();
+
+        try {
+            SettingManager.setRequestEditorTabsMultiLineEnabled(true);
+            AtomicReference<UISettingsPanelModern> panelRef = new AtomicReference<>();
+            SwingUtilities.invokeAndWait(() -> {
+                UISettingsPanelModern panel = new UISettingsPanelModern();
+                panel.getPreferredSize();
+                panelRef.set(panel);
+            });
+
+            JCheckBox checkBox = findCheckBox(
+                    panelRef.get(),
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_REQUEST_TABS_MULTILINE)
+            );
+
+            assertNotNull(checkBox);
+            assertTrue(checkBox.isSelected());
+        } finally {
+            SettingManager.setRequestEditorTabsMultiLineEnabled(oldMultiLine);
+        }
+    }
+
     private static int compactLabelWidthUpperBound(SettingsFieldRow row) {
         int textWidth = row.label().getFontMetrics(row.label().getFont()).stringWidth(row.label().getText());
         return Math.min(SettingsFieldRow.DEFAULT_LABEL_WIDTH, textWidth + 20);

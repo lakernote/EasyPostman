@@ -6,6 +6,7 @@ import com.laker.postman.common.component.setting.SettingsFieldRow;
 import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.model.NotificationPosition;
+import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.sidebar.SidebarTab;
 import com.laker.postman.panel.sidebar.SidebarTabSettingsResolver;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
@@ -47,6 +48,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JTextField gitDiffLargeFileThresholdField;
     private JTextField maxHistoryCountField;
     private JTextField maxOpenedRequestsCountField;
+    private JCheckBox requestEditorTabsMultiLineCheckBox;
     private JCheckBox autoFormatResponseCheckBox;
     private JCheckBox startupSplashCheckBox;
     private JCheckBox sidebarExpandedCheckBox;
@@ -128,20 +130,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 notificationPositionLabel
         ));
 
-        // 历史记录数量
-        maxHistoryCountField = new JTextField(10);
-        maxHistoryCountField.setText(String.valueOf(SettingManager.getMaxHistoryCount()));
-        JPanel historyRow = createFieldRow(
-                maxHistoryLabel,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_MAX_HISTORY_TOOLTIP),
-                maxHistoryCountField,
-                generalFieldLabelWidth,
-                SettingsFieldRow.DEFAULT_FIELD_WIDTH
-        );
-        generalSection.add(historyRow);
-        generalSection.add(createVerticalSpace(FIELD_SPACING));
-
-        // 最大打开请求数
+        // 请求标签页
         maxOpenedRequestsCountField = new JTextField(10);
         maxOpenedRequestsCountField.setText(String.valueOf(SettingManager.getMaxOpenedRequestsCount()));
         JPanel requestsRow = createFieldRow(
@@ -154,16 +143,28 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         generalSection.add(requestsRow);
         generalSection.add(createVerticalSpace(FIELD_SPACING));
 
-        gitDiffLargeFileThresholdField = new JTextField(10);
-        gitDiffLargeFileThresholdField.setText(String.valueOf(SettingManager.getGitDiffLargeFileThresholdMb()));
-        JPanel gitDiffThresholdRow = createFieldRow(
-                gitDiffThresholdLabel,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_GIT_DIFF_LARGE_FILE_THRESHOLD_TOOLTIP),
-                gitDiffLargeFileThresholdField,
+        requestEditorTabsMultiLineCheckBox = new JCheckBox(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_REQUEST_TABS_MULTILINE),
+                SettingManager.isRequestEditorTabsMultiLineEnabled()
+        );
+        JPanel requestTabsMultiLineRow = createCheckBoxRow(
+                requestEditorTabsMultiLineCheckBox,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_REQUEST_TABS_MULTILINE_TOOLTIP)
+        );
+        generalSection.add(requestTabsMultiLineRow);
+        generalSection.add(createVerticalSpace(FIELD_SPACING));
+
+        // 历史记录数量
+        maxHistoryCountField = new JTextField(10);
+        maxHistoryCountField.setText(String.valueOf(SettingManager.getMaxHistoryCount()));
+        JPanel historyRow = createFieldRow(
+                maxHistoryLabel,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_MAX_HISTORY_TOOLTIP),
+                maxHistoryCountField,
                 generalFieldLabelWidth,
                 SettingsFieldRow.DEFAULT_FIELD_WIDTH
         );
-        generalSection.add(gitDiffThresholdRow);
+        generalSection.add(historyRow);
         generalSection.add(createVerticalSpace(FIELD_SPACING));
 
         // 自动格式化响应体
@@ -225,6 +226,18 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 SettingsFieldRow.DEFAULT_FIELD_WIDTH
         );
         generalSection.add(notificationPositionRow);
+        generalSection.add(createVerticalSpace(FIELD_SPACING));
+
+        gitDiffLargeFileThresholdField = new JTextField(10);
+        gitDiffLargeFileThresholdField.setText(String.valueOf(SettingManager.getGitDiffLargeFileThresholdMb()));
+        JPanel gitDiffThresholdRow = createFieldRow(
+                gitDiffThresholdLabel,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_GIT_DIFF_LARGE_FILE_THRESHOLD_TOOLTIP),
+                gitDiffLargeFileThresholdField,
+                generalFieldLabelWidth,
+                SettingsFieldRow.DEFAULT_FIELD_WIDTH
+        );
+        generalSection.add(gitDiffThresholdRow);
 
         contentPanel.add(generalSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
@@ -335,6 +348,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         trackComponentValue(gitDiffLargeFileThresholdField);
         trackComponentValue(maxHistoryCountField);
         trackComponentValue(maxOpenedRequestsCountField);
+        trackComponentValue(requestEditorTabsMultiLineCheckBox);
         trackComponentValue(autoFormatResponseCheckBox);
         trackComponentValue(startupSplashCheckBox);
         trackComponentValue(sidebarExpandedCheckBox);
@@ -758,6 +772,8 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             // 保存通用设置
             SettingManager.setMaxHistoryCount(Integer.parseInt(maxHistoryCountField.getText().trim()));
             SettingManager.setMaxOpenedRequestsCount(Integer.parseInt(maxOpenedRequestsCountField.getText().trim()));
+            SettingManager.setRequestEditorTabsMultiLineEnabled(requestEditorTabsMultiLineCheckBox.isSelected());
+            updateRequestEditorTabsLayoutPolicy();
             SettingManager.setGitDiffLargeFileThresholdMb(Integer.parseInt(gitDiffLargeFileThresholdField.getText().trim()));
             SettingManager.setAutoFormatResponse(autoFormatResponseCheckBox.isSelected());
             SettingManager.setStartupSplashEnabled(startupSplashCheckBox.isSelected());
@@ -814,6 +830,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(gitDiffLargeFileThresholdField);
             trackComponentValue(maxHistoryCountField);
             trackComponentValue(maxOpenedRequestsCountField);
+            trackComponentValue(requestEditorTabsMultiLineCheckBox);
             trackComponentValue(autoFormatResponseCheckBox);
             trackComponentValue(startupSplashCheckBox);
             trackComponentValue(sidebarExpandedCheckBox);
@@ -851,6 +868,14 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             sidebarPanel.refreshSidebarConfiguration();
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
+        }
+    }
+
+    private void updateRequestEditorTabsLayoutPolicy() {
+        try {
+            UiSingletonFactory.getInstance(RequestEditorPanel.class).updateRequestEditorTabsLayoutPolicy();
+        } catch (Exception ex) {
+            log.debug("Failed to refresh request editor tabs layout policy", ex);
         }
     }
 

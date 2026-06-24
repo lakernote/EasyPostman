@@ -148,6 +148,10 @@ class AppSettingKeys {
             AppSettingKeys::parseUppercaseSet,
             AppSettingKeys::formatCollection
     ).normalized(AppSettingKeys::normalizeUppercaseSet);
+    static final SettingKey<Boolean> REQUEST_EDITOR_TABS_MULTILINE = SettingKey.booleanKey(
+            "request_editor_tabs_multiline",
+            false
+    );
     static final SettingKey<Boolean> REMOTE_JS_REQUIRE_ENABLED = SettingKey.booleanKey(
             "script_remote_require_enabled",
             false

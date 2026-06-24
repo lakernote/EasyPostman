@@ -1,8 +1,10 @@
 package com.laker.postman.common.component;
 
+import org.fife.ui.rsyntaxtextarea.DefaultTokenPainterFactory;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.Token;
 import org.fife.ui.rsyntaxtextarea.TokenPainter;
+import org.fife.ui.rsyntaxtextarea.TokenPainterFactory;
 
 import javax.swing.text.TabExpander;
 import java.awt.*;
@@ -17,8 +19,17 @@ import java.awt.*;
  * <p>这里不改变文档内容、不自动换行、不截断显示，只在绘制阶段把长 token 按小块处理：
  * 先测量每块的屏幕范围，跳过视口外的块，只绘制和当前 clip 相交的块。这样保留原有
  * RSyntaxTextArea 的 token 样式语义，同时降低水平滚动时每一帧的绘制成本。</p>
+ *
+ * <p>注意：选区绘制不能走这里的长 token 分块逻辑。RSyntaxTextArea 的
+ * {@code SyntaxView.drawTokenWithSelection} 会对同一个 token 多次设置不同 clip，
+ * 分别绘制选中段、未选中前缀和未选中后缀；这些 clip 边界同时决定用户看到的选区和
+ * 复制时使用的 model offset。自定义 painter 如果再叠加分块裁剪，在多屏缩放或
+ * HiDPI 场景下更容易让视觉选区和真实 selection range 产生偏差。</p>
  */
 public class ViewportClippedTokenPainter implements TokenPainter {
+
+    // 使用 RSTA 自带工厂而不是直接 new DefaultTokenPainter，保留“显示空白字符”模式下的默认行为。
+    private static final TokenPainterFactory DEFAULT_TOKEN_PAINTER_FACTORY = new DefaultTokenPainterFactory();
 
     // 普通 token 继续走直接绘制路径，避免给常规文本增加分块开销。
     private static final int LONG_TOKEN_THRESHOLD = 512;
@@ -41,31 +52,59 @@ public class ViewportClippedTokenPainter implements TokenPainter {
 
     @Override
     public float paint(Token token, Graphics2D g, float x, float y, RSyntaxTextArea host, TabExpander e) {
+        // 选区相交时交回 RSTA 默认 painter，保持 selection clip、modelToView 和复制范围一致。
+        if (selectionIntersectsToken(token, host)) {
+            return defaultTokenPainter(host).paint(token, g, x, y, host, e);
+        }
         return paint(token, g, x, y, host, e, 0);
     }
 
     @Override
     public float paint(Token token, Graphics2D g, float x, float y, RSyntaxTextArea host,
                        TabExpander e, float clipStart) {
+        // 不能只在 paintSelected() 里兜底：RSTA 还会用普通 paint() 绘制选中 token 的未选中片段。
+        if (selectionIntersectsToken(token, host)) {
+            return defaultTokenPainter(host).paint(token, g, x, y, host, e, clipStart);
+        }
         return paintImpl(token, g, x, y, host, e, clipStart, true, false);
     }
 
     @Override
     public float paint(Token token, Graphics2D g, float x, float y, RSyntaxTextArea host,
                        TabExpander e, float clipStart, boolean paintBG) {
+        // 同上，选区相关 token 必须完整遵循 RSTA 默认 painter 的坐标和 clip 语义。
+        if (selectionIntersectsToken(token, host)) {
+            return defaultTokenPainter(host).paint(token, g, x, y, host, e, clipStart, paintBG);
+        }
         return paintImpl(token, g, x, y, host, e, clipStart, paintBG, false);
     }
 
     @Override
     public float paintSelected(Token token, Graphics2D g, float x, float y, RSyntaxTextArea host,
                                TabExpander e, boolean useSTC) {
-        return paintSelected(token, g, x, y, host, e, 0, useSTC);
+        // 选中段由 RSTA 默认 painter 绘制，避免自定义分块和 RSTA 选区分段重复裁剪。
+        return defaultTokenPainter(host).paintSelected(token, g, x, y, host, e, useSTC);
     }
 
     @Override
     public float paintSelected(Token token, Graphics2D g, float x, float y, RSyntaxTextArea host,
                                TabExpander e, float clipStart, boolean useSTC) {
-        return paintImpl(token, g, x, y, host, e, clipStart, false, useSTC);
+        return defaultTokenPainter(host).paintSelected(token, g, x, y, host, e, clipStart, useSTC);
+    }
+
+    private TokenPainter defaultTokenPainter(RSyntaxTextArea host) {
+        return DEFAULT_TOKEN_PAINTER_FACTORY.getTokenPainter(host);
+    }
+
+    private boolean selectionIntersectsToken(Token token, RSyntaxTextArea host) {
+        if (token == null || host == null) {
+            return false;
+        }
+        int selectionStart = host.getSelectionStart();
+        int selectionEnd = host.getSelectionEnd();
+        return selectionStart < selectionEnd
+                && selectionStart < token.getEndOffset()
+                && selectionEnd > token.getOffset();
     }
 
     private float paintImpl(Token token, Graphics2D g, float x, float y, RSyntaxTextArea host,

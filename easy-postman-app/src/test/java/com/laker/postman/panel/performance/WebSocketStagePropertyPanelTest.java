@@ -2,11 +2,14 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
+import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.MessageKeys;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
+import javax.swing.*;
 import java.lang.reflect.Field;
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -44,6 +47,32 @@ public class WebSocketStagePropertyPanelTest extends AbstractSwingUiTest {
         assertNull(fieldValue(connectPanel, "customSendBodyArea", RSyntaxTextArea.class));
         assertNull(fieldValue(readPanel, "customSendBodyArea", RSyntaxTextArea.class));
         assertNull(fieldValue(closePanel, "customSendBodyArea", RSyntaxTextArea.class));
+    }
+
+    @Test
+    public void programmaticSendNodeLoadShouldNotBeUndoable() throws Exception {
+        WebSocketStagePropertyPanel[] holder = new WebSocketStagePropertyPanel[1];
+        RSyntaxTextArea[] bodyEditor = new RSyntaxTextArea[1];
+        RSyntaxTextArea[] scriptEditor = new RSyntaxTextArea[1];
+
+        SwingUtilities.invokeAndWait(() -> {
+            WebSocketPerformanceData data = new WebSocketPerformanceData();
+            data.sendContentSource = WebSocketPerformanceData.SendContentSource.CUSTOM_TEXT;
+            data.customSendBody = "loaded body";
+            data.sendPreScript = "loaded script";
+            PerformanceTreeNode node = new PerformanceTreeNode("WS Send", NodeType.WS_SEND);
+            node.webSocketPerformanceData = data;
+
+            holder[0] = new WebSocketStagePropertyPanel(WebSocketStagePropertyPanel.Stage.SEND);
+            holder[0].setNode(node);
+            bodyEditor[0] = readTextArea(holder[0], "customSendBodyArea");
+            scriptEditor[0] = readTextArea(holder[0], "sendPreScriptArea");
+            bodyEditor[0].undoLastAction();
+            scriptEditor[0].undoLastAction();
+        });
+
+        assertEquals(bodyEditor[0].getText(), "loaded body");
+        assertEquals(scriptEditor[0].getText(), "loaded script");
     }
 
     @Test
@@ -114,5 +143,13 @@ public class WebSocketStagePropertyPanelTest extends AbstractSwingUiTest {
         Field field = WebSocketStagePropertyPanel.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return type.cast(field.get(owner));
+    }
+
+    private static RSyntaxTextArea readTextArea(WebSocketStagePropertyPanel panel, String fieldName) {
+        try {
+            return fieldValue(panel, fieldName, RSyntaxTextArea.class);
+        } catch (Exception e) {
+            throw new AssertionError(e);
+        }
     }
 }

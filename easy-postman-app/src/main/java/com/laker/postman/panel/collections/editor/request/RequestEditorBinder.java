@@ -53,7 +53,7 @@ final class RequestEditorBinder {
         }
 
         String body = draft.getBody();
-        view.requestBodyPanel.getBodyArea().setText(body);
+        view.requestBodyPanel.setRawBodyText(body);
         String bodyType = normalizeBodyType(draft.getBodyType(), body);
         view.requestBodyPanel.getBodyTypeComboBox().setSelectedItem(bodyType);
         applyRawType(body);

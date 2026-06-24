@@ -64,13 +64,42 @@ public class ViewportClippedTokenPainterTest {
                 "Text drawing must be clipped to clipStart so horizontally scrolled text cannot bleed into the gutter");
     }
 
+    @Test
+    public void shouldKeepChunkedPaintingForLongTokenWhenNoSelectionIntersects() {
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        Token token = token("a".repeat(2_048));
+        RecordingGraphics2D graphics = graphicsWithClip(2_500, 0, 120, 40);
+
+        new ViewportClippedTokenPainter()
+                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertTrue(graphics.drawCharsCalls > 0);
+        assertTrue(graphics.longestDrawCharsLength <= 256,
+                "Long-token rendering without selection must stay chunked so horizontal scrolling remains responsive");
+    }
+
+    @Test
+    public void shouldUseSelectionCompatiblePaintingWhenSelectionIntersectsLongToken() {
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        host.setText("a".repeat(600));
+        host.select(10, 20);
+        Token token = token("a".repeat(600));
+        RecordingGraphics2D graphics = graphicsWithClip(120, 0, 80, 40);
+
+        new ViewportClippedTokenPainter()
+                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertEquals(graphics.longestDrawCharsLength, 600,
+                "RSTA owns selected-token clipping; intersecting tokens should be painted as a whole under that clip");
+    }
+
     private Token token(String text) {
         char[] chars = text.toCharArray();
         return new TokenImpl(chars, 0, chars.length - 1, 0, TokenTypes.IDENTIFIER, 0);
     }
 
     private RecordingGraphics2D graphicsWithClip(int x, int y, int width, int height) {
-        BufferedImage image = new BufferedImage(200, 60, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage image = new BufferedImage(Math.max(200, x + width + 10), 60, BufferedImage.TYPE_INT_ARGB);
         RecordingGraphics2D graphics = new RecordingGraphics2D(image.createGraphics());
         graphics.setClip(x, y, width, height);
         return graphics;
@@ -84,6 +113,7 @@ public class ViewportClippedTokenPainterTest {
         private final Graphics2D delegate;
         private int drawCharsCalls;
         private int leftMostClipAtDraw = Integer.MAX_VALUE;
+        private int longestDrawCharsLength;
 
         private RecordingGraphics2D(Graphics2D delegate) {
             this.delegate = delegate;
@@ -92,6 +122,7 @@ public class ViewportClippedTokenPainterTest {
         @Override
         public void drawChars(char[] data, int offset, int length, int x, int y) {
             drawCharsCalls++;
+            longestDrawCharsLength = Math.max(longestDrawCharsLength, length);
             Rectangle clip = delegate.getClipBounds();
             if (clip != null) {
                 leftMostClipAtDraw = Math.min(leftMostClipAtDraw, clip.x);

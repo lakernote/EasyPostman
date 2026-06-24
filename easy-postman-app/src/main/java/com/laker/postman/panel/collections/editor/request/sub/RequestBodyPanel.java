@@ -76,6 +76,7 @@ public class RequestBodyPanel extends JPanel {
     private SearchButton searchButton; // 搜索按钮（HTTP模式）
     private WrapToggleButton wrapButton; // 换行按钮（HTTP模式）
     private boolean editable = true;
+    private final UndoManager bodyUndoManager = new UndoManager();
 
     private RequestBodyVariableAutocompleteController autocompleteController;
 
@@ -256,8 +257,7 @@ public class RequestBodyPanel extends JPanel {
         updateEditorFont();
 
         // ====== 添加撤回/重做功能 ======
-        UndoManager undoManager = new UndoManager();
-        bodyArea.getDocument().addUndoableEditListener(undoManager);
+        bodyArea.getDocument().addUndoableEditListener(bodyUndoManager);
 
         // Undo
         bodyArea.getInputMap().put(KeyStroke.getKeyStroke("control Z"), "Undo");
@@ -266,7 +266,7 @@ public class RequestBodyPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    if (undoManager.canUndo()) undoManager.undo();
+                    if (bodyUndoManager.canUndo()) bodyUndoManager.undo();
                 } catch (CannotUndoException ignored) {
                 }
             }
@@ -279,7 +279,7 @@ public class RequestBodyPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try {
-                    if (undoManager.canRedo()) undoManager.redo();
+                    if (bodyUndoManager.canRedo()) bodyUndoManager.redo();
                 } catch (CannotRedoException ignored) {
                 }
             }
@@ -608,6 +608,23 @@ public class RequestBodyPanel extends JPanel {
 
     public String getRawBody() {
         return bodyArea != null ? bodyArea.getText() : null;
+    }
+
+    /**
+     * 程序性加载请求体内容时必须重置撤销历史。
+     * <p>
+     * RSTA 自带一个内部 UndoManager，这里又为了兼容 Ctrl/Cmd 快捷键维护了
+     * bodyUndoManager。切换请求、加载历史请求这类 setText 不是用户编辑，如果不同时清掉
+     * 两个撤销栈，第一次 Ctrl+Z 会撤销“加载动作”，表现为编辑器内容被清空或回到上一个请求。
+     */
+    public void setRawBodyText(String text) {
+        if (bodyArea == null) {
+            return;
+        }
+        bodyArea.setText(text == null ? "" : text);
+        bodyArea.setCaretPosition(0);
+        bodyArea.discardAllEdits();
+        bodyUndoManager.discardAllEdits();
     }
 
     public void setEditable(boolean editable) {

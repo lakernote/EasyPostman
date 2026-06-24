@@ -1222,7 +1222,13 @@ public class MarkdownEditorPanel extends JPanel {
      * 设置编辑器文本
      */
     public void setText(String text) {
-        editorArea.setText(text);
+        editorArea.setText(text == null ? "" : text);
+        editorArea.setCaretPosition(0);
+        // setText 多用于切换请求/分组时加载已有描述，不应成为用户可撤销的一步。
+        // 同时清理 RSTA 内置 undo 和本面板自管 undo，避免 Ctrl+Z 把加载出的内容清空。
+        editorArea.discardAllEdits();
+        undoManager.discardAllEdits();
+        updateUndoRedoButtons();
         updatePreview();
     }
 

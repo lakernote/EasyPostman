@@ -512,8 +512,10 @@ public class WebSocketStagePropertyPanel extends JPanel {
         if (ac != null) {
             ac.setAutoActivationEnabled(false);
         }
-        area.setText(text);
+        area.setText(text == null ? "" : text);
         area.setCaretPosition(0);
+        // 这里是切换性能节点时回填配置，不是用户编辑；清掉 RSTA 记录的加载动作。
+        area.discardAllEdits();
         if (ac != null) {
             ac.setAutoActivationEnabled(true);
         }

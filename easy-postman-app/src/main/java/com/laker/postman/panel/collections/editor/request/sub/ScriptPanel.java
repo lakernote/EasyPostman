@@ -267,7 +267,10 @@ public class ScriptPanel extends JPanel {
      */
     private void setEditorText(RSyntaxTextArea area, AutoCompletion ac, String text) {
         if (ac != null) ac.setAutoActivationEnabled(false);
-        area.setText(text);
+        area.setText(text == null ? "" : text);
+        area.setCaretPosition(0);
+        // 切换请求时的 setText 是数据加载，不是用户编辑；否则第一次 Ctrl/Cmd+Z 会撤销加载动作并清空脚本。
+        area.discardAllEdits();
         if (ac != null) ac.setAutoActivationEnabled(true);
     }
 

@@ -12,10 +12,11 @@ import java.util.regex.Pattern;
 import static com.laker.postman.plugin.capture.CaptureI18n.t;
 
 final class CaptureRequestFilter {
-    private final String rawValue;
     private final Expression expression;
     private final List<Rule> includeHostRules;
     private final List<Rule> excludeHostRules;
+    private final List<Rule> includeMethodRules;
+    private final List<Rule> excludeMethodRules;
     private final List<Rule> includePathRules;
     private final List<Rule> excludePathRules;
     private final List<Rule> includeQueryRules;
@@ -30,10 +31,11 @@ final class CaptureRequestFilter {
     private final List<Rule> excludeRegexRules;
     private final List<String> summaryTokens;
 
-    private CaptureRequestFilter(String rawValue,
-                                 Expression expression,
+    private CaptureRequestFilter(Expression expression,
                                  List<Rule> includeHostRules,
                                  List<Rule> excludeHostRules,
+                                 List<Rule> includeMethodRules,
+                                 List<Rule> excludeMethodRules,
                                  List<Rule> includePathRules,
                                  List<Rule> excludePathRules,
                                  List<Rule> includeQueryRules,
@@ -47,10 +49,11 @@ final class CaptureRequestFilter {
                                  List<Rule> includeRegexRules,
                                  List<Rule> excludeRegexRules,
                                  List<String> summaryTokens) {
-        this.rawValue = rawValue;
         this.expression = expression;
         this.includeHostRules = List.copyOf(includeHostRules);
         this.excludeHostRules = List.copyOf(excludeHostRules);
+        this.includeMethodRules = List.copyOf(includeMethodRules);
+        this.excludeMethodRules = List.copyOf(excludeMethodRules);
         this.includePathRules = List.copyOf(includePathRules);
         this.excludePathRules = List.copyOf(excludePathRules);
         this.includeQueryRules = List.copyOf(includeQueryRules);
@@ -71,6 +74,8 @@ final class CaptureRequestFilter {
         Expression expression = null;
         List<Rule> includeHostRules = new ArrayList<>();
         List<Rule> excludeHostRules = new ArrayList<>();
+        List<Rule> includeMethodRules = new ArrayList<>();
+        List<Rule> excludeMethodRules = new ArrayList<>();
         List<Rule> includePathRules = new ArrayList<>();
         List<Rule> excludePathRules = new ArrayList<>();
         List<Rule> includeQueryRules = new ArrayList<>();
@@ -103,6 +108,7 @@ final class CaptureRequestFilter {
                 summaryTokens.add(rule.summaryToken());
                 switch (rule.type()) {
                     case HOST -> (rule.exclude() ? excludeHostRules : includeHostRules).add(rule);
+                    case METHOD -> (rule.exclude() ? excludeMethodRules : includeMethodRules).add(rule);
                     case PATH -> (rule.exclude() ? excludePathRules : includePathRules).add(rule);
                     case QUERY -> (rule.exclude() ? excludeQueryRules : includeQueryRules).add(rule);
                     case URL -> (rule.exclude() ? excludeUrlRules : includeUrlRules).add(rule);
@@ -115,10 +121,11 @@ final class CaptureRequestFilter {
         }
 
         return new CaptureRequestFilter(
-                normalizedRaw,
                 expression,
                 includeHostRules,
                 excludeHostRules,
+                includeMethodRules,
+                excludeMethodRules,
                 includePathRules,
                 excludePathRules,
                 includeQueryRules,
@@ -136,11 +143,16 @@ final class CaptureRequestFilter {
     }
 
     boolean matches(String host, String requestUri, String fullUrl, Map<String, String> headers) {
-        RequestParts parts = RequestParts.from(host, requestUri, fullUrl, headers);
+        return matches("", host, requestUri, fullUrl, headers);
+    }
+
+    boolean matches(String method, String host, String requestUri, String fullUrl, Map<String, String> headers) {
+        RequestParts parts = RequestParts.from(method, host, requestUri, fullUrl, headers);
         if (expression != null) {
             return expression.matches(parts);
         }
         if (matchesAny(excludeHostRules, parts.host())
+                || matchesAny(excludeMethodRules, parts.method())
                 || matchesAny(excludePathRules, parts.path())
                 || matchesAny(excludeQueryRules, parts.query())
                 || matchesAny(excludeUrlRules, parts.fullUrl())
@@ -150,6 +162,7 @@ final class CaptureRequestFilter {
             return false;
         }
         return matchesDimension(includeHostRules, parts.host())
+                && matchesDimension(includeMethodRules, parts.method())
                 && matchesDimension(includePathRules, parts.path())
                 && matchesDimension(includeQueryRules, parts.query())
                 && matchesDimension(includeUrlRules, parts.fullUrl())
@@ -170,10 +183,6 @@ final class CaptureRequestFilter {
             return true;
         }
         return matchesAny(includeHostRules, normalizedHost);
-    }
-
-    String rawValue() {
-        return rawValue;
     }
 
     String summary() {
@@ -261,14 +270,16 @@ final class CaptureRequestFilter {
         return false;
     }
 
-    private record RequestParts(String host,
+    private record RequestParts(String method,
+                                String host,
                                 String path,
                                 String query,
                                 String fullUrl,
                                 String scheme,
                                 String resourceType) {
-        private static RequestParts from(String host, String requestUri, String fullUrl, Map<String, String> headers) {
+        private static RequestParts from(String method, String host, String requestUri, String fullUrl, Map<String, String> headers) {
             String normalizedHost = normalizeHost(host);
+            String normalizedMethod = method == null ? "" : method.trim().toLowerCase(Locale.ROOT);
             String uri = requestUri == null || requestUri.isBlank() ? "/" : requestUri;
             int queryIndex = uri.indexOf('?');
             String path = queryIndex >= 0 ? uri.substring(0, queryIndex) : uri;
@@ -278,6 +289,7 @@ final class CaptureRequestFilter {
             }
             String normalizedFullUrl = (fullUrl == null ? "" : fullUrl).toLowerCase(Locale.ROOT);
             return new RequestParts(
+                    normalizedMethod,
                     normalizedHost,
                     path.toLowerCase(Locale.ROOT),
                     query.toLowerCase(Locale.ROOT),
@@ -407,6 +419,7 @@ final class CaptureRequestFilter {
         public boolean matches(RequestParts parts) {
             boolean matched = switch (rule.type()) {
                 case HOST -> rule.matches(parts.host());
+                case METHOD -> rule.matches(parts.method());
                 case PATH -> rule.matches(parts.path());
                 case QUERY -> rule.matches(parts.query());
                 case URL -> rule.matches(parts.fullUrl());
@@ -566,6 +579,7 @@ final class CaptureRequestFilter {
 
     private enum RuleType {
         HOST,
+        METHOD,
         PATH,
         QUERY,
         URL,
@@ -594,6 +608,9 @@ final class CaptureRequestFilter {
             if (lower.startsWith("host:")) {
                 type = RuleType.HOST;
                 value = normalized.substring(5);
+            } else if (lower.startsWith("method:")) {
+                type = RuleType.METHOD;
+                value = normalized.substring(7);
             } else if (lower.startsWith("path:")) {
                 type = RuleType.PATH;
                 value = normalized.substring(5);
@@ -624,7 +641,9 @@ final class CaptureRequestFilter {
             if (cleanedValue.isEmpty()) {
                 return null;
             }
-            if (type == RuleType.SCHEME || type == RuleType.TYPE) {
+            if (type == RuleType.METHOD) {
+                cleanedValue = cleanedValue.toUpperCase(Locale.ROOT);
+            } else if (type == RuleType.SCHEME || type == RuleType.TYPE) {
                 cleanedValue = cleanedValue.toLowerCase(Locale.ROOT);
             }
 
@@ -642,6 +661,7 @@ final class CaptureRequestFilter {
         private String summaryToken() {
             String prefix = switch (type) {
                 case HOST -> "host:";
+                case METHOD -> "method:";
                 case PATH -> "path:";
                 case QUERY -> "query:";
                 case URL -> "url:";
@@ -650,6 +670,7 @@ final class CaptureRequestFilter {
                 case REGEX -> "regex:";
             };
             if ((type == RuleType.HOST && !value.contains("*") && !value.contains(":"))
+                    || type == RuleType.METHOD
                     || type == RuleType.SCHEME
                     || type == RuleType.TYPE) {
                 return (exclude ? "!" : "") + value;
@@ -663,7 +684,7 @@ final class CaptureRequestFilter {
             }
             return switch (type) {
                 case HOST -> matchesHost(candidate);
-                case PATH, QUERY, URL, SCHEME, TYPE -> matchesText(candidate);
+                case METHOD, PATH, QUERY, URL, SCHEME, TYPE -> matchesText(candidate);
                 case REGEX -> regexPattern != null && regexPattern.matcher(candidate).find();
             };
         }

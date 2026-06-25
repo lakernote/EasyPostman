@@ -144,6 +144,7 @@ public class EnhancedTablePanel extends JPanel {
 
         updateHintLabel();
         applyFilterAndSort();
+        updateSortHeaders();
     }
 
     /**
@@ -156,6 +157,7 @@ public class EnhancedTablePanel extends JPanel {
         sortCol = -1;
         updateHintLabel();
         applyFilterAndSort();
+        updateSortHeaders();
     }
 
     /**
@@ -192,6 +194,26 @@ public class EnhancedTablePanel extends JPanel {
         return sortCol >= 0 && sortCol < currentColumns.length;
     }
 
+    public void setSort(int columnIndex, boolean ascending) {
+        if (columnIndex < 0 || columnIndex >= currentColumns.length) {
+            clearSort();
+            return;
+        }
+        sortCol = columnIndex;
+        sortAsc = ascending;
+        currentPage = 0;
+        applyFilterAndSort();
+        updateSortHeaders();
+    }
+
+    public void clearSort() {
+        sortCol = -1;
+        sortAsc = true;
+        currentPage = 0;
+        applyFilterAndSort();
+        updateSortHeaders();
+    }
+
     /**
      * 清空数据（保持列结构）
      */
@@ -202,6 +224,7 @@ public class EnhancedTablePanel extends JPanel {
         sortCol = -1;
         updateHintLabel();
         tableModel.setRowCount(0);
+        updateSortHeaders();
         updatePaginationControls();
         updateEmptyState();
         notifyViewDataChanged();

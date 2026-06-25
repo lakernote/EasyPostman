@@ -22,33 +22,26 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import javax.net.ssl.SSLHandshakeException;
 
+import static com.laker.postman.plugin.capture.CaptureI18n.t;
+
+@RequiredArgsConstructor
 final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Logger log = LoggerFactory.getLogger(HttpsMitmFrontendHandler.class);
 
     private final CaptureSessionStore sessionStore;
     private final CaptureCertificateService certificateService;
-    private final CaptureRequestFilter captureRequestFilter;
+    private final CaptureFilterState captureFilterState;
     private final String targetHost;
     private final int targetPort;
-
-    HttpsMitmFrontendHandler(CaptureSessionStore sessionStore,
-                             CaptureCertificateService certificateService,
-                             CaptureRequestFilter captureRequestFilter,
-                             String targetHost,
-                             int targetPort) {
-        this.sessionStore = sessionStore;
-        this.certificateService = certificateService;
-        this.captureRequestFilter = captureRequestFilter;
-        this.targetHost = targetHost;
-        this.targetPort = targetPort;
-    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
@@ -56,7 +49,7 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         String uri = request.uri() == null || request.uri().isBlank() ? "/" : request.uri();
         String fullUrl = "https://" + targetHost + (targetPort == 443 ? "" : ":" + targetPort) + uri;
 
-        if (!captureRequestFilter.matches(targetHost, uri, fullUrl, flattenHeaders(request.headers()))) {
+        if (!captureFilterState.current().matches(request.method().name(), targetHost, uri, fullUrl, flattenHeaders(request.headers()))) {
             proxyHttpsWithoutCapture(ctx, request, uri, requestBody, fullUrl);
             return;
         }
@@ -88,7 +81,7 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                         SslHandler sslHandler = clientSslContext.newHandler(ch.alloc(), targetHost, targetPort);
                         sslHandler.handshakeFuture().addListener(handshakeFuture -> {
                             if (handshakeFuture.isSuccess()) {
-                                log.info("Upstream TLS handshake succeeded for {}:{}", targetHost, targetPort);
+                                log.debug("Upstream TLS handshake succeeded for {}:{}", targetHost, targetPort);
                             } else {
                                 log.warn("Upstream TLS handshake failed for {}:{} - {}", targetHost, targetPort, summarize(handshakeFuture.cause()));
                             }
@@ -167,9 +160,38 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (isClientTlsHandshakeFailure(cause)) {
+            log.warn("HTTPS MITM client TLS handshake failed for {}:{} - {}", targetHost, targetPort, summarize(cause));
+            recordClientTlsHandshakeFailure(cause);
+            ctx.close();
+            return;
+        }
         log.error("HTTPS MITM frontend request failed for {}:{}", targetHost, targetPort, cause);
         writeSimpleResponse(ctx, HttpResponseStatus.INTERNAL_SERVER_ERROR,
                 cause == null ? "HTTPS MITM request failed" : summarize(cause));
+    }
+
+    private boolean isClientTlsHandshakeFailure(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof SSLHandshakeException) {
+                return true;
+            }
+            Throwable next = current.getCause();
+            if (next == null || next == current) {
+                return false;
+            }
+            current = next;
+        }
+        return false;
+    }
+
+    private void recordClientTlsHandshakeFailure(Throwable cause) {
+        sessionStore.recordTlsIssue(
+                targetHost,
+                targetPort,
+                t(MessageKeys.TOOLBOX_CAPTURE_TLS_CLIENT_REJECTED, targetHost, summarize(cause))
+        );
     }
 
     private FullHttpRequest buildOutboundRequest(FullHttpRequest request, String uri, byte[] requestBody) {

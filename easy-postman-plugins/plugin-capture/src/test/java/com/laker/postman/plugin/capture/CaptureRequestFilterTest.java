@@ -40,6 +40,24 @@ public class CaptureRequestFilterTest {
     }
 
     @Test
+    public void shouldSupportMethodRules() {
+        CaptureRequestFilter filter = CaptureRequestFilter.parse("method:POST host:api.example.com path:/orders");
+
+        assertTrue(filter.matches(
+                "POST",
+                "api.example.com",
+                "/v1/orders?debug=true",
+                "https://api.example.com/v1/orders?debug=true",
+                Map.of()));
+        assertFalse(filter.matches(
+                "GET",
+                "api.example.com",
+                "/v1/orders?debug=true",
+                "https://api.example.com/v1/orders?debug=true",
+                Map.of()));
+    }
+
+    @Test
     public void shouldSupportExcludeRules() {
         CaptureRequestFilter filter = CaptureRequestFilter.parse("host:example.com !query:token=secret");
 

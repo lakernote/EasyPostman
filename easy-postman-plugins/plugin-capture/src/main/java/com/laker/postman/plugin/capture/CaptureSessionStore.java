@@ -3,14 +3,18 @@ package com.laker.postman.plugin.capture;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 final class CaptureSessionStore {
     private static final int MAX_FLOWS = 300;
+    private static final int TLS_ISSUE_STATUS_CODE = 495;
+    private static final long TLS_ISSUE_SUPPRESS_MS = 30_000L;
 
     private final List<CaptureFlow> flows = new ArrayList<>();
     private final Map<String, CaptureFlow> flowById = new LinkedHashMap<>();
+    private final Map<String, Long> tlsIssueRecordedAt = new LinkedHashMap<>();
     private final CopyOnWriteArrayList<Runnable> listeners = new CopyOnWriteArrayList<>();
 
     CaptureFlow createFlow(String method,
@@ -30,6 +34,33 @@ final class CaptureSessionStore {
         }
         fireChanged();
         return flow;
+    }
+
+    void recordTlsIssue(String host, int port, String message) {
+        String normalizedHost = host == null ? "" : host.trim();
+        if (normalizedHost.isBlank()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        String key = normalizedHost.toLowerCase(Locale.ROOT) + ":" + port;
+        synchronized (this) {
+            Long lastRecordedAt = tlsIssueRecordedAt.get(key);
+            if (lastRecordedAt != null && now - lastRecordedAt < TLS_ISSUE_SUPPRESS_MS) {
+                return;
+            }
+            tlsIssueRecordedAt.put(key, now);
+        }
+
+        String url = "https://" + normalizedHost + (port == 443 ? "" : ":" + port) + "/";
+        CaptureFlow flow = createFlow(
+                "TLS",
+                url,
+                normalizedHost,
+                "/",
+                Map.of(),
+                new byte[0]
+        );
+        fail(flow.id(), TLS_ISSUE_STATUS_CODE, message);
     }
 
     void complete(String flowId, int statusCode, String statusText, Map<String, String> responseHeaders, byte[] responseBody) {
@@ -131,6 +162,7 @@ final class CaptureSessionStore {
     synchronized void clear() {
         flows.clear();
         flowById.clear();
+        tlsIssueRecordedAt.clear();
         fireChanged();
     }
 

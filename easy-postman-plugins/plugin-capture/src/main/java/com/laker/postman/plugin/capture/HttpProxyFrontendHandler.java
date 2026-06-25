@@ -26,28 +26,26 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLHandshakeException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static com.laker.postman.plugin.capture.CaptureI18n.t;
+
+@RequiredArgsConstructor
 final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final int MAX_HTTP_OBJECT_SIZE = 10 * 1024 * 1024;
     private static final Logger log = LoggerFactory.getLogger(HttpProxyFrontendHandler.class);
 
     private final CaptureSessionStore sessionStore;
     private final CaptureCertificateService certificateService;
-    private final CaptureRequestFilter captureRequestFilter;
-
-    HttpProxyFrontendHandler(CaptureSessionStore sessionStore,
-                             CaptureCertificateService certificateService,
-                             CaptureRequestFilter captureRequestFilter) {
-        this.sessionStore = sessionStore;
-        this.certificateService = certificateService;
-        this.captureRequestFilter = captureRequestFilter;
-    }
+    private final CaptureFilterState captureFilterState;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
@@ -68,7 +66,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             return;
         }
 
-        if (!captureRequestFilter.matches(target.host, target.requestUri, target.fullUrl, flattenHeaders(request.headers()))) {
+        if (!captureFilterState.current().matches(request.method().name(), target.host, target.requestUri, target.fullUrl, flattenHeaders(request.headers()))) {
             proxyHttpWithoutCapture(ctx, request, target);
             return;
         }
@@ -129,7 +127,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         int port = hostPort.port();
         log.debug("CONNECT request received: {} -> {}:{}", authority, host, port);
 
-        if (!captureRequestFilter.shouldMitmHost(host)) {
+        if (!captureFilterState.current().shouldMitmHost(host)) {
             establishDirectTunnel(ctx, authority, host, port);
             return;
         }
@@ -179,7 +177,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                 if (handshakeFuture.isSuccess()) {
                     log.debug("Client TLS handshake succeeded for {}", authority);
                 } else {
-                    log.warn("Client TLS handshake failed for {}: {}", authority, summarize(handshakeFuture.cause()));
+                    recordClientTlsHandshakeFailure(targetHost, targetPort, handshakeFuture.cause());
                 }
             });
             pipeline.addLast("mitm-ssl", sslHandler);
@@ -188,7 +186,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             pipeline.addLast("httpsFrontendHandler", new HttpsMitmFrontendHandler(
                     sessionStore,
                     certificateService,
-                    captureRequestFilter,
+                    captureFilterState,
                     targetHost,
                     targetPort
             ));
@@ -334,5 +332,36 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             message = throwable.getMessage();
         }
         return root.getClass().getSimpleName() + (message == null || message.isBlank() ? "" : ": " + message);
+    }
+
+    private void recordClientTlsHandshakeFailure(String host, int port, Throwable cause) {
+        sessionStore.recordTlsIssue(
+                host,
+                port,
+                t(MessageKeys.TOOLBOX_CAPTURE_TLS_CLIENT_HANDSHAKE_FAILED, host, summarize(cause))
+        );
+        if (isClientHandshakeAbort(cause)) {
+            log.debug("Client closed MITM TLS handshake for {}:{} - {}", host, port, summarize(cause));
+            return;
+        }
+        log.warn("Client TLS handshake failed for {}:{} - {}", host, port, summarize(cause));
+    }
+
+    private boolean isClientHandshakeAbort(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof ClosedChannelException) {
+                return true;
+            }
+            if (current instanceof SSLHandshakeException) {
+                return false;
+            }
+            Throwable next = current.getCause();
+            if (next == null || next == current) {
+                return false;
+            }
+            current = next;
+        }
+        return false;
     }
 }

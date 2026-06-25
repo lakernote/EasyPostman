@@ -48,4 +48,47 @@ public class CaptureFlowTest {
         assertTrue(flow.streamDetailText().contains("SSE"));
         assertTrue(flow.streamDetailText().contains("data: hello"));
     }
+
+    @Test
+    public void shouldShowTlsFailureDiagnosisInResponseDetails() {
+        CaptureFlow flow = new CaptureFlow(
+                "TLS",
+                "https://pinned.example.com/",
+                "pinned.example.com",
+                "/",
+                Map.of(),
+                new byte[0]
+        );
+
+        flow.fail(495, "client rejected certificate");
+
+        String detail = flow.responseDetailText();
+        assertTrue(detail.contains("pinned.example.com"));
+        assertTrue(detail.contains("client rejected certificate"));
+        assertTrue(detail.contains("TLS"));
+    }
+
+    @Test
+    public void shouldKeepOriginalHeadersInDetailText() {
+        CaptureFlow flow = new CaptureFlow(
+                "GET",
+                "https://example.com/api",
+                "example.com",
+                "/api",
+                Map.of(
+                        "Authorization", "Bearer very-secret-token",
+                        "Cookie", "sid=private-session",
+                        "Accept", "application/json"
+                ),
+                new byte[0]
+        );
+
+        String detail = flow.requestDetailText();
+
+        assertTrue(detail.contains("Authorization"));
+        assertTrue(detail.contains("Cookie"));
+        assertTrue(detail.contains("Accept: application/json"));
+        assertTrue(detail.contains("very-secret-token"));
+        assertTrue(detail.contains("private-session"));
+    }
 }

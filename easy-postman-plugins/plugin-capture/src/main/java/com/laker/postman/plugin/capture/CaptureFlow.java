@@ -55,7 +55,7 @@ final class CaptureFlow {
         this.requestHeaders = new LinkedHashMap<>(requestHeaders);
         this.requestSize = requestBody == null ? 0 : requestBody.length;
         this.requestBody = trimPreview(requestBody);
-        this.protocol = detectInitialProtocol(requestHeaders);
+        this.protocol = "TLS".equalsIgnoreCase(method) ? Protocol.TLS : detectInitialProtocol(requestHeaders);
     }
 
     String id() {
@@ -114,6 +114,7 @@ final class CaptureFlow {
     String protocolText() {
         return switch (protocol) {
             case HTTP -> t(MessageKeys.TOOLBOX_CAPTURE_PROTOCOL_HTTP);
+            case TLS -> t(MessageKeys.TOOLBOX_CAPTURE_PROTOCOL_TLS);
             case SSE -> t(MessageKeys.TOOLBOX_CAPTURE_PROTOCOL_SSE);
             case WEBSOCKET -> t(MessageKeys.TOOLBOX_CAPTURE_PROTOCOL_WEBSOCKET);
         };
@@ -261,10 +262,11 @@ final class CaptureFlow {
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL), protocolText());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS),
                 statusCode > 0 ? statusCode + " " + statusText : t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PENDING));
-        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION), durationMs() + " ms");
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION), CaptureValueFormat.duration(durationMs()));
         if (!errorMessage.isBlank()) {
             appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_ERROR), errorMessage);
         }
+        appendTlsDiagnosis(builder);
 
         builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_REQUEST_HEADERS)).append('\n');
         builder.append("---------------\n");
@@ -290,6 +292,7 @@ final class CaptureFlow {
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_URL), url);
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_TIME), new Date(startedAt).toString());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL), protocolText());
+        appendTlsDiagnosis(builder);
         builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_REQUEST_HEADERS)).append('\n');
         builder.append("---------------\n");
         appendHeaders(builder, requestHeaders);
@@ -303,10 +306,11 @@ final class CaptureFlow {
         StringBuilder builder = new StringBuilder();
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL), protocolText());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS), statusDisplayText());
-        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION), durationMs() + " ms");
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION), CaptureValueFormat.duration(durationMs()));
         if (!errorMessage.isBlank()) {
             appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_ERROR), errorMessage);
         }
+        appendTlsDiagnosis(builder);
         builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_HEADERS)).append('\n');
         builder.append("----------------\n");
         appendHeaders(builder, responseHeaders);
@@ -369,12 +373,24 @@ final class CaptureFlow {
         builder.append(key).append(": ").append(value == null ? "" : value).append('\n');
     }
 
+    private void appendTlsDiagnosis(StringBuilder builder) {
+        if (statusCode != 495) {
+            return;
+        }
+        String detail = errorMessage.isBlank() ? statusDisplayText() : errorMessage;
+        builder.append('\n')
+                .append(t(MessageKeys.TOOLBOX_CAPTURE_TLS_DIAGNOSIS_TITLE))
+                .append('\n')
+                .append(t(MessageKeys.TOOLBOX_CAPTURE_TLS_DIAGNOSIS_BODY, host, detail))
+                .append('\n');
+    }
+
     private static void appendHeaders(StringBuilder builder, Map<String, String> headers) {
         if (headers == null || headers.isEmpty()) {
             builder.append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_EMPTY)).append('\n');
             return;
         }
-        headers.forEach((name, value) -> builder.append(name).append(": ").append(value).append('\n'));
+        headers.forEach((name, value) -> builder.append(name).append(": ").append(value == null ? "" : value).append('\n'));
     }
 
     private String curlBodyText() {
@@ -554,6 +570,7 @@ final class CaptureFlow {
 
     private enum Protocol {
         HTTP,
+        TLS,
         SSE,
         WEBSOCKET
     }

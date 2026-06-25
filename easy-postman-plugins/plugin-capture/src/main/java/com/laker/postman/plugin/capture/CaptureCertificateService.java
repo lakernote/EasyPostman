@@ -3,6 +3,7 @@ package com.laker.postman.plugin.capture;
 import com.laker.postman.util.SystemUtil;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.util.NetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,19 +89,23 @@ final class CaptureCertificateService {
     SslContext buildServerSslContext(String host) throws Exception {
         ensureRootCa();
         String normalizedHost = normalizeHost(host);
-        log.info("Building MITM SSL context for host {} (normalized: {})", host, normalizedHost);
+        log.debug("Building MITM SSL context for host {} (normalized: {})", host, normalizedHost);
         return serverContextCache.computeIfAbsent(normalizedHost, this::createServerContextUnchecked);
     }
 
     SslContext buildClientSslContext() throws SSLException {
-        return SslContextBuilder.forClient().build();
+        // Capture mode has already delegated browser TLS to this proxy; do not let JVM-only CA trust reject
+        // OS/browser-trusted enterprise or interception chains before the traffic can be inspected.
+        return SslContextBuilder.forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .build();
     }
 
     private SslContext createServerContextUnchecked(String host) {
         try {
             KeyPair leafKeyPair = generateRsaKeyPair();
             X509Certificate certificate = issueLeafCertificate(host, leafKeyPair);
-            log.info("Issued MITM leaf certificate for host {}", host);
+            log.debug("Issued MITM leaf certificate for host {}", host);
             return SslContextBuilder.forServer(leafKeyPair.getPrivate(), certificate, rootCertificate).build();
         } catch (Exception ex) {
             log.error("Failed to build MITM certificate for host {}", host, ex);

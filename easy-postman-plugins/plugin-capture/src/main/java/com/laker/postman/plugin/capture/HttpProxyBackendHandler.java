@@ -3,6 +3,7 @@ package com.laker.postman.plugin.capture;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelHandler;
@@ -25,6 +26,7 @@ import io.netty.handler.codec.http.LastHttpContent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -84,9 +86,7 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
         response.headers().forEach(entry -> clientResponse.headers().add(entry.getKey(), entry.getValue()));
         clientChannel.writeAndFlush(clientResponse).addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
-                log.warn("Failed to write response headers to client for flow {}", flowId);
-                future.channel().close();
-                ctx.close();
+                handleClientWriteFailure(ctx, future, "response headers");
             }
         });
     }
@@ -109,9 +109,7 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
         boolean last = content instanceof LastHttpContent;
         clientChannel.writeAndFlush(clientContent).addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
-                log.warn("Failed to write response body to client for flow {}", flowId);
-                future.channel().close();
-                ctx.close();
+                handleClientWriteFailure(ctx, future, "response body");
                 return;
             }
             if (last) {
@@ -127,9 +125,7 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
         response.headers().forEach(entry -> handshake.headers().add(entry.getKey(), entry.getValue()));
         clientChannel.writeAndFlush(handshake).addListener((ChannelFutureListener) future -> {
             if (!future.isSuccess()) {
-                log.warn("Failed to forward WebSocket handshake for flow {}", flowId);
-                future.channel().close();
-                ctx.close();
+                handleClientWriteFailure(ctx, future, "WebSocket handshake");
                 return;
             }
             switchToTunnel(ctx);
@@ -215,6 +211,35 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
         response.headers().set(HttpHeaderNames.CONNECTION, "close");
         clientChannel.write(response);
         clientChannel.writeAndFlush(content).addListener(ChannelFutureListener.CLOSE);
+    }
+
+    private void handleClientWriteFailure(ChannelHandlerContext ctx,
+                                          ChannelFuture future,
+                                          String operation) {
+        finishFlow();
+        Throwable cause = future.cause();
+        if (isClientDisconnect(cause) || !clientChannel.isActive()) {
+            log.debug("Client closed before writing {} for flow {}: {}", operation, flowId, summarize(cause));
+        } else {
+            log.warn("Failed to write {} to client for flow {}: {}", operation, flowId, summarize(cause), cause);
+        }
+        future.channel().close();
+        ctx.close();
+    }
+
+    private boolean isClientDisconnect(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof ClosedChannelException) {
+                return true;
+            }
+            Throwable next = current.getCause();
+            if (next == null || next == current) {
+                return false;
+            }
+            current = next;
+        }
+        return false;
     }
 
     private static boolean isWebSocketUpgrade(HttpResponse response) {

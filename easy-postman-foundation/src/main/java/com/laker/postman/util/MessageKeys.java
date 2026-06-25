@@ -2014,6 +2014,10 @@ public final class MessageKeys {
     public static final String WATERFALL_STAGE_WAITING = "waterfall.stage.waiting";
     public static final String WATERFALL_STAGE_CONTENT_DOWNLOAD = "waterfall.stage.content_download";
     public static final String WATERFALL_STAGE_DURATION = "waterfall.stage.duration";
+    public static final String WATERFALL_STAGE_DURATION_SUB_MILLISECOND = "waterfall.stage.duration.sub_millisecond";
+    public static final String WATERFALL_STAGE_DURATION_NOT_RECORDED = "waterfall.stage.duration.not_recorded";
+    public static final String WATERFALL_STAGE_DURATION_SUB_MILLISECOND_NOTE = "waterfall.stage.duration.sub_millisecond_note";
+    public static final String WATERFALL_STAGE_DURATION_NOT_RECORDED_NOTE = "waterfall.stage.duration.not_recorded_note";
     public static final String WATERFALL_STAGE_DESC_DNS = "waterfall.stage.desc.dns";
     public static final String WATERFALL_STAGE_DESC_SOCKET = "waterfall.stage.desc.socket";
     public static final String WATERFALL_STAGE_DESC_SSL = "waterfall.stage.desc.ssl";

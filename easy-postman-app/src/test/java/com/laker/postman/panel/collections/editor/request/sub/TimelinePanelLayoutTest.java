@@ -8,14 +8,18 @@ import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 
 import java.awt.Cursor;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionListener;
+import java.awt.image.BufferedImage;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -84,6 +88,121 @@ public class TimelinePanelLayoutTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void zeroDurationStageShouldUseSameRowHoverBackground() {
+        TimelinePanel panel = new TimelinePanel(List.of(
+                new TimelinePanel.Stage("DNS解析", 0, 0, "DNS")
+        ), new HttpEventInfo());
+        Dimension preferredSize = panel.getPreferredSize();
+        panel.setSize(preferredSize);
+        int barCenterY = preferredSize.height - 36;
+
+        moveMouse(panel, 180, barCenterY);
+        BufferedImage image = paintPanel(panel);
+
+        Color rowBackground = new Color(image.getRGB(30, barCenterY), true);
+        assertEquals(rowBackground, TimelineTheme.hoveredBarBackground(),
+                "Zero-duration rows should use the same hover highlight as timed rows");
+    }
+
+    @Test
+    public void durationStageShouldKeepDefaultCursorBecauseRowsAreTooltipOnly() {
+        TimelinePanel panel = new TimelinePanel(List.of(
+                new TimelinePanel.Stage("DNS解析", 0, 148, "DNS")
+        ), new HttpEventInfo());
+        Dimension preferredSize = panel.getPreferredSize();
+        panel.setSize(preferredSize);
+        int barCenterY = preferredSize.height - 36;
+
+        moveMouse(panel, 180, barCenterY);
+
+        assertEquals(panel.getCursor().getType(), Cursor.DEFAULT_CURSOR,
+                "Timeline rows expose hover details but are not clickable actions");
+    }
+
+    @Test
+    public void zeroDurationStageRowShouldExplainMissingObservedTiming() {
+        boolean originalChinese = I18nUtil.isChinese();
+        try {
+            I18nUtil.setLocale("en");
+            TimelinePanel panel = new TimelinePanel(List.of(
+                    new TimelinePanel.Stage("DNS", 0, 0, "DNS")
+            ), new HttpEventInfo());
+            Dimension preferredSize = panel.getPreferredSize();
+            panel.setSize(preferredSize);
+
+            String tooltip = findStageTooltip(panel, 180, "DNS");
+
+            assertNotNull(tooltip);
+            assertTrue(tooltip.contains("Not recorded"),
+                    "Unobserved zero-duration stages should explain why no bar is drawn");
+        } finally {
+            I18nUtil.setLocale(originalChinese ? "zh" : "en");
+        }
+    }
+
+    @Test
+    public void sameMillisecondObservedStageShouldDisplaySubMillisecondDuration() {
+        boolean originalChinese = I18nUtil.isChinese();
+        try {
+            I18nUtil.setLocale("en");
+            HttpEventInfo info = new HttpEventInfo();
+            info.setDnsStart(1_000);
+            info.setDnsEnd(1_000);
+            TimelinePanel panel = new TimelinePanel(TimelinePanel.buildStandardStages(info), info);
+            Dimension preferredSize = panel.getPreferredSize();
+            panel.setSize(preferredSize);
+
+            String tooltip = findStageTooltip(panel, 180, "DNS");
+
+            assertNotNull(tooltip);
+            assertTrue(tooltip.contains("&lt;1ms"),
+                    "Same-millisecond observed stages should be displayed as sub-millisecond timing");
+            assertTrue(tooltip.contains("same millisecond"),
+                    "Tooltip should distinguish observed sub-millisecond timing from missing timing");
+        } finally {
+            I18nUtil.setLocale(originalChinese ? "zh" : "en");
+        }
+    }
+
+    @Test
+    public void subMillisecondMarkerShouldClampToTrackWithoutTextReserve() {
+        int trackRightX = 1_000;
+        int markerX = TimelinePanel.resolveSubMillisecondMarkerX(996, 4, trackRightX);
+
+        assertEquals(markerX, 996,
+                "Sub-millisecond markers should only reserve their own width because the duration is shown in the tooltip");
+    }
+
+    @Test
+    public void subMillisecondStagesShouldReserveVisualSlotsInSequence() {
+        List<TimelinePanel.Stage> stages = List.of(
+                new TimelinePanel.Stage("Request Send", 1_000, 1_000, ""),
+                new TimelinePanel.Stage("Waiting", 1_000, 1_005, ""),
+                new TimelinePanel.Stage("Content Download", 1_005, 1_005, "")
+        );
+
+        int[] widths = TimelinePanel.resolveStageVisualWidths(stages, 5, 500);
+
+        assertEquals(widths.length, 3);
+        assertTrue(widths[0] > 0 && widths[0] < widths[1],
+                "Leading sub-millisecond stages should reserve a small visual slot before the next duration bar");
+        assertEquals(widths[0], widths[2],
+                "Sub-millisecond stages should use a consistent visual slot");
+        assertEquals(widths[1], 500 - widths[0] - widths[2],
+                "Duration bars should use the remaining visual space after sub-millisecond slots");
+        assertEquals(IntStream.of(widths).sum(), 500,
+                "Observed visual stages should fill the available track without overflowing");
+    }
+
+    @Test
+    public void durationTextShouldOnlyRenderInsideBarsWithEnoughSpace() {
+        assertTrue(TimelinePanel.shouldDrawDurationTextInsideBar(60, 40),
+                "Duration labels should be shown when the bar has enough room for text and padding");
+        assertFalse(TimelinePanel.shouldDrawDurationTextInsideBar(48, 40),
+                "Duration labels should be hidden instead of being pushed outside narrow bars");
+    }
+
+    @Test
     public void connectionInfoTooltipShouldExposeFullTruncatedValues() {
         HttpEventInfo info = new HttpEventInfo();
         info.setRemoteAddress("very-long-hostname-for-debugging.example.internal/192.168.100.101:443");
@@ -142,5 +261,27 @@ public class TimelinePanelLayoutTest extends AbstractSwingUiTest {
         for (MouseMotionListener listener : panel.getMouseMotionListeners()) {
             listener.mouseMoved(event);
         }
+    }
+
+    private static BufferedImage paintPanel(TimelinePanel panel) {
+        BufferedImage image = new BufferedImage(panel.getWidth(), panel.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        var graphics = image.createGraphics();
+        try {
+            panel.paint(graphics);
+        } finally {
+            graphics.dispose();
+        }
+        return image;
+    }
+
+    private static String findStageTooltip(TimelinePanel panel, int x, String stageLabel) {
+        for (int y = 0; y < panel.getHeight(); y++) {
+            String tooltip = panel.getToolTipText(new MouseEvent(panel, MouseEvent.MOUSE_MOVED,
+                    System.currentTimeMillis(), 0, x, y, 0, false));
+            if (tooltip != null && tooltip.contains("<b>" + stageLabel + "</b>")) {
+                return tooltip;
+            }
+        }
+        return null;
     }
 }

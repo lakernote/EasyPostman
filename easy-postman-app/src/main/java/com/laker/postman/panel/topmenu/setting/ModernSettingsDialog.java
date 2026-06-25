@@ -51,7 +51,7 @@ public class ModernSettingsDialog extends JDialog {
     private static final int SETTINGS_NAVIGATION_TREE_LEFT_GUTTER = 16;
     private static final int SETTINGS_NAVIGATION_TREE_RIGHT_GUTTER = 8;
     private static final int SETTINGS_NAVIGATION_TEXT_LEFT_INSET = 8;
-    private static final int SEARCH_MATCH_HIGHLIGHT_DURATION_MS = 1_800;
+    private static final int SEARCH_MATCH_HIGHLIGHT_DURATION_MS = 3_000;
 
     private final SettingsContributionRegistry contributionRegistry;
     private final List<SettingsSearchSupport.SettingsSearchPage> settingsPages = new ArrayList<>();

@@ -34,7 +34,7 @@ import java.awt.event.MouseMotionAdapter;
  *   <li>显示协议图标 + 标题（超长自动截断）</li>
  *   <li>右侧绘制关闭按钮（hover 才可见，点击关闭 Tab）</li>
  *   <li>右上角小圆点：黄色=新建未保存、红色=已修改（脏）</li>
- *   <li>预览模式：标题斜体，表示临时 Tab</li>
+ *   <li>临时模式：标题斜体，表示可被复用的临时 Tab</li>
  *   <li>右键菜单：关闭当前 / 关闭其他 / 关闭右侧 / 关闭所有</li>
  *   <li>支持 Tab 拖拽排序（附加 TabbedPaneDragHandler 监听器）</li>
  * </ul>
@@ -61,7 +61,7 @@ public class ClosableTabComponent extends JPanel {
     // ── 状态 ─────────────────────────────────────────────────────────────────
     @Getter private boolean dirty      = false; // 红点：内容已修改
     @Getter private boolean newRequest = false; // 黄点：新建未保存
-    @Getter private boolean previewMode = false; // 斜体：临时预览 Tab
+    @Getter private boolean previewMode = false; // 斜体：临时 Tab 视觉状态
     private boolean hoverTab = false;            // 鼠标是否在整个 Tab 上
     private boolean hoverClose = false;          // 鼠标是否在关闭按钮上
 

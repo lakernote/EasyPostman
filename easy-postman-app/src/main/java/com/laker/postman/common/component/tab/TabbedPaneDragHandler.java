@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class TabbedPaneDragHandler {
 
-    // ── 回调，用于同步 RequestEditorPanel 中的 previewTabIndex ─────────────────
+    // ── 回调，用于同步 RequestEditorPanel 中的 trackedTabIndex ─────────────────
     public interface IndexGetter { int get(); }
     public interface IndexSetter { void set(int value); }
 
@@ -50,8 +50,8 @@ public class TabbedPaneDragHandler {
     private static final int DRAG_THRESHOLD = 5; // 触发拖拽的最小像素位移
 
     private final JTabbedPane tabbedPane;
-    private final IndexGetter previewIndexGetter;
-    private final IndexSetter previewIndexSetter;
+    private final IndexGetter trackedIndexGetter;
+    private final IndexSetter trackedIndexSetter;
 
     private final DragState state = new DragState();
 
@@ -62,18 +62,18 @@ public class TabbedPaneDragHandler {
     // ── 工厂方法 ─────────────────────────────────────────────────────────────
 
     private TabbedPaneDragHandler(JTabbedPane tabbedPane,
-                                   IndexGetter previewIndexGetter,
-                                   IndexSetter previewIndexSetter) {
+                                   IndexGetter trackedIndexGetter,
+                                   IndexSetter trackedIndexSetter) {
         this.tabbedPane = tabbedPane;
-        this.previewIndexGetter = previewIndexGetter;
-        this.previewIndexSetter = previewIndexSetter;
+        this.trackedIndexGetter = trackedIndexGetter;
+        this.trackedIndexSetter = trackedIndexSetter;
     }
 
     /** 创建并绑定到指定 tabbedPane */
     public static TabbedPaneDragHandler install(JTabbedPane tabbedPane,
-                                                 IndexGetter previewIndexGetter,
-                                                 IndexSetter previewIndexSetter) {
-        return new TabbedPaneDragHandler(tabbedPane, previewIndexGetter, previewIndexSetter);
+                                                 IndexGetter trackedIndexGetter,
+                                                 IndexSetter trackedIndexSetter) {
+        return new TabbedPaneDragHandler(tabbedPane, trackedIndexGetter, trackedIndexSetter);
     }
 
     // ── 公开方法：注册到 tabComponent ────────────────────────────────────────
@@ -292,7 +292,7 @@ public class TabbedPaneDragHandler {
     /**
      * 将 from 位置的 Tab 移动到指定插入槽位。
      * 完整保留 tabComponent（ClosableTabComponent）、content、title、icon、tooltip、enabled，
-     * 并同步 selectedIndex 与 previewTabIndex。
+     * 并同步 selectedIndex 与 trackedTabIndex。
      */
     void moveTabToSlot(int from, int dropSlot) {
         int normalTabCount = normalTabCount();
@@ -319,7 +319,7 @@ public class TabbedPaneDragHandler {
         boolean enabled   = tabbedPane.isEnabledAt(from);
         Component tabComp = tabbedPane.getTabComponentAt(from);
         int selectedIndex = tabbedPane.getSelectedIndex();
-        int previewIdx    = previewIndexGetter.get();
+        int trackedIdx    = trackedIndexGetter.get();
 
         // 2. 删除原位置，再插入目标位置
         tabbedPane.removeTabAt(from);
@@ -328,9 +328,9 @@ public class TabbedPaneDragHandler {
         tabbedPane.setEnabledAt(insertAt, enabled);
         if (tabComp != null) tabbedPane.setTabComponentAt(insertAt, tabComp);
 
-        // 3. 同步 selectedIndex 和 previewTabIndex（索引因 remove+insert 发生了偏移）
+        // 3. 同步 selectedIndex 和 trackedTabIndex（索引因 remove+insert 发生了偏移）
         tabbedPane.setSelectedIndex(recalcIndex(selectedIndex, from, insertAt));
-        if (previewIdx >= 0) previewIndexSetter.set(recalcIndex(previewIdx, from, insertAt));
+        if (trackedIdx >= 0) trackedIndexSetter.set(recalcIndex(trackedIdx, from, insertAt));
 
         log.debug("Tab moved: {} → {}", from, insertAt);
     }

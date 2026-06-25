@@ -42,7 +42,7 @@ public class RequestEditSubPanel extends JPanel {
     private final RequestEditorSendPreparationController sendPreparationController =
             RequestEditorSendPreparationController.createDefault(
                     this::ensureEditorInitialized,
-                    this::promotePreviewTabToPermanent,
+                    this::pinTransientTab,
                     () -> view.requestSettingsPanel.validateSettings(),
                     this::getCurrentRequest
             );
@@ -370,8 +370,8 @@ public class RequestEditSubPanel extends JPanel {
         return sendPreparationController.validateRequestSettings();
     }
 
-    private void promotePreviewTabToPermanent() {
-        SwingUtilities.invokeLater(() -> UiSingletonFactory.getInstance(RequestEditorPanel.class).promotePreviewTabToPermanent());
+    private void pinTransientTab() {
+        SwingUtilities.invokeLater(() -> UiSingletonFactory.getInstance(RequestEditorPanel.class).pinTransientTab());
     }
 
     // WebSocket消息发送逻辑

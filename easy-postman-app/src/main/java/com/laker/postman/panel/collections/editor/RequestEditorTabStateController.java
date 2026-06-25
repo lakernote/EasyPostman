@@ -4,19 +4,30 @@ import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
-import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.function.Consumer;
 
 /**
  * 请求编辑器 Tab 状态控制器。
  * <p>
  * 标题、协议标识、红点、保存事件同步属于 Tab 状态维护，集中在这里，避免面板类继续膨胀。
  */
-@RequiredArgsConstructor
 final class RequestEditorTabStateController {
     private final JTabbedPane tabbedPane;
+    private final Consumer<Component> dirtyTransientTabPinAction;
+
+    RequestEditorTabStateController(JTabbedPane tabbedPane) {
+        this(tabbedPane, component -> {
+        });
+    }
+
+    RequestEditorTabStateController(JTabbedPane tabbedPane, Consumer<Component> dirtyTransientTabPinAction) {
+        this.tabbedPane = tabbedPane;
+        this.dirtyTransientTabPinAction = dirtyTransientTabPinAction == null ? component -> {
+        } : dirtyTransientTabPinAction;
+    }
 
     RequestEditSubPanel currentRequestTab() {
         Component component = tabbedPane.getSelectedComponent();
@@ -46,6 +57,9 @@ final class RequestEditorTabStateController {
     }
 
     void updateRequestDirty(RequestEditSubPanel panel, boolean dirty) {
+        if (dirty) {
+            dirtyTransientTabPinAction.accept(panel);
+        }
         int index = tabbedPane.indexOfComponent(panel);
         if (index < 0) {
             return;

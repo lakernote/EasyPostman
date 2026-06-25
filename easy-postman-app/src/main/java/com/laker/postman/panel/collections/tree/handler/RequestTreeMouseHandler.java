@@ -260,7 +260,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     }
 
     /**
-     * 处理单击事件：预览请求或分组
+     * 处理单击事件：临时打开请求或分组
      */
     private void handleSingleClick(MouseEvent e) {
         TreePath selPath = getTreePathAt(e.getX(), e.getY());
@@ -336,7 +336,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
                 return;
             }
             RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-            editPanel.showOrCreatePreviewTabForGroup(node, group);
+            editPanel.showOrCreateTransientTabForGroup(node, group);
         }
     }
 
@@ -344,15 +344,15 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 处理请求点击事件
      */
     private void handleRequestClick(HttpRequestItem item) {
-        UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreatePreviewTab(item);
+        UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTransientTab(item);
     }
 
     /**
-     * 处理保存的响应单击事件：预览
+     * 处理保存的响应单击事件：临时打开
      */
     private void handleSavedResponseClick(SavedResponse savedResponse) {
         RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-        editPanel.showOrCreatePreviewTabForSavedResponse(savedResponse);
+        editPanel.showOrCreateTransientTabForSavedResponse(savedResponse);
     }
 
     /**

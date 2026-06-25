@@ -29,7 +29,7 @@ import java.util.function.Supplier;
 final class RequestEditorSaveController {
     private final Component dialogParent;
     private final Supplier<RequestEditSubPanel> currentSubPanelSupplier;
-    private final Runnable previewTabPromoter;
+    private final Runnable transientTabPinAction;
     private final BiFunction<TreeModel, String, Optional<CollectionGroupSelectionDialog.RequestNameSelection>> requestNameChooser;
     private final BiConsumer<String, HttpRequestItem> newRequestTabRefresher;
     private final CollectionTreeEditorGateway collectionGateway;
@@ -49,8 +49,8 @@ final class RequestEditorSaveController {
             }
 
             @Override
-            public void promotePreviewTabToPermanent() {
-                previewTabPromoter.run();
+            public void pinTransientTab() {
+                transientTabPinAction.run();
             }
 
             @Override

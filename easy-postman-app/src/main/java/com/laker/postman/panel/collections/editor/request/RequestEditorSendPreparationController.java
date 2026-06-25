@@ -17,18 +17,18 @@ import java.util.function.Supplier;
 final class RequestEditorSendPreparationController {
     private final RequestPreparationService requestPreparationService;
     private final Runnable editorInitializer;
-    private final Runnable previewTabPromoter;
+    private final Runnable transientTabPinAction;
     private final Supplier<String> settingsValidator;
     private final Supplier<HttpRequestItem> currentRequestSupplier;
 
     static RequestEditorSendPreparationController createDefault(Runnable editorInitializer,
-                                                                Runnable previewTabPromoter,
+                                                                Runnable transientTabPinAction,
                                                                 Supplier<String> settingsValidator,
                                                                 Supplier<HttpRequestItem> currentRequestSupplier) {
         return new RequestEditorSendPreparationController(
                 new RequestPreparationService(ConsoleScriptOutputAdapter.outputCallback()),
                 editorInitializer,
-                previewTabPromoter,
+                transientTabPinAction,
                 settingsValidator,
                 currentRequestSupplier
         );
@@ -36,7 +36,7 @@ final class RequestEditorSendPreparationController {
 
     RequestPreparationResult prepareForSending() {
         editorInitializer.run();
-        previewTabPromoter.run();
+        transientTabPinAction.run();
         String settingsValidationError = validateCurrentSettings();
         if (settingsValidationError != null) {
             return RequestPreparationResult.error(settingsValidationError);

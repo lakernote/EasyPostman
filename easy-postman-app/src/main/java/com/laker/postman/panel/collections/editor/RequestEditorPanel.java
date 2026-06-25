@@ -50,7 +50,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
     @Setter
     private boolean startupRestoreSelectingLastTab;
 
-    private RequestEditorPreviewTabManager previewTabManager;
+    private RequestEditorTransientTabManager transientTabManager;
     private RequestEditorSaveController saveController;
     private RequestEditorShortcutInstaller shortcutInstaller;
     private RequestEditorTabOpenController tabOpenController;
@@ -84,29 +84,24 @@ public class RequestEditorPanel extends UiSingletonPanel {
     }
 
     /**
-     * 显示或创建预览 tab（用于单击时的临时预览）
-     * 预览 tab 的特点：
-     * 1. 如果没有预览 tab，创建一个新的
-     * 2. 如果已有预览 tab，复用它（替换内容）
-     * 3. 如果该 request 已有固定 tab，则切换到固定 tab
-     * 4. 预览 tab 会在标题显示斜体，提示这是临时的
+     * 单击树节点时显示或复用临时 Tab。
      */
-    public void showOrCreatePreviewTab(HttpRequestItem item) {
-        tabOpenController.showOrCreateRequestPreview(item);
+    public void showOrCreateTransientTab(HttpRequestItem item) {
+        tabOpenController.showOrCreateTransientRequest(item);
     }
 
     /**
-     * 将预览 tab 转为固定 tab
+     * 将当前临时 Tab 固定为普通 Tab。
      */
-    public void promotePreviewTabToPermanent() {
-        previewTabManager.promoteToPermanent();
+    public void pinTransientTab() {
+        transientTabManager.pin();
     }
 
     /**
-     * 显示或创建 Group 的预览 tab（用于单击 Group 时）
+     * 单击 Group 时显示或复用临时 Tab。
      */
-    public void showOrCreatePreviewTabForGroup(DefaultMutableTreeNode groupNode, RequestGroup group) {
-        tabOpenController.showOrCreateGroupPreview(groupNode, group);
+    public void showOrCreateTransientTabForGroup(DefaultMutableTreeNode groupNode, RequestGroup group) {
+        tabOpenController.showOrCreateTransientGroup(groupNode, group);
     }
 
     // showOrCreateTab 需适配 "+" Tab（双击时调用，创建固定 tab）
@@ -169,7 +164,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
                 this::initializeSelectedTabSoon);
         installDeferredTabInitialization();
         add(tabbedPane, BorderLayout.CENTER);
-        installPreviewAndDragSupport();
+        installTransientTabAndDragSupport();
         createTabControllers();
     }
 
@@ -217,25 +212,25 @@ public class RequestEditorPanel extends UiSingletonPanel {
         tabbedPane.addChangeListener(e -> tabInitializationScheduler.initializeSelectedTabSoon());
     }
 
-    private void installPreviewAndDragSupport() {
-        previewTabManager = new RequestEditorPreviewTabManager(
+    private void installTransientTabAndDragSupport() {
+        transientTabManager = new RequestEditorTransientTabManager(
                 tabbedPane,
                 this::isPlusTab,
                 this::addPlusTab,
                 RequestEditorTabResourceCleaner::cleanup);
 
         dragHandler = TabbedPaneDragHandler.install(tabbedPane,
-                previewTabManager::previewTabIndex,
-                previewTabManager::setPreviewTabIndex);
+                transientTabManager::transientTabIndex,
+                transientTabManager::setTransientTabIndex);
     }
 
     private void createTabControllers() {
-        tabStateController = new RequestEditorTabStateController(tabbedPane);
-        tabRemovalController = new RequestEditorTabRemovalController(tabbedPane, previewTabManager);
+        tabStateController = new RequestEditorTabStateController(tabbedPane, transientTabManager::pinIfTransient);
+        tabRemovalController = new RequestEditorTabRemovalController(tabbedPane, transientTabManager);
         saveController = new RequestEditorSaveController(
                 this,
                 tabStateController::currentRequestTab,
-                this::promotePreviewTabToPermanent,
+                this::pinTransientTab,
                 this::chooseGroupAndRequestName,
                 tabStateController::refreshNewRequestTab,
                 collectionTreeGateway);
@@ -247,7 +242,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
                 tabRemovalController::removeComponent);
         tabOpenController = new RequestEditorTabOpenController(
                 tabbedPane,
-                previewTabManager,
+                transientTabManager,
                 new RequestEditorExecutionScopeSynchronizer(),
                 this::cancelStartupRestoreAutoSelectionIfNeeded,
                 this::addPlusTab,
@@ -328,10 +323,10 @@ public class RequestEditorPanel extends UiSingletonPanel {
     }
 
     /**
-     * 单击保存的响应：在预览 Tab 中显示
+     * 单击保存的响应：在临时 Tab 中显示
      */
-    public void showOrCreatePreviewTabForSavedResponse(SavedResponse savedResponse) {
-        tabOpenController.showOrCreateSavedResponsePreview(savedResponse);
+    public void showOrCreateTransientTabForSavedResponse(SavedResponse savedResponse) {
+        tabOpenController.showOrCreateTransientSavedResponse(savedResponse);
     }
 
     /**

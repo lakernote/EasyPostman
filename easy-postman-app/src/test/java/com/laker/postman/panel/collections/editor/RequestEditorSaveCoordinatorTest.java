@@ -26,7 +26,7 @@ public class RequestEditorSaveCoordinatorTest {
         boolean saved = coordinator.saveCurrentRequest(context);
 
         assertTrue(saved);
-        assertTrue(context.promotedPreviewTab);
+        assertTrue(context.pinnedTransientTab);
         assertEquals(context.currentRequest.getName(), "Saved name");
         assertEquals(context.currentRequest.getId(), "generated-id");
         assertSame(context.savedGroup, group);
@@ -43,7 +43,7 @@ public class RequestEditorSaveCoordinatorTest {
         boolean saved = coordinator.saveCurrentRequest(context);
 
         assertFalse(saved);
-        assertTrue(context.promotedPreviewTab);
+        assertTrue(context.pinnedTransientTab);
         assertEquals(context.settingsValidationErrorShown, "bad timeout");
         assertFalse(context.newRequestDialogOpened);
         assertFalse(context.existingRequestUpdated);
@@ -57,7 +57,7 @@ public class RequestEditorSaveCoordinatorTest {
         boolean saved = coordinator.saveCurrentRequest(context);
 
         assertFalse(saved);
-        assertTrue(context.promotedPreviewTab);
+        assertTrue(context.pinnedTransientTab);
         assertTrue(context.newRequestDialogOpened);
         assertFalse(context.newRequestSaved);
         assertFalse(context.newRequestTabRefreshed);
@@ -83,7 +83,7 @@ public class RequestEditorSaveCoordinatorTest {
         private final HttpRequestItem currentRequest = new HttpRequestItem();
         private final TreeModel groupTreeModel = new DefaultTreeModel(null);
         private boolean savedResponseTab;
-        private boolean promotedPreviewTab;
+        private boolean pinnedTransientTab;
         private String validationError;
         private String settingsValidationErrorShown;
         private boolean newRequestDialogOpened;
@@ -108,8 +108,8 @@ public class RequestEditorSaveCoordinatorTest {
         }
 
         @Override
-        public void promotePreviewTabToPermanent() {
-            promotedPreviewTab = true;
+        public void pinTransientTab() {
+            pinnedTransientTab = true;
         }
 
         @Override

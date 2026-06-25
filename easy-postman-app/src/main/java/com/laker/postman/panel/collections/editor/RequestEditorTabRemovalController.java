@@ -8,12 +8,12 @@ import java.awt.*;
 /**
  * 请求编辑器 Tab 删除控制器。
  * <p>
- * 删除 Tab 时同时负责运行资源释放和预览 Tab 索引修正，避免关闭逻辑散落在面板里。
+ * 删除 Tab 时同时负责运行资源释放和临时 Tab 索引修正，避免关闭逻辑散落在面板里。
  */
 @RequiredArgsConstructor
 final class RequestEditorTabRemovalController {
     private final JTabbedPane tabbedPane;
-    private final RequestEditorPreviewTabManager previewTabManager;
+    private final RequestEditorTransientTabManager transientTabManager;
 
     void removeAt(int index) {
         if (index < 0 || index >= tabbedPane.getTabCount()) {
@@ -22,7 +22,7 @@ final class RequestEditorTabRemovalController {
 
         Component component = tabbedPane.getComponentAt(index);
         RequestEditorTabResourceCleaner.cleanup(component);
-        previewTabManager.onTabRemoved(component, index);
+        transientTabManager.onTabRemoved(component, index);
         tabbedPane.removeTabAt(index);
     }
 

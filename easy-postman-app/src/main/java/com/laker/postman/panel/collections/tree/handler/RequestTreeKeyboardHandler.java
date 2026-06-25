@@ -60,7 +60,7 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
 
         boolean isMultipleSelection = hasMultipleSelection();
 
-        // Enter 键：模拟单击事件，预览请求或分组（仅单选）
+        // Enter 键：模拟单击事件，临时打开请求或分组（仅单选）
         if (e.getKeyCode() == KeyEvent.VK_ENTER && !isMultipleSelection) {
             handleEnterKey();
             e.consume();
@@ -93,7 +93,7 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
     }
 
     /**
-     * 处理 Enter 键：模拟单击事件，预览请求或分组
+     * 处理 Enter 键：模拟单击事件，临时打开请求或分组
      */
     private void handleEnterKey() {
         DefaultMutableTreeNode selectedNode = getSelectedNode();
@@ -109,7 +109,7 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
     }
 
     /**
-     * 处理分组 Enter 键事件：预览分组
+     * 处理分组 Enter 键事件：临时打开分组
      */
     private void handleGroupEnter(DefaultMutableTreeNode node) {
         if (node.getChildCount() == 0) return;
@@ -119,22 +119,22 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
             return;
         }
         RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-        editPanel.showOrCreatePreviewTabForGroup(node, group);
+        editPanel.showOrCreateTransientTabForGroup(node, group);
     }
 
     /**
-     * 处理请求 Enter 键事件：预览请求
+     * 处理请求 Enter 键事件：临时打开请求
      */
     private void handleRequestEnter(HttpRequestItem item) {
-        UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreatePreviewTab(item);
+        UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTransientTab(item);
     }
 
     /**
-     * 处理保存的响应 Enter 键事件：预览响应
+     * 处理保存的响应 Enter 键事件：临时打开响应
      */
     private void handleSavedResponseEnter(SavedResponse savedResponse) {
         RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-        editPanel.showOrCreatePreviewTabForSavedResponse(savedResponse);
+        editPanel.showOrCreateTransientTabForSavedResponse(savedResponse);
     }
 
 }

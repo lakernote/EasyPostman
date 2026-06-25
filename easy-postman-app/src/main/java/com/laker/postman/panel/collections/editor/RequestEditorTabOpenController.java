@@ -19,12 +19,12 @@ import java.util.function.IntPredicate;
 /**
  * 请求编辑器 Tab 打开控制器。
  * <p>
- * 预览打开、固定打开、同 ID 查重、预览升级和插入到 +Tab 前都是 Tab 行为规则，不放在面板布局类里。
+ * 临时打开、固定打开、同 ID 查重、临时 Tab 固定和插入到 +Tab 前都是 Tab 行为规则，不放在面板布局类里。
  */
 @RequiredArgsConstructor
 final class RequestEditorTabOpenController {
     private final JTabbedPane tabbedPane;
-    private final RequestEditorPreviewTabManager previewTabManager;
+    private final RequestEditorTransientTabManager transientTabManager;
     private final RequestEditorExecutionScopeSynchronizer executionScopeSynchronizer;
     private final Runnable beforeOpenAction;
     private final Runnable plusTabRestorer;
@@ -34,7 +34,7 @@ final class RequestEditorTabOpenController {
     private final String defaultRequestTitle;
     private final CollectionTreeEditorGateway collectionGateway;
 
-    void showOrCreateRequestPreview(HttpRequestItem item) {
+    void showOrCreateTransientRequest(HttpRequestItem item) {
         beforeOpenAction.run();
         String requestId = item.getId();
         if (requestId == null || requestId.isEmpty()) {
@@ -48,10 +48,10 @@ final class RequestEditorTabOpenController {
             return;
         }
 
-        previewTabManager.validate();
+        transientTabManager.validate();
         RequestEditSubPanel newPanel = new RequestEditSubPanel(requestId, item.getProtocol());
         newPanel.initPanelData(item);
-        previewTabManager.showOrUpdate(newPanel, requestTitle(item), item.getProtocol());
+        transientTabManager.showOrReplace(newPanel, requestTitle(item), item.getProtocol());
     }
 
     void showOrCreateRequestTab(HttpRequestItem item) {
@@ -64,8 +64,8 @@ final class RequestEditorTabOpenController {
         }
 
         executionScopeSynchronizer.syncScopeForRequest(requestId);
-        if (previewTabManager.isPreviewRequest(requestId)) {
-            previewTabManager.promoteToPermanent();
+        if (transientTabManager.isTransientRequest(requestId)) {
+            transientTabManager.pin();
             return;
         }
         if (switchToExistingRequestTab(requestId)) {
@@ -77,23 +77,23 @@ final class RequestEditorTabOpenController {
         insertFixedTab(requestTitle(item), subPanel, item.getProtocol(), false);
     }
 
-    void showOrCreateGroupPreview(DefaultMutableTreeNode groupNode, RequestGroup group) {
+    void showOrCreateTransientGroup(DefaultMutableTreeNode groupNode, RequestGroup group) {
         beforeOpenAction.run();
         String groupId = group.getId();
         if (switchToExistingGroupTab(groupId)) {
             return;
         }
 
-        previewTabManager.validate();
+        transientTabManager.validate();
         GroupEditPanel groupEditPanel = createGroupEditPanel(groupNode, group);
-        previewTabManager.showOrUpdate(groupEditPanel, group.getName(), null, isRootGroup(groupNode));
+        transientTabManager.showOrReplace(groupEditPanel, group.getName(), null, isRootGroup(groupNode));
     }
 
     void showOrCreateGroupTab(DefaultMutableTreeNode groupNode, RequestGroup group) {
         beforeOpenAction.run();
         String groupId = group.getId();
-        if (previewTabManager.isPreviewGroup(groupId)) {
-            previewTabManager.promoteToPermanent();
+        if (transientTabManager.isTransientGroup(groupId)) {
+            transientTabManager.pin();
             return;
         }
         if (switchToExistingGroupTab(groupId)) {
@@ -104,7 +104,7 @@ final class RequestEditorTabOpenController {
         insertFixedTab(group.getName(), groupEditPanel, null, isRootGroup(groupNode));
     }
 
-    void showOrCreateSavedResponsePreview(SavedResponse savedResponse) {
+    void showOrCreateTransientSavedResponse(SavedResponse savedResponse) {
         beforeOpenAction.run();
         if (savedResponse == null || isBlank(savedResponse.getId())) {
             return;
@@ -115,10 +115,10 @@ final class RequestEditorTabOpenController {
             return;
         }
 
-        previewTabManager.validate();
+        transientTabManager.validate();
         RequestEditSubPanel newPanel = new RequestEditSubPanel(savedResponse);
         newPanel.loadSavedResponse(savedResponse);
-        previewTabManager.showOrUpdate(newPanel, savedResponse.getName(), RequestItemProtocolEnum.SAVED_RESPONSE);
+        transientTabManager.showOrReplace(newPanel, savedResponse.getName(), RequestItemProtocolEnum.SAVED_RESPONSE);
     }
 
     void showOrCreateSavedResponseTab(SavedResponse savedResponse) {
@@ -128,8 +128,8 @@ final class RequestEditorTabOpenController {
         }
 
         String savedResponseId = savedResponse.getId();
-        if (previewTabManager.isPreviewRequest(savedResponseId)) {
-            previewTabManager.promoteToPermanent();
+        if (transientTabManager.isTransientRequest(savedResponseId)) {
+            transientTabManager.pin();
             return;
         }
         if (switchToExistingRequestTab(savedResponseId)) {
@@ -158,7 +158,7 @@ final class RequestEditorTabOpenController {
 
     private boolean switchToExistingRequestTab(String id) {
         for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
-            if (i == previewTabManager.previewTabIndex()) {
+            if (i == transientTabManager.transientTabIndex()) {
                 continue;
             }
             Component component = tabbedPane.getComponentAt(i);
@@ -175,7 +175,7 @@ final class RequestEditorTabOpenController {
             return false;
         }
         for (int i = 0; i < tabbedPane.getTabCount() - 1; i++) {
-            if (i == previewTabManager.previewTabIndex()) {
+            if (i == transientTabManager.transientTabIndex()) {
                 continue;
             }
             Component component = tabbedPane.getComponentAt(i);

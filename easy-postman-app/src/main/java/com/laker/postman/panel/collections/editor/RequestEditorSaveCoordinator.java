@@ -15,7 +15,7 @@ final class RequestEditorSaveCoordinator {
             return false;
         }
 
-        context.promotePreviewTabToPermanent();
+        context.pinTransientTab();
 
         String settingsValidationError = context.validateRequestSettings();
         if (settingsValidationError != null) {
@@ -62,7 +62,7 @@ final class RequestEditorSaveCoordinator {
 
         void showSavedResponseReadonly();
 
-        void promotePreviewTabToPermanent();
+        void pinTransientTab();
 
         String validateRequestSettings();
 

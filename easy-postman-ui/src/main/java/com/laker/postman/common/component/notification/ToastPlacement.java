@@ -24,7 +24,7 @@ class ToastPlacement {
 
     static Point calculate(Rectangle anchor, Rectangle usableScreen, Dimension windowSize,
                            NotificationPosition position, int stackOffset) {
-        Rectangle safeAnchor = reserveAppToolWindowStripes(anchor);
+        Rectangle safeAnchor = reserveAppToolWindowStripes(usableAnchor(anchor) ? anchor : usableScreen);
         int x;
         int y;
         switch (position) {
@@ -89,7 +89,7 @@ class ToastPlacement {
         if (anchor == null) {
             anchor = parentWindow.getBounds();
         }
-        return anchor;
+        return usableAnchor(anchor) ? anchor : fallbackBounds;
     }
 
     private Rectangle contentPaneScreenBounds(Window parentWindow) {
@@ -122,6 +122,10 @@ class ToastPlacement {
 
     private int insetWithin(int availableSize, int desiredInset) {
         return availableSize > MIN_ANCHOR_SIZE ? Math.min(desiredInset, availableSize - MIN_ANCHOR_SIZE) : 0;
+    }
+
+    private boolean usableAnchor(Rectangle anchor) {
+        return anchor != null && anchor.width > 1 && anchor.height > 1;
     }
 
     private GraphicsConfiguration graphicsConfiguration(Window parentWindow) {

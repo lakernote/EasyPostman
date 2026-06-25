@@ -164,6 +164,18 @@ public class NotificationCenterTest {
         assertTrue(point.y <= anchor.y + anchor.height - ToolWindowStripeMetrics.STRIPE_THICKNESS - toastSize.height);
     }
 
+    @Test
+    public void bottomRightPlacementShouldUseScreenWhenAnchorHasNoUsableSize() {
+        Rectangle rootFrameAnchor = new Rectangle(0, 0, 0, 0);
+        Rectangle screen = new Rectangle(0, 0, 1400, 1000);
+        Dimension toastSize = new Dimension(ToastStyle.MAX_WIDTH, 80);
+
+        Point point = ToastPlacement.calculate(rootFrameAnchor, screen, toastSize, NotificationPosition.BOTTOM_RIGHT, 0);
+
+        assertTrue(point.x > screen.width / 2);
+        assertTrue(point.y > screen.height / 2);
+    }
+
     private static boolean iconHasVisiblePixels(Icon icon) {
         BufferedImage image = new BufferedImage(icon.getIconWidth(), icon.getIconHeight(), BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = image.createGraphics();

@@ -25,38 +25,84 @@ public final class NotificationCenter {
 
     private Window getMainFrame() {
         KeyboardFocusManager focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
-        Window activeWindow = focusManager.getActiveWindow();
-        if (activeWindow != null && activeWindow.isShowing()) {
-            return resolveNotificationAnchor(activeWindow);
+        Window activeAnchor = resolveNotificationAnchor(focusManager.getActiveWindow());
+        if (activeAnchor != null) {
+            return activeAnchor;
         }
 
-        Window focusedWindow = focusManager.getFocusedWindow();
-        if (focusedWindow != null && focusedWindow.isShowing()) {
-            return resolveNotificationAnchor(focusedWindow);
+        Window focusedAnchor = resolveNotificationAnchor(focusManager.getFocusedWindow());
+        if (focusedAnchor != null) {
+            return focusedAnchor;
         }
 
         for (Window window : Window.getWindows()) {
             if (window.isShowing() && window.isActive()) {
-                return resolveNotificationAnchor(window);
+                Window activeWindowAnchor = resolveNotificationAnchor(window);
+                if (activeWindowAnchor != null) {
+                    return activeWindowAnchor;
+                }
             }
+        }
+
+        Window visibleWindow = findVisibleFallbackWindow();
+        if (visibleWindow != null) {
+            return visibleWindow;
         }
 
         return JOptionPane.getRootFrame();
     }
 
     /**
-     * 通知默认挂到最外层可见 owner 上，避免在模态对话框里触发时贴在子窗口边缘。
+     * 通知默认挂到最外层可用 owner 上，避免在模态对话框里触发时贴在子窗口边缘。
      */
     private static Window resolveNotificationAnchor(Window window) {
-        Window anchor = window;
+        if (window == null || !window.isShowing()) {
+            return null;
+        }
+        Window anchor = isUsableAnchorWindow(window) ? window : null;
         Window owner = window.getOwner();
         while (owner != null) {
-            if (owner.isShowing()) {
+            if (isUsableAnchorWindow(owner)) {
                 anchor = owner;
             }
             owner = owner.getOwner();
         }
         return anchor;
+    }
+
+    /**
+     * 应用被其他窗口遮挡时，AWT 可能没有 active/focused window。此时仍应挂到
+     * EasyPostman 已显示的主窗口，而不是落到 JOptionPane 的 0x0 shared owner。
+     */
+    private static Window findVisibleFallbackWindow() {
+        Window dialogAnchor = null;
+        Window anyAnchor = null;
+        for (Window window : Window.getWindows()) {
+            Window anchor = resolveNotificationAnchor(window);
+            if (anchor == null) {
+                continue;
+            }
+            if (anchor instanceof Frame) {
+                return anchor;
+            }
+            if (dialogAnchor == null && anchor instanceof Dialog) {
+                dialogAnchor = anchor;
+            }
+            if (anyAnchor == null) {
+                anyAnchor = anchor;
+            }
+        }
+        return dialogAnchor != null ? dialogAnchor : anyAnchor;
+    }
+
+    private static boolean isUsableAnchorWindow(Window window) {
+        if (window == null || window instanceof ToastWindow || !window.isShowing()) {
+            return false;
+        }
+        if (window.getWidth() <= 1 || window.getHeight() <= 1) {
+            return false;
+        }
+        return !(window instanceof Frame frame && (frame.getExtendedState() & Frame.ICONIFIED) == Frame.ICONIFIED);
     }
 
     // ==================== 通知类型 ====================

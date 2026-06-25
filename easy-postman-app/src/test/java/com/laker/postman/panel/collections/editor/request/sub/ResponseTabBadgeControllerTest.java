@@ -10,7 +10,10 @@ import org.testng.annotations.Test;
 import javax.swing.*;
 import java.util.List;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class ResponseTabBadgeControllerTest {
@@ -28,7 +31,7 @@ public class ResponseTabBadgeControllerTest {
     }
 
     @Test
-    public void headersCountShouldUseNeutralMetadataColor() {
+    public void headersCountShouldUseNeutralMetadataBadgeIcon() {
         JButton headersButton = new JButton();
         ResponseTabBadgeController controller = new ResponseTabBadgeController(new JButton[]{
                 new JButton(),
@@ -38,16 +41,17 @@ public class ResponseTabBadgeControllerTest {
 
         controller.updateResponseHeadersCount(6);
 
-        String text = headersButton.getText();
-        assertTrue(text.contains("Response Headers"));
-        assertTrue(text.contains("&middot; 6"));
-        assertTrue(text.contains(ModernColors.toHtmlColor(ModernColors.getTextSecondary())));
-        assertFalse(text.contains(ModernColors.toHtmlColor(ModernColors.getSuccess())),
+        assertEquals(headersButton.getText(), "Response Headers");
+        assertTrue(headersButton.getIcon() instanceof TabCountBadgeIcon);
+        TabCountBadgeIcon badgeIcon = (TabCountBadgeIcon) headersButton.getIcon();
+        assertEquals(badgeIcon.getText(), "6");
+        assertEquals(badgeIcon.getForegroundColor(), ModernColors.getTextPrimary());
+        assertFalse(ModernColors.getSuccess().equals(badgeIcon.getBackgroundColor()),
                 "Header count is metadata, not success state");
     }
 
     @Test
-    public void testsCountShouldKeepResultSemanticColor() {
+    public void testsCountShouldKeepResultSemanticBadge() {
         JButton testsButton = new JButton();
         ResponseTabBadgeController controller = new ResponseTabBadgeController(new JButton[]{
                 new JButton(),
@@ -57,10 +61,12 @@ public class ResponseTabBadgeControllerTest {
 
         controller.updateTestResults(List.of(new TestResult("status", false, "boom")));
 
-        String text = testsButton.getText();
-        assertTrue(text.contains("Tests"));
-        assertTrue(text.contains("&middot; 1"));
-        assertTrue(text.contains(ModernColors.toHtmlColor(ModernColors.getError())));
+        assertEquals(testsButton.getText(), "Tests");
+        assertTrue(testsButton.getIcon() instanceof TabCountBadgeIcon);
+        TabCountBadgeIcon badgeIcon = (TabCountBadgeIcon) testsButton.getIcon();
+        assertEquals(badgeIcon.getText(), "1");
+        assertEquals(badgeIcon.getBackgroundColor(), ModernColors.getError());
+        assertEquals(badgeIcon.getForegroundColor(), ModernColors.getTextInverse());
     }
 
     @Test
@@ -76,7 +82,27 @@ public class ResponseTabBadgeControllerTest {
         controller.updateResponseHeadersCount(0);
         controller.updateTestResults(List.of());
 
-        assertFalse(headersButton.getText().contains("&middot;"));
-        assertFalse(testsButton.getText().contains("&middot;"));
+        assertEquals(headersButton.getText(), "Response Headers");
+        assertEquals(testsButton.getText(), "Tests");
+        assertNull(headersButton.getIcon());
+        assertNull(testsButton.getIcon());
+        assertNull(headersButton.getDisabledIcon());
+        assertNull(testsButton.getDisabledIcon());
+    }
+
+    @Test
+    public void passingTestsShouldUseSuccessBadge() {
+        JButton testsButton = new JButton();
+        ResponseTabBadgeController controller = new ResponseTabBadgeController(new JButton[]{
+                new JButton(),
+                new JButton(),
+                testsButton
+        });
+
+        controller.updateTestResults(List.of(new TestResult("status", true, "")));
+
+        assertNotNull(testsButton.getIcon());
+        TabCountBadgeIcon badgeIcon = (TabCountBadgeIcon) testsButton.getIcon();
+        assertEquals(badgeIcon.getBackgroundColor(), ModernColors.getSuccess());
     }
 }

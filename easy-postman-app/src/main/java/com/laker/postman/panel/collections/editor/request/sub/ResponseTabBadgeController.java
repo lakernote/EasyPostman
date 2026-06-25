@@ -7,6 +7,7 @@ import com.laker.postman.util.MessageKeys;
 import lombok.RequiredArgsConstructor;
 
 import javax.swing.*;
+import java.awt.Color;
 import java.util.List;
 
 /**
@@ -18,6 +19,7 @@ import java.util.List;
 final class ResponseTabBadgeController {
     private static final int TAB_INDEX_RESPONSE_HEADERS = 1;
     private static final int TAB_INDEX_TESTS = 2;
+    private static final int BADGE_ICON_TEXT_GAP = 6;
 
     private final JButton[] tabButtons;
 
@@ -26,15 +28,17 @@ final class ResponseTabBadgeController {
             return;
         }
         JButton headersButton = tabButtons[TAB_INDEX_RESPONSE_HEADERS];
+        String label = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS);
         if (count > 0) {
-            String countText = " &middot; " + count;
-            String countHtml = I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS) +
-                    "<span style='color:" + ModernColors.toHtmlColor(ModernColors.getTextSecondary())
-                            + ";'>" + countText + "</span>";
-            setTabText(headersButton, "<html>" + countHtml + "</html>");
+            setTabBadge(headersButton,
+                    label,
+                    String.valueOf(count),
+                    ModernColors.getTextPrimary(),
+                    neutralBadgeBackground(),
+                    neutralBadgeBorder());
             return;
         }
-        setTabText(headersButton, I18nUtil.getMessage(MessageKeys.TAB_RESPONSE_HEADERS));
+        clearTabBadge(headersButton, label);
     }
 
     void updateTestResults(List<TestResult> testResults) {
@@ -42,20 +46,56 @@ final class ResponseTabBadgeController {
             return;
         }
         JButton testsButton = tabButtons[TAB_INDEX_TESTS];
+        String label = I18nUtil.getMessage(MessageKeys.TAB_TESTS);
         if (testResults != null && !testResults.isEmpty()) {
             boolean allPassed = testResults.stream().allMatch(r -> r.passed);
-            String countText = " &middot; " + testResults.size();
-            String color = ModernColors.toHtmlColor(allPassed ? ModernColors.getSuccess() : ModernColors.getError());
-            String countHtml = I18nUtil.getMessage(MessageKeys.TAB_TESTS) +
-                    "<span style='color:" + color + ";'>" + countText + "</span>";
-            setTabText(testsButton, "<html>" + countHtml + "</html>");
+            Color background = allPassed ? ModernColors.getSuccess() : ModernColors.getError();
+            setTabBadge(testsButton,
+                    label,
+                    String.valueOf(testResults.size()),
+                    ModernColors.getTextInverse(),
+                    background,
+                    ModernColors.withAlpha(background, 180));
             return;
         }
-        setTabText(testsButton, I18nUtil.getMessage(MessageKeys.TAB_TESTS));
+        clearTabBadge(testsButton, label);
     }
 
-    private static void setTabText(JButton button, String text) {
-        button.setText(text);
+    private static void setTabBadge(JButton button,
+                                    String label,
+                                    String badgeText,
+                                    Color foreground,
+                                    Color background,
+                                    Color border) {
+        button.setText(label);
+        TabCountBadgeIcon badgeIcon = new TabCountBadgeIcon(button, badgeText, foreground, background, border);
+        button.setIcon(badgeIcon);
+        button.setDisabledIcon(badgeIcon);
+        button.setHorizontalTextPosition(SwingConstants.LEFT);
+        button.setIconTextGap(BADGE_ICON_TEXT_GAP);
+        button.getAccessibleContext().setAccessibleName(label + " " + badgeText);
+        button.setToolTipText(label + ": " + badgeText);
+        refreshTabButton(button);
+    }
+
+    private static void clearTabBadge(JButton button, String label) {
+        button.setText(label);
+        button.setIcon(null);
+        button.setDisabledIcon(null);
+        button.getAccessibleContext().setAccessibleName(label);
+        button.setToolTipText(null);
+        refreshTabButton(button);
+    }
+
+    private static Color neutralBadgeBackground() {
+        return ModernColors.withAlpha(ModernColors.getTextSecondary(), ModernColors.isDarkTheme() ? 72 : 30);
+    }
+
+    private static Color neutralBadgeBorder() {
+        return ModernColors.withAlpha(ModernColors.getTextSecondary(), ModernColors.isDarkTheme() ? 120 : 72);
+    }
+
+    private static void refreshTabButton(JButton button) {
         button.revalidate();
         if (button.getParent() != null) {
             button.getParent().revalidate();

@@ -72,6 +72,7 @@ final class WebSocketNetworkLogListener extends WebSocketListener {
             return "";
         }
         StringBuilder sb = new StringBuilder("\n");
+        sb.append("WebSocket Upgrade Request Headers:\n");
         for (HttpHeader header : preparedRequest.sentHeadersList) {
             sb.append(header.getKey()).append(": ").append(header.getValue()).append("\n");
         }

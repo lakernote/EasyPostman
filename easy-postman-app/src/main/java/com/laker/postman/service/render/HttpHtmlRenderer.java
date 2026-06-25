@@ -18,6 +18,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -135,8 +136,15 @@ public class HttpHtmlRenderer {
         if (req == null) return htmlDoc(noData("无请求信息"));
         StringBuilder sb = new StringBuilder();
 
-        sb.append(kvRow(colorPrimary(), "URL",    escapeHtml(safeStr(resolveSentOrConfigured(req.sentUrl, req.url))),    false));
-        sb.append(kvRow(colorPrimary(), "Method", escapeHtml(safeStr(resolveSentOrConfigured(req.sentMethod, req.method))), true));
+        if (hasWebSocketHandshakeSnapshot(req)) {
+            sb.append(kvRow(colorPrimary(), "WebSocket URL", escapeHtml(safeStr(req.url)), false));
+            sb.append(kvRow(colorPrimary(), "Handshake URL", escapeHtml(safeStr(req.sentUrl)), true));
+            sb.append(kvRow(colorPrimary(), "Handshake Method",
+                    escapeHtml(safeStr(resolveSentOrConfigured(req.sentMethod, req.method))), false));
+        } else {
+            sb.append(kvRow(colorPrimary(), "URL", escapeHtml(safeStr(resolveSentOrConfigured(req.sentUrl, req.url))), false));
+            sb.append(kvRow(colorPrimary(), "Method", escapeHtml(safeStr(resolveSentOrConfigured(req.sentMethod, req.method))), true));
+        }
 
         boolean hasSentHeaders = hasHeaders(req.sentHeadersList);
         List<HttpHeader> displayHeaders = hasSentHeaders
@@ -187,6 +195,22 @@ public class HttpHtmlRenderer {
         }
 
         return htmlDoc(sb.toString());
+    }
+
+    private static boolean hasWebSocketHandshakeSnapshot(PreparedRequest req) {
+        return req != null
+                && isWebSocketUrl(req.url)
+                && req.sentUrl != null
+                && !req.sentUrl.isBlank()
+                && !req.sentUrl.equals(req.url);
+    }
+
+    private static boolean isWebSocketUrl(String url) {
+        if (url == null) {
+            return false;
+        }
+        String lower = url.toLowerCase(Locale.ROOT);
+        return lower.startsWith("ws://") || lower.startsWith("wss://");
     }
 
     /** 渲染响应信息 */

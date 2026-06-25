@@ -310,6 +310,24 @@ public class HttpHtmlRendererTest {
     }
 
     @Test
+    public void shouldRenderWebSocketUrlAndHandshakeUrlInRequestDetails() {
+        PreparedRequest request = new PreparedRequest();
+        request.url = "ws://example.test/socket";
+        request.method = "GET";
+        request.sentUrl = "http://example.test/socket";
+        request.sentMethod = "GET";
+        request.sentHeadersList = List.of(new HttpHeader(true, "Upgrade", "websocket"));
+
+        String html = HttpHtmlRenderer.renderRequest(request);
+
+        assertTrue(html.contains("WebSocket URL"));
+        assertTrue(html.contains("ws://example.test/socket"));
+        assertTrue(html.contains("Handshake URL"));
+        assertTrue(html.contains("http://example.test/socket"));
+        assertTrue(html.contains("Handshake Method"));
+    }
+
+    @Test
     public void shouldKeepRequestBodyPreviewSmall() {
         String body = "x".repeat(3 * 1024);
         PreparedRequest request = new PreparedRequest();

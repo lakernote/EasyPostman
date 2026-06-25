@@ -385,16 +385,29 @@ public class DefaultHttpTransportIntegrationTest {
         assertEquals(recordedRequest.getPath(), "/events");
 
         waitForNetworkLogStage(events, NetworkLogEventStage.CALL_START);
+        waitForNetworkLogStage(events, NetworkLogEventStage.REQUEST_HEADERS_END);
         waitForNetworkLogStage(events, NetworkLogEventStage.RESPONSE_HEADERS_END);
         String callStart = firstEventMessage(events, NetworkLogEventStage.CALL_START);
+        String requestHeaders = firstEventMessage(events, NetworkLogEventStage.REQUEST_HEADERS_END);
         String responseHeaders = firstEventMessage(events, NetworkLogEventStage.RESPONSE_HEADERS_END);
 
         assertEquals(countEvents(events, NetworkLogEventStage.CALL_START), 1,
                 "SSE should publish a single CallStart event");
-        assertTrue(callStart.contains("GET " + request.url), callStart);
+        assertEquals(countEvents(events, NetworkLogEventStage.RESPONSE_HEADERS_END), 1,
+                "SSE should publish the response headers once: " + eventSnapshot(events));
+        assertTrue(callStart.contains("SSE URL: " + request.url), callStart);
+        assertTrue(callStart.contains("Stream Request: GET " + request.url), callStart);
+        assertTrue(callStart.contains("Stream Flow: HTTP GET + text/event-stream response body stays open"), callStart);
+        assertTrue(requestHeaders.contains("SSE Stream Request Headers:"), requestHeaders);
+        assertTrue(responseHeaders.contains("Result: SSE stream accepted"), responseHeaders);
+        assertTrue(responseHeaders.contains("SSE URL: " + request.url), responseHeaders);
         assertTrue(responseHeaders.matches("(?s).*Thread: \\S+.*"), responseHeaders);
         assertTrue(responseHeaders.contains("Connection: "), responseHeaders);
-        assertTrue(responseHeaders.contains("Protocol: http/1.1"), responseHeaders);
+        assertTrue(responseHeaders.contains("HTTP Stream Protocol: http/1.1"), responseHeaders);
+        assertFalse(eventSnapshot(events).stream()
+                        .anyMatch(event -> event.stage() == NetworkLogEventStage.CALL_FAILED
+                                && event.message().contains("Socket closed")),
+                "Closing a successfully opened SSE stream should not be shown as a protocol failure: " + eventSnapshot(events));
     }
 
     @Test
@@ -568,10 +581,18 @@ public class DefaultHttpTransportIntegrationTest {
                 "WebSocket should publish a single CallStart event");
         waitForNetworkLogStage(events, NetworkLogEventStage.REQUEST_BODY_START);
         waitForNetworkLogStage(events, NetworkLogEventStage.RESPONSE_HEADERS_END);
+        String callStart = firstEventMessage(events, NetworkLogEventStage.CALL_START);
+        String requestHeaders = firstEventMessage(events, NetworkLogEventStage.REQUEST_HEADERS_END);
         String requestBody = firstEventMessage(events, NetworkLogEventStage.REQUEST_BODY_START);
         String responseHeaders = firstEventMessage(events, NetworkLogEventStage.RESPONSE_HEADERS_END);
+        assertTrue(callStart.contains("WebSocket URL: " + request.url), callStart);
+        assertTrue(callStart.contains("Handshake Request: GET http://"), callStart);
+        assertTrue(callStart.contains("Upgrade Flow: ws:// -> HTTP/1.1 GET + Upgrade: websocket"), callStart);
+        assertTrue(requestHeaders.contains("WebSocket Upgrade Request Headers:"), requestHeaders);
         assertTrue(requestBody.contains("No request body"), requestBody);
-        assertTrue(responseHeaders.contains("Protocol: http/1.1"), responseHeaders);
+        assertTrue(responseHeaders.contains("Result: WebSocket upgrade accepted"), responseHeaders);
+        assertTrue(responseHeaders.contains("WebSocket URL: " + request.url), responseHeaders);
+        assertTrue(responseHeaders.contains("HTTP Handshake Protocol: http/1.1"), responseHeaders);
         assertTrue(responseHeaders.matches("(?s).*Thread: \\S+.*"), responseHeaders);
         assertTrue(responseHeaders.contains("Connection: "), responseHeaders);
     }

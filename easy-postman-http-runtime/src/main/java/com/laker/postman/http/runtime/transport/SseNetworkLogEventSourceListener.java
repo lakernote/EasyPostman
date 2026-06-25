@@ -16,6 +16,9 @@ final class SseNetworkLogEventSourceListener extends EventSourceListener {
     private final EventSourceListener delegate;
     private final PreparedRequest preparedRequest;
     private boolean requestSnapshotLogged;
+    private boolean responseSnapshotLogged;
+    private boolean streamOpened;
+    private boolean terminalLogged;
 
     SseNetworkLogEventSourceListener(EventSourceListener delegate, PreparedRequest preparedRequest) {
         this.delegate = delegate == null ? new EventSourceListener() {
@@ -26,6 +29,7 @@ final class SseNetworkLogEventSourceListener extends EventSourceListener {
     @Override
     public void onOpen(EventSource eventSource, Response response) {
         logResponseSnapshot(response);
+        streamOpened = true;
         log(NetworkLogEventStage.RESPONSE_BODY_START, "SSE stream opened");
         delegate.onOpen(eventSource, response);
     }
@@ -37,23 +41,30 @@ final class SseNetworkLogEventSourceListener extends EventSourceListener {
 
     @Override
     public void onClosed(EventSource eventSource) {
-        log(NetworkLogEventStage.CALL_END, "SSE stream closed");
+        logStreamClosed();
         delegate.onClosed(eventSource);
     }
 
     @Override
     public void onFailure(EventSource eventSource, Throwable t, Response response) {
         logResponseSnapshot(response);
+        if (streamOpened && isSocketClosed(t)) {
+            logStreamClosed();
+            delegate.onFailure(eventSource, t, response);
+            return;
+        }
         if (t != null) {
+            terminalLogged = true;
             log(NetworkLogEventStage.CALL_FAILED, t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage());
         }
         delegate.onFailure(eventSource, t, response);
     }
 
     private void logResponseSnapshot(Response response) {
-        if (response == null) {
+        if (response == null || responseSnapshotLogged) {
             return;
         }
+        responseSnapshotLogged = true;
         logRequestSnapshot(response);
         log(NetworkLogEventStage.RESPONSE_HEADERS_END,
                 RealtimeHandshakeNetworkLogFormatter.formatResponseSnapshot(preparedRequest, response));
@@ -75,7 +86,7 @@ final class SseNetworkLogEventSourceListener extends EventSourceListener {
         if (preparedRequest == null || preparedRequest.sentHeadersList == null || preparedRequest.sentHeadersList.isEmpty()) {
             return "";
         }
-        StringBuilder sb = new StringBuilder("\n");
+        StringBuilder sb = new StringBuilder("\nSSE Stream Request Headers:\n");
         for (HttpHeader header : preparedRequest.sentHeadersList) {
             if (header == null || header.getKey() == null) {
                 continue;
@@ -93,6 +104,21 @@ final class SseNetworkLogEventSourceListener extends EventSourceListener {
             return "Request body is empty";
         }
         return "\n" + preparedRequest.sentRequestBody;
+    }
+
+    private void logStreamClosed() {
+        if (terminalLogged) {
+            return;
+        }
+        terminalLogged = true;
+        log(NetworkLogEventStage.CALL_END, "SSE stream closed");
+    }
+
+    private boolean isSocketClosed(Throwable t) {
+        if (t == null || t.getMessage() == null) {
+            return false;
+        }
+        return "Socket closed".equalsIgnoreCase(t.getMessage());
     }
 
     private void log(NetworkLogEventStage stage, String message) {

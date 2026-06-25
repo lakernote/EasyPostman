@@ -1,17 +1,23 @@
 package com.laker.postman.common.component;
 
+import com.laker.postman.common.component.button.HelpButton;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.constants.ThemeColors;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import java.awt.BorderLayout;
 import java.awt.*;
 import java.lang.reflect.Method;
 import java.io.File;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.laker.postman.test.ThemeTokenTestSupport.remember;
 import static com.laker.postman.test.ThemeTokenTestSupport.restore;
@@ -110,6 +116,60 @@ public class CsvDataPanelTest {
         assertEquals(table.getBackground(), tableBackground);
     }
 
+    @Test(description = "CSV 弹窗尺寸应保持工具型弹窗的紧凑比例")
+    public void csvDialogSizesShouldUseCompactToolWindowScale() {
+        assertEquals(CsvDataPanel.csvOverviewDialogSize(), new Dimension(560, 390));
+        assertEquals(CsvDataPanel.csvManualDialogSize(), new Dimension(620, 260));
+        assertEquals(CsvDataPanel.csvManageDialogSize(), new Dimension(820, 560));
+        assertEquals(CsvDataPanel.csvManageDialogMinimumSize(), new Dimension(760, 500));
+    }
+
+    @Test(description = "手动创建 CSV 弹窗默认紧凑，但不应小于实际 pack 后尺寸")
+    public void csvManualDialogDisplaySizeShouldRespectPackedSize() {
+        assertEquals(CsvDataPanel.csvManualDialogDisplaySize(null), new Dimension(620, 260));
+        assertEquals(CsvDataPanel.csvManualDialogDisplaySize(new Dimension(500, 220)), new Dimension(620, 260));
+        assertEquals(CsvDataPanel.csvManualDialogDisplaySize(new Dimension(660, 310)), new Dimension(660, 310));
+    }
+
+    @Test(description = "CSV 管理工具栏应放在表格上方而不是底部说明区")
+    public void csvManageHeaderShouldPlaceToolbarAboveTable() {
+        JLabel infoLabel = new JLabel("source");
+        JPanel toolbar = new JPanel();
+
+        JPanel header = CsvDataPanel.createManageHeaderPanel(infoLabel, toolbar);
+        BorderLayout layout = (BorderLayout) header.getLayout();
+
+        assertSame(layout.getLayoutComponent(BorderLayout.NORTH), infoLabel);
+        assertSame(layout.getLayoutComponent(BorderLayout.SOUTH), toolbar);
+    }
+
+    @Test(description = "CSV 使用说明应通过独立帮助入口打开，避免占用主弹窗高度")
+    public void csvUsagePanelShouldExposeHelpButtonAction() {
+        AtomicBoolean actionInvoked = new AtomicBoolean(false);
+        JPanel panel = CsvDataPanel.createUsageHelpPanel("summary", () -> actionInvoked.set(true));
+        JButton helpButton = (JButton) panel.getClientProperty(CsvDataPanel.CSV_USAGE_BUTTON_PROPERTY);
+
+        assertNotNull(helpButton);
+        assertTrue(helpButton instanceof HelpButton);
+        assertEquals(helpButton.getToolTipText(), I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS));
+        JTextArea summaryArea = findFirstComponent(panel, JTextArea.class);
+        assertNotNull(summaryArea);
+        assertEquals(summaryArea.getForeground(), ModernColors.getTextSecondary());
+
+        helpButton.doClick();
+
+        assertTrue(actionInvoked.get());
+    }
+
+    @Test(description = "手动创建 CSV 时应解析有效列名并识别重复列")
+    public void csvManualHeadersShouldBeParsedAndValidated() {
+        List<String> headers = CsvDataPanel.parseManualHeaders(" username, password, , email ");
+
+        assertEquals(headers, List.of("username", "password", "email"));
+        assertNull(CsvDataPanel.findDuplicateHeader(headers));
+        assertEquals(CsvDataPanel.findDuplicateHeader(List.of("userId", "token", "userId")), "userId");
+    }
+
     @Test(description = "CSV 文件选择器应优先使用当前 CSV 所在目录，其次使用上一次成功导入目录")
     public void csvFileChooserShouldResolveInitialDirectoryFromCurrentFileOrRememberedDirectory() {
         File rememberedDir = new File(System.getProperty("java.io.tmpdir"));
@@ -147,5 +207,20 @@ public class CsvDataPanelTest {
         Method method = CsvDataPanel.class.getDeclaredMethod("configureCsvTable", JTable.class);
         method.setAccessible(true);
         method.invoke(panel, table);
+    }
+
+    private static <T extends Component> T findFirstComponent(Container container, Class<T> type) {
+        for (Component component : container.getComponents()) {
+            if (type.isInstance(component)) {
+                return type.cast(component);
+            }
+            if (component instanceof Container childContainer) {
+                T found = findFirstComponent(childContainer, type);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
     }
 }

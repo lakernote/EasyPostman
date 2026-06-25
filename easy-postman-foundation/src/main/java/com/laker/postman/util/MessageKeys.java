@@ -1615,9 +1615,11 @@ public final class MessageKeys {
     public static final String CSV_DATA_CLEARED = "csv.data.cleared";
     public static final String CSV_DIALOG_MANAGEMENT_TITLE = "csv.dialog.management.title";
     public static final String CSV_DATA_DRIVEN_TEST = "csv.data_driven_test";
+    public static final String CSV_DIALOG_SUMMARY = "csv.dialog.summary";
     public static final String CSV_DIALOG_DESCRIPTION = "csv.dialog.description";
     public static final String CSV_CURRENT_STATUS = "csv.current_status";
     public static final String CSV_OPERATIONS = "csv.operations";
+    public static final String CSV_ACTION_REQUIRES_DATA = "csv.action.requires_data";
     public static final String CSV_BUTTON_SELECT_FILE = "csv.button.select_file";
     public static final String CSV_BUTTON_MANAGE_DATA = "csv.button.manage_data";
     public static final String CSV_BUTTON_CLEAR_DATA = "csv.button.clear_data";
@@ -1637,6 +1639,7 @@ public final class MessageKeys {
     public static final String CSV_CANNOT_DELETE_ALL_COLUMNS = "csv.cannot_delete_all_columns";
     public static final String CSV_CONFIRM_DELETE_COLUMNS = "csv.confirm_delete_columns";
     public static final String CSV_USAGE_INSTRUCTIONS = "csv.usage_instructions";
+    public static final String CSV_USAGE_SUMMARY = "csv.usage_summary";
     public static final String CSV_USAGE_TEXT = "csv.usage_text";
     public static final String CSV_NO_VALID_DATA_ROWS = "csv.no_valid_data_rows";
     public static final String CSV_DATA_SAVED = "csv.data_saved";
@@ -1652,7 +1655,10 @@ public final class MessageKeys {
     public static final String CSV_CREATE_MANUAL_DIALOG_TITLE = "csv.create_manual.dialog_title";
     public static final String CSV_CREATE_MANUAL_DESCRIPTION = "csv.create_manual.description";
     public static final String CSV_CREATE_MANUAL_COLUMN_HEADERS = "csv.create_manual.column_headers";
+    public static final String CSV_CREATE_MANUAL_EXAMPLE = "csv.create_manual.example";
+    public static final String CSV_CREATE_MANUAL_PREVIEW = "csv.create_manual.preview";
     public static final String CSV_CREATE_MANUAL_HEADERS_REQUIRED = "csv.create_manual.headers_required";
+    public static final String CSV_CREATE_MANUAL_DUPLICATE_HEADER = "csv.create_manual.duplicate_header";
     public static final String CSV_CREATE_MANUAL_TOO_MANY_COLUMNS = "csv.create_manual.too_many_columns";
     public static final String CSV_BULK_EDIT = "csv.bulk_edit";
     public static final String CSV_BULK_EDIT_HINT = "csv.bulk_edit.hint";

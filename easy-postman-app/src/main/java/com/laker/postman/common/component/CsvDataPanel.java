@@ -7,6 +7,7 @@ import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.button.CSVButton;
 import com.laker.postman.common.component.button.CloseButton;
+import com.laker.postman.common.component.button.HelpButton;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.constants.ModernColors;
@@ -19,6 +20,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -34,11 +37,17 @@ import java.util.List;
 @Slf4j
 public class CsvDataPanel extends JPanel {
 
+    static final String CSV_USAGE_BUTTON_PROPERTY = "CsvDataPanel.usageButton";
     private static final int CSV_TABLE_MIN_COLUMN_WIDTH = 140;
-    private static final int CSV_MANUAL_DIALOG_MIN_WIDTH = 620;
-    private static final int CSV_MANAGE_DIALOG_MIN_WIDTH = 820;
-    private static final int CSV_MANAGE_DIALOG_MIN_HEIGHT = 580;
-    private static final int CSV_TOOLBAR_BUTTON_HEIGHT = 32;
+    private static final int CSV_OVERVIEW_DIALOG_WIDTH = 560;
+    private static final int CSV_OVERVIEW_DIALOG_HEIGHT = 390;
+    private static final int CSV_MANUAL_DIALOG_WIDTH = 620;
+    private static final int CSV_MANUAL_DIALOG_HEIGHT = 260;
+    private static final int CSV_MANAGE_DIALOG_WIDTH = 820;
+    private static final int CSV_MANAGE_DIALOG_HEIGHT = 560;
+    private static final int CSV_MANAGE_DIALOG_MIN_WIDTH = 760;
+    private static final int CSV_MANAGE_DIALOG_MIN_HEIGHT = 500;
+    private static final int CSV_TOOLBAR_BUTTON_HEIGHT = 30;
     private static final int CSV_FOOTER_BUTTON_HEIGHT = 34;
 
     public static final class CsvState {
@@ -77,6 +86,124 @@ public class CsvDataPanel extends JPanel {
 
     public CsvDataPanel() {
         initUI();
+    }
+
+    static Dimension csvOverviewDialogSize() {
+        return new Dimension(CSV_OVERVIEW_DIALOG_WIDTH, CSV_OVERVIEW_DIALOG_HEIGHT);
+    }
+
+    static Dimension csvManualDialogSize() {
+        return new Dimension(CSV_MANUAL_DIALOG_WIDTH, CSV_MANUAL_DIALOG_HEIGHT);
+    }
+
+    static Dimension csvManualDialogDisplaySize(Dimension packedSize) {
+        Dimension compactSize = csvManualDialogSize();
+        if (packedSize == null) {
+            return compactSize;
+        }
+        return new Dimension(
+                Math.max(compactSize.width, packedSize.width),
+                Math.max(compactSize.height, packedSize.height)
+        );
+    }
+
+    static Dimension csvManageDialogSize() {
+        return new Dimension(CSV_MANAGE_DIALOG_WIDTH, CSV_MANAGE_DIALOG_HEIGHT);
+    }
+
+    static Dimension csvManageDialogMinimumSize() {
+        return new Dimension(CSV_MANAGE_DIALOG_MIN_WIDTH, CSV_MANAGE_DIALOG_MIN_HEIGHT);
+    }
+
+    static JPanel createManageHeaderPanel(JComponent infoComponent, JPanel toolPanel) {
+        JPanel headerPanel = new JPanel(new BorderLayout(0, 8));
+        ToolWindowSurfaceStyle.applyDialogHeader(headerPanel, 10, 16, 10, 16);
+        headerPanel.add(infoComponent, BorderLayout.NORTH);
+        headerPanel.add(toolPanel, BorderLayout.SOUTH);
+        return headerPanel;
+    }
+
+    static JPanel createUsageHelpPanel(String summaryText, Runnable helpAction) {
+        JPanel panel = new JPanel(new BorderLayout(0, 6));
+        ToolWindowSurfaceStyle.applyDialogSurface(panel);
+        panel.setBorder(BorderFactory.createEmptyBorder(6, 16, 0, 16));
+
+        JPanel summaryPanel = new JPanel(new BorderLayout(12, 0));
+        ToolWindowSurfaceStyle.applyDialogSurface(summaryPanel);
+
+        JTextArea summaryArea = new JTextArea(summaryText);
+        summaryArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        summaryArea.setForeground(ModernColors.getTextSecondary());
+        summaryArea.setEditable(false);
+        summaryArea.setFocusable(false);
+        summaryArea.setOpaque(false);
+        summaryArea.setLineWrap(true);
+        summaryArea.setWrapStyleWord(true);
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(summaryArea);
+        summaryArea.setForeground(ModernColors.getTextSecondary());
+        summaryPanel.add(summaryArea, BorderLayout.CENTER);
+
+        JButton helpButton = new HelpButton();
+        helpButton.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS));
+        helpButton.getAccessibleContext().setAccessibleName(I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS));
+        helpButton.addActionListener(e -> {
+            if (helpAction != null) {
+                helpAction.run();
+            }
+        });
+        summaryPanel.add(helpButton, BorderLayout.EAST);
+        panel.add(summaryPanel, BorderLayout.NORTH);
+
+        panel.putClientProperty(CSV_USAGE_BUTTON_PROPERTY, helpButton);
+        return panel;
+    }
+
+    static List<String> parseManualHeaders(String headersText) {
+        List<String> headers = new ArrayList<>();
+        if (CharSequenceUtil.isBlank(headersText)) {
+            return headers;
+        }
+        for (String header : headersText.split(",")) {
+            String trimmedHeader = header.trim();
+            if (CharSequenceUtil.isNotBlank(trimmedHeader)) {
+                headers.add(trimmedHeader);
+            }
+        }
+        return headers;
+    }
+
+    static String findDuplicateHeader(List<String> headers) {
+        Set<String> seen = new HashSet<>();
+        for (String header : headers) {
+            String normalized = header.toLowerCase(Locale.ROOT);
+            if (!seen.add(normalized)) {
+                return header;
+            }
+        }
+        return null;
+    }
+
+    private static void updateManualHeaderPreview(JTextField headersField, JLabel previewLabel) {
+        List<String> headers = parseManualHeaders(headersField.getText());
+        if (headers.isEmpty()) {
+            previewLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_EXAMPLE));
+            previewLabel.setForeground(ModernColors.getTextHint());
+            return;
+        }
+
+        String duplicateHeader = findDuplicateHeader(headers);
+        if (duplicateHeader != null) {
+            previewLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DUPLICATE_HEADER, duplicateHeader));
+            previewLabel.setForeground(ModernColors.getError());
+            return;
+        }
+
+        previewLabel.setText(I18nUtil.getMessage(
+                MessageKeys.CSV_CREATE_MANUAL_PREVIEW,
+                headers.size(),
+                String.join(", ", headers)
+        ));
+        previewLabel.setForeground(ModernColors.getTextHint());
     }
 
 
@@ -177,6 +304,7 @@ public class CsvDataPanel extends JPanel {
                 IconUtil.createThemed("icons/code.svg", 16, 16));
         manageCsvItem.addActionListener(e -> showCsvDataManageDialog());
         manageCsvItem.setEnabled(false); // 默认禁用，有数据时启用
+        manageCsvItem.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_ACTION_REQUIRES_DATA));
         csvMenu.add(manageCsvItem);
 
         csvMenu.addSeparator();
@@ -185,6 +313,7 @@ public class CsvDataPanel extends JPanel {
                 IconUtil.createThemed("icons/clear.svg", 16, 16));
         clearCsvItem.addActionListener(e -> clearCsvData());
         clearCsvItem.setEnabled(false); // 默认禁用，有数据时启用
+        clearCsvItem.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_ACTION_REQUIRES_DATA));
         csvMenu.add(clearCsvItem);
 
         csvBtn.addActionListener(e -> {
@@ -192,6 +321,12 @@ public class CsvDataPanel extends JPanel {
             boolean hasCsvData = csvData != null && !csvData.isEmpty();
             manageCsvItem.setEnabled(hasCsvData);
             clearCsvItem.setEnabled(hasCsvData);
+            manageCsvItem.setToolTipText(hasCsvData
+                    ? I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA)
+                    : I18nUtil.getMessage(MessageKeys.CSV_ACTION_REQUIRES_DATA));
+            clearCsvItem.setToolTipText(hasCsvData
+                    ? I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_TOOLTIP)
+                    : I18nUtil.getMessage(MessageKeys.CSV_ACTION_REQUIRES_DATA));
 
             // 显示菜单
             csvMenu.show(csvBtn, 0, csvBtn.getHeight());
@@ -294,21 +429,22 @@ public class CsvDataPanel extends JPanel {
 
         JPanel rootPanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyDialogSurface(rootPanel);
-        rootPanel.setBorder(BorderFactory.createEmptyBorder(18, 22, 14, 22));
+        rootPanel.setBorder(BorderFactory.createEmptyBorder(16, 20, 12, 20));
         dialog.add(rootPanel, BorderLayout.CENTER);
 
         // 顶部说明面板
-        JPanel topPanel = new JPanel(new BorderLayout(0, 8));
+        JPanel topPanel = new JPanel(new BorderLayout(0, 6));
         ToolWindowSurfaceStyle.applyDialogSurface(topPanel);
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DIALOG_TITLE));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
         JLabel descLabel = new JLabel("<html><body style='width:520px'>"
                 + I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_DESCRIPTION)
                 + "</body></html>");
-        descLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        descLabel.setForeground(ModernColors.getTextSecondary());
         topPanel.add(descLabel, BorderLayout.CENTER);
 
         rootPanel.add(topPanel, BorderLayout.NORTH);
@@ -316,10 +452,10 @@ public class CsvDataPanel extends JPanel {
         // 中间内容面板
         JPanel contentPanel = new JPanel(new GridBagLayout());
         ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(12, 0, 12, 0));
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 8, 0));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(6, 8, 6, 8);
+        gbc.insets = new Insets(5, 6, 5, 6);
 
         // 列标题输入
         gbc.gridx = 0;
@@ -335,17 +471,34 @@ public class CsvDataPanel extends JPanel {
         JTextField headersField = new JTextField();
         headersField.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         headersField.setText("username,password,email");
-        headersField.setColumns(36);
+        headersField.setColumns(24);
         ToolWindowSurfaceStyle.applyTextComponentInput(headersField);
         contentPanel.add(headersField, gbc);
 
         // 占位符提示
         gbc.gridx = 1;
         gbc.gridy = 1;
-        JLabel placeholderLabel = new JLabel("eg: username,password,email");
-        placeholderLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.ITALIC, -2)); // 比标准字体小2号
+        JLabel placeholderLabel = new JLabel();
+        placeholderLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
         placeholderLabel.setForeground(ModernColors.getTextHint());
         contentPanel.add(placeholderLabel, gbc);
+        updateManualHeaderPreview(headersField, placeholderLabel);
+        headersField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                updateManualHeaderPreview(headersField, placeholderLabel);
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                updateManualHeaderPreview(headersField, placeholderLabel);
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                updateManualHeaderPreview(headersField, placeholderLabel);
+            }
+        });
 
         rootPanel.add(contentPanel, BorderLayout.CENTER);
 
@@ -359,25 +512,15 @@ public class CsvDataPanel extends JPanel {
                 // 默认创建1行数据
                 int rowCount = 1;
 
-                // 处理列标题
-                List<String> headers = new ArrayList<>();
-                String headersText = headersField.getText().trim();
-                if (CharSequenceUtil.isBlank(headersText)) {
+                List<String> headers = parseManualHeaders(headersField.getText());
+                if (headers.isEmpty()) {
                     NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_REQUIRED));
                     return;
                 }
-
-                // 解析列标题
-                String[] headerArray = headersText.split(",");
-                for (String header : headerArray) {
-                    String trimmedHeader = header.trim();
-                    if (CharSequenceUtil.isNotBlank(trimmedHeader)) {
-                        headers.add(trimmedHeader);
-                    }
-                }
-
-                if (headers.isEmpty()) {
-                    NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.CSV_CREATE_MANUAL_HEADERS_REQUIRED));
+                String duplicateHeader = findDuplicateHeader(headers);
+                if (duplicateHeader != null) {
+                    NotificationCenter.showError(I18nUtil.getMessage(
+                            MessageKeys.CSV_CREATE_MANUAL_DUPLICATE_HEADER, duplicateHeader));
                     return;
                 }
 
@@ -429,7 +572,7 @@ public class CsvDataPanel extends JPanel {
 
         dialog.getRootPane().setDefaultButton(createBtn);
         dialog.pack();
-        dialog.setSize(Math.max(dialog.getWidth(), CSV_MANUAL_DIALOG_MIN_WIDTH), dialog.getHeight());
+        dialog.setSize(csvManualDialogDisplaySize(dialog.getSize()));
         dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         SwingUtilities.invokeLater(headersField::requestFocusInWindow);
 
@@ -443,51 +586,36 @@ public class CsvDataPanel extends JPanel {
     private void showEnhancedCsvManagementDialog() {
         JDialog dialog = new JDialog(UiSingletonFactory.getInstance(MainFrame.class),
                 I18nUtil.getMessage(MessageKeys.CSV_DIALOG_MANAGEMENT_TITLE), true);
-        dialog.setSize(480, 520);
+        dialog.setSize(csvOverviewDialogSize());
         dialog.setResizable(false);
         dialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         dialog.setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         ToolWindowSurfaceStyle.applyDialogSurface((JComponent) dialog.getContentPane());
 
-        // ── NORTH：标题 + 可滚动说明文字 ──
         JPanel topPanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyDialogSurface(topPanel);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(14, 16, 0, 16));
+        topPanel.setBorder(BorderFactory.createEmptyBorder(16, 18, 8, 18));
 
         JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_DRIVEN_TEST));
-        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +2));
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 8, 0));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 6, 0));
         topPanel.add(titleLabel, BorderLayout.NORTH);
 
-        // 说明文字只读区域，超出高度出现滚动条
-        JTextArea descArea = new JTextArea(buildHelpText(I18nUtil.getMessage(MessageKeys.CSV_DIALOG_DESCRIPTION)));
-        descArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        descArea.setEditable(false);
-        descArea.setOpaque(false);
-        descArea.setFocusable(false);
-        descArea.setRequestFocusEnabled(false);
-        descArea.setCaretPosition(0);
-        descArea.setLineWrap(true);
-        descArea.setWrapStyleWord(true);
-        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(descArea);
-        JScrollPane descScroll = new JScrollPane(descArea,
-                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        ToolWindowSurfaceStyle.applyDialogScrollPane(descScroll);
-        descScroll.setPreferredSize(new Dimension(0, 180));
-        descScroll.getVerticalScrollBar().setUnitIncrement(10);
-        topPanel.add(descScroll, BorderLayout.CENTER);
+        JLabel descLabel = new JLabel("<html><body style='width:500px'>"
+                + I18nUtil.getMessage(MessageKeys.CSV_DIALOG_SUMMARY)
+                + "</body></html>");
+        descLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        descLabel.setForeground(ModernColors.getTextSecondary());
+        topPanel.add(descLabel, BorderLayout.CENTER);
 
         dialog.add(topPanel, BorderLayout.NORTH);
 
-        // ── CENTER：当前状态 + 操作按钮（固定，始终可见）──
         JPanel fixedPanel = new JPanel();
         ToolWindowSurfaceStyle.applyDialogSurface(fixedPanel);
         fixedPanel.setLayout(new BoxLayout(fixedPanel, BoxLayout.Y_AXIS));
-        fixedPanel.setBorder(BorderFactory.createEmptyBorder(8, 16, 4, 16));
+        fixedPanel.setBorder(BorderFactory.createEmptyBorder(4, 18, 8, 18));
 
-        // 当前状态
         JPanel statusSection = createDialogSection(I18nUtil.getMessage(MessageKeys.CSV_CURRENT_STATUS));
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
         statusPanel.setOpaque(false);
@@ -505,44 +633,31 @@ public class CsvDataPanel extends JPanel {
         statusPanel.add(currentStatusLabel);
         statusSection.add(statusPanel, BorderLayout.CENTER);
         statusSection.setAlignmentX(Component.LEFT_ALIGNMENT);
-        statusSection.setMaximumSize(new Dimension(Integer.MAX_VALUE, 66));
+        statusSection.setMaximumSize(new Dimension(Integer.MAX_VALUE, 58));
         fixedPanel.add(statusSection);
-        fixedPanel.add(Box.createVerticalStrut(6));
+        fixedPanel.add(Box.createVerticalStrut(8));
 
-        // 操作按钮区（BoxLayout，按钮全宽自适应，不受语言影响）
         JPanel actionSection = createDialogSection(I18nUtil.getMessage(MessageKeys.CSV_OPERATIONS));
-        JPanel actionPanel = new JPanel();
+        JPanel actionPanel = new JPanel(new GridLayout(2, 2, 8, 8));
         actionPanel.setOpaque(false);
-        actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
         actionSection.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JButton selectFileBtn = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.CSV_BUTTON_SELECT_FILE), false, "icons/file.svg", 16);
-        selectFileBtn.setHorizontalAlignment(SwingConstants.LEFT);
-        selectFileBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        selectFileBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
         JButton createManualBtn = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.CSV_MENU_CREATE_MANUAL), false, "icons/plus.svg", 16);
-        createManualBtn.setHorizontalAlignment(SwingConstants.LEFT);
-        createManualBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        createManualBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
 
         JButton manageDataBtn = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.CSV_BUTTON_MANAGE_DATA), false, "icons/code.svg", 16);
-        manageDataBtn.setHorizontalAlignment(SwingConstants.LEFT);
-        manageDataBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        manageDataBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         manageDataBtn.setEnabled(csvData != null && !csvData.isEmpty());
+        manageDataBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_ACTION_REQUIRES_DATA));
 
         JButton clearBtn = ModernButtonFactory.createButton(
                 I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_DATA), false, "icons/clear.svg", 16);
-        clearBtn.setHorizontalAlignment(SwingConstants.LEFT);
-        clearBtn.setAlignmentX(Component.LEFT_ALIGNMENT);
-        clearBtn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
         clearBtn.setEnabled(csvData != null && !csvData.isEmpty());
+        clearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_ACTION_REQUIRES_DATA));
 
-        // 事件
         selectFileBtn.addActionListener(e -> {
             if (selectCsvFile()) {
                 currentStatusLabel.setText(I18nUtil.getMessage(MessageKeys.CSV_STATUS_LOADED, csvData.size()));
@@ -551,6 +666,8 @@ public class CsvDataPanel extends JPanel {
                 updateCsvStatus();
                 manageDataBtn.setEnabled(true);
                 clearBtn.setEnabled(true);
+                manageDataBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_MENU_MANAGE_DATA));
+                clearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_BUTTON_CLEAR_TOOLTIP));
             }
         });
         createManualBtn.addActionListener(e -> {
@@ -565,24 +682,31 @@ public class CsvDataPanel extends JPanel {
             currentStatusLabel.setForeground(ModernColors.getTextHint());
             manageDataBtn.setEnabled(false);
             clearBtn.setEnabled(false);
+            manageDataBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_ACTION_REQUIRES_DATA));
+            clearBtn.setToolTipText(I18nUtil.getMessage(MessageKeys.CSV_ACTION_REQUIRES_DATA));
         });
 
-        actionPanel.add(Box.createVerticalStrut(4));
         actionPanel.add(selectFileBtn);
-        actionPanel.add(Box.createVerticalStrut(6));
         actionPanel.add(createManualBtn);
-        actionPanel.add(Box.createVerticalStrut(6));
         actionPanel.add(manageDataBtn);
-        actionPanel.add(Box.createVerticalStrut(6));
         actionPanel.add(clearBtn);
-        actionPanel.add(Box.createVerticalStrut(4));
+        actionPanel.setPreferredSize(new Dimension(0, 78));
 
         actionSection.add(actionPanel, BorderLayout.CENTER);
+        actionSection.setMaximumSize(new Dimension(Integer.MAX_VALUE, 118));
         fixedPanel.add(actionSection);
+
+        fixedPanel.add(Box.createVerticalStrut(8));
+        JPanel usagePanel = createUsageHelpPanel(
+                I18nUtil.getMessage(MessageKeys.CSV_USAGE_SUMMARY),
+                () -> showUsageInstructionsDialog(dialog,
+                        buildHelpText(I18nUtil.getMessage(MessageKeys.CSV_DIALOG_DESCRIPTION)))
+        );
+        usagePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        fixedPanel.add(usagePanel);
         dialog.add(fixedPanel, BorderLayout.CENTER);
 
-        // ── SOUTH：关闭按钮（固定，始终可见）──
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 8));
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         ToolWindowSurfaceStyle.applyDialogFooter(bottomPanel);
         JButton closeBtn = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE), false);
         closeBtn.addActionListener(e -> dialog.dispose());
@@ -602,6 +726,56 @@ public class CsvDataPanel extends JPanel {
         return section;
     }
 
+    private static void showUsageInstructionsDialog(Window owner, String helpText) {
+        JDialog dialog = new JDialog(owner,
+                I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS),
+                Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setLayout(new BorderLayout());
+        dialog.setResizable(true);
+        ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
+
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 10));
+        ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
+        contentPanel.setBorder(BorderFactory.createEmptyBorder(16, 18, 14, 18));
+
+        JLabel titleLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS));
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, +1));
+        contentPanel.add(titleLabel, BorderLayout.NORTH);
+
+        JTextArea helpArea = new JTextArea(helpText);
+        helpArea.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        helpArea.setEditable(false);
+        helpArea.setOpaque(false);
+        helpArea.setFocusable(false);
+        helpArea.setRequestFocusEnabled(false);
+        helpArea.setLineWrap(true);
+        helpArea.setWrapStyleWord(true);
+        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(helpArea);
+        helpArea.setForeground(ModernColors.getTextSecondary());
+        helpArea.setCaretPosition(0);
+
+        JScrollPane scrollPane = new JScrollPane(helpArea,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        ToolWindowSurfaceStyle.applyDialogScrollPane(scrollPane);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(10);
+        contentPanel.add(scrollPane, BorderLayout.CENTER);
+
+        JPanel footerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        ToolWindowSurfaceStyle.applyDialogFooter(footerPanel);
+        JButton closeButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE), false);
+        closeButton.addActionListener(e -> dialog.dispose());
+        footerPanel.add(closeButton);
+
+        dialog.add(contentPanel, BorderLayout.CENTER);
+        dialog.add(footerPanel, BorderLayout.SOUTH);
+        dialog.setSize(560, 400);
+        dialog.setMinimumSize(new Dimension(480, 320));
+        dialog.setLocationRelativeTo(owner);
+        dialog.getRootPane().setDefaultButton(closeButton);
+        dialog.setVisible(true);
+    }
+
     /**
      * CSV 数据管理对话框 - 集成预览和编辑功能
      */
@@ -613,25 +787,17 @@ public class CsvDataPanel extends JPanel {
         }
 
         JDialog manageDialog = new JDialog((Frame) null, I18nUtil.getMessage(MessageKeys.CSV_DATA_MANAGEMENT), true);
-        manageDialog.setSize(860, 620);
-        manageDialog.setMinimumSize(new Dimension(CSV_MANAGE_DIALOG_MIN_WIDTH, CSV_MANAGE_DIALOG_MIN_HEIGHT));
+        manageDialog.setSize(csvManageDialogSize());
+        manageDialog.setMinimumSize(csvManageDialogMinimumSize());
         manageDialog.setLocationRelativeTo(UiSingletonFactory.getInstance(MainFrame.class));
         manageDialog.setLayout(new BorderLayout());
         ToolWindowSurfaceStyle.applyDialogWindowChrome(manageDialog);
         ToolWindowSurfaceStyle.applyDialogSurface((JComponent) manageDialog.getContentPane());
 
-        // 顶部信息面板
-        JPanel topPanel = new JPanel(new BorderLayout());
-        ToolWindowSurfaceStyle.applyDialogSurface(topPanel);
-        topPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-
         JLabel infoLabel = new JLabel(I18nUtil.getMessage(MessageKeys.CSV_DATA_SOURCE_INFO,
                 getCurrentSourceDisplayName(),
                 csvData.size()));
         infoLabel.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
-        topPanel.add(infoLabel, BorderLayout.CENTER);
-
-        manageDialog.add(topPanel, BorderLayout.NORTH);
 
         // 创建可编辑的表格
         List<String> headers;
@@ -687,15 +853,15 @@ public class CsvDataPanel extends JPanel {
         // 创建表格容器面板，应用背景色
         JPanel tablePanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyDialogSurface(tablePanel);
-        tablePanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 8, 10));
+        tablePanel.setBorder(BorderFactory.createEmptyBorder(10, 16, 8, 16));
         tablePanel.add(scrollPane, BorderLayout.CENTER);
 
         manageDialog.add(tablePanel, BorderLayout.CENTER);
 
         // 底部面板
-        JPanel bottomPanel = new JPanel(new BorderLayout(0, 10));
+        JPanel bottomPanel = new JPanel(new BorderLayout(0, 0));
         ToolWindowSurfaceStyle.applyDialogSurface(bottomPanel);
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder());
 
         // 工具栏
         JPanel toolPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -827,24 +993,13 @@ public class CsvDataPanel extends JPanel {
         toolPanel.add(deleteRowBtn);
         toolPanel.add(addColumnBtn);
         toolPanel.add(deleteColumnBtn);
-        bottomPanel.add(toolPanel, BorderLayout.NORTH);
+        manageDialog.add(createManageHeaderPanel(infoLabel, toolPanel), BorderLayout.NORTH);
 
-        // 使用说明
-        JPanel helpPanel = createDialogSection(I18nUtil.getMessage(MessageKeys.CSV_USAGE_INSTRUCTIONS));
-        JTextArea helpText = new JTextArea(buildHelpText(I18nUtil.getMessage(MessageKeys.CSV_USAGE_TEXT)));
-        helpText.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        helpText.setEditable(false);
-        helpText.setOpaque(false);
-        helpText.setForeground(ModernColors.getTextSecondary());
-        helpText.setLineWrap(true);
-        helpText.setWrapStyleWord(true);
-        ToolWindowSurfaceStyle.applyTextComponentDialogSurface(helpText);
-        JScrollPane helpScrollPane = new JScrollPane(helpText,
-                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        ToolWindowSurfaceStyle.applyDialogScrollPane(helpScrollPane);
-        helpScrollPane.setPreferredSize(new Dimension(0, 112));
-        helpPanel.add(helpScrollPane, BorderLayout.CENTER);
+        JPanel helpPanel = createUsageHelpPanel(
+                I18nUtil.getMessage(MessageKeys.CSV_USAGE_SUMMARY),
+                () -> showUsageInstructionsDialog(manageDialog,
+                        buildHelpText(I18nUtil.getMessage(MessageKeys.CSV_USAGE_TEXT)))
+        );
         bottomPanel.add(helpPanel, BorderLayout.CENTER);
 
         // 按钮面板

@@ -31,6 +31,8 @@ public class RequestLinePanel extends JPanel {
     private static final int ICON_SIZE = 14;
     private static final int COMPONENT_HEIGHT = 32;
     private static final int METHOD_COMBO_WIDTH = 95;
+    private static final int SEND_BUTTON_MIN_WIDTH = 88;
+    private static final int SAVE_BUTTON_MIN_WIDTH = 80;
     private static final int PANEL_PADDING = 5;
 
     // 组件
@@ -82,6 +84,7 @@ public class RequestLinePanel extends JPanel {
         combo.setPreferredSize(size);
         combo.setMaximumSize(size);
         combo.setMinimumSize(size);
+        combo.setAlignmentY(Component.CENTER_ALIGNMENT);
 
         // 设置字体
         combo.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
@@ -108,6 +111,8 @@ public class RequestLinePanel extends JPanel {
         // 设置尺寸
         field.setPreferredSize(new Dimension(500, COMPONENT_HEIGHT));
         field.setMinimumSize(new Dimension(300, COMPONENT_HEIGHT));
+        field.setMaximumSize(new Dimension(Integer.MAX_VALUE, COMPONENT_HEIGHT));
+        field.setAlignmentY(Component.CENTER_ALIGNMENT);
 
         // 设置字体
         field.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
@@ -137,6 +142,7 @@ public class RequestLinePanel extends JPanel {
         PrimaryButton button = new PrimaryButton(text, iconPath);
         button.setToolTipText(tooltip);
         button.addActionListener(sendAction);
+        applyActionButtonSize(button, SEND_BUTTON_MIN_WIDTH);
 
         return button;
     }
@@ -155,8 +161,19 @@ public class RequestLinePanel extends JPanel {
                 NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.SAVE_SUCCESS));
             }
         });
+        applyActionButtonSize(button, SAVE_BUTTON_MIN_WIDTH);
 
         return button;
+    }
+
+    private static void applyActionButtonSize(AbstractButton button, int minimumWidth) {
+        button.setPreferredSize(null);
+        Dimension preferredSize = button.getPreferredSize();
+        Dimension size = new Dimension(Math.max(preferredSize.width, minimumWidth), COMPONENT_HEIGHT);
+        button.setPreferredSize(size);
+        button.setMinimumSize(size);
+        button.setMaximumSize(size);
+        button.setAlignmentY(Component.CENTER_ALIGNMENT);
     }
 
 
@@ -228,6 +245,7 @@ public class RequestLinePanel extends JPanel {
         }
 
         sendButton.setEnabled(true);
+        applyActionButtonSize(sendButton, SEND_BUTTON_MIN_WIDTH);
 
         // 重置为默认蓝色
         updateButtonStyle(sendButton, ModernColors.getPrimary(), ModernColors.getPrimaryLight(),
@@ -250,6 +268,7 @@ public class RequestLinePanel extends JPanel {
         sendButton.setText(I18nUtil.getMessage(MessageKeys.BUTTON_CANCEL));
         sendButton.setIcon(IconUtil.createOnPrimary("icons/cancel.svg", ICON_SIZE, ICON_SIZE));
         sendButton.setEnabled(true);
+        applyActionButtonSize(sendButton, SEND_BUTTON_MIN_WIDTH);
 
         // 改变按钮为警告色（橙色）
         updateButtonStyle(sendButton, ModernColors.getWarning(), ModernColors.getWarningDark(),

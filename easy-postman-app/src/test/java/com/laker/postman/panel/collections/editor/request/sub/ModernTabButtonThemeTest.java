@@ -53,6 +53,6 @@ public class ModernTabButtonThemeTest {
 
         Insets insets = ((EmptyBorder) button.getBorder()).getBorderInsets();
 
-        assertEquals(insets.right, 16);
+        assertEquals(insets.right, 12);
     }
 }

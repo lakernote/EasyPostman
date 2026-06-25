@@ -13,7 +13,7 @@ import java.awt.Dimension;
  */
 public final class ToolWindowSidebarToolbar extends JPanel {
     public static final int HORIZONTAL_PADDING = 8;
-    public static final int VERTICAL_PADDING = 6;
+    public static final int VERTICAL_PADDING = 5;
     public static final int ACTION_SIZE = ToolWindowStripeMetrics.ACTION_SIZE;
     public static final int SEARCH_HEIGHT = SearchTextField.DEFAULT_HEIGHT;
     public static final int CONTROL_GAP = 8;

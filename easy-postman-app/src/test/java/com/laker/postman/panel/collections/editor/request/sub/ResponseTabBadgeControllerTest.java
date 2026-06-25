@@ -45,6 +45,7 @@ public class ResponseTabBadgeControllerTest {
         assertTrue(headersButton.getIcon() instanceof TabCountBadgeIcon);
         TabCountBadgeIcon badgeIcon = (TabCountBadgeIcon) headersButton.getIcon();
         assertEquals(badgeIcon.getText(), "6");
+        assertTrue(badgeIcon.getIconHeight() <= 16);
         assertEquals(badgeIcon.getForegroundColor(), ModernColors.getTextPrimary());
         assertFalse(ModernColors.getSuccess().equals(badgeIcon.getBackgroundColor()),
                 "Header count is metadata, not success state");
@@ -65,7 +66,10 @@ public class ResponseTabBadgeControllerTest {
         assertTrue(testsButton.getIcon() instanceof TabCountBadgeIcon);
         TabCountBadgeIcon badgeIcon = (TabCountBadgeIcon) testsButton.getIcon();
         assertEquals(badgeIcon.getText(), "1");
-        assertEquals(badgeIcon.getBackgroundColor(), ModernColors.getError());
+        assertEquals(badgeIcon.getBackgroundColor().getRed(), ModernColors.getError().getRed());
+        assertEquals(badgeIcon.getBackgroundColor().getGreen(), ModernColors.getError().getGreen());
+        assertEquals(badgeIcon.getBackgroundColor().getBlue(), ModernColors.getError().getBlue());
+        assertTrue(badgeIcon.getBackgroundColor().getAlpha() < 255);
         assertEquals(badgeIcon.getForegroundColor(), ModernColors.getTextInverse());
     }
 
@@ -103,6 +107,9 @@ public class ResponseTabBadgeControllerTest {
 
         assertNotNull(testsButton.getIcon());
         TabCountBadgeIcon badgeIcon = (TabCountBadgeIcon) testsButton.getIcon();
-        assertEquals(badgeIcon.getBackgroundColor(), ModernColors.getSuccess());
+        assertEquals(badgeIcon.getBackgroundColor().getRed(), ModernColors.getSuccess().getRed());
+        assertEquals(badgeIcon.getBackgroundColor().getGreen(), ModernColors.getSuccess().getGreen());
+        assertEquals(badgeIcon.getBackgroundColor().getBlue(), ModernColors.getSuccess().getBlue());
+        assertTrue(badgeIcon.getBackgroundColor().getAlpha() < 255);
     }
 }

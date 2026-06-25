@@ -19,6 +19,7 @@ public class ModernTabButton extends JButton {
 
     // 常量定义
     private static final int INDICATOR_HEIGHT = 3;
+    private static final int MIN_HEIGHT = 34;
     private static final int HOVER_ANIMATION_DELAY = 10;
     private static final float HOVER_ALPHA_STEP = 0.1f;
 
@@ -48,7 +49,7 @@ public class ModernTabButton extends JButton {
         setForeground(ModernTabButtonTheme.foreground(true));
 
         // 设置内边距
-        setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 16));
+        setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
 
         // 设置光标
         setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -188,7 +189,7 @@ public class ModernTabButton extends JButton {
     public Dimension getPreferredSize() {
         Dimension size = super.getPreferredSize();
         // 确保有足够的高度
-        size.height = Math.max(size.height, 36);
+        size.height = Math.max(size.height, MIN_HEIGHT);
         return size;
     }
 }

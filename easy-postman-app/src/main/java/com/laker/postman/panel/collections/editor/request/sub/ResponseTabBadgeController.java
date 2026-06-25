@@ -19,7 +19,7 @@ import java.util.List;
 final class ResponseTabBadgeController {
     private static final int TAB_INDEX_RESPONSE_HEADERS = 1;
     private static final int TAB_INDEX_TESTS = 2;
-    private static final int BADGE_ICON_TEXT_GAP = 6;
+    private static final int BADGE_ICON_TEXT_GAP = 5;
 
     private final JButton[] tabButtons;
 
@@ -54,8 +54,8 @@ final class ResponseTabBadgeController {
                     label,
                     String.valueOf(testResults.size()),
                     ModernColors.getTextInverse(),
-                    background,
-                    ModernColors.withAlpha(background, 180));
+                    resultBadgeBackground(background),
+                    resultBadgeBorder(background));
             return;
         }
         clearTabBadge(testsButton, label);
@@ -93,6 +93,14 @@ final class ResponseTabBadgeController {
 
     private static Color neutralBadgeBorder() {
         return ModernColors.withAlpha(ModernColors.getTextSecondary(), ModernColors.isDarkTheme() ? 120 : 72);
+    }
+
+    private static Color resultBadgeBackground(Color color) {
+        return ModernColors.withAlpha(color, ModernColors.isDarkTheme() ? 225 : 235);
+    }
+
+    private static Color resultBadgeBorder(Color color) {
+        return ModernColors.withAlpha(color, ModernColors.isDarkTheme() ? 160 : 140);
     }
 
     private static void refreshTabButton(JButton button) {

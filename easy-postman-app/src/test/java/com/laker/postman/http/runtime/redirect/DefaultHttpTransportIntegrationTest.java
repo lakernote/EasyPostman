@@ -276,7 +276,14 @@ public class DefaultHttpTransportIntegrationTest {
         assertEquals(findHeaderValue(request.sentHeadersList, "Host"), recordedRequest.getHeader("Host"));
         assertEquals(findHeaderValue(request.sentHeadersList, "Content-Length"),
                 String.valueOf(request.body.getBytes(StandardCharsets.UTF_8).length));
+        waitForNetworkLogStage(events, NetworkLogEventStage.CALL_START);
         waitForNetworkLogStage(events, NetworkLogEventStage.REQUEST_HEADERS_END);
+        String callStart = firstEventMessage(events, NetworkLogEventStage.CALL_START);
+        assertTrue(callStart.contains("Stream Request: POST " + request.url), callStart);
+        assertTrue(callStart.contains("Stream Flow: HTTP POST + text/event-stream response body stays open"),
+                callStart);
+        assertFalse(callStart.contains("Stream Flow: HTTP GET + text/event-stream response body stays open"),
+                callStart);
         assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.REQUEST_HEADERS_END),
                 "SSE network log should include actual sent headers: " + eventSnapshot(events));
         assertTrue(events.stream().anyMatch(event -> event.stage() == NetworkLogEventStage.REQUEST_BODY_START),

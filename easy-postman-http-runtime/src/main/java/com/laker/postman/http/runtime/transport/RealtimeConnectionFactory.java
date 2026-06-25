@@ -114,7 +114,8 @@ public final class RealtimeConnectionFactory {
         StringBuilder sb = new StringBuilder("\n");
         sb.append("SSE URL: ").append(sseUrl).append("\n");
         sb.append("Stream Request: ").append(okRequest.method()).append(" ").append(okRequest.url()).append("\n");
-        sb.append("Stream Flow: HTTP GET + text/event-stream response body stays open\n");
+        sb.append("Stream Flow: HTTP ").append(okRequest.method())
+                .append(" + text/event-stream response body stays open\n");
         NetworkLogSupport.append(request, NetworkLogEventStage.CALL_START, sb.toString());
     }
 

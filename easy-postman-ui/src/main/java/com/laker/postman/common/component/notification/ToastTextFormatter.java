@@ -6,6 +6,8 @@ import lombok.experimental.UtilityClass;
 
 @UtilityClass
 class ToastTextFormatter {
+    private static final String ELLIPSIS = "\u2026";
+
     static String displayText(String message, boolean expanded) {
         if (message == null || message.isBlank()) {
             return "";
@@ -14,7 +16,11 @@ class ToastTextFormatter {
         if (!expanded && foldable) {
             return collapsedText(message);
         }
-        return foldable ? message + " " + UiI18n.get(UiMessageKeys.NOTIFICATION_COLLAPSE) : message;
+        return message;
+    }
+
+    static String actionText(boolean expanded) {
+        return UiI18n.get(expanded ? UiMessageKeys.NOTIFICATION_COLLAPSE : UiMessageKeys.NOTIFICATION_EXPAND);
     }
 
     static boolean isFoldable(String message) {
@@ -30,12 +36,26 @@ class ToastTextFormatter {
         int show = Math.min(lines.length, ToastStyle.COLLAPSED_MAX_LINES);
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < show; i++) {
-            builder.append(lines[i]);
-            if (i < show - 1) {
+            if (builder.length() >= ToastStyle.COLLAPSED_MAX_LENGTH) {
+                break;
+            }
+            if (i > 0) {
                 builder.append("\n");
             }
+            int remaining = ToastStyle.COLLAPSED_MAX_LENGTH - builder.length();
+            String line = lines[i];
+            builder.append(line, 0, Math.min(line.length(), Math.max(0, remaining)));
+            if (line.length() > remaining) {
+                break;
+            }
         }
-        builder.append("\u2026 ").append(UiI18n.get(UiMessageKeys.NOTIFICATION_EXPAND));
-        return builder.toString();
+        return trimTrailingWhitespace(builder).append(ELLIPSIS).toString();
+    }
+
+    private StringBuilder trimTrailingWhitespace(StringBuilder builder) {
+        while (!builder.isEmpty() && Character.isWhitespace(builder.charAt(builder.length() - 1))) {
+            builder.deleteCharAt(builder.length() - 1);
+        }
+        return builder;
     }
 }

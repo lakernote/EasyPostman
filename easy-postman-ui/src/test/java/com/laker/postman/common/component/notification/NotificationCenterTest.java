@@ -10,6 +10,9 @@ import org.testng.annotations.Test;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 import static com.laker.postman.test.ThemeTokenTestSupport.remember;
@@ -73,6 +76,25 @@ public class NotificationCenterTest {
     }
 
     @Test
+    public void collapsedToastBodyShouldNotEmbedExpandActionText() {
+        String message = String.join("\n", "line 1", "line 2", "line 3", "line 4", "line 5");
+
+        String displayText = ToastTextFormatter.displayText(message, false);
+
+        assertEquals(displayText, "line 1\nline 2\nline 3\nline 4\u2026");
+    }
+
+    @Test
+    public void collapsedSingleLineToastBodyShouldRespectLengthLimit() {
+        String message = "HTTP 403 Forbidden: " + "x".repeat(ToastStyle.COLLAPSED_MAX_LENGTH + 40);
+
+        String displayText = ToastTextFormatter.displayText(message, false);
+
+        assertTrue(displayText.endsWith("\u2026"));
+        assertTrue(displayText.length() <= ToastStyle.COLLAPSED_MAX_LENGTH + 1);
+    }
+
+    @Test
     public void toastSurfaceShouldReadNotificationBackgroundToken() {
         Color background = new Color(250, 251, 252);
         UIManager.put(ThemeColors.NOTIFICATION_BACKGROUND, background);
@@ -107,6 +129,27 @@ public class NotificationCenterTest {
         });
 
         assertTrue(iconHasVisiblePixels(closeButton.getIcon()));
+    }
+
+    @Test
+    public void toastActionButtonShouldUseButtonSemantics() {
+        boolean[] clicked = {false};
+        JButton actionButton = ToastStyle.createLinkButton("Show details", () -> clicked[0] = true);
+
+        actionButton.doClick();
+
+        assertTrue(clicked[0]);
+        assertEquals(actionButton.getCursor().getType(), Cursor.HAND_CURSOR);
+        assertTrue(!actionButton.isContentAreaFilled());
+    }
+
+    @Test
+    public void toastHoverTargetsShouldIncludeBodyTextArea() throws IOException {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/common/component/notification/ToastWindow.java"));
+
+        assertTrue(source.contains("bodyLabel, bodyText"),
+                "Toast body text area should pause auto-close on hover after wrapping it in a scroll pane");
     }
 
     @Test

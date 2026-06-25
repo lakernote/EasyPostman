@@ -23,8 +23,10 @@ class ToastStyle {
     static final int VERTICAL_PADDING = 10;
     private static final int CONTENT_GAP = 10;
     private static final int TITLE_BODY_GAP = 3;
+    private static final int BODY_ACTION_GAP = 6;
     static final int COLLAPSED_MAX_LINES = 4;
     static final int COLLAPSED_MAX_LENGTH = 120;
+    static final int EXPANDED_MAX_BODY_HEIGHT = 240;
     static final int STACK_GAP = 6;
     static final int SLIDE_STEPS = 14;
     static final int SLIDE_INTERVAL = 14;
@@ -118,6 +120,16 @@ class ToastStyle {
         return panel;
     }
 
+    static JPanel createBodyPanel(JComponent bodyComponent, JComponent actionPanel) {
+        JPanel panel = new JPanel(new BorderLayout(0, BODY_ACTION_GAP));
+        panel.setOpaque(false);
+        panel.add(bodyComponent, BorderLayout.CENTER);
+        if (actionPanel != null) {
+            panel.add(actionPanel, BorderLayout.SOUTH);
+        }
+        return panel;
+    }
+
     static JPanel createClosePanel(JButton closeButton) {
         JPanel panel = new JPanel(new BorderLayout());
         panel.setOpaque(false);
@@ -191,6 +203,45 @@ class ToastStyle {
         body.setForeground(ModernColors.getNotificationBodyForeground());
         body.setFont(bodyFont());
         return body;
+    }
+
+    static JScrollPane createBodyScrollPane(JTextArea body) {
+        JScrollPane scrollPane = new JScrollPane(
+                body,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
+        );
+        scrollPane.setOpaque(false);
+        scrollPane.getViewport().setOpaque(false);
+        scrollPane.setBorder(null);
+        scrollPane.setViewportBorder(null);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        return scrollPane;
+    }
+
+    static JPanel createActionPanel(AbstractButton expandButton, AbstractButton copyButton) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.X_AXIS));
+        panel.setOpaque(false);
+        panel.add(expandButton);
+        panel.add(Box.createHorizontalStrut(10));
+        panel.add(copyButton);
+        return panel;
+    }
+
+    static JButton createLinkButton(String text, Runnable action) {
+        JButton button = new JButton(text);
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setFocusPainted(false);
+        button.setFocusable(false);
+        button.setOpaque(false);
+        button.setForeground(ModernColors.getPrimary());
+        button.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
+        button.addActionListener(e -> action.run());
+        return button;
     }
 
     static JButton createCloseButton(Runnable onClose) {

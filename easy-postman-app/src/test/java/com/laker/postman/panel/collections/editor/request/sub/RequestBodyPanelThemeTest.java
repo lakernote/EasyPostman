@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.constants.ThemeColors;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.variable.VariableType;
@@ -25,7 +26,9 @@ public class RequestBodyPanelThemeTest {
         previousThemeTokens = remember(
                 ThemeColors.CONSOLE_SELECTION_BACKGROUND,
                 ThemeColors.BORDER_MEDIUM,
+                ThemeColors.ERROR,
                 ThemeColors.TEXT_PRIMARY,
+                ThemeColors.TEXT_SECONDARY,
                 ThemeColors.TEXT_HINT,
                 ThemeColors.HOVER_BACKGROUND
         );
@@ -91,5 +94,32 @@ public class RequestBodyPanelThemeTest {
 
         assertTrue(tooltip.contains("font-size: " + compactTooltipFontSize + "px"));
         assertFalse(tooltip.contains("font-size: " + largeTooltipFontSize + "px"));
+    }
+
+    @Test
+    public void undefinedVariableTooltipShouldReserveErrorColorForTitle() {
+        Color error = new Color(191, 72, 80);
+        Color secondaryText = new Color(151, 152, 153);
+        UIManager.put(ThemeColors.ERROR, error);
+        UIManager.put(ThemeColors.TEXT_SECONDARY, secondaryText);
+
+        String tooltip = RequestBodyVariableTooltipBuilder.undefinedVariableTooltip("orderId");
+        String errorHtml = ModernColors.toHtmlColor(error);
+        String secondaryHtml = ModernColors.toHtmlColor(secondaryText);
+
+        assertEquals(countOccurrences(tooltip, errorHtml), 2,
+                "Undefined variable tooltip should use error color only for the title and variable name");
+        assertTrue(tooltip.contains(secondaryHtml),
+                "The explanatory body row should use muted text instead of repeating strong error red");
+    }
+
+    private static int countOccurrences(String text, String token) {
+        int count = 0;
+        int index = 0;
+        while ((index = text.indexOf(token, index)) >= 0) {
+            count++;
+            index += token.length();
+        }
+        return count;
     }
 }

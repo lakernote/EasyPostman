@@ -131,8 +131,8 @@ public class VariableTooltipHtmlBuilder {
         }
 
         tooltip.append("<span style='color: ")
-                .append(ModernColors.toHtmlColor(ModernColors.getError()))
-                .append("; font-weight: bold;'>");
+                .append(ModernColors.toHtmlColor(ModernColors.getTextSecondary()))
+                .append(";'>");
         tooltip.append(escapeHtml(content));
         tooltip.append("</span>");
     }

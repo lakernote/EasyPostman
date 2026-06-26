@@ -9,6 +9,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 
+import static com.laker.postman.plugin.capture.CaptureI18n.t;
+
 final class CaptureRelayHandler extends ChannelInboundHandlerAdapter {
     private final Channel peerChannel;
     private final CaptureSessionStore sessionStore;
@@ -41,10 +43,16 @@ final class CaptureRelayHandler extends ChannelInboundHandlerAdapter {
         if (bytes.length > 0) {
             if (requestSide) {
                 sessionStore.appendRequestBody(flowId, bytes);
-                framePreviewDecoder.decode(bytes).forEach(event -> sessionStore.appendRequestStreamEvent(flowId, event));
+                framePreviewDecoder.decode(bytes).forEach(event -> {
+                    sessionStore.appendRequestStreamEvent(flowId, event);
+                    recordFrameEvent(event, true);
+                });
             } else {
                 sessionStore.appendResponseBody(flowId, bytes);
-                framePreviewDecoder.decode(bytes).forEach(event -> sessionStore.appendResponseStreamEvent(flowId, event));
+                framePreviewDecoder.decode(bytes).forEach(event -> {
+                    sessionStore.appendResponseStreamEvent(flowId, event);
+                    recordFrameEvent(event, false);
+                });
             }
         }
         peerChannel.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
@@ -58,6 +66,13 @@ final class CaptureRelayHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
+        sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.info(
+                CaptureDiagnosticPhase.FLOW_COMPLETE,
+                CaptureDiagnosticRole.EASY_POSTMAN_PROXY,
+                t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TUNNEL_CLOSED),
+                "",
+                ""
+        ));
         sessionStore.complete(flowId);
         if (peerChannel.isActive()) {
             peerChannel.writeAndFlush(Unpooled.EMPTY_BUFFER).addListener(ChannelFutureListener.CLOSE);
@@ -77,5 +92,21 @@ final class CaptureRelayHandler extends ChannelInboundHandlerAdapter {
             return ByteBufUtil.getBytes(frame.content());
         }
         return new byte[0];
+    }
+
+    private void recordFrameEvent(String event, boolean fromClient) {
+        if (event == null || event.isBlank()) {
+            return;
+        }
+        String firstLine = event.lines().findFirst().orElse(event);
+        sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.debug(
+                CaptureDiagnosticPhase.WEBSOCKET_FRAME,
+                fromClient ? CaptureDiagnosticRole.SOURCE_APP : CaptureDiagnosticRole.TARGET_SERVER,
+                fromClient
+                        ? t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_WEBSOCKET_SOURCE_FRAME)
+                        : t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_WEBSOCKET_TARGET_FRAME),
+                firstLine,
+                ""
+        ));
     }
 }

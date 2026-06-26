@@ -61,6 +61,8 @@ final class CaptureQuickFilterTokens {
             case "js", "type:js" -> "js";
             case "css", "type:css" -> "css";
             case "api", "type:api" -> "api";
+            case "sse", "type:sse" -> "sse";
+            case "ws", "websocket", "type:ws", "type:websocket" -> "websocket";
             default -> normalized;
         };
     }

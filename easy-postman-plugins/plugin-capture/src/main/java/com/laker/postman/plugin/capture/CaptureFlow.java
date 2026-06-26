@@ -4,9 +4,12 @@ import com.laker.postman.util.JsonUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.laker.postman.plugin.capture.CaptureI18n.t;
@@ -15,6 +18,7 @@ final class CaptureFlow {
     private static final AtomicLong IDS = new AtomicLong(1);
     private static final int PREVIEW_LIMIT = 64 * 1024;
     private static final int TEXT_PREVIEW_LIMIT = 64 * 1024;
+    private static final int DIAGNOSTIC_EVENT_LIMIT = 200;
     private static final String STREAM_SEPARATOR = "\n\n";
 
     private final String id;
@@ -24,8 +28,11 @@ final class CaptureFlow {
     private final String host;
     private final String path;
     private final Map<String, String> requestHeaders;
+    private final String connectionId;
+    private final CopyOnWriteArrayList<CaptureDiagnosticEvent> diagnosticEvents;
     private volatile byte[] requestBody;
     private volatile int requestSize;
+    private volatile CaptureSourceInfo sourceInfo;
 
     private volatile long completedAt;
     private volatile int statusCode;
@@ -46,6 +53,18 @@ final class CaptureFlow {
                 String path,
                 Map<String, String> requestHeaders,
                 byte[] requestBody) {
+        this(method, url, host, path, requestHeaders, requestBody, "", CaptureSourceInfo.unknown(), List.of());
+    }
+
+    CaptureFlow(String method,
+                String url,
+                String host,
+                String path,
+                Map<String, String> requestHeaders,
+                byte[] requestBody,
+                String connectionId,
+                CaptureSourceInfo sourceInfo,
+                List<CaptureDiagnosticEvent> diagnosticEvents) {
         this.id = String.valueOf(IDS.getAndIncrement());
         this.startedAt = System.currentTimeMillis();
         this.method = method;
@@ -53,6 +72,9 @@ final class CaptureFlow {
         this.host = host;
         this.path = path;
         this.requestHeaders = new LinkedHashMap<>(requestHeaders);
+        this.connectionId = connectionId == null ? "" : connectionId;
+        this.sourceInfo = sourceInfo == null ? CaptureSourceInfo.unknown() : sourceInfo;
+        this.diagnosticEvents = new CopyOnWriteArrayList<>(diagnosticEvents == null ? List.of() : diagnosticEvents);
         this.requestSize = requestBody == null ? 0 : requestBody.length;
         this.requestBody = trimPreview(requestBody);
         this.protocol = "TLS".equalsIgnoreCase(method) ? Protocol.TLS : detectInitialProtocol(requestHeaders);
@@ -97,6 +119,20 @@ final class CaptureFlow {
             return "ws://" + url.substring("http://".length());
         }
         return url;
+    }
+
+    String connectionId() {
+        return connectionId;
+    }
+
+    CaptureSourceInfo sourceInfo() {
+        return sourceInfo;
+    }
+
+    void updateSourceInfo(CaptureSourceInfo sourceInfo) {
+        if (sourceInfo != null) {
+            this.sourceInfo = sourceInfo;
+        }
     }
 
     int statusCode() {
@@ -219,6 +255,15 @@ final class CaptureFlow {
         appendTimelineEvent(protocol == Protocol.SSE ? "SSE" : "SERVER", text);
     }
 
+    void appendDiagnosticEvent(CaptureDiagnosticEvent event) {
+        if (event != null) {
+            diagnosticEvents.add(event);
+            while (diagnosticEvents.size() > DIAGNOSTIC_EVENT_LIMIT) {
+                diagnosticEvents.remove(0);
+            }
+        }
+    }
+
     void complete() {
         this.completedAt = System.currentTimeMillis();
     }
@@ -242,14 +287,14 @@ final class CaptureFlow {
         return new Object[]{
                 id,
                 sequence(),
-                timeText(),
+                sourceInfo.sourceTableText(),
+                sourceInfo.pidTableText(),
+                CaptureFlowClassifier.resourceType(this),
                 method,
-                host,
-                path,
+                url,
                 statusCode > 0 ? statusCode : "",
                 durationMs(),
-                requestSize(),
-                responseSize()
+                requestSize() + responseSize()
         };
     }
 
@@ -259,6 +304,7 @@ final class CaptureFlow {
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_TIME), new Date(startedAt).toString());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD), method);
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_URL), url);
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE), sourceInfo.tableText());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL), protocolText());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS),
                 statusCode > 0 ? statusCode + " " + statusText : t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PENDING));
@@ -288,6 +334,7 @@ final class CaptureFlow {
         StringBuilder builder = new StringBuilder();
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD), method);
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_URL), url);
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE), sourceInfo.tableText());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_TIME), new Date(startedAt).toString());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL), protocolText());
         appendTlsDiagnosis(builder);
@@ -303,6 +350,7 @@ final class CaptureFlow {
     String responseDetailText() {
         StringBuilder builder = new StringBuilder();
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL), protocolText());
+        appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE), sourceInfo.tableText());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS), statusDisplayText());
         appendLine(builder, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION), CaptureValueFormat.duration(durationMs()));
         if (!errorMessage.isBlank()) {
@@ -321,6 +369,26 @@ final class CaptureFlow {
             return streamTimelinePreview;
         }
         return t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_NO_STREAM);
+    }
+
+    String diagnosticsDetailText() {
+        StringBuilder builder = new StringBuilder();
+        builder.append(t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_SOURCE_TITLE)).append('\n');
+        builder.append("------\n");
+        builder.append(sourceInfo.detailText()).append('\n');
+        List<CaptureDiagnosticEvent> snapshot = new ArrayList<>(diagnosticEvents);
+        if (snapshot.isEmpty()) {
+            builder.append(t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_EMPTY)).append('\n');
+            return builder.toString();
+        }
+        for (int i = 0; i < snapshot.size(); i++) {
+            CaptureDiagnosticEvent event = snapshot.get(i);
+            builder.append('#').append(i + 1).append(' ').append(event.formattedText());
+            if (i < snapshot.size() - 1) {
+                builder.append('\n');
+            }
+        }
+        return builder.toString();
     }
 
     String requestBodyImportText() {

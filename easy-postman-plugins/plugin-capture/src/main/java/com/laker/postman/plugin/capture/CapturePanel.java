@@ -38,8 +38,10 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JTabbedPane;
+import javax.swing.JViewport;
 import javax.swing.ListSelectionModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
@@ -58,6 +60,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.datatransfer.StringSelection;
@@ -76,12 +79,16 @@ import static com.laker.postman.plugin.capture.CaptureI18n.t;
 
 public class CapturePanel extends JPanel {
     private static final int TABLE_COLUMN_COUNT = 10;
-    private static final int METHOD_COLUMN_INDEX = 3;
-    private static final int STATUS_COLUMN_INDEX = 6;
-    private static final int DURATION_COLUMN_INDEX = 7;
-    private static final int REQUEST_BYTES_COLUMN_INDEX = 8;
-    private static final int RESPONSE_BYTES_COLUMN_INDEX = 9;
+    private static final int SOURCE_COLUMN_INDEX = 2;
+    private static final int PID_COLUMN_INDEX = 3;
+    private static final int TYPE_COLUMN_INDEX = 4;
+    private static final int METHOD_COLUMN_INDEX = 5;
+    private static final int URL_COLUMN_INDEX = 6;
+    private static final int STATUS_COLUMN_INDEX = 7;
+    private static final int DURATION_COLUMN_INDEX = 8;
+    private static final int SIZE_COLUMN_INDEX = 9;
     private static final int DETAIL_HOST_MAX_CHARS = 36;
+    private static final int DETAIL_SOURCE_MAX_CHARS = 30;
     private static final Integer[] RETENTION_LIMIT_OPTIONS = {100, 300, 1000};
 
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
@@ -117,6 +124,7 @@ public class CapturePanel extends JPanel {
     private RSyntaxTextArea requestDetailArea;
     private RSyntaxTextArea responseDetailArea;
     private RSyntaxTextArea streamDetailArea;
+    private RSyntaxTextArea diagnosticsDetailArea;
     private JTabbedPane detailTabs;
     private JSplitPane detailSplit;
     private boolean detailPanelVisible;
@@ -124,12 +132,15 @@ public class CapturePanel extends JPanel {
     private JLabel detailMethodLabel;
     private JLabel detailProtocolLabel;
     private JLabel detailStatusLabel;
+    private JLabel detailSourceLabel;
     private JLabel detailHostLabel;
     private JLabel detailDurationLabel;
     private JLabel detailTimeLabel;
     private final Map<String, JToggleButton> quickFilterButtons = new LinkedHashMap<>();
     private final Map<CaptureViewPreset, JToggleButton> viewPresetButtons = new LinkedHashMap<>();
     private final EnumSet<CaptureViewPreset> activeViewPresets = EnumSet.noneOf(CaptureViewPreset.class);
+    private String sourceIncludeFilter = "";
+    private String sourceExcludeFilter = "";
     private boolean syncingQuickFilters;
     private boolean operationInProgress;
     private CaptureFlow selectedFlow;
@@ -186,7 +197,7 @@ public class CapturePanel extends JPanel {
         captureFilterField.setColumns(28);
         captureFilterField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 t(MessageKeys.TOOLBOX_CAPTURE_HOSTS_PLACEHOLDER));
-        captureFilterField.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_HOSTS_TOOLTIP));
+        captureFilterField.setToolTipText(htmlTooltip(t(MessageKeys.TOOLBOX_CAPTURE_HOSTS_TOOLTIP), 420));
         captureFilterField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -262,6 +273,7 @@ public class CapturePanel extends JPanel {
 
     private JComponent buildContent() {
         tablePanel = new EnhancedTablePanel(columnNames());
+        tablePanel.setCellDetailDialogOnDoubleClickEnabled(false);
         ToolWindowSurfaceStyle.applyPanelTreeCard(tablePanel);
         tablePanel.setRowCountFormatter((filtered, total) ->
                 formatRetainedRowCount(filtered, total, proxyService.sessionStore().maxFlows()));
@@ -272,13 +284,13 @@ public class CapturePanel extends JPanel {
         table.getSelectionModel().addListSelectionListener(this::handleSelectionChanged);
         table.addMouseListener(new MouseAdapter() {
             @Override
-            public void mousePressed(MouseEvent e) {
+            public void mouseClicked(MouseEvent e) {
                 if (!SwingUtilities.isLeftMouseButton(e)
-                        || detailPanelVisible
+                        || e.getClickCount() != 2
                         || table.rowAtPoint(e.getPoint()) < 0) {
                     return;
                 }
-                SwingUtilities.invokeLater(CapturePanel.this::showSelectedTableFlowDetail);
+                showTableFlowDetailAtRow(table.rowAtPoint(e.getPoint()));
             }
         });
         disableTableTooltips(table);
@@ -289,25 +301,29 @@ public class CapturePanel extends JPanel {
         requestDetailArea = createDetailArea();
         responseDetailArea = createDetailArea();
         streamDetailArea = createDetailArea();
+        diagnosticsDetailArea = createDetailArea();
         requestDetailArea.setText(idleDetailText());
         responseDetailArea.setText(idleDetailText());
         streamDetailArea.setText(idleDetailText());
+        diagnosticsDetailArea.setText(idleDetailText());
 
         detailTabs = new JTabbedPane(JTabbedPane.TOP, JTabbedPane.SCROLL_TAB_LAYOUT);
         detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_REQUEST), buildRequestDetailTab());
         detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_RESPONSE), buildResponseDetailTab());
         detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_STREAM), buildStreamDetailTab());
+        detailTabs.addTab(t(MessageKeys.TOOLBOX_CAPTURE_TAB_DIAGNOSTICS), buildDiagnosticsDetailTab());
         detailTabs.setPreferredSize(new Dimension(360, 200));
         ToolWindowSurfaceStyle.applyTabbedPaneCard(detailTabs);
 
         JPanel detailHeader = new JPanel(new MigLayout(
                 "insets 4 10 4 8, fillx",
-                "[]8[]8[]8[]8[]push[]4[]",
+                "[]6[]6[]6[]6[]6[]push[]4[]4[]",
                 "[]"));
         ToolWindowSurfaceStyle.applySectionHeader(detailHeader);
         detailMethodLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -", ModernColors.getInfo());
         detailProtocolLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -", ModernColors.getSecondary());
         detailStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", CaptureStatusStyle.accentFor(null));
+        detailSourceLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": -", ModernColors.getInfo());
         detailHostLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -", ModernColors.getAccent());
         detailDurationLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -", ModernColors.getWarningDark());
         detailTimeLabel = buildChipLabel("-", null);
@@ -333,6 +349,7 @@ public class CapturePanel extends JPanel {
         detailHeader.add(detailMethodLabel);
         detailHeader.add(detailProtocolLabel);
         detailHeader.add(detailStatusLabel);
+        detailHeader.add(detailSourceLabel);
         detailHeader.add(detailHostLabel);
         detailHeader.add(detailDurationLabel);
         detailHeader.add(detailTimeLabel);
@@ -530,7 +547,7 @@ public class CapturePanel extends JPanel {
         } else if (retainedSelectedFlow != null) {
             selectedFlow = retainedSelectedFlow;
             updateDetailHeader(retainedSelectedFlow);
-            updateDetailAreas(retainedSelectedFlow);
+            updateDetailAreas(retainedSelectedFlow, true);
         } else if (table.getSelectedRow() < 0) {
             clearDetail();
         } else if (selectedFlow != null) {
@@ -538,7 +555,7 @@ public class CapturePanel extends JPanel {
             if (latestSelectedFlow != null) {
                 selectedFlow = latestSelectedFlow;
                 updateDetailHeader(latestSelectedFlow);
-                updateDetailAreas(latestSelectedFlow);
+                updateDetailAreas(latestSelectedFlow, true);
             }
         }
     }
@@ -570,6 +587,9 @@ public class CapturePanel extends JPanel {
     }
 
     private boolean matchesViewPresets(CaptureFlow flow) {
+        if (!matchesSourceDisplayFilter(flow, sourceIncludeFilter, sourceExcludeFilter)) {
+            return false;
+        }
         if (activeViewPresets.contains(CaptureViewPreset.ERRORS_ONLY)
                 && !CaptureFlowClassifier.isError(flow)) {
             return false;
@@ -590,6 +610,16 @@ public class CapturePanel extends JPanel {
                 || CaptureFlowClassifier.isApiTraffic(flow);
     }
 
+    static boolean matchesSourceDisplayFilter(CaptureFlow flow, String includeSource, String excludeSource) {
+        String source = sourceFilterValue(flow);
+        String include = cleanFilterValue(includeSource);
+        String exclude = cleanFilterValue(excludeSource);
+        if (!include.isBlank() && !source.equals(include)) {
+            return false;
+        }
+        return exclude.isBlank() || !source.equals(exclude);
+    }
+
     private Comparator<CaptureFlow> errorPriorityComparator() {
         return (left, right) -> {
             int priority = Integer.compare(CaptureFlowClassifier.errorPriority(left), CaptureFlowClassifier.errorPriority(right));
@@ -604,6 +634,10 @@ public class CapturePanel extends JPanel {
         List<CaptureFlow> flows = selectedFlows();
         CaptureFlow flow = flows.isEmpty() ? null : flows.get(0);
         String selectedHost = selectedHost(flows);
+        String selectedSource = selectedSource(flows);
+        CaptureSourceInfo selectedSourceInfo = selectedSourceInfo(flows);
+        String selectedPid = selectedSourceInfo == null ? "" : cleanFilterValue(selectedSourceInfo.processId());
+        String selectedProcess = selectedSourceInfo == null ? "" : cleanFilterValue(selectedSourceInfo.processName());
         JMenuItem onlyRequestItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_ONLY_REQUEST));
         onlyRequestItem.setEnabled(!operationInProgress && flow != null);
         onlyRequestItem.addActionListener(e -> applyOnlyRequestFilter(flow));
@@ -628,6 +662,34 @@ public class CapturePanel extends JPanel {
         onlyMethodItem.setEnabled(!operationInProgress && flow != null && !flow.method().isBlank());
         onlyMethodItem.addActionListener(e -> applyOnlyMethodFilter(flow.method()));
 
+        JMenuItem onlyPidItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_ONLY_PID));
+        onlyPidItem.setEnabled(!operationInProgress && !selectedPid.isBlank());
+        onlyPidItem.addActionListener(e -> applyOnlyPidFilter(selectedPid));
+
+        JMenuItem onlyProcessItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_ONLY_PROCESS));
+        onlyProcessItem.setEnabled(!operationInProgress && !selectedProcess.isBlank());
+        onlyProcessItem.addActionListener(e -> applyOnlyProcessFilter(selectedProcess));
+
+        JMenuItem excludePidItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_EXCLUDE_PID));
+        excludePidItem.setEnabled(!operationInProgress && !selectedPid.isBlank());
+        excludePidItem.addActionListener(e -> applyExcludePidFilter(selectedPid));
+
+        JMenuItem excludeProcessItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_EXCLUDE_PROCESS));
+        excludeProcessItem.setEnabled(!operationInProgress && !selectedProcess.isBlank());
+        excludeProcessItem.addActionListener(e -> applyExcludeProcessFilter(selectedProcess));
+
+        JMenuItem onlySourceItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_ONLY_SOURCE));
+        onlySourceItem.setEnabled(flow != null && !selectedSource.isBlank());
+        onlySourceItem.addActionListener(e -> applyOnlySourceViewFilter(selectedSource));
+
+        JMenuItem excludeSourceItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_EXCLUDE_SOURCE));
+        excludeSourceItem.setEnabled(flow != null && !selectedSource.isBlank());
+        excludeSourceItem.addActionListener(e -> applyExcludeSourceViewFilter(selectedSource));
+
+        JMenuItem clearSourceFilterItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_CLEAR_SOURCE_FILTER));
+        clearSourceFilterItem.setEnabled(hasActiveSourceDisplayFilter());
+        clearSourceFilterItem.addActionListener(e -> clearSourceViewFilter());
+
         JMenuItem resetSortItem = new JMenuItem(t(MessageKeys.TOOLBOX_CAPTURE_CONTEXT_RESET_SORT));
         resetSortItem.addActionListener(e -> {
             resetTableSort();
@@ -647,8 +709,16 @@ public class CapturePanel extends JPanel {
         menu.add(onlyHostItem);
         menu.add(onlyPathItem);
         menu.add(onlyMethodItem);
+        menu.add(onlyPidItem);
+        menu.add(onlyProcessItem);
         menu.add(excludeHostItem);
         menu.add(excludePathItem);
+        menu.add(excludePidItem);
+        menu.add(excludeProcessItem);
+        menu.addSeparator();
+        menu.add(onlySourceItem);
+        menu.add(excludeSourceItem);
+        menu.add(clearSourceFilterItem);
         menu.addSeparator();
         menu.add(errorPriorityItem);
         menu.add(resetSortItem);
@@ -662,6 +732,42 @@ public class CapturePanel extends JPanel {
         }
         String host = flows.get(0).host();
         return host == null ? "" : host.trim();
+    }
+
+    private String selectedSource(List<CaptureFlow> flows) {
+        if (flows == null || flows.isEmpty()) {
+            return "";
+        }
+        return sourceFilterValue(flows.get(0));
+    }
+
+    private CaptureSourceInfo selectedSourceInfo(List<CaptureFlow> flows) {
+        if (flows == null || flows.isEmpty()) {
+            return null;
+        }
+        return flows.get(0).sourceInfo();
+    }
+
+    private void applyOnlySourceViewFilter(String source) {
+        sourceIncludeFilter = cleanFilterValue(source);
+        sourceExcludeFilter = "";
+        updateCaptureFilterSummary();
+        refreshTable();
+    }
+
+    private void applyExcludeSourceViewFilter(String source) {
+        sourceIncludeFilter = "";
+        sourceExcludeFilter = cleanFilterValue(source);
+        updateCaptureFilterSummary();
+        refreshTable();
+    }
+
+    private void clearSourceViewFilter() {
+        sourceIncludeFilter = "";
+        sourceExcludeFilter = "";
+        updateCaptureFilterSummary();
+        refreshTable();
+        NotificationCenter.showInfo(t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER_SOURCE_CLEARED));
     }
 
     private void applyOnlyHostFilter(String host) {
@@ -704,11 +810,43 @@ public class CapturePanel extends JPanel {
         );
     }
 
+    private void applyOnlyPidFilter(String pid) {
+        applyCaptureFilterText(
+                CaptureFilterExpressions.onlyPid(pid),
+                MessageKeys.TOOLBOX_CAPTURE_FILTER_UPDATED_ONLY_PID,
+                pid
+        );
+    }
+
+    private void applyOnlyProcessFilter(String processName) {
+        applyCaptureFilterText(
+                CaptureFilterExpressions.onlyProcess(processName),
+                MessageKeys.TOOLBOX_CAPTURE_FILTER_UPDATED_ONLY_PROCESS,
+                processName
+        );
+    }
+
     private void applyExcludeHostFilter(String host) {
         applyCaptureFilterText(
                 CaptureFilterExpressions.excludeHost(captureFilterField.getText(), host),
                 MessageKeys.TOOLBOX_CAPTURE_FILTER_UPDATED_EXCLUDE_HOST,
                 host
+        );
+    }
+
+    private void applyExcludePidFilter(String pid) {
+        applyCaptureFilterText(
+                CaptureFilterExpressions.excludePid(captureFilterField.getText(), pid),
+                MessageKeys.TOOLBOX_CAPTURE_FILTER_UPDATED_EXCLUDE_PID,
+                pid
+        );
+    }
+
+    private void applyExcludeProcessFilter(String processName) {
+        applyCaptureFilterText(
+                CaptureFilterExpressions.excludeProcess(captureFilterField.getText(), processName),
+                MessageKeys.TOOLBOX_CAPTURE_FILTER_UPDATED_EXCLUDE_PROCESS,
+                processName
         );
     }
 
@@ -785,30 +923,20 @@ public class CapturePanel extends JPanel {
             return;
         }
         JTable table = tablePanel.getTable();
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow < 0) {
-            clearDetail();
-            return;
-        }
-        Object flowId = table.getValueAt(selectedRow, 0);
-        CaptureFlow flow = proxyService.sessionStore().find(String.valueOf(flowId));
-        if (flow != null) {
-            showFlowDetail(flow);
-        } else {
+        if (table.getSelectedRow() < 0 && !detailPanelVisible) {
             clearDetail();
         }
     }
 
-    private void showSelectedTableFlowDetail() {
+    private void showTableFlowDetailAtRow(int row) {
         if (tablePanel == null || tablePanel.getTable() == null) {
             return;
         }
         JTable table = tablePanel.getTable();
-        int selectedRow = table.getSelectedRow();
-        if (selectedRow < 0) {
+        if (row < 0 || row >= table.getRowCount()) {
             return;
         }
-        Object flowId = table.getValueAt(selectedRow, 0);
+        Object flowId = table.getValueAt(row, 0);
         CaptureFlow flow = proxyService.sessionStore().find(String.valueOf(flowId));
         if (flow != null) {
             showFlowDetail(flow);
@@ -818,7 +946,7 @@ public class CapturePanel extends JPanel {
     private void showFlowDetail(CaptureFlow flow) {
         selectedFlow = flow;
         updateDetailHeader(flow);
-        updateDetailAreas(flow);
+        updateDetailAreas(flow, false);
         detailTabs.setSelectedIndex(0);
         showDetailPanel();
     }
@@ -890,7 +1018,7 @@ public class CapturePanel extends JPanel {
             updateCaptureFilterSummary();
             return true;
         } catch (IllegalArgumentException ex) {
-            captureFilterLabel.setText(summarizeDraftCaptureFilter(filterText));
+            captureFilterLabel.setText(summarizeDraftCaptureFilter(filterText) + "    " + viewFilterSummary());
             return false;
         }
     }
@@ -943,14 +1071,20 @@ public class CapturePanel extends JPanel {
     }
 
     private String viewFilterSummary() {
-        if (activeViewPresets.isEmpty()) {
-            return t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER_ALL);
-        }
         List<String> labels = new ArrayList<>();
         for (CaptureViewPreset preset : CaptureViewPreset.values()) {
             if (activeViewPresets.contains(preset)) {
                 labels.add(viewPresetText(preset));
             }
+        }
+        if (!sourceIncludeFilter.isBlank()) {
+            labels.add(t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER_SOURCE_ONLY, sourceIncludeFilter));
+        }
+        if (!sourceExcludeFilter.isBlank()) {
+            labels.add(t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER_SOURCE_EXCLUDED, sourceExcludeFilter));
+        }
+        if (labels.isEmpty()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER_ALL);
         }
         return t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER_RULES, String.join(", ", labels));
     }
@@ -965,6 +1099,8 @@ public class CapturePanel extends JPanel {
         addQuickFilterButton(panel, "js", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_JS));
         addQuickFilterButton(panel, "css", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_CSS));
         addQuickFilterButton(panel, "api", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_API));
+        addQuickFilterButton(panel, "sse", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_SSE));
+        addQuickFilterButton(panel, "websocket", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_WS));
         return panel;
     }
 
@@ -1244,6 +1380,16 @@ public class CapturePanel extends JPanel {
                 .replace(">", "&gt;");
     }
 
+    static String htmlTooltip(String value, int width) {
+        String escaped = (value == null ? "" : value)
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\n", "<br>");
+        int normalizedWidth = Math.max(240, Math.min(width, 520));
+        return "<html><div style='width:" + normalizedWidth + "px;'>" + escaped + "</div></html>";
+    }
+
     private void hideIdColumn(JTable table) {
         if (table.getColumnModel().getColumnCount() == 0) {
             return;
@@ -1255,24 +1401,86 @@ public class CapturePanel extends JPanel {
         idColumn.setResizable(false);
     }
 
+    static TableColumnSpec[] captureTableColumnSpecs() {
+        return new TableColumnSpec[]{
+                new TableColumnSpec(0, 0, 0, 0, false),
+                new TableColumnSpec(1, 40, 50, 70, true),
+                new TableColumnSpec(SOURCE_COLUMN_INDEX, 112, 150, 220, true),
+                new TableColumnSpec(PID_COLUMN_INDEX, 42, 54, 76, true),
+                new TableColumnSpec(TYPE_COLUMN_INDEX, 52, 66, 86, true),
+                new TableColumnSpec(METHOD_COLUMN_INDEX, 56, 66, 88, true),
+                new TableColumnSpec(URL_COLUMN_INDEX, 260, 400, 0, true),
+                new TableColumnSpec(STATUS_COLUMN_INDEX, 60, 72, 94, true),
+                new TableColumnSpec(DURATION_COLUMN_INDEX, 72, 88, 112, true),
+                new TableColumnSpec(SIZE_COLUMN_INDEX, 76, 92, 122, true)
+        };
+    }
+
     private void configureTableColumns(JTable table) {
         if (table.getColumnModel().getColumnCount() < TABLE_COLUMN_COUNT) {
             return;
         }
-        table.getColumnModel().getColumn(1).setPreferredWidth(52);
-        table.getColumnModel().getColumn(2).setPreferredWidth(82);
-        table.getColumnModel().getColumn(3).setPreferredWidth(74);
-        table.getColumnModel().getColumn(4).setPreferredWidth(180);
-        table.getColumnModel().getColumn(5).setPreferredWidth(320);
-        table.getColumnModel().getColumn(6).setPreferredWidth(72);
-        table.getColumnModel().getColumn(7).setPreferredWidth(92);
-        table.getColumnModel().getColumn(8).setPreferredWidth(96);
-        table.getColumnModel().getColumn(9).setPreferredWidth(96);
+        for (TableColumnSpec spec : captureTableColumnSpecs()) {
+            TableColumn column = table.getColumnModel().getColumn(spec.columnIndex());
+            column.setMinWidth(spec.minWidth());
+            column.setPreferredWidth(spec.preferredWidth());
+            if (spec.maxWidth() > 0) {
+                column.setMaxWidth(spec.maxWidth());
+            }
+            column.setResizable(spec.resizable());
+        }
+        configureSourceColumnRenderer(table);
+        configurePidColumnRenderer(table);
+        configureTypeColumnRenderer(table);
         configureMethodColumnRenderer(table);
+        configureUrlColumnRenderer(table);
         configureStatusColumnRenderer(table);
         configureDurationColumnRenderer(table);
-        configureBytesColumnRenderer(table, REQUEST_BYTES_COLUMN_INDEX);
-        configureBytesColumnRenderer(table, RESPONSE_BYTES_COLUMN_INDEX);
+        configureBytesColumnRenderer(table, SIZE_COLUMN_INDEX);
+    }
+
+    private void configureSourceColumnRenderer(JTable table) {
+        TableCellRenderer renderer = table.getDefaultRenderer(Object.class);
+        table.getColumnModel().getColumn(SOURCE_COLUMN_INDEX).setCellRenderer((tbl, value, selected, focus, row, column) -> {
+            Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
+            if (component instanceof JLabel label) {
+                String text = value == null ? "" : String.valueOf(value);
+                resetCaptureTableLabel(label, selected, SwingConstants.LEFT, text.isBlank() ? null : text);
+                if (!selected) {
+                    label.setForeground(CaptureTableStyle.sourceForegroundFor(value));
+                }
+            }
+            return component;
+        });
+    }
+
+    private void configurePidColumnRenderer(JTable table) {
+        TableCellRenderer renderer = table.getDefaultRenderer(Object.class);
+        table.getColumnModel().getColumn(PID_COLUMN_INDEX).setCellRenderer((tbl, value, selected, focus, row, column) -> {
+            Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
+            if (component instanceof JLabel label) {
+                String text = value == null ? "" : String.valueOf(value);
+                resetCaptureTableLabel(label, selected, SwingConstants.RIGHT, text.isBlank() || "-".equals(text) ? null : text);
+                if (!selected) {
+                    label.setForeground(ModernColors.getTextSecondary());
+                }
+            }
+            return component;
+        });
+    }
+
+    private void configureTypeColumnRenderer(JTable table) {
+        TableCellRenderer renderer = table.getDefaultRenderer(Object.class);
+        table.getColumnModel().getColumn(TYPE_COLUMN_INDEX).setCellRenderer((tbl, value, selected, focus, row, column) -> {
+            Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
+            if (component instanceof JLabel label) {
+                resetCaptureTableLabel(label, selected, SwingConstants.LEFT, null);
+                if (!selected) {
+                    label.setForeground(CaptureTableStyle.typeForegroundFor(value));
+                }
+            }
+            return component;
+        });
     }
 
     private void configureMethodColumnRenderer(JTable table) {
@@ -1280,10 +1488,22 @@ public class CapturePanel extends JPanel {
         table.getColumnModel().getColumn(METHOD_COLUMN_INDEX).setCellRenderer((tbl, value, selected, focus, row, column) -> {
             Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
             if (component instanceof JLabel label) {
-                label.setToolTipText(null);
+                resetCaptureTableLabel(label, selected, SwingConstants.LEFT, null);
                 if (!selected) {
                     label.setForeground(CaptureTableStyle.methodForegroundFor(value));
                 }
+            }
+            return component;
+        });
+    }
+
+    private void configureUrlColumnRenderer(JTable table) {
+        TableCellRenderer renderer = table.getDefaultRenderer(Object.class);
+        table.getColumnModel().getColumn(URL_COLUMN_INDEX).setCellRenderer((tbl, value, selected, focus, row, column) -> {
+            Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
+            if (component instanceof JLabel label) {
+                String text = value == null ? "" : String.valueOf(value);
+                resetCaptureTableLabel(label, selected, SwingConstants.LEFT, text.isBlank() ? null : text);
             }
             return component;
         });
@@ -1294,7 +1514,7 @@ public class CapturePanel extends JPanel {
         table.getColumnModel().getColumn(STATUS_COLUMN_INDEX).setCellRenderer((tbl, value, selected, focus, row, column) -> {
             Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
             if (component instanceof JLabel label) {
-                label.setToolTipText(null);
+                resetCaptureTableLabel(label, selected, SwingConstants.LEFT, null);
                 if (!selected) {
                     label.setForeground(CaptureStatusStyle.tableForegroundFor(value));
                 }
@@ -1308,8 +1528,8 @@ public class CapturePanel extends JPanel {
         table.getColumnModel().getColumn(DURATION_COLUMN_INDEX).setCellRenderer((tbl, value, selected, focus, row, column) -> {
             Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
             if (component instanceof JLabel label) {
+                resetCaptureTableLabel(label, selected, SwingConstants.RIGHT, value == null ? null : value + " ms");
                 label.setText(CaptureValueFormat.duration(value));
-                label.setToolTipText(value == null ? null : value + " ms");
                 if (!selected) {
                     label.setForeground(CaptureTableStyle.durationForegroundFor(value));
                 }
@@ -1323,8 +1543,12 @@ public class CapturePanel extends JPanel {
         table.getColumnModel().getColumn(columnIndex).setCellRenderer((tbl, value, selected, focus, row, column) -> {
             Component component = renderer.getTableCellRendererComponent(tbl, value, selected, focus, row, column);
             if (component instanceof JLabel label) {
+                resetCaptureTableLabel(label, selected, SwingConstants.RIGHT,
+                        value == null ? null : value + " " + t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES));
                 label.setText(CaptureValueFormat.bytes(value));
-                label.setToolTipText(value == null ? null : value + " " + t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_BYTES));
+                if (!selected) {
+                    label.setForeground(CaptureTableStyle.bytesForegroundFor(value));
+                }
             }
             return component;
         });
@@ -1337,10 +1561,24 @@ public class CapturePanel extends JPanel {
             if (component instanceof JComponent jComponent) {
                 jComponent.setToolTipText(null);
             }
+            if (component instanceof JLabel label) {
+                resetCaptureTableLabel(label, selected, SwingConstants.LEFT, null);
+            }
             return component;
         });
         table.setToolTipText(null);
         table.getTableHeader().setToolTipText(null);
+    }
+
+    static void resetCaptureTableLabel(JLabel label, boolean selected, int alignment, String tooltip) {
+        if (label == null) {
+            return;
+        }
+        label.setHorizontalAlignment(alignment);
+        label.setToolTipText(tooltip);
+        if (!selected) {
+            label.setForeground(ModernColors.getTextPrimary());
+        }
     }
 
     private String defaultHost() {
@@ -1538,6 +1776,7 @@ public class CapturePanel extends JPanel {
         setChipText(detailMethodLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -");
         setChipText(detailProtocolLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -");
         setStatusChip(detailStatusLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", null);
+        setChipText(detailSourceLabel, t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": -");
         setChipText(detailHostLabel, t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -");
         setChipText(detailDurationLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -");
         detailTimeLabel.setText("-");
@@ -1552,6 +1791,9 @@ public class CapturePanel extends JPanel {
         streamDetailArea.setText(idleText);
         streamDetailArea.setCaretPosition(0);
         streamDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        diagnosticsDetailArea.setText(idleText);
+        diagnosticsDetailArea.setCaretPosition(0);
+        diagnosticsDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         detailTabs.setSelectedIndex(0);
     }
 
@@ -1571,6 +1813,9 @@ public class CapturePanel extends JPanel {
     }
 
     private boolean hasActiveViewFilter() {
+        if (hasActiveSourceDisplayFilter()) {
+            return true;
+        }
         for (CaptureViewPreset preset : activeViewPresets) {
             if (preset != CaptureViewPreset.ERROR_PRIORITY) {
                 return true;
@@ -1579,12 +1824,21 @@ public class CapturePanel extends JPanel {
         return false;
     }
 
+    private boolean hasActiveSourceDisplayFilter() {
+        return !sourceIncludeFilter.isBlank() || !sourceExcludeFilter.isBlank();
+    }
+
     private void updateDetailHeader(CaptureFlow flow) {
         setChipText(detailMethodLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": " + flow.method());
         setChipText(detailProtocolLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": " + flow.protocolText());
         setStatusChip(detailStatusLabel,
                 t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": " + flow.statusDisplayText(),
                 flow.statusCode());
+        String source = sourceFilterValue(flow);
+        setChipText(
+                detailSourceLabel,
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": " + ellipsize(source, DETAIL_SOURCE_MAX_CHARS),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": " + displayValue(source));
         setChipText(
                 detailHostLabel,
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": " + ellipsize(flow.host(), DETAIL_HOST_MAX_CHARS),
@@ -1665,6 +1919,10 @@ public class CapturePanel extends JPanel {
         return buildDetailTabPanel(streamDetailArea);
     }
 
+    private JComponent buildDiagnosticsDetailTab() {
+        return buildDetailTabPanel(diagnosticsDetailArea);
+    }
+
     private JComponent buildDetailTabPanel(RSyntaxTextArea detailArea) {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
         SearchableTextArea searchableDetail = new SearchableTextArea(detailArea, false);
@@ -1674,19 +1932,66 @@ public class CapturePanel extends JPanel {
     }
 
     private void updateDetailAreas(CaptureFlow flow) {
-        updateDetailArea(requestDetailArea, flow.requestDetailText());
-        updateDetailArea(responseDetailArea, flow.responseDetailText());
-        updateDetailArea(streamDetailArea, flow.streamDetailText());
+        updateDetailAreas(flow, true);
     }
 
-    private void updateDetailArea(RSyntaxTextArea area, String text) {
+    private void updateDetailAreas(CaptureFlow flow, boolean preserveView) {
+        updateDetailArea(requestDetailArea, flow.requestDetailText(), preserveView);
+        updateDetailArea(responseDetailArea, flow.responseDetailText(), preserveView);
+        updateDetailArea(streamDetailArea, flow.streamDetailText(), preserveView);
+        updateDetailArea(diagnosticsDetailArea, flow.diagnosticsDetailText(), preserveView);
+    }
+
+    private void updateDetailArea(RSyntaxTextArea area, String text, boolean preserveView) {
         area.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        if (preserveView) {
+            updateDetailAreaTextPreservingView(area, text);
+            return;
+        }
         area.setText(text == null ? "" : text);
         area.setCaretPosition(0);
     }
 
+    static void updateDetailAreaTextPreservingView(RSyntaxTextArea area, String text) {
+        if (area == null) {
+            return;
+        }
+        String normalized = text == null ? "" : text;
+        if (normalized.equals(area.getText())) {
+            return;
+        }
+        int caretPosition = Math.min(area.getCaretPosition(), normalized.length());
+        JViewport viewport = (JViewport) SwingUtilities.getAncestorOfClass(JViewport.class, area);
+        Point viewPosition = viewport == null ? null : viewport.getViewPosition();
+        area.setText(normalized);
+        area.setCaretPosition(Math.min(caretPosition, area.getDocument().getLength()));
+        if (viewport != null && viewPosition != null) {
+            SwingUtilities.invokeLater(() -> restoreDetailViewportPosition(area, viewport, viewPosition));
+        }
+    }
+
+    private static void restoreDetailViewportPosition(RSyntaxTextArea area, JViewport viewport, Point viewPosition) {
+        int maxX = Math.max(0, area.getWidth() - viewport.getExtentSize().width);
+        int maxY = Math.max(0, area.getHeight() - viewport.getExtentSize().height);
+        viewport.setViewPosition(new Point(
+                Math.min(viewPosition.x, maxX),
+                Math.min(viewPosition.y, maxY)
+        ));
+    }
+
     private String displayValue(String value) {
         return value == null || value.isBlank() ? "-" : value;
+    }
+
+    private static String sourceFilterValue(CaptureFlow flow) {
+        if (flow == null || flow.sourceInfo() == null) {
+            return "";
+        }
+        return cleanFilterValue(flow.sourceInfo().sourceTableText());
+    }
+
+    private static String cleanFilterValue(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private RSyntaxTextArea activeDetailArea() {
@@ -1697,7 +2002,10 @@ public class CapturePanel extends JPanel {
         if (index == 1) {
             return responseDetailArea;
         }
-        return streamDetailArea;
+        if (index == 2) {
+            return streamDetailArea;
+        }
+        return diagnosticsDetailArea;
     }
 
     private List<CaptureFlow> selectedFlows() {
@@ -1859,14 +2167,14 @@ public class CapturePanel extends JPanel {
         return new String[]{
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_ID),
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SEQ),
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_TIME),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PID),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_TYPE),
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_METHOD),
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST),
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_PATH),
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_URL),
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_STATUS),
                 t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_DURATION_MS),
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_REQ_BYTES),
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_RESP_BYTES)
+                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SIZE)
         };
     }
 
@@ -1879,6 +2187,9 @@ public class CapturePanel extends JPanel {
     }
 
     private record StartResult(String host, int port, boolean systemProxySynced) {
+    }
+
+    record TableColumnSpec(int columnIndex, int minWidth, int preferredWidth, int maxWidth, boolean resizable) {
     }
 
     private record CaptureStatusSnapshot(CaptureTrustStatus trustStatus, String caPathText) {

@@ -34,7 +34,29 @@ final class CaptureSessionStore {
                            String path,
                            Map<String, String> requestHeaders,
                            byte[] requestBody) {
-        CaptureFlow flow = new CaptureFlow(method, url, host, path, requestHeaders, requestBody);
+        return createFlow(method, url, host, path, requestHeaders, requestBody, "", CaptureSourceInfo.unknown(), List.of());
+    }
+
+    CaptureFlow createFlow(String method,
+                           String url,
+                           String host,
+                           String path,
+                           Map<String, String> requestHeaders,
+                           byte[] requestBody,
+                           String connectionId,
+                           CaptureSourceInfo sourceInfo,
+                           List<CaptureDiagnosticEvent> diagnosticEvents) {
+        CaptureFlow flow = new CaptureFlow(
+                method,
+                url,
+                host,
+                path,
+                requestHeaders,
+                requestBody,
+                connectionId,
+                sourceInfo,
+                diagnosticEvents
+        );
         synchronized (this) {
             flows.add(0, flow);
             flowById.put(flow.id(), flow);
@@ -76,6 +98,15 @@ final class CaptureSessionStore {
     }
 
     boolean recordTlsIssue(String host, int port, String message) {
+        return recordTlsIssue(host, port, message, "", CaptureSourceInfo.unknown(), List.of());
+    }
+
+    boolean recordTlsIssue(String host,
+                           int port,
+                           String message,
+                           String connectionId,
+                           CaptureSourceInfo sourceInfo,
+                           List<CaptureDiagnosticEvent> diagnosticEvents) {
         String normalizedHost = host == null ? "" : host.trim();
         if (normalizedHost.isBlank()) {
             return false;
@@ -97,7 +128,10 @@ final class CaptureSessionStore {
                 normalizedHost,
                 "/",
                 Map.of(),
-                new byte[0]
+                new byte[0],
+                connectionId,
+                sourceInfo,
+                diagnosticEvents
         );
         fail(flow.id(), TLS_ISSUE_STATUS_CODE, message);
         return true;
@@ -165,6 +199,53 @@ final class CaptureSessionStore {
         }
         if (flow != null) {
             flow.appendResponseStreamEvent(text);
+            fireChanged();
+        }
+    }
+
+    void appendDiagnosticEvent(String flowId, CaptureDiagnosticEvent event) {
+        CaptureFlow flow;
+        synchronized (this) {
+            flow = flowById.get(flowId);
+        }
+        if (flow != null) {
+            flow.appendDiagnosticEvent(event);
+            fireChanged();
+        }
+    }
+
+    void appendDiagnosticEventForConnection(String connectionId, CaptureDiagnosticEvent event) {
+        if (connectionId == null || connectionId.isBlank() || event == null) {
+            return;
+        }
+        boolean changed = false;
+        synchronized (this) {
+            for (CaptureFlow flow : flows) {
+                if (connectionId.equals(flow.connectionId())) {
+                    flow.appendDiagnosticEvent(event);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            fireChanged();
+        }
+    }
+
+    void updateSourceForConnection(String connectionId, CaptureSourceInfo sourceInfo) {
+        if (connectionId == null || connectionId.isBlank() || sourceInfo == null) {
+            return;
+        }
+        boolean changed = false;
+        synchronized (this) {
+            for (CaptureFlow flow : flows) {
+                if (connectionId.equals(flow.connectionId())) {
+                    flow.updateSourceInfo(sourceInfo);
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
             fireChanged();
         }
     }

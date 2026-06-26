@@ -38,4 +38,12 @@ public class CaptureQuickFilterTokensTest {
         assertEquals(tokens, List.of("https"));
         assertTrue(CaptureQuickFilterTokens.hasIncludedToken(tokens, "https"));
     }
+
+    @Test
+    public void shouldCanonicalizeStreamingQuickFilterAliases() {
+        List<String> tokens = CaptureQuickFilterTokens.parse("type:sse ws type:websocket");
+
+        assertTrue(CaptureQuickFilterTokens.hasIncludedToken(tokens, "sse"));
+        assertTrue(CaptureQuickFilterTokens.hasIncludedToken(tokens, "websocket"));
+    }
 }

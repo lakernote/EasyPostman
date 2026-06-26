@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import javax.net.ssl.SSLHandshakeException;
@@ -37,6 +38,7 @@ import static com.laker.postman.plugin.capture.CaptureI18n.t;
 @RequiredArgsConstructor
 final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Logger log = LoggerFactory.getLogger(HttpsMitmFrontendHandler.class);
+    private static final Duration SOURCE_FILTER_RESOLVE_TIMEOUT = Duration.ofMillis(500);
     static final AttributeKey<Boolean> CLIENT_TLS_HANDSHAKE_REPORTED =
             AttributeKey.valueOf("easyPostman.capture.clientTlsHandshakeReported");
 
@@ -45,14 +47,24 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
     private final CaptureFilterState captureFilterState;
     private final String targetHost;
     private final int targetPort;
+    private final CaptureConnectionContext connectionContext;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
         byte[] requestBody = ByteBufUtil.getBytes(request.content());
         String uri = request.uri() == null || request.uri().isBlank() ? "/" : request.uri();
         String fullUrl = "https://" + targetHost + (targetPort == 443 ? "" : ":" + targetPort) + uri;
+        connectionContext.addDiagnostic(CaptureDiagnosticEvent.info(
+                CaptureDiagnosticPhase.DECRYPTED_HTTP,
+                CaptureDiagnosticRole.HTTPS_MITM_PROXY,
+                t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_HTTPS_DECRYPTED),
+                request.method() + " " + uri,
+                ""
+        ));
 
-        if (!captureFilterState.current().matches(request.method().name(), targetHost, uri, fullUrl, flattenHeaders(request.headers()))) {
+        CaptureRequestFilter captureFilter = captureFilterState.current();
+        CaptureSourceInfo sourceInfo = sourceInfoForFilter(captureFilter);
+        if (!captureFilter.matches(request.method().name(), targetHost, uri, fullUrl, flattenHeaders(request.headers()), sourceInfo)) {
             proxyHttpsWithoutCapture(ctx, request, uri, requestBody, fullUrl);
             return;
         }
@@ -63,7 +75,10 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                 targetHost,
                 uri,
                 flattenHeaders(request.headers()),
-                requestBody
+                requestBody,
+                connectionContext.connectionId(),
+                connectionContext.sourceInfo(),
+                connectionContext.diagnosticSnapshot()
         );
 
         final SslContext clientSslContext;
@@ -85,8 +100,22 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                         sslHandler.handshakeFuture().addListener(handshakeFuture -> {
                             if (handshakeFuture.isSuccess()) {
                                 log.debug("Upstream TLS handshake succeeded for {}:{}", targetHost, targetPort);
+                                sessionStore.appendDiagnosticEvent(flow.id(), CaptureDiagnosticEvent.info(
+                                        CaptureDiagnosticPhase.TARGET_TLS,
+                                        CaptureDiagnosticRole.TARGET_SERVER,
+                                        t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_TLS_SUCCEEDED),
+                                        targetHost + ":" + targetPort,
+                                        ""
+                                ));
                             } else {
                                 log.warn("Upstream TLS handshake failed for {}:{} - {}", targetHost, targetPort, summarize(handshakeFuture.cause()));
+                                sessionStore.appendDiagnosticEvent(flow.id(), CaptureDiagnosticEvent.error(
+                                        CaptureDiagnosticPhase.TARGET_TLS,
+                                        CaptureDiagnosticRole.TARGET_SERVER,
+                                        t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_TLS_FAILED),
+                                        targetHost + ":" + targetPort + " - " + summarize(handshakeFuture.cause()),
+                                        t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_TLS_FAILED_SUGGESTION)
+                                ));
                             }
                         });
                         ch.pipeline().addLast(sslHandler);
@@ -98,19 +127,48 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         bootstrap.connect(targetHost, targetPort).addListener(connectFuture -> {
             if (!connectFuture.isSuccess()) {
                 log.warn("HTTPS upstream connect failed: {}:{} - {}", targetHost, targetPort, summarize(connectFuture.cause()));
+                sessionStore.appendDiagnosticEvent(flow.id(), CaptureDiagnosticEvent.error(
+                        CaptureDiagnosticPhase.TARGET_CONNECT,
+                        CaptureDiagnosticRole.TARGET_SERVER,
+                        t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_CONNECT_FAILED),
+                        targetHost + ":" + targetPort + " - " + summarize(connectFuture.cause()),
+                        ""
+                ));
                 writeErrorResponse(ctx, flow.id(), HttpResponseStatus.BAD_GATEWAY,
                         connectFuture.cause() == null ? "HTTPS upstream connect failed" : summarize(connectFuture.cause()));
                 return;
             }
+            sessionStore.appendDiagnosticEvent(flow.id(), CaptureDiagnosticEvent.info(
+                    CaptureDiagnosticPhase.TARGET_CONNECT,
+                    CaptureDiagnosticRole.TARGET_SERVER,
+                    t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_CONNECTED),
+                    targetHost + ":" + targetPort,
+                    ""
+            ));
             Channel upstreamChannel = ((io.netty.channel.ChannelFuture) connectFuture).channel();
             FullHttpRequest outboundRequest = buildOutboundRequest(request, uri, requestBody);
             upstreamChannel.writeAndFlush(outboundRequest).addListener(writeFuture -> {
                 if (!writeFuture.isSuccess()) {
                     log.warn("HTTPS upstream write failed: {} {} - {}", request.method(), fullUrl, summarize(writeFuture.cause()));
+                    sessionStore.appendDiagnosticEvent(flow.id(), CaptureDiagnosticEvent.error(
+                            CaptureDiagnosticPhase.TARGET_REQUEST,
+                            CaptureDiagnosticRole.TARGET_SERVER,
+                            t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_REQUEST_FAILED),
+                            request.method() + " " + fullUrl + " - " + summarize(writeFuture.cause()),
+                            ""
+                    ));
                     sessionStore.fail(flow.id(), HttpResponseStatus.BAD_GATEWAY.code(),
                             writeFuture.cause() == null ? "Failed to send HTTPS upstream request" : summarize(writeFuture.cause()));
                     writeSimpleResponse(ctx, HttpResponseStatus.BAD_GATEWAY, "Failed to send HTTPS upstream request");
                     upstreamChannel.close();
+                } else {
+                    sessionStore.appendDiagnosticEvent(flow.id(), CaptureDiagnosticEvent.info(
+                            CaptureDiagnosticPhase.TARGET_REQUEST,
+                            CaptureDiagnosticRole.EASY_POSTMAN_PROXY,
+                            t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_REQUEST_SENT),
+                            request.method() + " " + fullUrl,
+                            ""
+                    ));
                 }
             });
         });
@@ -195,10 +253,20 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
     }
 
     private boolean recordClientTlsHandshakeFailure(Throwable cause) {
+        connectionContext.addDiagnostic(CaptureDiagnosticEvent.error(
+                CaptureDiagnosticPhase.CLIENT_TLS,
+                CaptureDiagnosticRole.SOURCE_APP,
+                t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_CLIENT_TLS_REJECTED),
+                summarize(cause),
+                t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_CLIENT_TLS_REJECTED_SUGGESTION)
+        ));
         return sessionStore.recordTlsIssue(
                 targetHost,
                 targetPort,
-                t(MessageKeys.TOOLBOX_CAPTURE_TLS_CLIENT_REJECTED, targetHost, summarize(cause))
+                t(MessageKeys.TOOLBOX_CAPTURE_TLS_CLIENT_REJECTED, targetHost, summarize(cause)),
+                connectionContext.connectionId(),
+                connectionContext.sourceInfo(),
+                connectionContext.diagnosticSnapshot()
         );
     }
 
@@ -226,8 +294,17 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         if (!webSocketUpgrade) {
             outbound.headers().set(HttpHeaderNames.CONNECTION, HttpHeaderValues.CLOSE);
         }
-        HttpUtil.setContentLength(outbound, requestBody.length);
+        if (requestBody.length > 0 || !webSocketUpgrade) {
+            HttpUtil.setContentLength(outbound, requestBody.length);
+        }
         return outbound;
+    }
+
+    private CaptureSourceInfo sourceInfoForFilter(CaptureRequestFilter captureFilter) {
+        if (captureFilter != null && captureFilter.requiresResolvedSource()) {
+            return connectionContext.awaitSourceInfo(SOURCE_FILTER_RESOLVE_TIMEOUT);
+        }
+        return connectionContext.sourceInfo();
     }
 
     private boolean isWebSocketUpgradeRequest(FullHttpRequest request) {

@@ -81,6 +81,56 @@ class CaptureFlowClassifier {
                 || contentType.contains("text/event-stream");
     }
 
+    static String resourceType(CaptureFlow flow) {
+        if (flow == null) {
+            return "other";
+        }
+        Map<String, String> requestHeaders = flow.requestHeadersSnapshot();
+        String path = lower(flow.path());
+        String accept = lower(header(requestHeaders, "Accept"));
+        String contentType = lower(firstNonBlank(flow.requestContentType(), flow.responseContentType()));
+        String fetchDest = lower(header(requestHeaders, "Sec-Fetch-Dest"));
+        String upgrade = lower(header(requestHeaders, "Upgrade"));
+        String requestedWith = lower(header(requestHeaders, "X-Requested-With"));
+
+        if ("websocket".equals(upgrade) || flow.isWebSocketProtocol()) {
+            return "websocket";
+        }
+        if (accept.contains("text/event-stream") || contentType.contains("text/event-stream") || flow.isSseProtocol()) {
+            return "sse";
+        }
+        if ("image".equals(fetchDest) || contentType.startsWith("image/")
+                || hasExtension(path, ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", ".ico", ".bmp", ".avif", ".tif", ".tiff")) {
+            return "image";
+        }
+        if ("style".equals(fetchDest) || contentType.contains("text/css") || hasExtension(path, ".css")) {
+            return "css";
+        }
+        if ("script".equals(fetchDest) || contentType.contains("javascript") || hasExtension(path, ".js", ".mjs", ".cjs")) {
+            return "js";
+        }
+        if ("font".equals(fetchDest) || contentType.startsWith("font/")
+                || hasExtension(path, ".woff", ".woff2", ".ttf", ".otf", ".eot")) {
+            return "font";
+        }
+        if ("audio".equals(fetchDest) || "video".equals(fetchDest)
+                || contentType.startsWith("audio/") || contentType.startsWith("video/")
+                || hasExtension(path, ".mp4", ".mp3", ".wav", ".webm", ".ogg", ".m4a", ".mov", ".avi", ".mkv")) {
+            return "media";
+        }
+        if (contentType.contains("application/json") || accept.contains("application/json") || hasExtension(path, ".json")) {
+            return "json";
+        }
+        if ("xmlhttprequest".equals(requestedWith) || isApiTraffic(flow)) {
+            return "api";
+        }
+        if ("document".equals(fetchDest) || "iframe".equals(fetchDest) || "frame".equals(fetchDest)
+                || contentType.contains("text/html") || hasExtension(path, ".html", ".htm")) {
+            return "html";
+        }
+        return "other";
+    }
+
     static int errorPriority(CaptureFlow flow) {
         if (flow == null) {
             return 50;

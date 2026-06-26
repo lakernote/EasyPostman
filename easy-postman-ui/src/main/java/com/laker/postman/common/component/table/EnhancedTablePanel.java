@@ -67,6 +67,9 @@ public class EnhancedTablePanel extends JPanel {
     private int hoveredRow = -1;
     @Setter
     private boolean autoResizeOnRefresh = true;
+    @Getter
+    @Setter
+    private boolean cellDetailDialogOnDoubleClickEnabled = true;
     @Setter
     private Consumer<JPopupMenu> contextMenuCustomizer;
     /**
@@ -563,7 +566,9 @@ public class EnhancedTablePanel extends JPanel {
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                if (cellDetailDialogOnDoubleClickEnabled
+                        && e.getClickCount() == 2
+                        && SwingUtilities.isLeftMouseButton(e)) {
                     int row = table.rowAtPoint(e.getPoint());
                     int col = table.columnAtPoint(e.getPoint());
                     if (row >= 0 && col >= 0) {

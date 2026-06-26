@@ -32,6 +32,32 @@ class CaptureFilterExpressions {
         return normalizedMethod.isBlank() ? "" : "method:" + normalizedMethod;
     }
 
+    static String onlyPid(String pid) {
+        String normalizedPid = normalizeTokenValue(pid);
+        return normalizedPid.isBlank() ? "" : "pid:" + normalizedPid;
+    }
+
+    static String excludePid(String currentFilter, String pid) {
+        String pidToken = onlyPid(pid);
+        if (pidToken.isBlank()) {
+            return normalizeFilter(currentFilter);
+        }
+        return appendConjunctiveToken(currentFilter, "!" + pidToken);
+    }
+
+    static String onlyProcess(String processName) {
+        String normalizedProcessName = normalizeTokenValue(processName);
+        return normalizedProcessName.isBlank() ? "" : "process:" + quoteIfNeeded(normalizedProcessName);
+    }
+
+    static String excludeProcess(String currentFilter, String processName) {
+        String processToken = onlyProcess(processName);
+        if (processToken.isBlank()) {
+            return normalizeFilter(currentFilter);
+        }
+        return appendConjunctiveToken(currentFilter, "!" + processToken);
+    }
+
     static String onlyPath(String path) {
         String normalizedPath = normalizePath(path);
         return normalizedPath.isBlank() ? "" : "path:" + normalizedPath;
@@ -96,6 +122,24 @@ class CaptureFilterExpressions {
 
     private static String normalizeMethod(String method) {
         return method == null ? "" : method.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static String normalizeTokenValue(String value) {
+        return value == null ? "" : value.trim()
+                .replace('"', ' ')
+                .replace('\'', ' ')
+                .replaceAll("\\s+", " ")
+                .trim();
+    }
+
+    private static String quoteIfNeeded(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        if (value.indexOf(' ') >= 0 || value.indexOf(',') >= 0 || value.indexOf(';') >= 0) {
+            return "\"" + value + "\"";
+        }
+        return value;
     }
 
     private static String normalizePath(String path) {

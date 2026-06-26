@@ -32,6 +32,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.laker.postman.plugin.capture.CaptureI18n.t;
+
 final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObject> {
     private static final Logger log = LoggerFactory.getLogger(HttpProxyBackendHandler.class);
 
@@ -75,9 +77,25 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
                     response.status().reasonPhrase(),
                     flattenHeaders(response.headers())
             );
+            sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.info(
+                    CaptureDiagnosticPhase.TARGET_RESPONSE,
+                    CaptureDiagnosticRole.TARGET_SERVER,
+                    t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_RESPONSE_RECEIVED),
+                    response.status().code() + " " + response.status().reasonPhrase(),
+                    ""
+            ));
         }
 
         if (isWebSocketUpgrade(response)) {
+            if (flowId != null) {
+                sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.info(
+                        CaptureDiagnosticPhase.WEBSOCKET_UPGRADE,
+                        CaptureDiagnosticRole.EASY_POSTMAN_PROXY,
+                        t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_WEBSOCKET_UPGRADE_ACCEPTED),
+                        response.status().code() + " " + response.status().reasonPhrase(),
+                        ""
+                ));
+            }
             writeWebSocketHandshake(ctx, response);
             return;
         }
@@ -113,6 +131,15 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
                 return;
             }
             if (last) {
+                if (flowId != null) {
+                    sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.info(
+                            CaptureDiagnosticPhase.CLIENT_RESPONSE,
+                            CaptureDiagnosticRole.EASY_POSTMAN_PROXY,
+                            t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_CLIENT_RESPONSE_SENT),
+                            "",
+                            ""
+                    ));
+                }
                 finishFlow();
                 future.channel().close();
                 ctx.channel().close();
@@ -166,6 +193,13 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
             }
             if (flowId != null) {
                 log.warn("Upstream connection closed before response for flow {}", flowId);
+                sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.warn(
+                        CaptureDiagnosticPhase.TARGET_CLOSED,
+                        CaptureDiagnosticRole.TARGET_SERVER,
+                        t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_TARGET_CLOSED_BEFORE_RESPONSE),
+                        "",
+                        ""
+                ));
                 sessionStore.fail(flowId, HttpResponseStatus.BAD_GATEWAY.code(), "Upstream connection closed");
             }
             writeGatewayError();
@@ -186,6 +220,13 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
         }
         if (flowId != null) {
             log.warn("Backend proxy error for flow {}: {}", flowId, summarize(cause), cause);
+            sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.error(
+                    CaptureDiagnosticPhase.FLOW_FAILED,
+                    CaptureDiagnosticRole.EASY_POSTMAN_PROXY,
+                    t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_PROXY_BACKEND_FAILED),
+                    summarize(cause),
+                    ""
+            ));
             sessionStore.fail(flowId, HttpResponseStatus.BAD_GATEWAY.code(),
                     cause == null ? "Upstream proxy error" : summarize(cause));
         }
@@ -195,6 +236,13 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
 
     private void finishFlow() {
         if (flowId != null && finished.compareAndSet(false, true)) {
+            sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.info(
+                    CaptureDiagnosticPhase.FLOW_COMPLETE,
+                    CaptureDiagnosticRole.EASY_POSTMAN_PROXY,
+                    t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_FLOW_COMPLETED),
+                    "",
+                    ""
+            ));
             sessionStore.complete(flowId);
         }
     }
@@ -220,8 +268,26 @@ final class HttpProxyBackendHandler extends SimpleChannelInboundHandler<HttpObje
         Throwable cause = future.cause();
         if (isClientDisconnect(cause) || !clientChannel.isActive()) {
             log.debug("Client closed before writing {} for flow {}: {}", operation, flowId, summarize(cause));
+            if (flowId != null) {
+                sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.warn(
+                        CaptureDiagnosticPhase.CLIENT_CLOSED,
+                        CaptureDiagnosticRole.SOURCE_APP,
+                        t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_CLIENT_CLOSED_BEFORE_RESPONSE_WRITE),
+                        operation + " - " + summarize(cause),
+                        ""
+                ));
+            }
         } else {
             log.warn("Failed to write {} to client for flow {}: {}", operation, flowId, summarize(cause), cause);
+            if (flowId != null) {
+                sessionStore.appendDiagnosticEvent(flowId, CaptureDiagnosticEvent.error(
+                        CaptureDiagnosticPhase.CLIENT_RESPONSE,
+                        CaptureDiagnosticRole.EASY_POSTMAN_PROXY,
+                        t(MessageKeys.TOOLBOX_CAPTURE_DIAGNOSTIC_CLIENT_RESPONSE_WRITE_FAILED),
+                        operation + " - " + summarize(cause),
+                        ""
+                ));
+            }
         }
         future.channel().close();
         ctx.close();

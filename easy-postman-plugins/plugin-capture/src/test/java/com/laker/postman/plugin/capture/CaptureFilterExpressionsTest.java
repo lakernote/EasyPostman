@@ -37,6 +37,17 @@ public class CaptureFilterExpressionsTest {
     }
 
     @Test
+    public void shouldBuildSourceProcessFilters() {
+        assertEquals(CaptureFilterExpressions.onlyPid(" 25562 "), "pid:25562");
+        assertEquals(CaptureFilterExpressions.excludePid("https", "25562"), "https !pid:25562");
+        assertEquals(CaptureFilterExpressions.onlyProcess("Google Chrome Helper"), "process:\"Google Chrome Helper\"");
+        assertEquals(
+                CaptureFilterExpressions.excludeProcess("api", "Google Chrome Helper"),
+                "api !process:\"Google Chrome Helper\""
+        );
+    }
+
+    @Test
     public void shouldWrapOrExpressionWhenAppendingExcludeHost() {
         assertEquals(
                 CaptureFilterExpressions.excludeHost("a.com or b.com json", "pinned.example.com"),

@@ -107,6 +107,9 @@ public class CaptureRequestFilterTest {
         CaptureRequestFilter imageFilter = CaptureRequestFilter.parse("image");
         CaptureRequestFilter jsonFilter = CaptureRequestFilter.parse("json");
         CaptureRequestFilter apiFilter = CaptureRequestFilter.parse("type:api");
+        CaptureRequestFilter websocketFilter = CaptureRequestFilter.parse("websocket");
+        CaptureRequestFilter wsFilter = CaptureRequestFilter.parse("ws");
+        CaptureRequestFilter sseFilter = CaptureRequestFilter.parse("sse");
 
         assertTrue(httpsFilter.matches("chatgpt.com", "/assets/app.js", "https://chatgpt.com/assets/app.js", Map.of()));
         assertFalse(httpsFilter.matches("example.com", "/app.js", "http://example.com/app.js", Map.of()));
@@ -137,6 +140,74 @@ public class CaptureRequestFilterTest {
                 "/index.html",
                 "https://www.example.com/index.html",
                 Map.of("Accept", "text/html")));
+        assertTrue(websocketFilter.matches(
+                "GET",
+                "echo.example.com",
+                "/socket",
+                "https://echo.example.com/socket",
+                Map.of("Upgrade", "websocket")));
+        assertTrue(wsFilter.matches(
+                "GET",
+                "echo.example.com",
+                "/socket",
+                "https://echo.example.com/socket",
+                Map.of("Upgrade", "websocket")));
+        assertTrue(sseFilter.matches(
+                "GET",
+                "events.example.com",
+                "/events",
+                "https://events.example.com/events",
+                Map.of("Accept", "text/event-stream")));
+    }
+
+    @Test
+    public void shouldSupportSourceRules() {
+        CaptureSourceInfo sourceInfo = CaptureSourceInfo.network("127.0.0.1", 53421, "127.0.0.1", 8888)
+                .withProcess("25562", "Google Chrome Helper", "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome Helper");
+        CaptureRequestFilter filter = CaptureRequestFilter.parse(
+                "source:127.0.0.1:53421 client:127.0.0.1 sourcePort:53421 pid:25562 process:\"Google Chrome Helper\" sourcePath:Chrome.app");
+
+        assertTrue(filter.matches(
+                "GET",
+                "api.example.com",
+                "/orders",
+                "https://api.example.com/orders",
+                Map.of(),
+                sourceInfo));
+        assertFalse(filter.matches(
+                "GET",
+                "api.example.com",
+                "/orders",
+                "https://api.example.com/orders",
+                Map.of(),
+                sourceInfo.withProcess("111", "codex", "/usr/local/bin/codex")));
+    }
+
+    @Test
+    public void shouldSupportSourceRulesWhenDecidingMitm() {
+        CaptureSourceInfo chrome = CaptureSourceInfo.network("127.0.0.1", 53421, "127.0.0.1", 8888)
+                .withProcess("111", "Google Chrome Helper", "/Applications/Google Chrome.app");
+        CaptureSourceInfo codex = CaptureSourceInfo.network("127.0.0.1", 53422, "127.0.0.1", 8888)
+                .withProcess("222", "codex", "/usr/local/bin/codex");
+        CaptureRequestFilter filter = CaptureRequestFilter.parse("host:api.example.com !process:Chrome source:127.0.0.1");
+
+        assertFalse(filter.shouldMitmHost("api.example.com", chrome));
+        assertTrue(filter.shouldMitmHost("api.example.com", codex));
+        assertFalse(filter.shouldMitmHost("static.example.com", codex));
+    }
+
+    @Test
+    public void shouldUseSourceTermsInsideExpressionForMitmDecision() {
+        CaptureSourceInfo chrome = CaptureSourceInfo.network("127.0.0.1", 53421, "127.0.0.1", 8888)
+                .withProcess("111", "Google Chrome Helper", "/Applications/Google Chrome.app");
+        CaptureSourceInfo codex = CaptureSourceInfo.network("127.0.0.1", 53422, "127.0.0.1", 8888)
+                .withProcess("222", "codex", "/usr/local/bin/codex");
+        CaptureRequestFilter filter = CaptureRequestFilter.parse("(host:api.example.com and process:codex) or host:public.example.com");
+
+        assertFalse(filter.shouldMitmHost("api.example.com", chrome));
+        assertTrue(filter.shouldMitmHost("api.example.com", codex));
+        assertTrue(filter.shouldMitmHost("public.example.com", chrome));
+        assertFalse(filter.shouldMitmHost("static.example.com", codex));
     }
 
     @Test

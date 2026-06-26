@@ -5,6 +5,7 @@ import org.testng.annotations.Test;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
@@ -47,6 +48,19 @@ public class WebSocketFramePreviewDecoderTest {
         List<String> events = decoder.decode(buildFrame(true, 0x8, false, payload.array()));
 
         assertEquals(events, List.of("CLOSE code=1000 reason=done"));
+    }
+
+    @Test
+    public void shouldBufferFramesSplitAcrossTcpChunks() {
+        WebSocketFramePreviewDecoder decoder = new WebSocketFramePreviewDecoder();
+        byte[] frame = buildFrame(true, 0x1, true, "hello".getBytes(StandardCharsets.UTF_8));
+
+        assertEquals(decoder.decode(Arrays.copyOfRange(frame, 0, 3)), List.of());
+        List<String> events = decoder.decode(Arrays.copyOfRange(frame, 3, frame.length));
+
+        assertEquals(events.size(), 1);
+        assertTrue(events.get(0).contains("TEXT len=5"));
+        assertTrue(events.get(0).contains("hello"));
     }
 
     private static byte[] buildFrame(boolean fin, int opcode, boolean masked, byte[] payload) {

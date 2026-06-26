@@ -263,7 +263,7 @@ public class RequestTreeCoordinator {
                 if (tabItem != null && item.getId().equals(tabItem.getId())) {
                     tabbedPane.setTitleAt(i, newName);
                     tabbedPane.setTabComponentAt(i,
-                            new ClosableTabComponent(newName, item.getProtocol()));
+                            ClosableTabComponent.forRequest(newName, item));
                     subPanel.initPanelData(item);
                 }
             }
@@ -320,7 +320,7 @@ public class RequestTreeCoordinator {
                     if (tabSavedResponse != null && savedResponse.getId().equals(tabSavedResponse.getId())) {
                         tabbedPane.setTitleAt(i, newName);
                         tabbedPane.setTabComponentAt(i,
-                                new ClosableTabComponent(newName, RequestItemProtocolEnum.SAVED_RESPONSE));
+                                new ClosableTabComponent(newName, RequestItemProtocolEnum.SAVED_RESPONSE, false));
                     }
                 }
             }

@@ -285,7 +285,11 @@ public class RequestEditSubPanel extends JPanel {
                 e -> sendWebSocketMessage()
         );
         if (!isPerformanceSnapshot()) {
-            requestTabStateController.bindListeners(this::updateTabDirty);
+            requestTabStateController.bindListeners(
+                    this::updateTabDirty,
+                    isSavedResponseTab() ? () -> {
+                    } : this::updateParentTabMethod
+            );
         }
 
         SwingUtilities.invokeLater(this::updateTabIndicators);
@@ -347,7 +351,24 @@ public class RequestEditSubPanel extends JPanel {
     }
 
     private void updateParentTabProtocol(RequestItemProtocolEnum newProtocol) {
-        UiSingletonFactory.getInstance(RequestEditorPanel.class).updateTabProtocol(this, newProtocol);
+        updateParentTabDisplay(newProtocol);
+    }
+
+    private void updateParentTabMethod() {
+        updateParentTabDisplay(getEffectiveProtocol());
+    }
+
+    private void updateParentTabDisplay(RequestItemProtocolEnum protocol) {
+        if (isSavedResponseTab() || isPerformanceSnapshot() || isLoadingData || view == null || view.methodBox == null) {
+            return;
+        }
+        UiSingletonFactory.getInstance(RequestEditorPanel.class)
+                .updateTabDisplay(this, currentMethodForTabDisplay(), protocol);
+    }
+
+    private String currentMethodForTabDisplay() {
+        Object selectedMethod = view.methodBox.getSelectedItem();
+        return selectedMethod instanceof String method ? method : null;
     }
 
     private void updateParentTabDirty(boolean dirty) {
@@ -386,6 +407,9 @@ public class RequestEditSubPanel extends JPanel {
      */
     public void initPanelData(HttpRequestItem item) {
         dataController.initPanelData(item);
+        if (item != null) {
+            updateParentTabDisplay(item.getProtocol() != null ? item.getProtocol() : getEffectiveProtocol());
+        }
     }
 
     /**

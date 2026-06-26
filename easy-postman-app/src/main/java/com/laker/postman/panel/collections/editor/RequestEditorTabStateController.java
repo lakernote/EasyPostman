@@ -51,7 +51,7 @@ final class RequestEditorTabStateController {
         }
         tabbedPane.setTitleAt(currentTabIndex, requestName);
         if (tabbedPane.getTabComponentAt(currentTabIndex) instanceof ClosableTabComponent) {
-            tabbedPane.setTabComponentAt(currentTabIndex, new ClosableTabComponent(requestName, item.getProtocol()));
+            replaceRequestTabComponent(currentTabIndex, requestName, item);
         }
         updateCurrentRequest(item);
     }
@@ -83,26 +83,22 @@ final class RequestEditorTabStateController {
             if (tabItem != null && updatedItem.getId().equals(tabItem.getId())) {
                 updateRequestDirty(subPanel, false);
                 subPanel.setOriginalRequestItem(updatedItem);
+                replaceRequestTabComponent(i, tabbedPane.getTitleAt(i), updatedItem);
             }
         }
     }
 
-    void updateRequestProtocol(RequestEditSubPanel panel, RequestItemProtocolEnum protocol) {
+    void updateRequestDisplay(RequestEditSubPanel panel, String method, RequestItemProtocolEnum protocol) {
         int index = tabbedPane.indexOfComponent(panel);
-        if (index < 0 || protocol == null) {
+        if (index < 0) {
             return;
         }
-        Component tabComponent = tabbedPane.getTabComponentAt(index);
-        if (!(tabComponent instanceof ClosableTabComponent closable)) {
+        if (!(tabbedPane.getTabComponentAt(index) instanceof ClosableTabComponent)) {
             return;
         }
 
         String title = tabbedPane.getTitleAt(index);
-        ClosableTabComponent updated = new ClosableTabComponent(title, protocol);
-        updated.setDirty(closable.isDirty());
-        updated.setNewRequest(closable.isNewRequest());
-        updated.setPreviewMode(closable.isPreviewMode());
-        tabbedPane.setTabComponentAt(index, updated);
+        replaceRequestTabComponent(index, title, method, protocol);
     }
 
     void updateGroupTitle(GroupEditPanel panel, String newTitle) {
@@ -131,5 +127,26 @@ final class RequestEditorTabStateController {
                 action.accept(subPanel);
             }
         }
+    }
+
+    private void replaceRequestTabComponent(int index, String title, HttpRequestItem item) {
+        if (item == null) {
+            return;
+        }
+        replaceRequestTabComponent(index, title, item.getMethod(), item.getProtocol());
+    }
+
+    private void replaceRequestTabComponent(int index, String title, String method, RequestItemProtocolEnum protocol) {
+        Component tabComponent = tabbedPane.getTabComponentAt(index);
+        if (!(tabComponent instanceof ClosableTabComponent previous)) {
+            tabbedPane.setTabComponentAt(index, ClosableTabComponent.forRequest(title, method, protocol));
+            return;
+        }
+
+        ClosableTabComponent updated = ClosableTabComponent.forRequest(title, method, protocol);
+        updated.setDirty(previous.isDirty());
+        updated.setNewRequest(previous.isNewRequest());
+        updated.setPreviewMode(previous.isPreviewMode());
+        tabbedPane.setTabComponentAt(index, updated);
     }
 }

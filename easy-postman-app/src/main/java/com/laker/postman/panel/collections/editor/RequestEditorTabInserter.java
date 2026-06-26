@@ -46,7 +46,7 @@ public class RequestEditorTabInserter {
             insertIndex--;
         }
         tabbedPane.insertTab(tabTitle, null, subPanel, null, insertIndex);
-        tabbedPane.setTabComponentAt(insertIndex, new ClosableTabComponent(tabTitle, item.getProtocol()));
+        tabbedPane.setTabComponentAt(insertIndex, ClosableTabComponent.forRequest(tabTitle, item));
         boolean shouldSelectInsertedTab = selectTab;
         if (shouldSelectInsertedTab && deferEditorInitialization) {
             shouldSelectInsertedTab = requestEditPanel.isStartupRestoreSelectingLastTab();

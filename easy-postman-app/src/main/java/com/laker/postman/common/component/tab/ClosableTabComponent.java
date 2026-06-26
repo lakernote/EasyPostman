@@ -11,10 +11,10 @@ import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.editor.RequestEditorEmptyStatePanel;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
-import com.laker.postman.panel.collections.editor.request.RequestProtocolUiMetadata;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.service.setting.ShortcutManager;
 import com.laker.postman.util.FontsUtil;
+import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -25,13 +25,14 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
+import java.util.Objects;
 
 /**
  * 可关闭的 Tab 标题组件。
  *
  * <p>功能：
  * <ul>
- *   <li>显示协议图标 + 标题（超长自动截断）</li>
+ *   <li>显示请求方法/协议标识或业务图标 + 标题（超长自动截断）</li>
  *   <li>右侧绘制关闭按钮（hover 才可见，点击关闭 Tab）</li>
  *   <li>右上角小圆点：黄色=新建未保存、红色=已修改（脏）</li>
  *   <li>临时模式：标题斜体，表示可被复用的临时 Tab</li>
@@ -55,7 +56,7 @@ public class ClosableTabComponent extends JPanel {
 
     // ── 数据 ─────────────────────────────────────────────────────────────────
     private final JLabel label;
-    private final String rawTitle;           // 原始完整标题（用于 dirty/newRequest 重置）
+    private final String labelText;
     private final JTabbedPane tabbedPane;
 
     // ── 状态 ─────────────────────────────────────────────────────────────────
@@ -67,21 +68,33 @@ public class ClosableTabComponent extends JPanel {
 
     // ── 构造器 ───────────────────────────────────────────────────────────────
 
-    public ClosableTabComponent(String title, RequestItemProtocolEnum protocol) {
-        this(title, protocol, false);
+    public ClosableTabComponent(String title, RequestItemProtocolEnum protocol, boolean isRoot) {
+        this(title, null, protocol, isRoot, false);
     }
 
-    public ClosableTabComponent(String title, RequestItemProtocolEnum protocol, boolean isRoot) {
+    public static ClosableTabComponent forRequest(String title, HttpRequestItem item) {
+        Objects.requireNonNull(item, "item");
+        return forRequest(title, item.getMethod(), item.getProtocol());
+    }
+
+    public static ClosableTabComponent forRequest(String title, String method, RequestItemProtocolEnum protocol) {
+        return new ClosableTabComponent(title, method, protocol, false, true);
+    }
+
+    private ClosableTabComponent(String title, String method, RequestItemProtocolEnum protocol,
+                                 boolean isRoot, boolean requestTab) {
         this.tabbedPane = UiSingletonFactory.getInstance(RequestEditorPanel.class).getTabbedPane();
-        this.rawTitle = title;
+        String safeTitle = title == null ? "" : title;
 
         setOpaque(false);
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
-        setToolTipText(title);
+        setToolTipText(safeTitle);
 
         // 计算 Tab 宽度并创建 label
-        label = buildLabel(title, protocol, isRoot);
+        LabelPresentation labelPresentation = buildLabel(safeTitle, method, protocol, isRoot, requestTab);
+        label = labelPresentation.label();
+        labelText = labelPresentation.text();
         add(label, BorderLayout.CENTER);
 
         // 右键菜单
@@ -106,30 +119,38 @@ public class ClosableTabComponent extends JPanel {
 
     // ── 构造辅助：构建 label ─────────────────────────────────────────────────
 
-    private JLabel buildLabel(String title, RequestItemProtocolEnum protocol, boolean isRoot) {
-        FontMetrics fm = getFontMetrics(getFont());
+    private LabelPresentation buildLabel(String title, String method, RequestItemProtocolEnum protocol,
+                                         boolean isRoot, boolean requestTab) {
+        Font labelFont = FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1);
+        FontMetrics fm = getFontMetrics(labelFont);
+        RequestTabDisplayMetadata.Badge badge = requestTab
+                ? RequestTabDisplayMetadata.badgeFor(method, protocol)
+                : null;
+        Icon icon = requestTab ? null : resolveIcon(protocol, isRoot);
         int closeSpace = CLOSE_DIAMETER + CLOSE_TEXT_SPACING + CLOSE_MARGIN;
-        int iconSpace  = 20;
+        int iconSpace  = icon == null ? 0 : 20;
+        int badgeSpace = badge == null ? 0 : fm.stringWidth(badge.text() + " ");
         int padding    = 20;
 
         int tabWidth = Math.max(
-                Math.min(fm.stringWidth(title) + iconSpace + closeSpace + padding, MAX_TAB_WIDTH),
+                Math.min(fm.stringWidth(title) + badgeSpace + iconSpace + closeSpace + padding, MAX_TAB_WIDTH),
                 MIN_TAB_WIDTH);
         setPreferredSize(new Dimension(tabWidth, TAB_HEIGHT));
 
         // 文字超长时截断
-        String displayTitle = truncate(title, fm, tabWidth - iconSpace - closeSpace - padding);
+        String displayTitle = truncate(title, fm, tabWidth - badgeSpace - iconSpace - closeSpace - padding);
+        String renderedText = RequestTabDisplayMetadata.labelText(badge, displayTitle);
 
         // label 本身不消费鼠标事件（避免遮挡关闭按钮）
-        JLabel lbl = new JLabel(displayTitle) {
+        JLabel lbl = new JLabel(renderedText) {
             @Override public boolean contains(int x, int y) { return false; }
         };
-        lbl.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        lbl.setIcon(resolveIcon(protocol, isRoot));
+        lbl.setFont(labelFont);
+        lbl.setIcon(icon);
         lbl.setBorder(BorderFactory.createEmptyBorder(0, LABEL_LEFT_PAD, 0, closeSpace + CLOSE_TEXT_SPACING));
         lbl.setHorizontalAlignment(SwingConstants.LEFT);
         lbl.setVerticalAlignment(SwingConstants.CENTER);
-        return lbl;
+        return new LabelPresentation(lbl, renderedText);
     }
 
     private static String truncate(String title, FontMetrics fm, int maxWidth) {
@@ -140,8 +161,16 @@ public class ClosableTabComponent extends JPanel {
     }
 
     private static Icon resolveIcon(RequestItemProtocolEnum protocol, boolean isRoot) {
-        if (protocol != null) return RequestProtocolUiMetadata.iconFor(protocol);
+        if (protocol == RequestItemProtocolEnum.SAVED_RESPONSE) {
+            return IconUtil.createThemed("icons/save-response.svg", 24, 24);
+        }
+        if (protocol != null) {
+            return null;
+        }
         return new FlatSVGIcon(isRoot ? "icons/collection.svg" : "icons/group.svg", 18, 18);
+    }
+
+    private record LabelPresentation(JLabel label, String text) {
     }
 
     // ── 鼠标事件处理 ─────────────────────────────────────────────────────────
@@ -316,13 +345,13 @@ public class ClosableTabComponent extends JPanel {
 
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
-        label.setText(rawTitle);
+        label.setText(labelText);
         repaint();
     }
 
     public void setNewRequest(boolean newRequest) {
         this.newRequest = newRequest;
-        label.setText(rawTitle);
+        label.setText(labelText);
         repaint();
     }
 

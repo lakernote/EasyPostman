@@ -1574,6 +1574,8 @@ public final class MessageKeys {
     public static final String REQUEST_BODY_COMPRESS_INVALID = "request.body.compress.invalid";
 
     // ============ 响应头面板相关 ============
+    public static final String RESPONSE_HEADERS_COLUMN_NAME = "response.headers.column.name";
+    public static final String RESPONSE_HEADERS_COLUMN_VALUE = "response.headers.column.value";
     public static final String RESPONSE_HEADERS_COPY_SELECTED = "response.headers.copy_selected";
     public static final String RESPONSE_HEADERS_COPY_CELL = "response.headers.copy_cell";
     public static final String RESPONSE_HEADERS_COPY_ALL = "response.headers.copy_all";

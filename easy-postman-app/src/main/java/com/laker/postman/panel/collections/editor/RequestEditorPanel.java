@@ -135,8 +135,8 @@ public class RequestEditorPanel extends UiSingletonPanel {
         tabStateController.updateRequestDirty(panel, dirty);
     }
 
-    public void updateTabProtocol(RequestEditSubPanel panel, RequestItemProtocolEnum protocol) {
-        tabStateController.updateRequestProtocol(panel, protocol);
+    public void updateTabDisplay(RequestEditSubPanel panel, String method, RequestItemProtocolEnum protocol) {
+        tabStateController.updateRequestDisplay(panel, method, protocol);
     }
 
     /**

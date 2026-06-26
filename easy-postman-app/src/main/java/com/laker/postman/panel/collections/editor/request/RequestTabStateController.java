@@ -22,9 +22,12 @@ final class RequestTabStateController {
     private final RequestItemProtocolEnum protocol;
     private final RequestViewComponents view;
 
-    void bindListeners(Runnable dirtyAction) {
+    void bindListeners(Runnable dirtyAction, Runnable methodChangeAction) {
         addDocumentListener(view.urlField.getDocument(), dirtyAction);
-        view.methodBox.addActionListener(e -> dirtyAction.run());
+        view.methodBox.addActionListener(e -> {
+            dirtyAction.run();
+            methodChangeAction.run();
+        });
         view.descriptionEditor.addDocumentListener(createDocumentListener(dirtyAction));
         view.headersPanel.addTableModelListener(e -> dirtyAction.run());
         view.pathVariablesPanel.addTableModelListener(e -> dirtyAction.run());

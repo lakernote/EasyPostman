@@ -10,10 +10,10 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
-public class ProtocolTabIconResourceTest {
+public class ProtocolIconResourceTest {
 
     @Test
-    public void protocolTabIconsShouldUseContrastStableFixedColors() throws IOException {
+    public void protocolIconsShouldUseContrastStableFixedColors() throws IOException {
         String http = readIcon("http.svg");
         String websocket = readIcon("websocket.svg");
         String sse = readIcon("sse.svg");
@@ -29,7 +29,7 @@ public class ProtocolTabIconResourceTest {
     }
 
     private static String readIcon(String iconName) throws IOException {
-        try (InputStream stream = ProtocolTabIconResourceTest.class.getResourceAsStream("/icons/" + iconName)) {
+        try (InputStream stream = ProtocolIconResourceTest.class.getResourceAsStream("/icons/" + iconName)) {
             assertNotNull(stream, "Missing protocol icon resource: " + iconName);
             return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
         }

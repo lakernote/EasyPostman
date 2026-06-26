@@ -51,7 +51,7 @@ final class RequestEditorTabOpenController {
         transientTabManager.validate();
         RequestEditSubPanel newPanel = new RequestEditSubPanel(requestId, item.getProtocol());
         newPanel.initPanelData(item);
-        transientTabManager.showOrReplace(newPanel, requestTitle(item), item.getProtocol());
+        transientTabManager.showOrReplace(newPanel, requestTitle(item), item);
     }
 
     void showOrCreateRequestTab(HttpRequestItem item) {
@@ -74,7 +74,8 @@ final class RequestEditorTabOpenController {
 
         RequestEditSubPanel subPanel = new RequestEditSubPanel(requestId, item.getProtocol());
         subPanel.initPanelData(item);
-        insertFixedTab(requestTitle(item), subPanel, item.getProtocol(), false);
+        String title = requestTitle(item);
+        insertFixedTab(title, subPanel, ClosableTabComponent.forRequest(title, item));
     }
 
     void showOrCreateTransientGroup(DefaultMutableTreeNode groupNode, RequestGroup group) {
@@ -101,7 +102,8 @@ final class RequestEditorTabOpenController {
         }
 
         GroupEditPanel groupEditPanel = createGroupEditPanel(groupNode, group);
-        insertFixedTab(group.getName(), groupEditPanel, null, isRootGroup(groupNode));
+        insertFixedTab(group.getName(), groupEditPanel,
+                new ClosableTabComponent(group.getName(), null, isRootGroup(groupNode)));
     }
 
     void showOrCreateTransientSavedResponse(SavedResponse savedResponse) {
@@ -138,20 +140,21 @@ final class RequestEditorTabOpenController {
 
         RequestEditSubPanel newPanel = new RequestEditSubPanel(savedResponse);
         newPanel.loadSavedResponse(savedResponse);
-        insertFixedTab(savedResponse.getName(), newPanel, RequestItemProtocolEnum.SAVED_RESPONSE, false);
+        insertFixedTab(savedResponse.getName(), newPanel,
+                new ClosableTabComponent(savedResponse.getName(), RequestItemProtocolEnum.SAVED_RESPONSE, false));
     }
 
     private GroupEditPanel createGroupEditPanel(DefaultMutableTreeNode groupNode, RequestGroup group) {
         return new GroupEditPanel(groupNode, group, () -> collectionGateway.saveGroupNode(groupNode));
     }
 
-    private void insertFixedTab(String title, Component component, RequestItemProtocolEnum protocol, boolean rootGroup) {
+    private void insertFixedTab(String title, Component component, ClosableTabComponent tabComponent) {
         int plusTabIndex = tabbedPane.getTabCount() > 0 ? tabbedPane.getTabCount() - 1 : 0;
         if (!plusTabPredicate.test(plusTabIndex)) {
             plusTabIndex = tabbedPane.getTabCount();
         }
         tabbedPane.insertTab(title, null, component, null, plusTabIndex);
-        tabbedPane.setTabComponentAt(plusTabIndex, new ClosableTabComponent(title, protocol, rootGroup));
+        tabbedPane.setTabComponentAt(plusTabIndex, tabComponent);
         tabbedPane.setSelectedIndex(plusTabIndex);
         plusTabRestorer.run();
     }

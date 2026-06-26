@@ -104,6 +104,36 @@ public class HttpRequestDirtyComparatorTest {
     }
 
     @Test
+    public void shouldTreatUiParsedUrlQueryParamsAsUnmodifiedWhenOriginalParamsAreEmpty() {
+        HttpRequestItem original = baseRequest();
+        original.setUrl("https://metrics.o.webex.com/api/ds/query?ds_type=prometheus&requestId=SQR106");
+
+        HttpRequestItem current = baseRequest();
+        current.setUrl("https://metrics.o.webex.com/api/ds/query?ds_type=prometheus&requestId=SQR106");
+        current.setParamsList(List.of(
+                new HttpParam(true, "ds_type", "prometheus"),
+                new HttpParam(true, "requestId", "SQR106")
+        ));
+
+        assertFalse(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
+    }
+
+    @Test
+    public void shouldTreatEditedUiParsedUrlQueryParamAsModified() {
+        HttpRequestItem original = baseRequest();
+        original.setUrl("https://metrics.o.webex.com/api/ds/query?ds_type=prometheus&requestId=SQR106");
+
+        HttpRequestItem current = baseRequest();
+        current.setUrl("https://metrics.o.webex.com/api/ds/query?ds_type=prometheus&requestId=SQR106");
+        current.setParamsList(List.of(
+                new HttpParam(true, "ds_type", "prometheus"),
+                new HttpParam(true, "requestId", "SQR107")
+        ));
+
+        assertTrue(HttpRequestDirtyComparator.isDirty(original, current, DEFAULT_HEADERS));
+    }
+
+    @Test
     public void shouldIgnoreSavedResponses() {
         HttpRequestItem original = baseRequest();
         original.setResponse(null);

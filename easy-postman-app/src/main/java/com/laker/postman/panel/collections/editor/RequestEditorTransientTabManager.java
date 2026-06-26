@@ -2,6 +2,7 @@ package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.common.component.tab.ClosableTabComponent;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import lombok.RequiredArgsConstructor;
 
@@ -82,14 +83,22 @@ final class RequestEditorTransientTabManager {
         showOrReplace(panel, name, protocol, false);
     }
 
+    void showOrReplace(Component panel, String name, HttpRequestItem item) {
+        showOrReplace(panel, name, ClosableTabComponent.forRequest(name, item));
+    }
+
     void showOrReplace(Component panel, String name, RequestItemProtocolEnum protocol, boolean rootGroup) {
+        showOrReplace(panel, name, new ClosableTabComponent(name, protocol, rootGroup));
+    }
+
+    private void showOrReplace(Component panel, String name, ClosableTabComponent tabComponent) {
         validate();
         if (transientTab != null && transientTabIndex >= 0) {
             componentCleanupAction.accept(transientTab);
             transientTab = panel;
             tabbedPane.setComponentAt(transientTabIndex, transientTab);
             tabbedPane.setTitleAt(transientTabIndex, name);
-            tabbedPane.setTabComponentAt(transientTabIndex, createTransientTabComponent(name, protocol, rootGroup));
+            tabbedPane.setTabComponentAt(transientTabIndex, asPreview(tabComponent));
             tabbedPane.setSelectedIndex(transientTabIndex);
             return;
         }
@@ -101,7 +110,7 @@ final class RequestEditorTransientTabManager {
         transientTab = panel;
         tabbedPane.addTab(name, transientTab);
         transientTabIndex = tabbedPane.getTabCount() - 1;
-        tabbedPane.setTabComponentAt(transientTabIndex, createTransientTabComponent(name, protocol, rootGroup));
+        tabbedPane.setTabComponentAt(transientTabIndex, asPreview(tabComponent));
         tabbedPane.setSelectedIndex(transientTabIndex);
         plusTabRestorer.run();
     }
@@ -116,8 +125,7 @@ final class RequestEditorTransientTabManager {
         }
     }
 
-    private ClosableTabComponent createTransientTabComponent(String name, RequestItemProtocolEnum protocol, boolean rootGroup) {
-        ClosableTabComponent tabComponent = new ClosableTabComponent(name, protocol, rootGroup);
+    private ClosableTabComponent asPreview(ClosableTabComponent tabComponent) {
         tabComponent.setPreviewMode(true);
         return tabComponent;
     }

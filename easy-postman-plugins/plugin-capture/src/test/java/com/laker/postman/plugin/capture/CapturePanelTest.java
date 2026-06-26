@@ -1,11 +1,15 @@
 package com.laker.postman.plugin.capture;
 
+import com.laker.postman.plugin.api.PluginStorage;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
 import javax.swing.JLabel;
 import javax.swing.SwingConstants;
 import java.awt.Color;
+import java.awt.Component;
+import java.awt.Container;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -91,6 +95,16 @@ public class CapturePanelTest {
     }
 
     @Test
+    public void shouldOmitSourceAndHostFromDetailSummaryChips() {
+        CapturePanel panel = new CapturePanel(null, PluginStorage.noop());
+
+        List<String> labels = collectLabelTexts(panel);
+
+        assertFalse(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": -"));
+        assertFalse(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -"));
+    }
+
+    @Test
     public void shouldUseCompactWidthsForCaptureTableColumns() {
         CapturePanel.TableColumnSpec[] specs = CapturePanel.captureTableColumnSpecs();
 
@@ -130,6 +144,23 @@ public class CapturePanelTest {
             total += spec.minWidth();
         }
         return total;
+    }
+
+    private static List<String> collectLabelTexts(Component component) {
+        List<String> labels = new ArrayList<>();
+        collectLabelTexts(component, labels);
+        return labels;
+    }
+
+    private static void collectLabelTexts(Component component, List<String> labels) {
+        if (component instanceof JLabel label) {
+            labels.add(label.getText());
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                collectLabelTexts(child, labels);
+            }
+        }
     }
 
     @Test

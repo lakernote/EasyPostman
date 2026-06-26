@@ -87,8 +87,6 @@ public class CapturePanel extends JPanel {
     private static final int STATUS_COLUMN_INDEX = 7;
     private static final int DURATION_COLUMN_INDEX = 8;
     private static final int SIZE_COLUMN_INDEX = 9;
-    private static final int DETAIL_HOST_MAX_CHARS = 36;
-    private static final int DETAIL_SOURCE_MAX_CHARS = 30;
     private static final Integer[] RETENTION_LIMIT_OPTIONS = {100, 300, 1000};
 
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
@@ -132,8 +130,6 @@ public class CapturePanel extends JPanel {
     private JLabel detailMethodLabel;
     private JLabel detailProtocolLabel;
     private JLabel detailStatusLabel;
-    private JLabel detailSourceLabel;
-    private JLabel detailHostLabel;
     private JLabel detailDurationLabel;
     private JLabel detailTimeLabel;
     private final Map<String, JToggleButton> quickFilterButtons = new LinkedHashMap<>();
@@ -317,14 +313,12 @@ public class CapturePanel extends JPanel {
 
         JPanel detailHeader = new JPanel(new MigLayout(
                 "insets 4 10 4 8, fillx",
-                "[]6[]6[]6[]6[]6[]push[]4[]4[]",
+                "[]6[]6[]6[]6[]push[]4[]4[]",
                 "[]"));
         ToolWindowSurfaceStyle.applySectionHeader(detailHeader);
         detailMethodLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -", ModernColors.getInfo());
         detailProtocolLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -", ModernColors.getSecondary());
         detailStatusLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", CaptureStatusStyle.accentFor(null));
-        detailSourceLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": -", ModernColors.getInfo());
-        detailHostLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -", ModernColors.getAccent());
         detailDurationLabel = buildChipLabel(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -", ModernColors.getWarningDark());
         detailTimeLabel = buildChipLabel("-", null);
         detailTimeLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
@@ -349,8 +343,6 @@ public class CapturePanel extends JPanel {
         detailHeader.add(detailMethodLabel);
         detailHeader.add(detailProtocolLabel);
         detailHeader.add(detailStatusLabel);
-        detailHeader.add(detailSourceLabel);
-        detailHeader.add(detailHostLabel);
         detailHeader.add(detailDurationLabel);
         detailHeader.add(detailTimeLabel);
         detailHeader.add(copyCurlButton);
@@ -1776,8 +1768,6 @@ public class CapturePanel extends JPanel {
         setChipText(detailMethodLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -");
         setChipText(detailProtocolLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -");
         setStatusChip(detailStatusLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -", null);
-        setChipText(detailSourceLabel, t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": -");
-        setChipText(detailHostLabel, t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -");
         setChipText(detailDurationLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -");
         detailTimeLabel.setText("-");
         detailTimeLabel.setToolTipText(null);
@@ -1834,15 +1824,6 @@ public class CapturePanel extends JPanel {
         setStatusChip(detailStatusLabel,
                 t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": " + flow.statusDisplayText(),
                 flow.statusCode());
-        String source = sourceFilterValue(flow);
-        setChipText(
-                detailSourceLabel,
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": " + ellipsize(source, DETAIL_SOURCE_MAX_CHARS),
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": " + displayValue(source));
-        setChipText(
-                detailHostLabel,
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": " + ellipsize(flow.host(), DETAIL_HOST_MAX_CHARS),
-                t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": " + displayValue(flow.host()));
         setChipText(detailDurationLabel, t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": " + CaptureValueFormat.duration(flow.durationMs()));
         detailTimeLabel.setText(flow.startedAtText());
         detailTimeLabel.setToolTipText(flow.startedAtText());

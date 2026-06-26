@@ -2,6 +2,7 @@ package com.laker.postman.panel.topmenu.setting;
 
 import com.laker.postman.common.component.EasyPasswordField;
 import com.laker.postman.common.component.setting.SettingsFieldRow;
+import com.laker.postman.common.component.setting.SettingsHintLabel;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
@@ -10,6 +11,7 @@ import com.laker.postman.util.MessageKeys;
 import com.laker.postman.common.component.notification.NotificationCenter;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
@@ -20,6 +22,7 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
     private static final int SECTION_SPACING = 12;
     private static final int FIELD_LABEL_WIDTH = 220;
     private static final int PREVIEW_ROW_WIDTH = 460;
+    private static final int SUBSECTION_DESCRIPTION_WIDTH = 660;
     private static final String DEFAULT_PROXY_PREVIEW_TARGET = "example.com";
     private JCheckBox proxyEnabledCheckBox;
     private JComboBox<String> proxyModeComboBox;
@@ -36,9 +39,10 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
     private SettingsFieldRow proxyPasswordRow;
     private SettingsFieldRow proxyPreviewTargetRow;
     private JCheckBox sslVerificationDisabledCheckBox;
-    private JTextArea proxyAuthHintArea;
     private JTextArea proxyStatusArea;
     private JTextField proxyPreviewTargetField;
+    private JComponent proxyPreviewSectionHeader;
+    private Component proxyPreviewHeaderSpacing;
     private Component proxyPreviewSpacing;
 
     private record ProxyViewState(
@@ -78,6 +82,11 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         );
         proxySection.add(proxyModeRow);
         proxySection.add(createVerticalSpace(FIELD_SPACING));
+        proxySection.add(createSubsectionHeader(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_MANUAL_SECTION_TITLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_MANUAL_SECTION_DESCRIPTION)
+        ));
+        proxySection.add(createVerticalSpace(FIELD_SPACING));
         proxyTypeComboBox = new JComboBox<>(new String[]{
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TYPE_HTTP),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TYPE_SOCKS)
@@ -108,6 +117,11 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         );
         proxySection.add(proxyPortRow);
         proxySection.add(createVerticalSpace(FIELD_SPACING));
+        proxySection.add(createSubsectionHeader(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_AUTH_SECTION_TITLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_AUTH_SECTION_DESCRIPTION)
+        ));
+        proxySection.add(createVerticalSpace(FIELD_SPACING));
         proxyUsernameField = new JTextField(10);
         proxyUsernameField.setText(SettingManager.getProxyUsername());
         proxyUsernameRow = createFieldRow(
@@ -126,8 +140,10 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         );
         proxySection.add(proxyPasswordRow);
         proxySection.add(createVerticalSpace(FIELD_SPACING));
-        proxyAuthHintArea = createInfoTextArea();
-        proxySection.add(proxyAuthHintArea);
+        proxySection.add(createSubsectionHeader(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_ADVANCED_SECTION_TITLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_ADVANCED_SECTION_DESCRIPTION)
+        ));
         proxySection.add(createVerticalSpace(FIELD_SPACING));
         sslVerificationDisabledCheckBox = new JCheckBox(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_SSL_VERIFICATION_CHECKBOX),
@@ -139,6 +155,13 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         );
         proxySection.add(sslVerificationRow);
         proxySection.add(createVerticalSpace(FIELD_SPACING));
+        proxyPreviewSectionHeader = createSubsectionHeader(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PREVIEW_SECTION_TITLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PREVIEW_SECTION_DESCRIPTION)
+        );
+        proxySection.add(proxyPreviewSectionHeader);
+        proxyPreviewHeaderSpacing = createVerticalSpace(FIELD_SPACING);
+        proxySection.add(proxyPreviewHeaderSpacing);
         proxyPreviewTargetField = new JTextField(10);
         proxyPreviewTargetField.setText(DEFAULT_PROXY_PREVIEW_TARGET);
         proxyPreviewTargetRow = createFieldRow(
@@ -241,6 +264,28 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
         return area;
     }
 
+    private JComponent createSubsectionHeader(String title, String description) {
+        JPanel header = new JPanel();
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
+        header.setOpaque(false);
+        header.setAlignmentX(Component.LEFT_ALIGNMENT);
+        header.setBorder(new EmptyBorder(8, 0, 0, 0));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.BOLD, -1));
+        titleLabel.setForeground(getTextPrimaryColor());
+        header.add(titleLabel);
+
+        if (description != null && !description.isBlank()) {
+            SettingsHintLabel descriptionLabel = new SettingsHintLabel(description, SUBSECTION_DESCRIPTION_WIDTH);
+            descriptionLabel.setBorder(BorderFactory.createEmptyBorder(3, 0, 0, 0));
+            header.add(descriptionLabel);
+        }
+
+        return header;
+    }
+
     private void addRefreshListeners(JTextField... fields) {
         DocumentListener listener = new DocumentListener() {
             @Override
@@ -288,6 +333,8 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
     }
 
     private void updateSystemPreviewVisibility(boolean visible) {
+        proxyPreviewSectionHeader.setVisible(visible);
+        proxyPreviewHeaderSpacing.setVisible(visible);
         if (proxyPreviewTargetRow.isVisible() == visible) {
             return;
         }
@@ -298,11 +345,6 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
     }
 
     private void updateInformationalAreas(ProxyViewState state) {
-        boolean showSystemAuthHint = state.showSystemPreviewControls();
-        proxyAuthHintArea.setVisible(showSystemAuthHint);
-        proxyAuthHintArea.setText(showSystemAuthHint
-                ? I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_SYSTEM_AUTH_HINT)
-                : "");
         proxyStatusArea.setText(buildProxyStatusText(state));
     }
 

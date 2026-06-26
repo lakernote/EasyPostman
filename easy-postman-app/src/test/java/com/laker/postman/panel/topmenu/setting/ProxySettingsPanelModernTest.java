@@ -115,6 +115,65 @@ public class ProxySettingsPanelModernTest extends AbstractSwingUiTest {
         }
     }
 
+    @Test
+    public void shouldSeparateManualProxyAuthenticationAndSystemPreviewSections() throws Exception {
+        boolean oldProxyEnabled = SettingManager.isProxyEnabled();
+        String oldProxyMode = SettingManager.getProxyMode();
+
+        try {
+            SettingManager.setProxyEnabled(true);
+            SettingManager.setProxyMode(SettingManager.PROXY_MODE_SYSTEM);
+
+            AtomicReference<ProxySettingsPanelModern> panelRef = new AtomicReference<>();
+            SwingUtilities.invokeAndWait(() -> {
+                ProxySettingsPanelModern panel = new ProxySettingsPanelModern();
+                panel.getPreferredSize();
+                panelRef.set(panel);
+            });
+
+            ProxySettingsPanelModern panel = panelRef.get();
+            assertNotNull(findLabel(panel, I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_MANUAL_SECTION_TITLE)));
+            assertNotNull(findLabel(panel, I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_AUTH_SECTION_TITLE)));
+            JLabel previewSectionLabel = findLabel(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PREVIEW_SECTION_TITLE)
+            );
+            assertNotNull(previewSectionLabel);
+            assertTrue(isEffectivelyVisible(previewSectionLabel, panel));
+
+            assertRowDisabled(findFieldRow(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_TYPE)
+            ));
+            assertRowDisabled(findFieldRow(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_HOST)
+            ));
+            assertRowDisabled(findFieldRow(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PORT)
+            ));
+            assertRowEnabled(findFieldRow(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_USERNAME)
+            ));
+            assertRowEnabled(findFieldRow(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PASSWORD)
+            ));
+
+            JLabel previewLabel = findLabel(
+                    panel,
+                    I18nUtil.getMessage(MessageKeys.SETTINGS_PROXY_PREVIEW_TARGET)
+            );
+            assertNotNull(previewLabel);
+            assertTrue(isEffectivelyVisible(previewLabel, panel));
+        } finally {
+            SettingManager.setProxyEnabled(oldProxyEnabled);
+            SettingManager.setProxyMode(oldProxyMode);
+        }
+    }
+
     private static <T extends JComponent> T findFirstComponent(Container container, Class<T> componentType) {
         for (Component component : container.getComponents()) {
             if (componentType.isInstance(component)) {

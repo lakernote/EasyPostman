@@ -2270,6 +2270,8 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_MODE_TOOLTIP = "settings.proxy.mode.tooltip";
     public static final String SETTINGS_PROXY_MODE_MANUAL = "settings.proxy.mode.manual";
     public static final String SETTINGS_PROXY_MODE_SYSTEM = "settings.proxy.mode.system";
+    public static final String SETTINGS_PROXY_MANUAL_SECTION_TITLE = "settings.proxy.manual_section.title";
+    public static final String SETTINGS_PROXY_MANUAL_SECTION_DESCRIPTION = "settings.proxy.manual_section.description";
     public static final String SETTINGS_PROXY_TYPE = "settings.proxy.type";
     public static final String SETTINGS_PROXY_TYPE_TOOLTIP = "settings.proxy.type.tooltip";
     public static final String SETTINGS_PROXY_TYPE_HTTP = "settings.proxy.type.http";
@@ -2283,8 +2285,14 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_PASSWORD = "settings.proxy.password";
     public static final String SETTINGS_PROXY_PASSWORD_TOOLTIP = "settings.proxy.password.tooltip";
     public static final String SETTINGS_PROXY_SYSTEM_AUTH_HINT = "settings.proxy.system_auth_hint";
+    public static final String SETTINGS_PROXY_AUTH_SECTION_TITLE = "settings.proxy.auth_section.title";
+    public static final String SETTINGS_PROXY_AUTH_SECTION_DESCRIPTION = "settings.proxy.auth_section.description";
+    public static final String SETTINGS_PROXY_ADVANCED_SECTION_TITLE = "settings.proxy.advanced_section.title";
+    public static final String SETTINGS_PROXY_ADVANCED_SECTION_DESCRIPTION = "settings.proxy.advanced_section.description";
     public static final String SETTINGS_PROXY_SSL_VERIFICATION_TOOLTIP = "settings.proxy.ssl.verification.tooltip";
     public static final String SETTINGS_PROXY_SSL_VERIFICATION_CHECKBOX = "settings.proxy.ssl.verification.checkbox";
+    public static final String SETTINGS_PROXY_PREVIEW_SECTION_TITLE = "settings.proxy.preview_section.title";
+    public static final String SETTINGS_PROXY_PREVIEW_SECTION_DESCRIPTION = "settings.proxy.preview_section.description";
     public static final String SETTINGS_PROXY_PREVIEW_TARGET = "settings.proxy.preview.target";
     public static final String SETTINGS_PROXY_PREVIEW_TARGET_TOOLTIP = "settings.proxy.preview.target.tooltip";
     public static final String SETTINGS_PROXY_STATUS_DISABLED = "settings.proxy.status.disabled";

@@ -5,6 +5,8 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
 import javax.swing.JLabel;
+import javax.swing.JTabbedPane;
+import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import java.awt.Color;
 import java.awt.Component;
@@ -107,6 +109,7 @@ public class CapturePanelTest {
 
     @Test
     public void shouldLimitLargeRequestAndResponseDetailDisplayText() {
+        assertEquals(CapturePanel.REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT, 5_000);
         String fullText = "x".repeat(CapturePanel.REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT + 128);
 
         String displayText = CapturePanel.displayRequestResponseDetailText(fullText);
@@ -136,7 +139,21 @@ public class CapturePanelTest {
         String displayedResponseText = CapturePanel.displayRequestResponseDetailText(fullResponseText);
 
         assertTrue(fullResponseText.length() > displayedResponseText.length());
-        assertEquals(CapturePanel.copyDetailTextForTab(flow, 1), fullResponseText);
+
+        String copyText = CapturePanel.copyDetailText(flow);
+
+        assertTrue(copyText.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_REQUEST_HEADERS)));
+        assertTrue(copyText.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_HEADERS)));
+        assertTrue(copyText.contains(responseBody.substring(0, 64)));
+    }
+
+    @Test
+    public void shouldUsePlainTextAreasForRequestAndResponseDetailTabs() {
+        CapturePanel panel = new CapturePanel(null, PluginStorage.noop());
+        JTabbedPane tabs = findDetailTabs(panel);
+
+        assertTrue(collectTextAreas(tabs.getComponentAt(0)).stream().noneMatch(RSyntaxTextArea.class::isInstance));
+        assertTrue(collectTextAreas(tabs.getComponentAt(1)).stream().noneMatch(RSyntaxTextArea.class::isInstance));
     }
 
     @Test
@@ -194,6 +211,38 @@ public class CapturePanelTest {
         if (component instanceof Container container) {
             for (Component child : container.getComponents()) {
                 collectLabelTexts(child, labels);
+            }
+        }
+    }
+
+    private static JTabbedPane findDetailTabs(Component component) {
+        if (component instanceof JTabbedPane tabbedPane && tabbedPane.getTabCount() == 4) {
+            return tabbedPane;
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JTabbedPane tabbedPane = findDetailTabs(child);
+                if (tabbedPane != null) {
+                    return tabbedPane;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static List<JTextArea> collectTextAreas(Component component) {
+        List<JTextArea> areas = new ArrayList<>();
+        collectTextAreas(component, areas);
+        return areas;
+    }
+
+    private static void collectTextAreas(Component component, List<JTextArea> areas) {
+        if (component instanceof JTextArea textArea) {
+            areas.add(textArea);
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                collectTextAreas(child, areas);
             }
         }
     }

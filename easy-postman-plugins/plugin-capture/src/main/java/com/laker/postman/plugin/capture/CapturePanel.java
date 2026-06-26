@@ -51,6 +51,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.table.TableColumn;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.text.DefaultFormatterFactory;
+import javax.swing.text.JTextComponent;
 import javax.swing.text.NumberFormatter;
 import java.awt.Component;
 import java.awt.BorderLayout;
@@ -87,7 +88,7 @@ public class CapturePanel extends JPanel {
     private static final int STATUS_COLUMN_INDEX = 7;
     private static final int DURATION_COLUMN_INDEX = 8;
     private static final int SIZE_COLUMN_INDEX = 9;
-    static final int REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT = 20_000;
+    static final int REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT = 5_000;
     private static final Integer[] RETENTION_LIMIT_OPTIONS = {100, 300, 1000};
 
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
@@ -120,8 +121,8 @@ public class CapturePanel extends JPanel {
     private JLabel statusPopupDetailLabel;
     private JButton refreshStatusButton;
     private EnhancedTablePanel tablePanel;
-    private RSyntaxTextArea requestDetailArea;
-    private RSyntaxTextArea responseDetailArea;
+    private JTextArea requestDetailArea;
+    private JTextArea responseDetailArea;
     private RSyntaxTextArea streamDetailArea;
     private RSyntaxTextArea diagnosticsDetailArea;
     private JTabbedPane detailTabs;
@@ -295,8 +296,8 @@ public class CapturePanel extends JPanel {
         configureTableColumns(table);
         resetTableSort();
 
-        requestDetailArea = createDetailArea();
-        responseDetailArea = createDetailArea();
+        requestDetailArea = createPlainDetailArea();
+        responseDetailArea = createPlainDetailArea();
         streamDetailArea = createDetailArea();
         diagnosticsDetailArea = createDetailArea();
         requestDetailArea.setText(idleDetailText());
@@ -1775,10 +1776,8 @@ public class CapturePanel extends JPanel {
         String idleText = idleDetailText();
         requestDetailArea.setText(idleText);
         requestDetailArea.setCaretPosition(0);
-        requestDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         responseDetailArea.setText(idleText);
         responseDetailArea.setCaretPosition(0);
-        responseDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         streamDetailArea.setText(idleText);
         streamDetailArea.setCaretPosition(0);
         streamDetailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
@@ -1875,6 +1874,18 @@ public class CapturePanel extends JPanel {
         return area;
     }
 
+    private JTextArea createPlainDetailArea() {
+        JTextArea area = new JTextArea();
+        area.setEditable(false);
+        area.setLineWrap(false);
+        area.setWrapStyleWord(false);
+        area.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        area.setForeground(ModernColors.getTextPrimary());
+        area.setBackground(ModernColors.getCardBackgroundColor());
+        area.setBorder(new EmptyBorder(8, 10, 8, 10));
+        return area;
+    }
+
     private void configurePortSpinner() {
         JSpinner.NumberEditor editor = new JSpinner.NumberEditor(portSpinner, "0");
         DecimalFormat format = editor.getFormat();
@@ -1889,22 +1900,32 @@ public class CapturePanel extends JPanel {
     }
 
     private JComponent buildRequestDetailTab() {
-        return buildDetailTabPanel(requestDetailArea);
+        return buildPlainDetailTabPanel(requestDetailArea);
     }
 
     private JComponent buildResponseDetailTab() {
-        return buildDetailTabPanel(responseDetailArea);
+        return buildPlainDetailTabPanel(responseDetailArea);
     }
 
     private JComponent buildStreamDetailTab() {
-        return buildDetailTabPanel(streamDetailArea);
+        return buildSearchableDetailTabPanel(streamDetailArea);
     }
 
     private JComponent buildDiagnosticsDetailTab() {
-        return buildDetailTabPanel(diagnosticsDetailArea);
+        return buildSearchableDetailTabPanel(diagnosticsDetailArea);
     }
 
-    private JComponent buildDetailTabPanel(RSyntaxTextArea detailArea) {
+    private JComponent buildPlainDetailTabPanel(JTextArea detailArea) {
+        JScrollPane scrollPane = new JScrollPane(
+                detailArea,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED
+        );
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        return scrollPane;
+    }
+
+    private JComponent buildSearchableDetailTabPanel(RSyntaxTextArea detailArea) {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
         SearchableTextArea searchableDetail = new SearchableTextArea(detailArea, false);
         searchableDetail.setLineNumbersEnabled(false);
@@ -1923,8 +1944,10 @@ public class CapturePanel extends JPanel {
         updateDetailArea(diagnosticsDetailArea, displayDetailTextForTab(flow, 3), preserveView);
     }
 
-    private void updateDetailArea(RSyntaxTextArea area, String text, boolean preserveView) {
-        area.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+    private void updateDetailArea(JTextArea area, String text, boolean preserveView) {
+        if (area instanceof RSyntaxTextArea syntaxArea) {
+            syntaxArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
+        }
         if (preserveView) {
             updateDetailAreaTextPreservingView(area, text);
             return;
@@ -1933,7 +1956,7 @@ public class CapturePanel extends JPanel {
         area.setCaretPosition(0);
     }
 
-    static void updateDetailAreaTextPreservingView(RSyntaxTextArea area, String text) {
+    static void updateDetailAreaTextPreservingView(JTextComponent area, String text) {
         if (area == null) {
             return;
         }
@@ -1951,7 +1974,7 @@ public class CapturePanel extends JPanel {
         }
     }
 
-    private static void restoreDetailViewportPosition(RSyntaxTextArea area, JViewport viewport, Point viewPosition) {
+    private static void restoreDetailViewportPosition(JTextComponent area, JViewport viewport, Point viewPosition) {
         int maxX = Math.max(0, area.getWidth() - viewport.getExtentSize().width);
         int maxY = Math.max(0, area.getHeight() - viewport.getExtentSize().height);
         viewport.setViewPosition(new Point(
@@ -1975,7 +1998,7 @@ public class CapturePanel extends JPanel {
         return value == null ? "" : value.trim();
     }
 
-    private RSyntaxTextArea activeDetailArea() {
+    private JTextArea activeDetailArea() {
         int index = detailTabs.getSelectedIndex();
         if (index == 0) {
             return requestDetailArea;
@@ -1991,9 +2014,9 @@ public class CapturePanel extends JPanel {
 
     private String activeDetailTextForCopy() {
         if (selectedFlow != null) {
-            return copyDetailTextForTab(selectedFlow, detailTabs.getSelectedIndex());
+            return copyDetailText(selectedFlow);
         }
-        RSyntaxTextArea activeArea = activeDetailArea();
+        JTextArea activeArea = activeDetailArea();
         return activeArea == null ? "" : activeArea.getText();
     }
 
@@ -2005,8 +2028,8 @@ public class CapturePanel extends JPanel {
         return detailText;
     }
 
-    static String copyDetailTextForTab(CaptureFlow flow, int tabIndex) {
-        return detailTextForTab(flow, tabIndex);
+    static String copyDetailText(CaptureFlow flow) {
+        return flow == null ? "" : flow.detailText();
     }
 
     static String detailTextForTab(CaptureFlow flow, int tabIndex) {

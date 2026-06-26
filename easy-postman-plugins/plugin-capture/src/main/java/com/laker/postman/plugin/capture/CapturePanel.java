@@ -87,6 +87,7 @@ public class CapturePanel extends JPanel {
     private static final int STATUS_COLUMN_INDEX = 7;
     private static final int DURATION_COLUMN_INDEX = 8;
     private static final int SIZE_COLUMN_INDEX = 9;
+    static final int REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT = 20_000;
     private static final Integer[] RETENTION_LIMIT_OPTIONS = {100, 300, 1000};
 
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
@@ -1830,8 +1831,7 @@ public class CapturePanel extends JPanel {
     }
 
     private void copyDetail() {
-        RSyntaxTextArea activeArea = activeDetailArea();
-        String detailText = activeArea.getText().trim();
+        String detailText = activeDetailTextForCopy().trim();
         if (detailText.isEmpty()) {
             return;
         }
@@ -1917,10 +1917,10 @@ public class CapturePanel extends JPanel {
     }
 
     private void updateDetailAreas(CaptureFlow flow, boolean preserveView) {
-        updateDetailArea(requestDetailArea, flow.requestDetailText(), preserveView);
-        updateDetailArea(responseDetailArea, flow.responseDetailText(), preserveView);
-        updateDetailArea(streamDetailArea, flow.streamDetailText(), preserveView);
-        updateDetailArea(diagnosticsDetailArea, flow.diagnosticsDetailText(), preserveView);
+        updateDetailArea(requestDetailArea, displayDetailTextForTab(flow, 0), preserveView);
+        updateDetailArea(responseDetailArea, displayDetailTextForTab(flow, 1), preserveView);
+        updateDetailArea(streamDetailArea, displayDetailTextForTab(flow, 2), preserveView);
+        updateDetailArea(diagnosticsDetailArea, displayDetailTextForTab(flow, 3), preserveView);
     }
 
     private void updateDetailArea(RSyntaxTextArea area, String text, boolean preserveView) {
@@ -1987,6 +1987,54 @@ public class CapturePanel extends JPanel {
             return streamDetailArea;
         }
         return diagnosticsDetailArea;
+    }
+
+    private String activeDetailTextForCopy() {
+        if (selectedFlow != null) {
+            return copyDetailTextForTab(selectedFlow, detailTabs.getSelectedIndex());
+        }
+        RSyntaxTextArea activeArea = activeDetailArea();
+        return activeArea == null ? "" : activeArea.getText();
+    }
+
+    static String displayDetailTextForTab(CaptureFlow flow, int tabIndex) {
+        String detailText = detailTextForTab(flow, tabIndex);
+        if (tabIndex == 0 || tabIndex == 1) {
+            return displayRequestResponseDetailText(detailText);
+        }
+        return detailText;
+    }
+
+    static String copyDetailTextForTab(CaptureFlow flow, int tabIndex) {
+        return detailTextForTab(flow, tabIndex);
+    }
+
+    static String detailTextForTab(CaptureFlow flow, int tabIndex) {
+        if (flow == null) {
+            return "";
+        }
+        if (tabIndex == 0) {
+            return flow.requestDetailText();
+        }
+        if (tabIndex == 1) {
+            return flow.responseDetailText();
+        }
+        if (tabIndex == 2) {
+            return flow.streamDetailText();
+        }
+        return flow.diagnosticsDetailText();
+    }
+
+    static String displayRequestResponseDetailText(String text) {
+        String normalized = text == null ? "" : text;
+        if (normalized.length() <= REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT) {
+            return normalized;
+        }
+        return normalized.substring(0, REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT)
+                + "\n\n"
+                + t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DISPLAY_TRUNCATED,
+                REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT,
+                normalized.length());
     }
 
     private List<CaptureFlow> selectedFlows() {

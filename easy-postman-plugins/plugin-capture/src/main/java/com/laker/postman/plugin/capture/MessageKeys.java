@@ -243,6 +243,7 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_DETAIL_PENDING = "toolbox.capture.detail.pending";
     public static final String TOOLBOX_CAPTURE_DETAIL_ERROR_STATUS = "toolbox.capture.detail.error_status";
     public static final String TOOLBOX_CAPTURE_DETAIL_TRUNCATED = "toolbox.capture.detail.truncated";
+    public static final String TOOLBOX_CAPTURE_DETAIL_DISPLAY_TRUNCATED = "toolbox.capture.detail.display_truncated";
     public static final String TOOLBOX_CAPTURE_PROTOCOL_HTTP = "toolbox.capture.protocol.http";
     public static final String TOOLBOX_CAPTURE_PROTOCOL_TLS = "toolbox.capture.protocol.tls";
     public static final String TOOLBOX_CAPTURE_PROTOCOL_SSE = "toolbox.capture.protocol.sse";

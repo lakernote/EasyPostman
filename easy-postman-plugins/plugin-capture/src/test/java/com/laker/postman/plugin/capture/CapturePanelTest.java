@@ -9,6 +9,7 @@ import javax.swing.SwingConstants;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +103,40 @@ public class CapturePanelTest {
 
         assertFalse(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": -"));
         assertFalse(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -"));
+    }
+
+    @Test
+    public void shouldLimitLargeRequestAndResponseDetailDisplayText() {
+        String fullText = "x".repeat(CapturePanel.REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT + 128);
+
+        String displayText = CapturePanel.displayRequestResponseDetailText(fullText);
+
+        assertTrue(displayText.length() < fullText.length());
+        assertTrue(displayText.startsWith("x".repeat(64)));
+        assertTrue(displayText.contains(CaptureI18n.t(
+                MessageKeys.TOOLBOX_CAPTURE_DETAIL_DISPLAY_TRUNCATED,
+                CapturePanel.REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT,
+                fullText.length())));
+    }
+
+    @Test
+    public void shouldKeepFullRequestAndResponseDetailTextAvailableForCopy() {
+        CaptureFlow flow = new CaptureFlow(
+                "POST",
+                "https://example.com/api",
+                "example.com",
+                "/api",
+                Map.of("Content-Type", "text/plain"),
+                "request".getBytes(StandardCharsets.UTF_8)
+        );
+        String responseBody = "response-body-".repeat(2_000);
+        flow.complete(200, "OK", Map.of("Content-Type", "text/plain"), responseBody.getBytes(StandardCharsets.UTF_8));
+
+        String fullResponseText = CapturePanel.detailTextForTab(flow, 1);
+        String displayedResponseText = CapturePanel.displayRequestResponseDetailText(fullResponseText);
+
+        assertTrue(fullResponseText.length() > displayedResponseText.length());
+        assertEquals(CapturePanel.copyDetailTextForTab(flow, 1), fullResponseText);
     }
 
     @Test

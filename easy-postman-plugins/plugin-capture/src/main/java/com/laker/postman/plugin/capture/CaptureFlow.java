@@ -180,7 +180,7 @@ final class CaptureFlow {
         if (!responseStreamPreview.isBlank()) {
             return responseStreamPreview;
         }
-        return toPreviewText(responseBody);
+        return toPreviewText(responseBodyPreviewBytes().bytes());
     }
 
     void recordResponseStart(int statusCode, String statusText, Map<String, String> responseHeaders) {
@@ -280,9 +280,7 @@ final class CaptureFlow {
         builder.append("----------------\n");
         appendHeaders(builder, responseHeaders);
 
-        builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY)).append('\n');
-        builder.append("-------------\n");
-        builder.append(responseBodyPreview()).append('\n');
+        appendResponseBodySection(builder);
         return builder.toString();
     }
 
@@ -314,9 +312,7 @@ final class CaptureFlow {
         builder.append('\n').append(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_HEADERS)).append('\n');
         builder.append("----------------\n");
         appendHeaders(builder, responseHeaders);
-        builder.append('\n').append(responseBodySectionTitle()).append('\n');
-        builder.append("-------------\n");
-        builder.append(responseBodyPreview()).append('\n');
+        appendResponseBodySection(builder);
         return builder.toString();
     }
 
@@ -391,6 +387,19 @@ final class CaptureFlow {
             return;
         }
         headers.forEach((name, value) -> builder.append(name).append(": ").append(value == null ? "" : value).append('\n'));
+    }
+
+    private void appendResponseBodySection(StringBuilder builder) {
+        if (usesResponseStreamPreview()) {
+            builder.append('\n').append(responseBodySectionTitle(null)).append('\n');
+            builder.append("-------------\n");
+            builder.append(responseBodyPreview()).append('\n');
+            return;
+        }
+        CaptureBodyDecoder.DecodedBody decodedBody = responseBodyPreviewBytes();
+        builder.append('\n').append(responseBodySectionTitle(decodedBody)).append('\n');
+        builder.append("-------------\n");
+        builder.append(toPreviewText(decodedBody.bytes())).append('\n');
     }
 
     private String curlBodyText() {
@@ -512,10 +521,25 @@ final class CaptureFlow {
                 : t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_REQUEST_BODY);
     }
 
-    private String responseBodySectionTitle() {
-        return protocol == Protocol.WEBSOCKET
-                ? t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_STREAM)
-                : t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY);
+    private String responseBodySectionTitle(CaptureBodyDecoder.DecodedBody decodedBody) {
+        if (usesResponseStreamPreview()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_STREAM);
+        }
+        if (decodedBody != null && decodedBody.decoded()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY_DECODED, decodedBody.encoding());
+        }
+        if (decodedBody != null && decodedBody.decodeFailed()) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY_DECODE_FAILED, decodedBody.encoding());
+        }
+        return t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY);
+    }
+
+    private boolean usesResponseStreamPreview() {
+        return protocol == Protocol.WEBSOCKET || !responseStreamPreview.isBlank();
+    }
+
+    private CaptureBodyDecoder.DecodedBody responseBodyPreviewBytes() {
+        return CaptureBodyDecoder.decodeForPreview(responseBody, responseHeaders, PREVIEW_LIMIT);
     }
 
     private String formatStreamChunkEvent(String prefix, byte[] bytes) {

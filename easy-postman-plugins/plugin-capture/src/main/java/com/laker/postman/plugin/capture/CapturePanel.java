@@ -5,7 +5,6 @@ import com.laker.postman.common.component.ChipLabel;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.component.button.CloseButton;
 import com.laker.postman.common.component.button.CopyButton;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
@@ -23,6 +22,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JMenuItem;
@@ -82,6 +82,7 @@ public class CapturePanel extends JPanel {
     private static final int REQUEST_BYTES_COLUMN_INDEX = 8;
     private static final int RESPONSE_BYTES_COLUMN_INDEX = 9;
     private static final int DETAIL_HOST_MAX_CHARS = 36;
+    private static final Integer[] RETENTION_LIMIT_OPTIONS = {100, 300, 1000};
 
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
     private final CaptureRequestCollectionImporter requestCollectionImporter;
@@ -92,6 +93,7 @@ public class CapturePanel extends JPanel {
 
     private JTextField hostField;
     private JSpinner portSpinner;
+    private JComboBox<Integer> retentionLimitComboBox;
     private JButton toggleProxyButton;
     private JButton clearButton;
     private JMenuItem installCaMenuItem;
@@ -117,8 +119,8 @@ public class CapturePanel extends JPanel {
     private RSyntaxTextArea streamDetailArea;
     private JTabbedPane detailTabs;
     private JSplitPane detailSplit;
-    private JToggleButton detailToggleButton;
     private boolean detailPanelVisible;
+    private boolean refreshingTable;
     private JLabel detailMethodLabel;
     private JLabel detailProtocolLabel;
     private JLabel detailStatusLabel;
@@ -145,6 +147,7 @@ public class CapturePanel extends JPanel {
         requestCollectionImporter = new CaptureRequestCollectionImporter(importService);
         settingsStore = new CaptureSettingsStore(storage == null ? PluginStorage.noop() : storage);
         initialSettings = settingsStore.load();
+        proxyService.sessionStore().setMaxFlows(initialSettings.maxFlows());
         initUI();
         proxyService.sessionStore().addChangeListener(this::scheduleRefreshTable);
         refreshTable();
@@ -165,7 +168,7 @@ public class CapturePanel extends JPanel {
     private JComponent buildTopBar() {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 8, fillx, novisualpadding",
-                "[][grow,fill]12[]8[]12[]6[]push[]",
+                "[][grow,fill]12[]8[]12[]6[]6[]push[]",
                 "[][][][][]"));
         ToolWindowSurfaceStyle.applySectionHeader(panel, 0, 0, 8, 0);
 
@@ -175,6 +178,10 @@ public class CapturePanel extends JPanel {
                 t(MessageKeys.TOOLBOX_CAPTURE_BIND_HOST_PLACEHOLDER));
         portSpinner = new JSpinner(new SpinnerNumberModel(defaultPort(), 1, 65535, 1));
         configurePortSpinner();
+        retentionLimitComboBox = new JComboBox<>(RETENTION_LIMIT_OPTIONS);
+        retentionLimitComboBox.setSelectedItem(defaultMaxFlows());
+        retentionLimitComboBox.setFocusable(false);
+        retentionLimitComboBox.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_RETENTION_TOOLTIP));
         captureFilterField = new JTextField(defaultCaptureFilter());
         captureFilterField.setColumns(28);
         captureFilterField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
@@ -200,9 +207,6 @@ public class CapturePanel extends JPanel {
         toggleProxyButton = new JButton();
         clearButton = new JButton(t(MessageKeys.TOOLBOX_CAPTURE_CLEAR), IconUtil.createThemed("icons/clear.svg", 16, 16));
         syncSystemProxyCheckBox = new JCheckBox(t(MessageKeys.TOOLBOX_CAPTURE_SYNC_MACOS_PROXY), defaultSyncSystemProxy());
-        detailToggleButton = new DetailToggleButton();
-        detailToggleButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_DETAIL));
-        detailToggleButton.setSelected(false);
         initStatusPopupMenu();
 
         toggleProxyButton.addActionListener(e -> {
@@ -213,14 +217,7 @@ public class CapturePanel extends JPanel {
             }
         });
         clearButton.addActionListener(e -> proxyService.sessionStore().clear());
-        detailToggleButton.addActionListener(e -> {
-            detailPanelVisible = detailToggleButton.isSelected();
-            if (detailPanelVisible) {
-                showDetailPanel();
-            } else {
-                hideDetailPanel();
-            }
-        });
+        retentionLimitComboBox.addActionListener(e -> handleRetentionLimitChanged());
 
         captureFilterLabel = new JLabel();
         captureFilterLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
@@ -249,13 +246,14 @@ public class CapturePanel extends JPanel {
         panel.add(portSpinner, "wmin 90");
         panel.add(toggleProxyButton, "wmin 110");
         panel.add(clearButton);
-        panel.add(detailToggleButton);
+        panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_RETENTION)), "gapleft 4");
+        panel.add(retentionLimitComboBox, "wmin 82");
         panel.add(new JLabel(), "push, wrap");
         panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_CAPTURE_HOSTS)), "gapright 8");
-        panel.add(captureFilterField, "span 6, growx, wrap");
-        panel.add(quickFilterPanel, "skip 1, span 6, growx, wrap");
+        panel.add(captureFilterField, "span 7, growx, wrap");
+        panel.add(quickFilterPanel, "skip 1, span 7, growx, wrap");
         panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER)), "gapright 8");
-        panel.add(viewPresetPanel, "span 6, growx, wrap");
+        panel.add(viewPresetPanel, "span 7, growx, wrap");
         panel.add(captureFilterLabel, "span, split 2, growx");
         panel.add(captureStatusPanel, "gapleft push");
         syncQuickFilterButtonsFromField();
@@ -265,11 +263,24 @@ public class CapturePanel extends JPanel {
     private JComponent buildContent() {
         tablePanel = new EnhancedTablePanel(columnNames());
         ToolWindowSurfaceStyle.applyPanelTreeCard(tablePanel);
+        tablePanel.setRowCountFormatter((filtered, total) ->
+                formatRetainedRowCount(filtered, total, proxyService.sessionStore().maxFlows()));
         tablePanel.setAutoResizeOnRefresh(false);
         tablePanel.setContextMenuCustomizer(this::appendTableContextMenu);
         JTable table = tablePanel.getTable();
         table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         table.getSelectionModel().addListSelectionListener(this::handleSelectionChanged);
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                if (!SwingUtilities.isLeftMouseButton(e)
+                        || detailPanelVisible
+                        || table.rowAtPoint(e.getPoint()) < 0) {
+                    return;
+                }
+                SwingUtilities.invokeLater(CapturePanel.this::showSelectedTableFlowDetail);
+            }
+        });
         disableTableTooltips(table);
         hideIdColumn(table);
         configureTableColumns(table);
@@ -313,12 +324,11 @@ public class CapturePanel extends JPanel {
         copyCurlButton.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
         copyCurlButton.addActionListener(e -> copyAsCurl());
 
-        CloseButton closeDetailButton = new CloseButton();
-        closeDetailButton.setToolTipText(t(MessageKeys.TOOLBOX_CAPTURE_CLOSE_DETAIL));
-        closeDetailButton.addActionListener(e -> {
-            detailToggleButton.setSelected(false);
-            hideDetailPanel();
-        });
+        JButton hideDetailButton = createToolWindowToolbarButton(
+                "icons/tool-window-hide.svg",
+                t(MessageKeys.TOOLBOX_CAPTURE_CLOSE_DETAIL)
+        );
+        hideDetailButton.addActionListener(e -> hideDetailPanel());
 
         detailHeader.add(detailMethodLabel);
         detailHeader.add(detailProtocolLabel);
@@ -328,7 +338,7 @@ public class CapturePanel extends JPanel {
         detailHeader.add(detailTimeLabel);
         detailHeader.add(copyCurlButton);
         detailHeader.add(copyDetailButton);
-        detailHeader.add(closeDetailButton);
+        detailHeader.add(hideDetailButton);
 
         JPanel detailPanel = new JPanel(new BorderLayout(0, 0));
         detailPanel.setOpaque(false);
@@ -418,13 +428,14 @@ public class CapturePanel extends JPanel {
         int port = ((Number) portSpinner.getValue()).intValue();
         boolean syncSystemProxy = syncSystemProxyCheckBox.isSelected();
         String captureFilter = captureFilterField.getText().trim();
+        int maxFlows = currentMaxFlows();
 
         setOperationState(true);
         SwingWorker<StartResult, Void> worker = new SwingWorker<>() {
             @Override
             protected StartResult doInBackground() throws Exception {
                 proxyService.start(host, port, syncSystemProxy, captureFilter);
-                settingsStore.save(new CaptureSettings(host, port, syncSystemProxy, captureFilter));
+                settingsStore.save(new CaptureSettings(host, port, syncSystemProxy, captureFilter, maxFlows));
                 return new StartResult(host, port, proxyService.isSystemProxySynced());
             }
 
@@ -494,6 +505,7 @@ public class CapturePanel extends JPanel {
 
     private void refreshTable() {
         List<String> selectedIds = selectedFlowIds();
+        CaptureFlow selectedFlowBeforeRefresh = selectedFlow;
         List<CaptureFlow> snapshot = proxyService.sessionStore().snapshot();
         List<CaptureFlow> visibleFlows = visibleFlows(snapshot);
         totalFlowCount = snapshot.size();
@@ -502,13 +514,23 @@ public class CapturePanel extends JPanel {
         for (CaptureFlow flow : visibleFlows) {
             rows.add(flow.toRow());
         }
-        tablePanel.setDataPreserveView(rows);
         JTable table = tablePanel.getTable();
-        hideIdColumn(table);
-        configureTableColumns(table);
-        restoreSelectedRows(selectedIds);
+        refreshingTable = true;
+        try {
+            tablePanel.setDataPreserveView(rows);
+            hideIdColumn(table);
+            configureTableColumns(table);
+            restoreSelectedRows(selectedIds);
+        } finally {
+            refreshingTable = false;
+        }
+        CaptureFlow retainedSelectedFlow = findVisibleSelectedFlow(selectedFlowBeforeRefresh, visibleFlows);
         if (rows.isEmpty()) {
             clearDetail();
+        } else if (retainedSelectedFlow != null) {
+            selectedFlow = retainedSelectedFlow;
+            updateDetailHeader(retainedSelectedFlow);
+            updateDetailAreas(retainedSelectedFlow);
         } else if (table.getSelectedRow() < 0) {
             clearDetail();
         } else if (selectedFlow != null) {
@@ -519,6 +541,19 @@ public class CapturePanel extends JPanel {
                 updateDetailAreas(latestSelectedFlow);
             }
         }
+    }
+
+    static CaptureFlow findVisibleSelectedFlow(CaptureFlow selectedFlow, List<CaptureFlow> visibleFlows) {
+        if (selectedFlow == null || visibleFlows == null || visibleFlows.isEmpty()) {
+            return null;
+        }
+        String selectedId = selectedFlow.id();
+        for (CaptureFlow flow : visibleFlows) {
+            if (flow != null && selectedId.equals(flow.id())) {
+                return flow;
+            }
+        }
+        return null;
     }
 
     private List<CaptureFlow> visibleFlows(List<CaptureFlow> snapshot) {
@@ -746,7 +781,7 @@ public class CapturePanel extends JPanel {
     }
 
     private void handleSelectionChanged(ListSelectionEvent event) {
-        if (event.getValueIsAdjusting()) {
+        if (event.getValueIsAdjusting() || refreshingTable) {
             return;
         }
         JTable table = tablePanel.getTable();
@@ -758,17 +793,34 @@ public class CapturePanel extends JPanel {
         Object flowId = table.getValueAt(selectedRow, 0);
         CaptureFlow flow = proxyService.sessionStore().find(String.valueOf(flowId));
         if (flow != null) {
-            selectedFlow = flow;
-            updateDetailHeader(flow);
-            updateDetailAreas(flow);
-            detailTabs.setSelectedIndex(0);
-            if (!detailPanelVisible) {
-                detailToggleButton.setSelected(true);
-                showDetailPanel();
-            }
+            showFlowDetail(flow);
         } else {
             clearDetail();
         }
+    }
+
+    private void showSelectedTableFlowDetail() {
+        if (tablePanel == null || tablePanel.getTable() == null) {
+            return;
+        }
+        JTable table = tablePanel.getTable();
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow < 0) {
+            return;
+        }
+        Object flowId = table.getValueAt(selectedRow, 0);
+        CaptureFlow flow = proxyService.sessionStore().find(String.valueOf(flowId));
+        if (flow != null) {
+            showFlowDetail(flow);
+        }
+    }
+
+    private void showFlowDetail(CaptureFlow flow) {
+        selectedFlow = flow;
+        updateDetailHeader(flow);
+        updateDetailAreas(flow);
+        detailTabs.setSelectedIndex(0);
+        showDetailPanel();
     }
 
     private void updateStatus() {
@@ -848,8 +900,37 @@ public class CapturePanel extends JPanel {
                 hostField.getText().trim(),
                 ((Number) portSpinner.getValue()).intValue(),
                 syncSystemProxyCheckBox.isSelected(),
-                captureFilter
+                captureFilter,
+                currentMaxFlows()
         ));
+    }
+
+    private void handleRetentionLimitChanged() {
+        int maxFlows = currentMaxFlows();
+        proxyService.sessionStore().setMaxFlows(maxFlows);
+        saveCurrentSettings(captureFilterField.getText().trim());
+        refreshTable();
+    }
+
+    private int currentMaxFlows() {
+        Object selected = retentionLimitComboBox == null ? null : retentionLimitComboBox.getSelectedItem();
+        if (selected instanceof Number number) {
+            return CaptureSessionStore.normalizeMaxFlows(number.intValue());
+        }
+        return proxyService.sessionStore().maxFlows();
+    }
+
+    static String formatRetainedRowCount(int filteredRows, int totalRows, int maxFlows) {
+        int normalizedMaxFlows = CaptureSessionStore.normalizeMaxFlows(maxFlows);
+        if (filteredRows != totalRows) {
+            return t(MessageKeys.TOOLBOX_CAPTURE_ROWS_FILTERED_LIMIT,
+                    String.valueOf(filteredRows),
+                    String.valueOf(totalRows),
+                    String.valueOf(normalizedMaxFlows));
+        }
+        return t(MessageKeys.TOOLBOX_CAPTURE_ROWS_LIMIT,
+                String.valueOf(totalRows),
+                String.valueOf(normalizedMaxFlows));
     }
 
     static String summarizeDraftCaptureFilter(String rawValue) {
@@ -1278,6 +1359,10 @@ public class CapturePanel extends JPanel {
         return initialSettings.hostFilter();
     }
 
+    private int defaultMaxFlows() {
+        return initialSettings.maxFlows();
+    }
+
     private void openCa() {
         try {
             String caPath = proxyService.rootCertificatePath();
@@ -1639,6 +1724,15 @@ public class CapturePanel extends JPanel {
         return new ChipLabel(text, bgColor);
     }
 
+    private JButton createToolWindowToolbarButton(String iconPath, String tooltip) {
+        JButton button = new JButton(IconUtil.createThemed(iconPath, IconUtil.SIZE_SMALL, IconUtil.SIZE_SMALL));
+        button.setToolTipText(tooltip);
+        button.setFocusable(false);
+        button.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        button.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        return button;
+    }
+
     private void setStatusChip(JLabel label, String text, Object statusValue) {
         setChipText(label, text);
         if (label instanceof ChipLabel chipLabel) {
@@ -1750,64 +1844,6 @@ public class CapturePanel extends JPanel {
             g2.fill(chipShape);
             g2.setColor(ChipLabel.borderFor(borderColor, isSelected() ? 160 : 90));
             g2.draw(chipShape);
-            g2.dispose();
-            super.paintComponent(g);
-        }
-    }
-
-    private static final class DetailToggleButton extends JToggleButton {
-
-        private static final int SIZE = 28;
-        private static final int ARC = 7;
-
-        private DetailToggleButton() {
-            setPreferredSize(new Dimension(SIZE, SIZE));
-            setMinimumSize(new Dimension(SIZE, SIZE));
-            setMaximumSize(new Dimension(SIZE, SIZE));
-            setBorder(new EmptyBorder(4, 4, 4, 4));
-            setFocusable(false);
-            setRolloverEnabled(true);
-            setContentAreaFilled(false);
-            setBorderPainted(false);
-            setOpaque(false);
-            setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            updateIcons();
-        }
-
-        @Override
-        public void updateUI() {
-            super.updateUI();
-            setContentAreaFilled(false);
-            setBorderPainted(false);
-            setOpaque(false);
-            updateIcons();
-        }
-
-        private void updateIcons() {
-            setIcon(IconUtil.createThemed("icons/detail.svg", 16, 16));
-            setSelectedIcon(IconUtil.createColored("icons/detail.svg", 16, 16, ModernColors.getPrimary()));
-            setDisabledIcon(IconUtil.createColored("icons/detail.svg", 16, 16, ModernColors.getTextDisabled()));
-        }
-
-        @Override
-        protected void paintComponent(Graphics g) {
-            Graphics2D g2 = (Graphics2D) g.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            RoundRectangle2D.Float shape = new RoundRectangle2D.Float(
-                    0.5f, 0.5f,
-                    Math.max(0f, getWidth() - 1f),
-                    Math.max(0f, getHeight() - 1f),
-                    ARC, ARC);
-            if (isSelected()) {
-                Color accent = ModernColors.getPrimary();
-                g2.setColor(ChipLabel.fillFor(accent, ModernColors.isDarkTheme() ? 48 : 32));
-                g2.fill(shape);
-                g2.setColor(ChipLabel.borderFor(accent, ModernColors.isDarkTheme() ? 150 : 130));
-                g2.draw(shape);
-            } else if (getModel().isRollover() && isEnabled()) {
-                g2.setColor(ModernColors.getHoverBackgroundColor());
-                g2.fill(shape);
-            }
             g2.dispose();
             super.paintComponent(g);
         }

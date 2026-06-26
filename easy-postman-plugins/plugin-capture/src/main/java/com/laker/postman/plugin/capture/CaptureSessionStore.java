@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 final class CaptureSessionStore {
-    private static final int MAX_FLOWS = 300;
+    static final int DEFAULT_MAX_FLOWS = 300;
+    static final int MIN_MAX_FLOWS = 50;
+    static final int HARD_MAX_FLOWS = 1_000;
     private static final int TLS_ISSUE_STATUS_CODE = 495;
     private static final long TLS_ISSUE_SUPPRESS_MS = 30_000L;
 
@@ -16,6 +18,15 @@ final class CaptureSessionStore {
     private final Map<String, CaptureFlow> flowById = new LinkedHashMap<>();
     private final Map<String, Long> tlsIssueRecordedAt = new LinkedHashMap<>();
     private final CopyOnWriteArrayList<Runnable> listeners = new CopyOnWriteArrayList<>();
+    private int maxFlows;
+
+    CaptureSessionStore() {
+        this(DEFAULT_MAX_FLOWS);
+    }
+
+    CaptureSessionStore(int maxFlows) {
+        this.maxFlows = normalizeMaxFlows(maxFlows);
+    }
 
     CaptureFlow createFlow(String method,
                            String url,
@@ -27,26 +38,54 @@ final class CaptureSessionStore {
         synchronized (this) {
             flows.add(0, flow);
             flowById.put(flow.id(), flow);
-            while (flows.size() > MAX_FLOWS) {
-                CaptureFlow removed = flows.remove(flows.size() - 1);
-                flowById.remove(removed.id());
-            }
+            trimToMaxFlows();
         }
         fireChanged();
         return flow;
     }
 
-    void recordTlsIssue(String host, int port, String message) {
+    synchronized int maxFlows() {
+        return maxFlows;
+    }
+
+    void setMaxFlows(int maxFlows) {
+        boolean changed;
+        synchronized (this) {
+            int normalized = normalizeMaxFlows(maxFlows);
+            changed = this.maxFlows != normalized;
+            this.maxFlows = normalized;
+            trimToMaxFlows();
+        }
+        if (changed) {
+            fireChanged();
+        }
+    }
+
+    static int normalizeMaxFlows(int value) {
+        if (value < MIN_MAX_FLOWS) {
+            return DEFAULT_MAX_FLOWS;
+        }
+        return Math.min(value, HARD_MAX_FLOWS);
+    }
+
+    private void trimToMaxFlows() {
+        while (flows.size() > maxFlows) {
+            CaptureFlow removed = flows.remove(flows.size() - 1);
+            flowById.remove(removed.id());
+        }
+    }
+
+    boolean recordTlsIssue(String host, int port, String message) {
         String normalizedHost = host == null ? "" : host.trim();
         if (normalizedHost.isBlank()) {
-            return;
+            return false;
         }
         long now = System.currentTimeMillis();
         String key = normalizedHost.toLowerCase(Locale.ROOT) + ":" + port;
         synchronized (this) {
             Long lastRecordedAt = tlsIssueRecordedAt.get(key);
             if (lastRecordedAt != null && now - lastRecordedAt < TLS_ISSUE_SUPPRESS_MS) {
-                return;
+                return false;
             }
             tlsIssueRecordedAt.put(key, now);
         }
@@ -61,6 +100,7 @@ final class CaptureSessionStore {
                 new byte[0]
         );
         fail(flow.id(), TLS_ISSUE_STATUS_CODE, message);
+        return true;
     }
 
     void complete(String flowId, int statusCode, String statusText, Map<String, String> responseHeaders, byte[] responseBody) {

@@ -177,7 +177,7 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
                 if (handshakeFuture.isSuccess()) {
                     log.debug("Client TLS handshake succeeded for {}", authority);
                 } else {
-                    recordClientTlsHandshakeFailure(targetHost, targetPort, handshakeFuture.cause());
+                    recordClientTlsHandshakeFailure(ctx, targetHost, targetPort, handshakeFuture.cause());
                 }
             });
             pipeline.addLast("mitm-ssl", sslHandler);
@@ -334,8 +334,12 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         return root.getClass().getSimpleName() + (message == null || message.isBlank() ? "" : ": " + message);
     }
 
-    private void recordClientTlsHandshakeFailure(String host, int port, Throwable cause) {
-        sessionStore.recordTlsIssue(
+    private void recordClientTlsHandshakeFailure(ChannelHandlerContext ctx, String host, int port, Throwable cause) {
+        if (markClientTlsHandshakeReported(ctx)) {
+            log.debug("Client TLS handshake failure already reported for {}:{} - {}", host, port, summarize(cause));
+            return;
+        }
+        boolean recorded = sessionStore.recordTlsIssue(
                 host,
                 port,
                 t(MessageKeys.TOOLBOX_CAPTURE_TLS_CLIENT_HANDSHAKE_FAILED, host, summarize(cause))
@@ -344,7 +348,15 @@ final class HttpProxyFrontendHandler extends SimpleChannelInboundHandler<FullHtt
             log.debug("Client closed MITM TLS handshake for {}:{} - {}", host, port, summarize(cause));
             return;
         }
-        log.warn("Client TLS handshake failed for {}:{} - {}", host, port, summarize(cause));
+        if (recorded) {
+            log.warn("Client TLS handshake failed for {}:{} - {}", host, port, summarize(cause));
+        } else {
+            log.debug("Repeated client TLS handshake failed for {}:{} - {}", host, port, summarize(cause));
+        }
+    }
+
+    private boolean markClientTlsHandshakeReported(ChannelHandlerContext ctx) {
+        return Boolean.TRUE.equals(ctx.channel().attr(HttpsMitmFrontendHandler.CLIENT_TLS_HANDSHAKE_REPORTED).getAndSet(Boolean.TRUE));
     }
 
     private boolean isClientHandshakeAbort(Throwable throwable) {

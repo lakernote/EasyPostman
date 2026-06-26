@@ -19,13 +19,14 @@ public class CaptureSettingsStoreTest {
         MemoryPluginStorage storage = new MemoryPluginStorage();
         CaptureSettingsStore store = new CaptureSettingsStore(storage);
 
-        store.save(new CaptureSettings("0.0.0.0", 18888, true, "api.example.com or dev.local"));
+        store.save(new CaptureSettings("0.0.0.0", 18888, true, "api.example.com or dev.local", 1000));
 
         CaptureSettings settings = store.load();
         assertEquals(settings.bindHost(), "0.0.0.0");
         assertEquals(settings.bindPort(), 18888);
         assertTrue(settings.syncSystemProxy());
         assertEquals(settings.hostFilter(), "api.example.com or dev.local");
+        assertEquals(settings.maxFlows(), 1000);
 
         String json = storage.files.get(CaptureSettingsStore.STORAGE_FILE);
         assertTrue(json.contains("\"bindHost\""));
@@ -40,6 +41,7 @@ public class CaptureSettingsStoreTest {
         assertEquals(settings.bindPort(), 8888);
         assertFalse(settings.syncSystemProxy());
         assertEquals(settings.hostFilter(), "");
+        assertEquals(settings.maxFlows(), 300);
     }
 
     private static final class MemoryPluginStorage implements PluginStorage {

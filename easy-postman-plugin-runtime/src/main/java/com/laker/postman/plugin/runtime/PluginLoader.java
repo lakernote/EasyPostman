@@ -165,6 +165,15 @@ class PluginLoader {
         }
 
         @Override
+        public void registerStatusBarActionContribution(
+                com.laker.postman.plugin.api.StatusBarActionContribution contribution) {
+            registry.registerStatusBarActionContribution(
+                    descriptor.id(),
+                    contribution == null ? null : contribution.withIconClassLoader(classLoader)
+            );
+        }
+
+        @Override
         public void registerUpdateMetadataContribution(
                 com.laker.postman.plugin.api.PluginUpdateMetadataContribution contribution) {
             registry.registerUpdateMetadataContribution(descriptor.id(), contribution);

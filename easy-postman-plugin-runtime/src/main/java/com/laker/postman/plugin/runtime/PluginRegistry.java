@@ -6,6 +6,7 @@ import com.laker.postman.plugin.api.SnippetDefinition;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
 import com.laker.postman.plugin.api.PluginUpdateMetadataContribution;
 import com.laker.postman.plugin.api.ToolboxContribution;
+import com.laker.postman.plugin.api.StatusBarActionContribution;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ public class PluginRegistry {
     private final List<PluginMenuContribution> menuContributions = new CopyOnWriteArrayList<>();
     private final List<PluginSettingsContribution> settingsContributions = new CopyOnWriteArrayList<>();
     private final List<PluginUpdateMetadataContribution> updateMetadataContributions = new CopyOnWriteArrayList<>();
+    private final List<StatusBarActionContribution> statusBarActionContributions = new CopyOnWriteArrayList<>();
     private final List<ScriptCompletionContributor> scriptCompletionContributors = new CopyOnWriteArrayList<>();
     private final List<SnippetDefinition> snippetDefinitions = new CopyOnWriteArrayList<>();
 
@@ -128,6 +130,20 @@ public class PluginRegistry {
         return new ArrayList<>(menuContributions);
     }
 
+    public void registerStatusBarActionContribution(StatusBarActionContribution contribution) {
+        registerStatusBarActionContribution(null, contribution);
+    }
+
+    void registerStatusBarActionContribution(String pluginId, StatusBarActionContribution contribution) {
+        if (contribution != null) {
+            statusBarActionContributions.add(contribution);
+        }
+    }
+
+    public List<StatusBarActionContribution> getStatusBarActionContributions() {
+        return new ArrayList<>(statusBarActionContributions);
+    }
+
     public void registerSettingsContribution(PluginSettingsContribution contribution) {
         registerSettingsContribution(null, contribution);
     }
@@ -184,6 +200,7 @@ public class PluginRegistry {
         menuContributions.clear();
         settingsContributions.clear();
         updateMetadataContributions.clear();
+        statusBarActionContributions.clear();
         scriptCompletionContributors.clear();
         snippetDefinitions.clear();
     }

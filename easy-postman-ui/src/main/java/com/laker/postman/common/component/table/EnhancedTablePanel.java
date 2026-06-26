@@ -23,6 +23,7 @@ import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.util.*;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 /**
@@ -73,6 +74,8 @@ public class EnhancedTablePanel extends JPanel {
      */
     @Setter
     private Runnable viewDataChangedListener;
+    @Setter
+    private BiFunction<Integer, Integer, String> rowCountFormatter;
 
     /**
      * 超过此字符数时，单元格显示截断文字 + 省略号，并启用 tooltip
@@ -809,6 +812,13 @@ public class EnhancedTablePanel extends JPanel {
     private void updateHintLabel() {
         int total = allRows.size();
         int filtered = filteredRows.size();
+        if (rowCountFormatter != null) {
+            String customText = rowCountFormatter.apply(filtered, total);
+            if (customText != null && !customText.isBlank()) {
+                hintLabel.setText(customText);
+                return;
+            }
+        }
         String suffix = UiI18n.get(UiMessageKeys.TABLE_ROWS_SUFFIX);
         if (!filterText.isEmpty() && filtered != total) {
             hintLabel.setText(UiI18n.get(UiMessageKeys.TABLE_ROWS_FILTERED,

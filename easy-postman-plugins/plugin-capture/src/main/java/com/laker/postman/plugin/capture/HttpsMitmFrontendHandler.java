@@ -22,6 +22,7 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
+import io.netty.util.AttributeKey;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,8 @@ import static com.laker.postman.plugin.capture.CaptureI18n.t;
 @RequiredArgsConstructor
 final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Logger log = LoggerFactory.getLogger(HttpsMitmFrontendHandler.class);
+    static final AttributeKey<Boolean> CLIENT_TLS_HANDSHAKE_REPORTED =
+            AttributeKey.valueOf("easyPostman.capture.clientTlsHandshakeReported");
 
     private final CaptureSessionStore sessionStore;
     private final CaptureCertificateService certificateService;
@@ -161,8 +164,13 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (isClientTlsHandshakeFailure(cause)) {
-            log.warn("HTTPS MITM client TLS handshake failed for {}:{} - {}", targetHost, targetPort, summarize(cause));
-            recordClientTlsHandshakeFailure(cause);
+            if (markClientTlsHandshakeReported(ctx)) {
+                log.debug("HTTPS MITM client TLS handshake failure already reported for {}:{} - {}", targetHost, targetPort, summarize(cause));
+            } else if (recordClientTlsHandshakeFailure(cause)) {
+                log.warn("HTTPS MITM client TLS handshake failed for {}:{} - {}", targetHost, targetPort, summarize(cause));
+            } else {
+                log.debug("Repeated HTTPS MITM client TLS handshake failed for {}:{} - {}", targetHost, targetPort, summarize(cause));
+            }
             ctx.close();
             return;
         }
@@ -186,12 +194,16 @@ final class HttpsMitmFrontendHandler extends SimpleChannelInboundHandler<FullHtt
         return false;
     }
 
-    private void recordClientTlsHandshakeFailure(Throwable cause) {
-        sessionStore.recordTlsIssue(
+    private boolean recordClientTlsHandshakeFailure(Throwable cause) {
+        return sessionStore.recordTlsIssue(
                 targetHost,
                 targetPort,
                 t(MessageKeys.TOOLBOX_CAPTURE_TLS_CLIENT_REJECTED, targetHost, summarize(cause))
         );
+    }
+
+    private boolean markClientTlsHandshakeReported(ChannelHandlerContext ctx) {
+        return Boolean.TRUE.equals(ctx.channel().attr(CLIENT_TLS_HANDSHAKE_REPORTED).getAndSet(Boolean.TRUE));
     }
 
     private FullHttpRequest buildOutboundRequest(FullHttpRequest request, String uri, byte[] requestBody) {

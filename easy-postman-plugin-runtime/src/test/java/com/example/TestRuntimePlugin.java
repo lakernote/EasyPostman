@@ -6,6 +6,7 @@ import com.laker.postman.plugin.api.PluginMenuContribution;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
 import com.laker.postman.plugin.api.PluginUpdateMetadata;
 import com.laker.postman.plugin.api.PluginUpdateMetadataContribution;
+import com.laker.postman.plugin.api.StatusBarActionContribution;
 
 import javax.swing.JPanel;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,6 +60,14 @@ public class TestRuntimePlugin implements EasyPostmanPlugin {
                 actionContext -> {
                 },
                 "test-runtime-messages"
+        ));
+        context.registerStatusBarActionContribution(new StatusBarActionContribution(
+                "test-runtime-status-action",
+                "Open runtime tool",
+                "icons/global-variables.svg",
+                StatusBarActionContribution.TARGET_TOOLBOX,
+                "runtime-tool",
+                900
         ));
         context.registerUpdateMetadataContribution(new PluginUpdateMetadataContribution(
                 "test-runtime-update-metadata",

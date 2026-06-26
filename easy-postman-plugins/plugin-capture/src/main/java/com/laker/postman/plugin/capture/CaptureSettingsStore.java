@@ -19,6 +19,7 @@ class CaptureSettingsStore {
     private static final String KEY_BIND_PORT = "bindPort";
     private static final String KEY_SYNC_SYSTEM_PROXY = "syncSystemProxy";
     private static final String KEY_HOST_FILTER = "hostFilter";
+    private static final String KEY_MAX_FLOWS = "maxFlows";
 
     private static final String LEGACY_BIND_HOST = "plugin.capture.bindHost";
     private static final String LEGACY_BIND_PORT = "plugin.capture.bindPort";
@@ -60,7 +61,8 @@ class CaptureSettingsStore {
                 UserPreferencesStore.getString(LEGACY_BIND_HOST),
                 legacyPort(),
                 Boolean.TRUE.equals(UserPreferencesStore.getBoolean(LEGACY_SYNC_SYSTEM_PROXY)),
-                UserPreferencesStore.getString(LEGACY_HOST_FILTER)
+                UserPreferencesStore.getString(LEGACY_HOST_FILTER),
+                CaptureSessionStore.DEFAULT_MAX_FLOWS
         ));
         if (hasLegacySettings()) {
             save(settings);
@@ -86,6 +88,7 @@ class CaptureSettingsStore {
         root.put(KEY_BIND_PORT, settings.bindPort());
         root.put(KEY_SYNC_SYSTEM_PROXY, settings.syncSystemProxy());
         root.put(KEY_HOST_FILTER, settings.hostFilter());
+        root.put(KEY_MAX_FLOWS, settings.maxFlows());
         return JsonUtil.toJsonPrettyStr(root);
     }
 
@@ -95,19 +98,21 @@ class CaptureSettingsStore {
                 stringValue(root, KEY_BIND_HOST, DEFAULT_BIND_HOST),
                 intValue(root, KEY_BIND_PORT, DEFAULT_BIND_PORT),
                 booleanValue(root, KEY_SYNC_SYSTEM_PROXY, false),
-                stringValue(root, KEY_HOST_FILTER, "")
+                stringValue(root, KEY_HOST_FILTER, ""),
+                intValue(root, KEY_MAX_FLOWS, CaptureSessionStore.DEFAULT_MAX_FLOWS)
         ));
     }
 
     private static CaptureSettings normalize(CaptureSettings settings) {
         CaptureSettings source = settings == null
-                ? new CaptureSettings(DEFAULT_BIND_HOST, DEFAULT_BIND_PORT, false, "")
+                ? new CaptureSettings(DEFAULT_BIND_HOST, DEFAULT_BIND_PORT, false, "", CaptureSessionStore.DEFAULT_MAX_FLOWS)
                 : settings;
         return new CaptureSettings(
                 safeTrim(source.bindHost(), DEFAULT_BIND_HOST),
                 normalizePort(source.bindPort()),
                 source.syncSystemProxy(),
-                safeTrim(source.hostFilter(), "")
+                safeTrim(source.hostFilter(), ""),
+                CaptureSessionStore.normalizeMaxFlows(source.maxFlows())
         );
     }
 

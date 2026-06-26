@@ -5,6 +5,7 @@ import com.laker.postman.plugin.api.ScriptCompletionContributor;
 import com.laker.postman.plugin.api.SnippetDefinition;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
 import com.laker.postman.plugin.api.PluginUpdateMetadataContribution;
+import com.laker.postman.plugin.api.StatusBarActionContribution;
 import com.laker.postman.plugin.api.ToolboxContribution;
 import com.laker.postman.plugin.runtime.PluginRuntime;
 
@@ -33,6 +34,10 @@ public final class PluginAccess {
 
     public static List<PluginMenuContribution> getMenuContributions() {
         return PluginRuntime.getRegistry().getMenuContributions();
+    }
+
+    public static List<StatusBarActionContribution> getStatusBarActionContributions() {
+        return PluginRuntime.getRegistry().getStatusBarActionContributions();
     }
 
     public static List<PluginSettingsContribution> getSettingsContributions() {

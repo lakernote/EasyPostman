@@ -4,6 +4,7 @@ import com.laker.postman.plugin.api.PluginMenuContribution;
 import com.laker.postman.plugin.api.PluginSettingsContribution;
 import com.laker.postman.plugin.api.PluginUpdateMetadata;
 import com.laker.postman.plugin.api.PluginUpdateMetadataContribution;
+import com.laker.postman.plugin.api.StatusBarActionContribution;
 import org.testng.annotations.Test;
 
 import javax.swing.JPanel;
@@ -90,6 +91,24 @@ public class PluginRegistryTest {
         assertEquals(registry.getMenuContributions().size(), 1);
         assertSame(registry.getMenuContributions().get(0), contribution);
         assertTrue(invoked.get());
+    }
+
+    @Test
+    public void shouldRegisterStatusBarActionContributions() {
+        PluginRegistry registry = new PluginRegistry();
+        StatusBarActionContribution contribution = new StatusBarActionContribution(
+                "capture-shortcut",
+                "Capture requests",
+                "icons/capture.svg",
+                StatusBarActionContribution.TARGET_TOOLBOX,
+                "capture",
+                200
+        );
+
+        registry.registerStatusBarActionContribution("plugin-capture", contribution);
+
+        assertEquals(registry.getStatusBarActionContributions().size(), 1);
+        assertSame(registry.getStatusBarActionContributions().get(0), contribution);
     }
 
     @Test

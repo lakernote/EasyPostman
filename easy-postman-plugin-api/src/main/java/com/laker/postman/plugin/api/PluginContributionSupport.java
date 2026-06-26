@@ -102,6 +102,27 @@ public final class PluginContributionSupport {
         ));
     }
 
+    public static void registerToolboxStatusBarAction(PluginContext context,
+                                                      String id,
+                                                      String tooltip,
+                                                      String iconPath,
+                                                      String toolboxToolId,
+                                                      int order,
+                                                      Class<?> ownerClass) {
+        if (context == null) {
+            return;
+        }
+        context.registerStatusBarActionContribution(new StatusBarActionContribution(
+                id,
+                tooltip,
+                iconPath,
+                StatusBarActionContribution.TARGET_TOOLBOX,
+                toolboxToolId,
+                order,
+                ownerClass == null ? null : ownerClass.getClassLoader()
+        ));
+    }
+
     public static void registerUpdateMetadataContribution(PluginContext context,
                                                           String id,
                                                           int order,

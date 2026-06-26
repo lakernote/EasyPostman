@@ -375,10 +375,18 @@ public class ToolboxPanel extends UiSingletonPanel {
 
     // ===== 选中工具 =====
     private void selectTool(String id) {
+        showTool(id);
+    }
+
+    public boolean showTool(String id) {
+        if (!toolsById.containsKey(id)) {
+            return false;
+        }
         ensureToolContentLoaded(id);
         selectedId = id;
         cardLayout.show(contentArea, id);
         rebuildNav();
+        return true;
     }
 
     private void ensureToolContentLoaded(String id) {

@@ -37,4 +37,27 @@ public class HttpsMitmFrontendHandlerTest {
         assertEquals(flows.get(0).host(), "pinned.example.com");
         assertEquals(flows.get(0).statusCode(), 495);
     }
+
+    @Test
+    public void shouldSkipDuplicateTlsIssueWhenHandshakeListenerAlreadyReportedFailure() {
+        CaptureSessionStore sessionStore = new CaptureSessionStore();
+        CaptureFilterState captureFilterState = new CaptureFilterState();
+        HttpsMitmFrontendHandler handler = new HttpsMitmFrontendHandler(
+                sessionStore,
+                new CaptureCertificateService(),
+                captureFilterState,
+                "pinned.example.com",
+                443
+        );
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        channel.attr(HttpsMitmFrontendHandler.CLIENT_TLS_HANDSHAKE_REPORTED).set(Boolean.TRUE);
+
+        handler.exceptionCaught(
+                channel.pipeline().context(handler),
+                new DecoderException(new SSLHandshakeException("Received fatal alert: unknown_ca"))
+        );
+
+        assertNull(channel.readOutbound());
+        assertEquals(sessionStore.snapshot().size(), 0);
+    }
 }

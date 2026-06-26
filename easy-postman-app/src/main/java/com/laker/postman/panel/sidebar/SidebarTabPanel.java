@@ -9,6 +9,9 @@ import com.laker.postman.panel.env.EnvironmentPanel;
 import com.laker.postman.panel.performance.PerformanceUiWarmup;
 import com.laker.postman.panel.sidebar.cookie.CookieManagerDialog;
 import com.laker.postman.panel.sidebar.global.GlobalVariablesDialog;
+import com.laker.postman.panel.toolbox.ToolboxPanel;
+import com.laker.postman.plugin.api.StatusBarActionContribution;
+import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
@@ -91,8 +94,23 @@ public class SidebarTabPanel extends UiSingletonPanel {
                 this::toggleConsoleArea,
                 this::toggleLayoutOrientation,
                 this::showGlobalVariablesDialog,
-                this::showCookieManagerDialog
+                this::showCookieManagerDialog,
+                PluginAccess.getStatusBarActionContributions(),
+                this::handleStatusBarAction
         );
+    }
+
+    private void handleStatusBarAction(StatusBarActionContribution contribution) {
+        if (StatusBarActionContribution.TARGET_TOOLBOX.equals(contribution.targetType())) {
+            openToolboxTool(contribution.targetId());
+        }
+    }
+
+    boolean openToolboxTool(String toolId) {
+        if (toolId == null || toolId.isBlank() || !showTab(SidebarTab.TOOLBOX)) {
+            return false;
+        }
+        return UiSingletonFactory.getInstance(ToolboxPanel.class).showTool(toolId);
     }
 
     private void toggleConsoleArea() {

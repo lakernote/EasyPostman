@@ -194,6 +194,20 @@ public class PluginRuntimeTest {
     }
 
     @Test
+    public void shouldExposeStatusBarActionContributionsFromLoadedPlugin() throws Exception {
+        Path pluginJar = PluginRuntime.getManagedPluginDir().resolve("plugin-ok-1.0.0.jar");
+        writePluginJar(pluginJar, "plugin-ok", "1.0.0", "com.example.TestRuntimePlugin");
+
+        PluginRuntime.initialize();
+
+        var contributions = PluginRuntime.getRegistry().getStatusBarActionContributions();
+        assertEquals(contributions.size(), 1);
+        assertEquals(contributions.get(0).id(), "test-runtime-status-action");
+        assertEquals(contributions.get(0).targetId(), "runtime-tool");
+        assertNotNull(contributions.get(0).iconClassLoader());
+    }
+
+    @Test
     public void shouldExposeUpdateMetadataContributionsFromLoadedPlugin() throws Exception {
         Path pluginJar = PluginRuntime.getManagedPluginDir().resolve("plugin-ok-1.0.0.jar");
         writePluginJar(pluginJar, "plugin-ok", "1.0.0", "com.example.TestRuntimePlugin");

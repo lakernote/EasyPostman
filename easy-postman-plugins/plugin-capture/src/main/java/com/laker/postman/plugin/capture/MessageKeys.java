@@ -7,6 +7,7 @@ public final class MessageKeys {
 
     public static final String TOOLBOX_GROUP_DEV = "toolbox.group.dev";
     public static final String TOOLBOX_CAPTURE = "toolbox.capture";
+    public static final String TOOLBOX_CAPTURE_STATUS_BAR_OPEN = "toolbox.capture.status_bar.open";
     public static final String TOOLBOX_CAPTURE_BIND = "toolbox.capture.bind";
     public static final String TOOLBOX_CAPTURE_BIND_HOST_PLACEHOLDER = "toolbox.capture.bind.host.placeholder";
     public static final String TOOLBOX_CAPTURE_CAPTURE_HOSTS = "toolbox.capture.capture_hosts";
@@ -33,6 +34,10 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_STARTING = "toolbox.capture.starting";
     public static final String TOOLBOX_CAPTURE_STOPPING = "toolbox.capture.stopping";
     public static final String TOOLBOX_CAPTURE_CLEAR = "toolbox.capture.clear";
+    public static final String TOOLBOX_CAPTURE_RETENTION = "toolbox.capture.retention";
+    public static final String TOOLBOX_CAPTURE_RETENTION_TOOLTIP = "toolbox.capture.retention.tooltip";
+    public static final String TOOLBOX_CAPTURE_ROWS_LIMIT = "toolbox.capture.rows.limit";
+    public static final String TOOLBOX_CAPTURE_ROWS_FILTERED_LIMIT = "toolbox.capture.rows.filtered_limit";
     public static final String TOOLBOX_CAPTURE_IMPORT = "toolbox.capture.import";
     public static final String TOOLBOX_CAPTURE_IMPORT_EMPTY = "toolbox.capture.import.empty";
     public static final String TOOLBOX_CAPTURE_IMPORT_SUCCESS = "toolbox.capture.import.success";
@@ -156,6 +161,8 @@ public final class MessageKeys {
     public static final String TOOLBOX_CAPTURE_DETAIL_REQUEST_STREAM = "toolbox.capture.detail.request_stream";
     public static final String TOOLBOX_CAPTURE_DETAIL_RESPONSE_HEADERS = "toolbox.capture.detail.response_headers";
     public static final String TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY = "toolbox.capture.detail.response_body";
+    public static final String TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY_DECODED = "toolbox.capture.detail.response_body_decoded";
+    public static final String TOOLBOX_CAPTURE_DETAIL_RESPONSE_BODY_DECODE_FAILED = "toolbox.capture.detail.response_body_decode_failed";
     public static final String TOOLBOX_CAPTURE_DETAIL_RESPONSE_STREAM = "toolbox.capture.detail.response_stream";
     public static final String TOOLBOX_CAPTURE_DETAIL_EMPTY = "toolbox.capture.detail.empty";
     public static final String TOOLBOX_CAPTURE_DETAIL_NO_STREAM = "toolbox.capture.detail.no_stream";

@@ -62,6 +62,13 @@ public interface PluginContext {
     }
 
     /**
+     * 注册状态栏快捷入口扩展。
+     */
+    default void registerStatusBarActionContribution(StatusBarActionContribution contribution) {
+        // Runtime implementations can expose this through host status bar.
+    }
+
+    /**
      * 注册插件更新元数据扩展。
      */
     default void registerUpdateMetadataContribution(PluginUpdateMetadataContribution contribution) {

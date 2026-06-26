@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 import javax.swing.JLabel;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
+import javax.swing.JSplitPane;
 import javax.swing.SwingConstants;
 import java.awt.Color;
 import java.awt.Component;
@@ -109,7 +110,7 @@ public class CapturePanelTest {
 
     @Test
     public void shouldLimitLargeRequestAndResponseDetailDisplayText() {
-        assertEquals(CapturePanel.REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT, 5_000);
+        assertEquals(CapturePanel.REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT, 20_000);
         String fullText = "x".repeat(CapturePanel.REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT + 128);
 
         String displayText = CapturePanel.displayRequestResponseDetailText(fullText);
@@ -154,6 +155,14 @@ public class CapturePanelTest {
 
         assertTrue(collectTextAreas(tabs.getComponentAt(0)).stream().noneMatch(RSyntaxTextArea.class::isInstance));
         assertTrue(collectTextAreas(tabs.getComponentAt(1)).stream().noneMatch(RSyntaxTextArea.class::isInstance));
+    }
+
+    @Test
+    public void shouldUseWiderDragAreaForDetailSplitWithoutChangingDividerStyle() {
+        CapturePanel panel = new CapturePanel(null, PluginStorage.noop());
+        JSplitPane splitPane = findDetailSplit(panel);
+
+        assertEquals(splitPane.getDividerSize(), CapturePanel.DETAIL_SPLIT_DIVIDER_SIZE);
     }
 
     @Test
@@ -245,6 +254,21 @@ public class CapturePanelTest {
                 collectTextAreas(child, areas);
             }
         }
+    }
+
+    private static JSplitPane findDetailSplit(Component component) {
+        if (component instanceof JSplitPane splitPane && splitPane.getOrientation() == JSplitPane.VERTICAL_SPLIT) {
+            return splitPane;
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JSplitPane splitPane = findDetailSplit(child);
+                if (splitPane != null) {
+                    return splitPane;
+                }
+            }
+        }
+        return null;
     }
 
     @Test

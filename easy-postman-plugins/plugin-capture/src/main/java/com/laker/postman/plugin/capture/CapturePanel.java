@@ -88,7 +88,8 @@ public class CapturePanel extends JPanel {
     private static final int STATUS_COLUMN_INDEX = 7;
     private static final int DURATION_COLUMN_INDEX = 8;
     private static final int SIZE_COLUMN_INDEX = 9;
-    static final int REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT = 5_000;
+    static final int REQUEST_RESPONSE_DETAIL_DISPLAY_LIMIT = 20_000;
+    static final int DETAIL_SPLIT_DIVIDER_SIZE = 9;
     private static final Integer[] RETENTION_LIMIT_OPTIONS = {100, 300, 1000};
 
     private final CaptureProxyService proxyService = CaptureRuntime.proxyService();
@@ -358,6 +359,7 @@ public class CapturePanel extends JPanel {
         detailPanel.add(detailTabs, BorderLayout.CENTER);
 
         detailSplit = ToolWindowChrome.createVerticalInnerSplitPane(tablePanel, detailPanel, 320);
+        detailSplit.setDividerSize(DETAIL_SPLIT_DIVIDER_SIZE);
         detailSplit.setResizeWeight(1.0);
         SwingUtilities.invokeLater(this::hideDetailPanel);
         return detailSplit;

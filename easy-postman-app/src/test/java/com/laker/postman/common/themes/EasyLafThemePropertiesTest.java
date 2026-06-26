@@ -1,5 +1,7 @@
 package com.laker.postman.common.themes;
 
+import com.formdev.flatlaf.FlatClientProperties;
+import com.formdev.flatlaf.FlatLaf;
 import com.laker.postman.common.constants.ThemeColors;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -8,8 +10,13 @@ import org.testng.annotations.Test;
 import javax.swing.*;
 import java.awt.*;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -89,6 +96,15 @@ public class EasyLafThemePropertiesTest {
     public void shouldDefineModernButtonStyleClassesForBuiltInThemes() throws Exception {
         assertDefinesButtonStyleClasses("com/laker/postman/common/themes/EasyLightLaf.properties");
         assertDefinesButtonStyleClasses("com/laker/postman/common/themes/EasyDarkLaf.properties");
+    }
+
+    @Test
+    public void shouldApplyModernToggleStyleClassesWithoutFlatLafStylingErrors() {
+        assertTrue(EasyLightLaf.setup());
+        assertAppliesToggleStyleClassWithoutSevereLog("EasyLightLaf");
+
+        assertTrue(EasyDarkLaf.setup());
+        assertAppliesToggleStyleClassWithoutSevereLog("EasyDarkLaf");
     }
 
     @Test
@@ -248,6 +264,38 @@ public class EasyLafThemePropertiesTest {
             assertTrue(style.contains("margin: 4,12,4,12"),
                     key + " must keep shared action buttons compact enough for request toolbars");
         }
+    }
+
+    private void assertAppliesToggleStyleClassWithoutSevereLog(String themeName) {
+        Logger logger = Logger.getLogger(FlatLaf.class.getName());
+        List<LogRecord> severeRecords = new ArrayList<>();
+        Handler handler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                if (record.getLevel().intValue() >= Level.SEVERE.intValue()) {
+                    severeRecords.add(record);
+                }
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+
+        logger.addHandler(handler);
+        try {
+            JToggleButton button = new JToggleButton("Mode");
+            button.putClientProperty(FlatClientProperties.STYLE_CLASS, "easyPostmanToggle");
+            button.updateUI();
+        } finally {
+            logger.removeHandler(handler);
+        }
+
+        assertTrue(severeRecords.isEmpty(), themeName + " should apply easyPostmanToggle without FlatLaf styling errors");
     }
 
     private void assertDefinesDefaultComponentFocusChrome(String resourcePath) throws Exception {

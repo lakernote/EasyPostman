@@ -1404,15 +1404,15 @@ public class CapturePanel extends JPanel {
     static TableColumnSpec[] captureTableColumnSpecs() {
         return new TableColumnSpec[]{
                 new TableColumnSpec(0, 0, 0, 0, false),
-                new TableColumnSpec(1, 40, 50, 70, true),
-                new TableColumnSpec(SOURCE_COLUMN_INDEX, 112, 150, 220, true),
-                new TableColumnSpec(PID_COLUMN_INDEX, 42, 54, 76, true),
-                new TableColumnSpec(TYPE_COLUMN_INDEX, 52, 66, 86, true),
-                new TableColumnSpec(METHOD_COLUMN_INDEX, 56, 66, 88, true),
-                new TableColumnSpec(URL_COLUMN_INDEX, 260, 400, 0, true),
-                new TableColumnSpec(STATUS_COLUMN_INDEX, 60, 72, 94, true),
-                new TableColumnSpec(DURATION_COLUMN_INDEX, 72, 88, 112, true),
-                new TableColumnSpec(SIZE_COLUMN_INDEX, 76, 92, 122, true)
+                new TableColumnSpec(1, 56, 64, 78, true),
+                new TableColumnSpec(SOURCE_COLUMN_INDEX, 78, 110, 150, true),
+                new TableColumnSpec(PID_COLUMN_INDEX, 42, 54, 70, true),
+                new TableColumnSpec(TYPE_COLUMN_INDEX, 48, 62, 78, true),
+                new TableColumnSpec(METHOD_COLUMN_INDEX, 50, 64, 82, true),
+                new TableColumnSpec(URL_COLUMN_INDEX, 200, 300, 0, true),
+                new TableColumnSpec(STATUS_COLUMN_INDEX, 44, 58, 72, true),
+                new TableColumnSpec(DURATION_COLUMN_INDEX, 52, 68, 82, true),
+                new TableColumnSpec(SIZE_COLUMN_INDEX, 52, 68, 82, true)
         };
     }
 

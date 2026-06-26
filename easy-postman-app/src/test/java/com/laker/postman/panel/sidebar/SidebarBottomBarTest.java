@@ -27,10 +27,12 @@ public class SidebarBottomBarTest extends AbstractSwingUiTest {
         SidebarBottomBar bottomBar = noopBottomBar();
 
         List<JLabel> labels = collectIconLabels(bottomBar.leftPanel(), bottomBar.rightPanel());
-        Dimension actionSize = ToolWindowStripeMetrics.actionSize();
+        Dimension actionSize = SidebarBottomBar.bottomBarActionSize();
 
         assertEquals(SidebarBottomBar.STRIPE_THICKNESS, ToolWindowStripeMetrics.STRIPE_THICKNESS);
         assertEquals(SidebarBottomBar.BOTTOM_BAR_ACTION_SIZE, ToolWindowStripeMetrics.ACTION_SIZE);
+        assertEquals(actionSize.width, 28);
+        assertEquals(actionSize.height, ToolWindowStripeMetrics.STRIPE_THICKNESS);
         assertEquals(labels.size(), 5);
         for (JLabel label : labels) {
             assertEquals(label.getPreferredSize(), actionSize);
@@ -44,6 +46,23 @@ public class SidebarBottomBarTest extends AbstractSwingUiTest {
             assertEquals(insets.bottom, 0);
             assertEquals(insets.right, 0);
         }
+    }
+
+    @Test
+    public void bottomBarPanelsShouldKeepActionsAwayFromWindowEdges() {
+        SidebarBottomBar bottomBar = noopBottomBar();
+
+        Insets leftInsets = bottomBar.leftPanel().getInsets();
+        Insets rightInsets = bottomBar.rightPanel().getInsets();
+
+        assertEquals(leftInsets.top, 0);
+        assertEquals(leftInsets.left, 8);
+        assertEquals(leftInsets.bottom, 0);
+        assertEquals(leftInsets.right, 0);
+        assertEquals(rightInsets.top, 0);
+        assertEquals(rightInsets.left, 0);
+        assertEquals(rightInsets.bottom, 0);
+        assertEquals(rightInsets.right, 8);
     }
 
     @Test

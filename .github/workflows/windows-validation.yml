@@ -45,9 +45,9 @@ jobs:
         shell: powershell
         run: |
           mvn -B -q -pl easy-postman-plugins/plugin-capture -am `
-            -Dtest=WindowsCertificateInstallServiceTest,SystemProxyServiceTest `
-            -Dsurefire.failIfNoSpecifiedTests=false `
-            -Djava.awt.headless=true test
+            "-Dtest=WindowsCertificateInstallServiceTest,SystemProxyServiceTest" `
+            "-Dsurefire.failIfNoSpecifiedTests=false" `
+            "-Djava.awt.headless=true" test
 
       - name: Create Windows runtime with MSCAPI
         shell: powershell

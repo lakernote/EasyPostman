@@ -120,22 +120,45 @@ jobs:
 
       - name: Verify CurrentUser Root certificate import
         shell: powershell
+        timeout-minutes: 3
         run: |
-          $cert = New-SelfSignedCertificate `
-            -Subject "CN=EasyPostman CI Root" `
-            -CertStoreLocation "Cert:\CurrentUser\My" `
-            -KeyExportPolicy Exportable `
-            -NotAfter (Get-Date).AddDays(1)
+          $keyStorePath = Join-Path $env:RUNNER_TEMP "easy-postman-ci-root.p12"
+          $certPath = Join-Path $env:RUNNER_TEMP "easy-postman-ci-root.cer"
+          $storePassword = "changeit"
+          $alias = "easy-postman-ci-root"
+
+          Write-Host "Generating temporary test certificate with keytool..."
+          keytool -genkeypair `
+            -alias $alias `
+            -keyalg RSA `
+            -keysize 2048 `
+            -dname "CN=EasyPostman CI Root" `
+            -validity 1 `
+            -storetype PKCS12 `
+            -keystore $keyStorePath `
+            -storepass $storePassword `
+            -keypass $storePassword `
+            -noprompt
+
+          keytool -exportcert `
+            -alias $alias `
+            -keystore $keyStorePath `
+            -storepass $storePassword `
+            -file $certPath
 
           try {
-            $certPath = Join-Path $env:RUNNER_TEMP "easy-postman-ci-root.cer"
-            Export-Certificate -Cert $cert -FilePath $certPath | Out-Null
+            $thumbprint = (Get-PfxCertificate -FilePath $certPath).Thumbprint
+            Write-Host "Importing temporary certificate into CurrentUser Root: $thumbprint"
             Import-Certificate -FilePath $certPath -CertStoreLocation "Cert:\CurrentUser\Root" | Out-Null
 
-            .\target\runtime\bin\java.exe -cp target\windows-smoke VerifyWindowsRoot $cert.Thumbprint
+            Write-Host "Verifying Windows-ROOT visibility from packaged runtime..."
+            .\target\runtime\bin\java.exe -cp target\windows-smoke VerifyWindowsRoot $thumbprint
           } finally {
-            Remove-Item "Cert:\CurrentUser\Root\$($cert.Thumbprint)" -Force -ErrorAction SilentlyContinue
-            Remove-Item "Cert:\CurrentUser\My\$($cert.Thumbprint)" -Force -ErrorAction SilentlyContinue
+            if ($thumbprint) {
+              Remove-Item "Cert:\CurrentUser\Root\$thumbprint" -Force -ErrorAction SilentlyContinue
+            }
+            Remove-Item $keyStorePath -Force -ErrorAction SilentlyContinue
+            Remove-Item $certPath -Force -ErrorAction SilentlyContinue
           }
 
       - name: Verify WinINet refresh API

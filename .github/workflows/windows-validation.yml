@@ -148,14 +148,14 @@ jobs:
 
           try {
             $thumbprint = (Get-PfxCertificate -FilePath $certPath).Thumbprint
-            Write-Host "Importing temporary certificate into CurrentUser Root: $thumbprint"
-            Import-Certificate -FilePath $certPath -CertStoreLocation "Cert:\CurrentUser\Root" | Out-Null
+            Write-Host "Importing temporary certificate into CurrentUser Root with certutil: $thumbprint"
+            certutil -user -f -addstore Root $certPath
 
             Write-Host "Verifying Windows-ROOT visibility from packaged runtime..."
             .\target\runtime\bin\java.exe -cp target\windows-smoke VerifyWindowsRoot $thumbprint
           } finally {
             if ($thumbprint) {
-              Remove-Item "Cert:\CurrentUser\Root\$thumbprint" -Force -ErrorAction SilentlyContinue
+              certutil -user -delstore Root $thumbprint
             }
             Remove-Item $keyStorePath -Force -ErrorAction SilentlyContinue
             Remove-Item $certPath -Force -ErrorAction SilentlyContinue

@@ -46,7 +46,13 @@ final class WindowsCertificateInstallService {
 
     void installToCurrentUserRoot(String certificatePath) throws Exception {
         ensureSupported();
-        Exception powershellFailure = null;
+        Exception certutilFailure = null;
+        try {
+            runCommand(List.of(CERTUTIL, "-user", "-f", "-addstore", "Root", certificatePath));
+            return;
+        } catch (Exception ex) {
+            certutilFailure = ex;
+        }
         try {
             runCommand(List.of(
                     POWERSHELL,
@@ -57,15 +63,9 @@ final class WindowsCertificateInstallService {
                     "-Command",
                     buildImportCertificateScript(certificatePath)
             ));
-            return;
         } catch (Exception ex) {
-            powershellFailure = ex;
-        }
-        try {
-            runCommand(List.of(CERTUTIL, "-user", "-f", "-addstore", "Root", certificatePath));
-        } catch (Exception ex) {
-            if (powershellFailure != null) {
-                ex.addSuppressed(powershellFailure);
+            if (certutilFailure != null) {
+                ex.addSuppressed(certutilFailure);
             }
             throw ex;
         }

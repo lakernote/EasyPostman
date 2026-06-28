@@ -64,7 +64,7 @@ public class WindowsCertificateInstallServiceTest {
     }
 
     @Test
-    public void shouldInstallRootCaIntoCurrentUserRootStoreWithPowerShell() throws Exception {
+    public void shouldInstallRootCaIntoCurrentUserRootStoreWithCertutil() throws Exception {
         String certificatePath = new CaptureCertificateService().rootCertificatePath();
         List<List<String>> commands = new ArrayList<>();
         WindowsCertificateInstallService service = new WindowsCertificateInstallService(command -> {
@@ -74,9 +74,28 @@ public class WindowsCertificateInstallServiceTest {
 
         service.installToCurrentUserRoot(certificatePath);
 
+        assertTrue(commands.stream().anyMatch(command -> command.equals(List.of(
+                "certutil", "-user", "-f", "-addstore", "Root", certificatePath
+        ))), "Install should use non-interactive current-user Root store import first");
+    }
+
+    @Test
+    public void shouldFallbackToPowerShellImportWhenCertutilFails() throws Exception {
+        String certificatePath = new CaptureCertificateService().rootCertificatePath();
+        List<List<String>> commands = new ArrayList<>();
+        WindowsCertificateInstallService service = new WindowsCertificateInstallService(command -> {
+            commands.add(command);
+            if ("certutil".equals(command.get(0))) {
+                return new WindowsCertificateInstallService.CommandResult(1, List.of("certutil failed"));
+            }
+            return new WindowsCertificateInstallService.CommandResult(0, List.of());
+        });
+
+        service.installToCurrentUserRoot(certificatePath);
+
         assertTrue(commands.stream().anyMatch(command -> command.stream()
                         .anyMatch(part -> part.contains("Import-Certificate") && part.contains("Cert:\\CurrentUser\\Root"))),
-                "Install should use the current-user Windows root certificate store");
+                "Install should fall back to PowerShell CurrentUser Root import when certutil fails");
     }
 
     private static void deleteRecursively(Path path) throws Exception {

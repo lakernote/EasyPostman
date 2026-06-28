@@ -143,7 +143,7 @@ jobs:
           if (Test-Path $runtimeDir) { Remove-Item -Recurse -Force $runtimeDir }
           
           jlink `
-            --add-modules $env:JLINK_MODULES `
+            --add-modules "$env:JLINK_MODULES,jdk.crypto.mscapi" `
             --strip-debug `
             --no-header-files `
             --no-man-pages `

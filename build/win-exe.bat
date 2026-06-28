@@ -95,7 +95,7 @@ echo         JAR: %APP_TARGET_DIR%\%JAR_NAME_WITH_VERSION% [OK]
 echo [6/9] 使用 jlink 创建精简 JRE...
 if exist target\runtime rd /s /q target\runtime
 jlink ^
-    --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,jdk.httpserver,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,java.management,java.management.rmi,jdk.crypto.cryptoki ^
+    --add-modules java.base,java.desktop,java.logging,jdk.unsupported,java.naming,java.net.http,jdk.httpserver,java.prefs,java.sql,java.security.sasl,java.security.jgss,jdk.crypto.ec,jdk.crypto.mscapi,java.management,java.management.rmi,jdk.crypto.cryptoki ^
     --strip-debug ^
     --no-header-files ^
     --no-man-pages ^

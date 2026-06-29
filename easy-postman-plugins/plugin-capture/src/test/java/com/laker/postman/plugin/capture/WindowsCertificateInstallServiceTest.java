@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class WindowsCertificateInstallServiceTest {
@@ -96,6 +97,44 @@ public class WindowsCertificateInstallServiceTest {
         assertTrue(commands.stream().anyMatch(command -> command.stream()
                         .anyMatch(part -> part.contains("Import-Certificate") && part.contains("Cert:\\CurrentUser\\Root"))),
                 "Install should fall back to PowerShell CurrentUser Root import when certutil fails");
+    }
+
+    @Test
+    public void shouldRemoveRootCaFromCurrentUserRootStoreWithCertutil() throws Exception {
+        String certificatePath = new CaptureCertificateService().rootCertificatePath();
+        List<List<String>> commands = new ArrayList<>();
+        WindowsCertificateInstallService service = new WindowsCertificateInstallService(command -> {
+            commands.add(command);
+            return new WindowsCertificateInstallService.CommandResult(0, List.of());
+        });
+
+        int removed = service.removeFromCurrentUserRoot(certificatePath);
+
+        assertEquals(removed, 1);
+        assertTrue(commands.stream().anyMatch(command -> command.size() == 5
+                        && command.subList(0, 4).equals(List.of("certutil", "-user", "-delstore", "Root"))
+                        && command.get(4).matches("[0-9A-F]{40}")),
+                "Uninstall should use non-interactive current-user Root store removal first");
+    }
+
+    @Test
+    public void shouldFallbackToPowerShellRemoveWhenCertutilFails() throws Exception {
+        String certificatePath = new CaptureCertificateService().rootCertificatePath();
+        List<List<String>> commands = new ArrayList<>();
+        WindowsCertificateInstallService service = new WindowsCertificateInstallService(command -> {
+            commands.add(command);
+            if ("certutil".equals(command.get(0))) {
+                return new WindowsCertificateInstallService.CommandResult(1, List.of("certutil failed"));
+            }
+            return new WindowsCertificateInstallService.CommandResult(0, List.of("removed"));
+        });
+
+        int removed = service.removeFromCurrentUserRoot(certificatePath);
+
+        assertEquals(removed, 1);
+        assertTrue(commands.stream().anyMatch(command -> command.stream()
+                        .anyMatch(part -> part.contains("Remove-Item") && part.contains("Cert:\\CurrentUser\\Root"))),
+                "Uninstall should fall back to PowerShell CurrentUser Root removal when certutil fails");
     }
 
     private static void deleteRecursively(Path path) throws Exception {

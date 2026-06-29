@@ -99,13 +99,28 @@ public class CapturePanelTest {
     }
 
     @Test
-    public void shouldOmitSourceAndHostFromDetailSummaryChips() {
+    public void shouldHardWrapLongPathTooltipLines() {
+        String tooltip = CapturePanel.htmlTooltip(
+                "Root CA: /Users/lonli2/EasyPostman/capture-ca/easy-postman-capture-root-ca.crt",
+                320);
+
+        assertTrue(tooltip.startsWith("<html>"));
+        assertTrue(tooltip.contains("<br>"));
+        assertTrue(tooltip.contains("/Users/lonli2/"));
+        assertTrue(tooltip.contains("easy-postman-"));
+    }
+
+    @Test
+    public void shouldOnlyShowCoreDetailSummaryChips() {
         CapturePanel panel = new CapturePanel(null, PluginStorage.noop());
 
         List<String> labels = collectLabelTexts(panel);
 
         assertFalse(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_SOURCE) + ": -"));
-        assertFalse(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_COLUMN_HOST) + ": -"));
+        assertTrue(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_METHOD) + ": -"));
+        assertTrue(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_PROTOCOL) + ": -"));
+        assertTrue(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_STATUS) + ": -"));
+        assertTrue(labels.contains(CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_DETAIL_DURATION) + ": -"));
     }
 
     @Test

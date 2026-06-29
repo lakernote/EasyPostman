@@ -1,6 +1,11 @@
 package com.laker.postman.plugin.capture;
 
+import com.laker.postman.plugin.api.PluginStorage;
+import com.laker.postman.util.JsonUtil;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -9,11 +14,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Optional;
 
+@Slf4j
 final class SystemProxyService {
-    private static final Logger log = LoggerFactory.getLogger(SystemProxyService.class);
+    static final String RECOVERY_STORAGE_FILE = "system-proxy-recovery.json";
     private static final String NETWORKSETUP = "/usr/sbin/networksetup";
     private static final String REG = "reg";
     private static final String CMD = "cmd";
@@ -147,6 +152,7 @@ final class SystemProxyService {
     private final CommandRunner commandRunner;
     private final String osName;
 
+    private volatile PluginStorage storage = PluginStorage.noop();
     private volatile Map<String, ProxyServiceSnapshot> snapshots = Map.of();
     private volatile WindowsProxySnapshot windowsSnapshot;
     private volatile boolean active;
@@ -175,6 +181,51 @@ final class SystemProxyService {
         return active;
     }
 
+    void configureStorage(PluginStorage storage) {
+        this.storage = storage == null ? PluginStorage.noop() : storage;
+    }
+
+    synchronized SystemProxyRecoveryResult restorePersistedSnapshotIfOwned() throws Exception {
+        if (!isSupported()) {
+            return new SystemProxyRecoveryResult(false, false, false, "System proxy recovery is unsupported on this OS");
+        }
+        if (active) {
+            return new SystemProxyRecoveryResult(false, false, false, "System proxy sync is already active");
+        }
+
+        Optional<SystemProxyRecoverySnapshot> maybeSnapshot = loadRecoverySnapshot();
+        if (maybeSnapshot.isEmpty()) {
+            return new SystemProxyRecoveryResult(false, false, false, "No persisted system proxy snapshot");
+        }
+
+        SystemProxyRecoverySnapshot snapshot = maybeSnapshot.get();
+        if (!isSamePlatform(snapshot.osName())) {
+            deleteRecoverySnapshotQuietly();
+            return new SystemProxyRecoveryResult(true, false, true, "Persisted proxy snapshot belongs to another OS");
+        }
+        if (!snapshot.hasProxySnapshot()) {
+            deleteRecoverySnapshotQuietly();
+            return new SystemProxyRecoveryResult(true, false, true, "Persisted proxy snapshot is incomplete");
+        }
+        if (!isCurrentProxyOwnedBy(snapshot)) {
+            deleteRecoverySnapshotQuietly();
+            return new SystemProxyRecoveryResult(true, false, true,
+                    "Current system proxy no longer points to the persisted EasyPostman proxy");
+        }
+
+        activeHost = normalizeProxyHost(snapshot.activeHost());
+        activePort = snapshot.activePort();
+        active = true;
+        if (isWindows()) {
+            windowsSnapshot = snapshot.windowsSnapshot();
+            restoreWindowsSnapshot();
+        } else {
+            snapshots = Map.copyOf(snapshot.macSnapshots());
+            restoreSnapshots();
+        }
+        return new SystemProxyRecoveryResult(true, true, false, "Restored persisted system proxy snapshot");
+    }
+
     synchronized void enable(String host, int port) throws Exception {
         ensureSupported();
         if (isWindows()) {
@@ -195,11 +246,13 @@ final class SystemProxyService {
         }
 
         Map<String, ProxyServiceSnapshot> captured = new LinkedHashMap<>();
+        for (String service : services) {
+            captured.put(service, readSnapshot(service));
+        }
+        saveRecoverySnapshotQuietly(proxyHost, port, captured, null);
         try {
-            for (String service : services) {
-                ProxyServiceSnapshot snapshot = readSnapshot(service);
-                applyProxy(service, proxyHost, port, snapshot.bypassDomains());
-                captured.put(service, snapshot);
+            for (Map.Entry<String, ProxyServiceSnapshot> entry : captured.entrySet()) {
+                applyProxy(entry.getKey(), proxyHost, port, entry.getValue().bypassDomains());
             }
             snapshots = Map.copyOf(captured);
             activeHost = proxyHost;
@@ -245,6 +298,7 @@ final class SystemProxyService {
             for (Map.Entry<String, ProxyServiceSnapshot> entry : currentSnapshots.entrySet()) {
                 restoreSnapshot(entry.getKey(), entry.getValue());
             }
+            deleteRecoverySnapshotQuietly();
         } finally {
             active = false;
             activeHost = "";
@@ -265,6 +319,262 @@ final class SystemProxyService {
         }
     }
 
+    private void saveRecoverySnapshotQuietly(
+            String host,
+            int port,
+            Map<String, ProxyServiceSnapshot> macSnapshots,
+            WindowsProxySnapshot windowsSnapshot
+    ) {
+        try {
+            storage.writeString(RECOVERY_STORAGE_FILE, recoverySnapshotJson(
+                    host,
+                    port,
+                    macSnapshots == null ? Map.of() : macSnapshots,
+                    windowsSnapshot
+            ));
+        } catch (IOException ex) {
+            log.warn("Failed to persist system proxy recovery snapshot", ex);
+        }
+    }
+
+    private Optional<SystemProxyRecoverySnapshot> loadRecoverySnapshot() {
+        try {
+            Optional<String> content = storage.readString(RECOVERY_STORAGE_FILE);
+            if (content.isEmpty() || content.get().isBlank()) {
+                return Optional.empty();
+            }
+            return Optional.of(recoverySnapshotFromJson(content.get()));
+        } catch (Exception ex) {
+            log.warn("Failed to load system proxy recovery snapshot", ex);
+            deleteRecoverySnapshotQuietly();
+            return Optional.empty();
+        }
+    }
+
+    private void deleteRecoverySnapshotQuietly() {
+        try {
+            storage.delete(RECOVERY_STORAGE_FILE);
+        } catch (IOException ex) {
+            log.warn("Failed to delete system proxy recovery snapshot", ex);
+        }
+    }
+
+    private boolean isSamePlatform(String snapshotOsName) {
+        String normalized = snapshotOsName == null ? "" : snapshotOsName.toLowerCase(Locale.ROOT);
+        return isWindows() ? normalized.contains("win") : normalized.contains("mac");
+    }
+
+    private boolean isCurrentProxyOwnedBy(SystemProxyRecoverySnapshot snapshot) throws Exception {
+        String host = normalizeProxyHost(snapshot.activeHost());
+        int port = snapshot.activePort();
+        if (port <= 0) {
+            return false;
+        }
+        if (isWindows()) {
+            WindowsProxySnapshot current = readWindowsSnapshot();
+            return isRegistryDwordEnabled(current.proxyEnable())
+                    && windowsProxyServerMatches(registryData(current.proxyServer()), host, port);
+        }
+
+        for (String service : snapshot.macSnapshots().keySet()) {
+            try {
+                if (proxyEndpointMatches(readProxyEndpoint(service, false), host, port)
+                        || proxyEndpointMatches(readProxyEndpoint(service, true), host, port)) {
+                    return true;
+                }
+            } catch (Exception ex) {
+                log.debug("Failed to inspect macOS network service proxy ownership: {}", service, ex);
+            }
+        }
+        return false;
+    }
+
+    private boolean proxyEndpointMatches(ProxyEndpoint endpoint, String host, int port) {
+        return endpoint != null
+                && endpoint.enabled()
+                && normalizeProxyHost(endpoint.server()).equals(host)
+                && endpoint.port() == port;
+    }
+
+    private boolean windowsProxyServerMatches(String proxyServer, String host, int port) {
+        if (proxyServer == null || proxyServer.isBlank()) {
+            return false;
+        }
+        String expected = (host + ":" + port).toLowerCase(Locale.ROOT);
+        for (String rawToken : proxyServer.split(";")) {
+            String token = rawToken.trim();
+            int separator = token.indexOf('=');
+            String endpoint = separator >= 0 ? token.substring(separator + 1).trim() : token;
+            if (expected.equals(endpoint.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private String recoverySnapshotJson(
+            String host,
+            int port,
+            Map<String, ProxyServiceSnapshot> macSnapshots,
+            WindowsProxySnapshot windowsSnapshot
+    ) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("schemaVersion", 1);
+        root.put("osName", osName);
+        root.put("activeHost", host);
+        root.put("activePort", port);
+        root.put("macSnapshots", proxyServiceSnapshotsToMap(macSnapshots));
+        root.put("windowsSnapshot", windowsSnapshot == null ? Map.of() : windowsProxySnapshotToMap(windowsSnapshot));
+        return JsonUtil.toJsonPrettyStr(root);
+    }
+
+    private SystemProxyRecoverySnapshot recoverySnapshotFromJson(String json) {
+        Map<String, Object> root = objectMap(JsonUtil.convertValue(JsonUtil.readTree(json), Map.class));
+        return new SystemProxyRecoverySnapshot(
+                stringValue(root, "osName", ""),
+                stringValue(root, "activeHost", ""),
+                intValue(root, "activePort", 0),
+                proxyServiceSnapshotsFromMap(objectMap(root.get("macSnapshots"))),
+                windowsProxySnapshotFromMap(objectMap(root.get("windowsSnapshot")))
+        );
+    }
+
+    private Map<String, Object> proxyServiceSnapshotsToMap(Map<String, ProxyServiceSnapshot> snapshots) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        for (Map.Entry<String, ProxyServiceSnapshot> entry : snapshots.entrySet()) {
+            root.put(entry.getKey(), proxyServiceSnapshotToMap(entry.getValue()));
+        }
+        return root;
+    }
+
+    private Map<String, ProxyServiceSnapshot> proxyServiceSnapshotsFromMap(Map<String, Object> root) {
+        Map<String, ProxyServiceSnapshot> result = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : root.entrySet()) {
+            result.put(entry.getKey(), proxyServiceSnapshotFromMap(objectMap(entry.getValue())));
+        }
+        return result;
+    }
+
+    private Map<String, Object> proxyServiceSnapshotToMap(ProxyServiceSnapshot snapshot) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("webProxy", proxyEndpointToMap(snapshot.webProxy()));
+        root.put("secureWebProxy", proxyEndpointToMap(snapshot.secureWebProxy()));
+        root.put("bypassDomains", snapshot.bypassDomains());
+        root.put("autoDiscoveryEnabled", snapshot.autoDiscoveryEnabled());
+        root.put("autoProxyEnabled", snapshot.autoProxyEnabled());
+        root.put("autoProxyUrl", snapshot.autoProxyUrl());
+        return root;
+    }
+
+    private ProxyServiceSnapshot proxyServiceSnapshotFromMap(Map<String, Object> root) {
+        return new ProxyServiceSnapshot(
+                proxyEndpointFromMap(objectMap(root.get("webProxy"))),
+                proxyEndpointFromMap(objectMap(root.get("secureWebProxy"))),
+                stringList(root.get("bypassDomains")),
+                booleanValue(root, "autoDiscoveryEnabled", false),
+                booleanValue(root, "autoProxyEnabled", false),
+                stringValue(root, "autoProxyUrl", "")
+        );
+    }
+
+    private Map<String, Object> proxyEndpointToMap(ProxyEndpoint endpoint) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("enabled", endpoint.enabled());
+        root.put("server", endpoint.server());
+        root.put("port", endpoint.port());
+        return root;
+    }
+
+    private ProxyEndpoint proxyEndpointFromMap(Map<String, Object> root) {
+        return new ProxyEndpoint(
+                booleanValue(root, "enabled", false),
+                stringValue(root, "server", ""),
+                intValue(root, "port", 0)
+        );
+    }
+
+    private Map<String, Object> windowsProxySnapshotToMap(WindowsProxySnapshot snapshot) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("proxyEnable", windowsRegistryValueToMap(snapshot.proxyEnable()));
+        root.put("proxyServer", windowsRegistryValueToMap(snapshot.proxyServer()));
+        root.put("proxyOverride", windowsRegistryValueToMap(snapshot.proxyOverride()));
+        root.put("autoConfigUrl", windowsRegistryValueToMap(snapshot.autoConfigUrl()));
+        root.put("autoDetect", windowsRegistryValueToMap(snapshot.autoDetect()));
+        return root;
+    }
+
+    private WindowsProxySnapshot windowsProxySnapshotFromMap(Map<String, Object> root) {
+        if (root.isEmpty()) {
+            return null;
+        }
+        return new WindowsProxySnapshot(
+                windowsRegistryValueFromMap(objectMap(root.get("proxyEnable"))),
+                windowsRegistryValueFromMap(objectMap(root.get("proxyServer"))),
+                windowsRegistryValueFromMap(objectMap(root.get("proxyOverride"))),
+                windowsRegistryValueFromMap(objectMap(root.get("autoConfigUrl"))),
+                windowsRegistryValueFromMap(objectMap(root.get("autoDetect")))
+        );
+    }
+
+    private Map<String, Object> windowsRegistryValueToMap(WindowsRegistryValue value) {
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("present", value != null && value.present());
+        root.put("type", value == null ? "" : value.type());
+        root.put("data", value == null ? "" : value.data());
+        return root;
+    }
+
+    private WindowsRegistryValue windowsRegistryValueFromMap(Map<String, Object> root) {
+        return new WindowsRegistryValue(
+                booleanValue(root, "present", false),
+                stringValue(root, "type", ""),
+                stringValue(root, "data", "")
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> objectMap(Object value) {
+        return value instanceof Map<?, ?> map ? (Map<String, Object>) map : Map.of();
+    }
+
+    private List<String> stringList(Object value) {
+        if (value instanceof List<?> list) {
+            return list.stream().map(String::valueOf).toList();
+        }
+        return List.of();
+    }
+
+    private String stringValue(Map<String, Object> root, String key, String defaultValue) {
+        Object value = root.get(key);
+        return value == null ? defaultValue : value.toString();
+    }
+
+    private int intValue(Map<String, Object> root, String key, int defaultValue) {
+        Object value = root.get(key);
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(value.toString());
+        } catch (NumberFormatException ex) {
+            return defaultValue;
+        }
+    }
+
+    private boolean booleanValue(Map<String, Object> root, String key, boolean defaultValue) {
+        Object value = root.get(key);
+        if (value instanceof Boolean bool) {
+            return bool;
+        }
+        if (value == null) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(value.toString());
+    }
+
     private boolean isWindows() {
         return osName.toLowerCase(Locale.ROOT).contains("win");
     }
@@ -279,6 +589,7 @@ final class SystemProxyService {
         }
 
         WindowsProxySnapshot snapshot = readWindowsSnapshot();
+        saveRecoverySnapshotQuietly(proxyHost, port, Map.of(), snapshot);
         try {
             applyWindowsProxy(proxyHost, port, snapshot.proxyOverrideData());
             windowsSnapshot = snapshot;
@@ -486,6 +797,7 @@ final class SystemProxyService {
                 log.debug("Failed to restore Windows proxy through WinINet; falling back to registry", ex);
                 restoreWindowsSnapshotWithRegistry(snapshot);
             }
+            deleteRecoverySnapshotQuietly();
         } finally {
             active = false;
             activeHost = "";
@@ -698,6 +1010,21 @@ final class SystemProxyService {
     }
 
     record CommandResult(int exitCode, List<String> lines) {
+    }
+
+    record SystemProxyRecoveryResult(boolean attempted, boolean restored, boolean stale, String detail) {
+    }
+
+    private record SystemProxyRecoverySnapshot(
+            String osName,
+            String activeHost,
+            int activePort,
+            Map<String, ProxyServiceSnapshot> macSnapshots,
+            WindowsProxySnapshot windowsSnapshot
+    ) {
+        boolean hasProxySnapshot() {
+            return windowsSnapshot != null || !macSnapshots.isEmpty();
+        }
     }
 
     private static final class ProcessCommandRunner implements CommandRunner {

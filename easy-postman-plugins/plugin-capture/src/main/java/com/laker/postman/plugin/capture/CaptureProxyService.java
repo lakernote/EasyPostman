@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.capture;
 
+import com.laker.postman.plugin.api.PluginStorage;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
@@ -23,6 +24,14 @@ final class CaptureProxyService {
 
     CaptureSessionStore sessionStore() {
         return sessionStore;
+    }
+
+    void configureStorage(PluginStorage storage) {
+        systemProxyService.configureStorage(storage);
+    }
+
+    SystemProxyService.SystemProxyRecoveryResult restoreLingeringSystemProxy() throws Exception {
+        return systemProxyService.restorePersistedSnapshotIfOwned();
     }
 
     synchronized void start(String host, int port, boolean syncSystemProxy, String captureHostFilterText) throws Exception {

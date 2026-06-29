@@ -1,6 +1,7 @@
 package com.laker.postman.plugin.capture;
 
 import java.awt.Desktop;
+import java.io.ByteArrayInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,9 +14,12 @@ import java.security.MessageDigest;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HexFormat;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,9 +31,20 @@ final class MacCertificateInstallService {
     private static final String SECURITY = "/usr/bin/security";
     private static final Pattern SHA256_PATTERN = Pattern.compile("^SHA-256 hash:\\s*(\\S+)$");
     private static final Pattern COMMON_NAME_PATTERN = Pattern.compile("(?:^|,)CN=([^,]+)");
+    private final CommandRunner commandRunner;
+    private final String osName;
+
+    MacCertificateInstallService() {
+        this(new ProcessCommandRunner(), System.getProperty("os.name", ""));
+    }
+
+    MacCertificateInstallService(CommandRunner commandRunner, String osName) {
+        this.commandRunner = commandRunner == null ? new ProcessCommandRunner() : commandRunner;
+        this.osName = osName == null ? "" : osName;
+    }
 
     boolean isSupported() {
-        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac");
+        return osName.toLowerCase(Locale.ROOT).contains("mac");
     }
 
     void installToLoginKeychain(String certificatePath) throws Exception {
@@ -52,22 +67,32 @@ final class MacCertificateInstallService {
         return removeMatchingCertificates(certificatePath, resolveLoginKeychain());
     }
 
+    int removeMatchingSystemKeychainCertificatesWithPrompt(String certificatePath) throws Exception {
+        ensureSupported();
+        return removeMatchingCertificates(certificatePath, resolveSystemKeychain(), true);
+    }
+
     CertificateTrustStatus trustStatus(String certificatePath) throws Exception {
         ensureSupported();
         X509Certificate certificate = readCertificate(certificatePath);
         String fingerprint = sha256(certificate);
         String subjectName = extractCommonName(certificate);
 
-        KeychainTrust loginTrust = inspectKeychain(subjectName, fingerprint, certificatePath, resolveLoginKeychain(), "login keychain");
+        KeychainTrust loginTrust = inspectKeychain(certificate, subjectName, fingerprint, certificatePath, resolveLoginKeychain(), "login keychain");
         if (loginTrust.installed() && loginTrust.trusted()) {
             return new CertificateTrustStatus(true, true,
                     "Root CA installed and accepted by macOS trust evaluation (" + loginTrust.location() + ")");
         }
 
-        KeychainTrust systemTrust = inspectKeychain(subjectName, fingerprint, certificatePath, resolveSystemKeychain(), "System keychain");
+        KeychainTrust systemTrust = inspectKeychain(certificate, subjectName, fingerprint, certificatePath, resolveSystemKeychain(), "System keychain");
         if (systemTrust.installed() && systemTrust.trusted()) {
             return new CertificateTrustStatus(true, true,
                     "Root CA installed and accepted by macOS trust evaluation (" + systemTrust.location() + ")");
+        }
+
+        if (loginTrust.trusted() || systemTrust.trusted()) {
+            return new CertificateTrustStatus(true, true,
+                    "Root CA accepted by macOS trust evaluation, but security find-certificate did not return the matching keychain item");
         }
 
         if (loginTrust.installed() || systemTrust.installed()) {
@@ -150,20 +175,104 @@ final class MacCertificateInstallService {
     }
 
     private int removeMatchingCertificates(String certificatePath, Path keychain) throws Exception {
+        return removeMatchingCertificates(certificatePath, keychain, false);
+    }
+
+    private int removeMatchingCertificates(String certificatePath, Path keychain, boolean adminPrompt) throws Exception {
         X509Certificate certificate = readCertificate(certificatePath);
-        List<String> fingerprints = findCertificateFingerprints(extractCommonName(certificate), keychain);
+        Set<String> fingerprints = new LinkedHashSet<>();
+        fingerprints.add(sha256(certificate));
+        fingerprints.addAll(findMatchingCertificateFingerprints(certificate, keychain));
         int removed = 0;
         for (String fingerprint : fingerprints) {
-            runCommand(
-                    SECURITY,
-                    "delete-certificate",
-                    "-Z",
-                    fingerprint,
-                    keychain.toString()
-            );
-            removed++;
+            CommandResult result = runDeleteCertificateCommand(fingerprint, keychain, adminPrompt);
+            if (result.exitCode() == 0) {
+                removed++;
+                continue;
+            }
+            if (isCertificateNotFound(result.lines())) {
+                continue;
+            }
+            throw new IllegalStateException(String.join(System.lineSeparator(), result.lines()));
         }
         return removed;
+    }
+
+    private Set<String> findMatchingCertificateFingerprints(X509Certificate certificate, Path keychain) throws Exception {
+        return findMatchingCertificateFingerprints(certificate, extractCommonName(certificate), sha256(certificate), keychain);
+    }
+
+    private Set<String> findMatchingCertificateFingerprints(
+            X509Certificate certificate,
+            String subjectName,
+            String fingerprint,
+            Path keychain
+    ) throws Exception {
+        Set<String> fingerprints = new LinkedHashSet<>();
+        try {
+            fingerprints.addAll(findCertificateFingerprints(subjectName, keychain));
+        } catch (Exception ignored) {
+            // Fall back to exporting all certificates from the keychain and comparing locally.
+        }
+        for (X509Certificate existing : exportCertificates(keychain)) {
+            if (sha256(existing).equalsIgnoreCase(fingerprint)
+                    || extractCommonName(existing).equals(subjectName)) {
+                fingerprints.add(sha256(existing));
+            }
+        }
+        return fingerprints;
+    }
+
+    private List<X509Certificate> exportCertificates(Path keychain) throws Exception {
+        CommandResult result = runCommandAllowFailure(SECURITY, "find-certificate", "-a", "-p", keychain.toString());
+        if (result.exitCode() != 0 || result.lines().isEmpty()) {
+            return List.of();
+        }
+        String pem = String.join(System.lineSeparator(), result.lines());
+        Collection<? extends java.security.cert.Certificate> certificates =
+                CertificateFactory.getInstance("X.509")
+                        .generateCertificates(new ByteArrayInputStream(pem.getBytes(StandardCharsets.UTF_8)));
+        List<X509Certificate> resultCertificates = new ArrayList<>();
+        for (java.security.cert.Certificate exported : certificates) {
+            if (exported instanceof X509Certificate x509Certificate) {
+                resultCertificates.add(x509Certificate);
+            }
+        }
+        return resultCertificates;
+    }
+
+    private String[] deleteCertificateCommand(String fingerprint, Path keychain) {
+        return new String[]{
+                SECURITY,
+                "delete-certificate",
+                "-Z",
+                fingerprint,
+                "-t",
+                keychain.toString()
+        };
+    }
+
+    private CommandResult runDeleteCertificateCommand(String fingerprint, Path keychain, boolean adminPrompt) throws Exception {
+        String[] command = deleteCertificateCommand(fingerprint, keychain);
+        if (!adminPrompt) {
+            return runCommandAllowFailure(command);
+        }
+        return runCommandAllowFailure(
+                OSASCRIPT,
+                "-e",
+                "do shell script " + appleScriptString(shellJoin(command)) + " with administrator privileges"
+        );
+    }
+
+    private boolean isCertificateNotFound(List<String> lines) {
+        String message = String.join("\n", lines).toLowerCase(Locale.ROOT);
+        return message.contains("could not be found")
+                || message.contains("not found")
+                || message.contains("unable to find")
+                || message.contains("unable to delete certificate matching")
+                || message.contains("no certificate")
+                || message.contains("secitemcopymatching")
+                || message.contains("seckeychainsearchcopynext");
     }
 
     private boolean verifyCertificateTrust(String certificatePath, Path keychain) throws Exception {
@@ -187,23 +296,28 @@ final class MacCertificateInstallService {
         return result.exitCode() == 0;
     }
 
-    private KeychainTrust inspectKeychain(String subjectName, String fingerprint, String certificatePath, Path keychain, String location) throws Exception {
+    private KeychainTrust inspectKeychain(
+            X509Certificate certificate,
+            String subjectName,
+            String fingerprint,
+            String certificatePath,
+            Path keychain,
+            String location
+    ) throws Exception {
         boolean installed = false;
         try {
-            installed = findCertificateFingerprints(subjectName, keychain)
+            installed = findMatchingCertificateFingerprints(certificate, subjectName, fingerprint, keychain)
                     .stream()
                     .anyMatch(existing -> existing.equalsIgnoreCase(fingerprint));
         } catch (Exception ignored) {
-            // If the certificate cannot be found in the keychain, do not infer trust from verify-cert alone.
-            // For a self-signed root CA, verify-cert may still report success even when the CA is not installed.
+            // Continue with trust evaluation; some macOS keychain views expose certificates that find-certificate -c
+            // does not return even though verify-cert accepts the current root.
         }
         boolean trusted = false;
-        if (installed) {
-            try {
-                trusted = verifyCertificateTrust(certificatePath, keychain);
-            } catch (Exception ignored) {
-                // Ignore keychain-specific trust evaluation failures and fall back to the remaining checks.
-            }
+        try {
+            trusted = verifyCertificateTrust(certificatePath, keychain);
+        } catch (Exception ignored) {
+            // Ignore keychain-specific trust evaluation failures and fall back to the remaining checks.
         }
         return new KeychainTrust(location, installed, trusted);
     }
@@ -252,18 +366,7 @@ final class MacCertificateInstallService {
     }
 
     private CommandResult runCommandAllowFailure(String... command) throws Exception {
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        processBuilder.redirectErrorStream(true);
-        Process process = processBuilder.start();
-        List<String> lines = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                lines.add(line);
-            }
-        }
-        return new CommandResult(process.waitFor(), lines);
+        return commandRunner.run(List.of(command));
     }
 
     record CertificateTrustStatus(boolean installed, boolean trusted, String detail) {
@@ -272,6 +375,28 @@ final class MacCertificateInstallService {
     private record KeychainTrust(String location, boolean installed, boolean trusted) {
     }
 
-    private record CommandResult(int exitCode, List<String> lines) {
+    record CommandResult(int exitCode, List<String> lines) {
+    }
+
+    interface CommandRunner {
+        CommandResult run(List<String> command) throws Exception;
+    }
+
+    private static final class ProcessCommandRunner implements CommandRunner {
+        @Override
+        public CommandResult run(List<String> command) throws Exception {
+            ProcessBuilder processBuilder = new ProcessBuilder(command);
+            processBuilder.redirectErrorStream(true);
+            Process process = processBuilder.start();
+            List<String> lines = new ArrayList<>();
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    lines.add(line);
+                }
+            }
+            return new CommandResult(process.waitFor(), lines);
+        }
     }
 }

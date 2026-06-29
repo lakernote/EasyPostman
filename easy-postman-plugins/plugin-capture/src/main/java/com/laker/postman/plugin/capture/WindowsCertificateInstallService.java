@@ -71,6 +71,39 @@ final class WindowsCertificateInstallService {
         }
     }
 
+    int removeFromCurrentUserRoot(String certificatePath) throws Exception {
+        ensureSupported();
+        String thumbprint = sha1Fingerprint(readCertificate(certificatePath));
+        Exception certutilFailure = null;
+        try {
+            runCommand(List.of(CERTUTIL, "-user", "-delstore", "Root", thumbprint));
+            return 1;
+        } catch (Exception ex) {
+            certutilFailure = ex;
+        }
+
+        CommandResult result = runCommandAllowFailure(List.of(
+                POWERSHELL,
+                "-NoProfile",
+                "-NonInteractive",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-Command",
+                buildRemoveCurrentUserCertificateScript(thumbprint)
+        ));
+        if (result.exitCode() == 0) {
+            return 1;
+        }
+        if (result.exitCode() == POWERSHELL_CERT_NOT_FOUND_EXIT_CODE) {
+            return 0;
+        }
+        IllegalStateException failure = new IllegalStateException(String.join(System.lineSeparator(), result.lines()));
+        if (certutilFailure != null) {
+            failure.addSuppressed(certutilFailure);
+        }
+        throw failure;
+    }
+
     WindowsTrustStatus trustStatus(String certificatePath) throws Exception {
         ensureSupported();
         X509Certificate target = readCertificate(certificatePath);
@@ -176,6 +209,18 @@ final class WindowsCertificateInstallService {
                 + "if($cert){ Write-Output $store; exit 0 }"
                 + "};"
                 + "exit " + POWERSHELL_CERT_NOT_FOUND_EXIT_CODE;
+    }
+
+    private String buildRemoveCurrentUserCertificateScript(String thumbprint) {
+        return "$ErrorActionPreference='Stop';"
+                + "$thumb=" + powerShellSingleQuoted(thumbprint) + ";"
+                + "$cert=Get-ChildItem -Path " + powerShellSingleQuoted(CURRENT_USER_ROOT_STORE)
+                + " -ErrorAction SilentlyContinue "
+                + "| Where-Object { (($_.Thumbprint -replace '\\s','').ToUpperInvariant()) -eq $thumb } "
+                + "| Select-Object -First 1;"
+                + "if(-not $cert){ exit " + POWERSHELL_CERT_NOT_FOUND_EXIT_CODE + " };"
+                + "Remove-Item -Path ($cert.PSPath) -Force;"
+                + "Write-Output 'removed'";
     }
 
     private String trustDetailForStore(String store) {

@@ -195,6 +195,7 @@ public class RequestBodyPanel extends JPanel {
      * 初始化 WebSocket 模式下的 Body 面板
      */
     private void initWebSocketBodyPanel() {
+        currentBodyType = BODY_TYPE_RAW;
         JPanel bodyTypePanel = new JPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(bodyTypePanel);
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));

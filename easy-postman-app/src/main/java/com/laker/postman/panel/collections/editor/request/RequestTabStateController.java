@@ -35,7 +35,7 @@ final class RequestTabStateController {
         view.authTabPanel.addDirtyListener(dirtyAction);
         view.requestSettingsPanel.addDirtyListener(dirtyAction);
 
-        if (protocol.isHttpProtocol()) {
+        if (protocol.supportsRequestBodyContent()) {
             if (view.requestBodyPanel.getBodyArea() != null) {
                 addDocumentListener(view.requestBodyPanel.getBodyArea().getDocument(), dirtyAction);
                 view.requestBodyPanel.getBodyArea().getDocument().addDocumentListener(createDocumentListener(this::updateTabIndicators));

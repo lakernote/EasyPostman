@@ -76,7 +76,7 @@ public class HttpRequestEditorContentSummaryTest {
     }
 
     @Test
-    public void shouldDetectBodyContentBySelectedBodyTypeOnlyForHttpProtocols() {
+    public void shouldDetectBodyContentBySelectedBodyTypeForBodyContentProtocols() {
         HttpRequestEditorDraft rawDraft = HttpRequestEditorDraft.builder()
                 .protocol(RequestItemProtocolEnum.HTTP)
                 .bodyType(RequestBodyTypes.BODY_TYPE_RAW)
@@ -95,12 +95,24 @@ public class HttpRequestEditorContentSummaryTest {
         HttpRequestEditorDraft websocketDraft = HttpRequestEditorDraft.builder()
                 .protocol(RequestItemProtocolEnum.WEBSOCKET)
                 .bodyType(RequestBodyTypes.BODY_TYPE_RAW)
+                .body("hello")
+                .build();
+        HttpRequestEditorDraft sseDraft = HttpRequestEditorDraft.builder()
+                .protocol(RequestItemProtocolEnum.SSE)
+                .bodyType(RequestBodyTypes.BODY_TYPE_RAW)
+                .body(" {\"stream\":true} ")
+                .build();
+        HttpRequestEditorDraft savedResponseDraft = HttpRequestEditorDraft.builder()
+                .protocol(RequestItemProtocolEnum.SAVED_RESPONSE)
+                .bodyType(RequestBodyTypes.BODY_TYPE_RAW)
                 .body("ignored")
                 .build();
 
         assertTrue(HttpRequestEditorContentSummary.from(rawDraft).isHasBody());
         assertTrue(HttpRequestEditorContentSummary.from(formDraft).isHasBody());
         assertTrue(HttpRequestEditorContentSummary.from(urlencodedDraft).isHasBody());
-        assertFalse(HttpRequestEditorContentSummary.from(websocketDraft).isHasBody());
+        assertTrue(HttpRequestEditorContentSummary.from(sseDraft).isHasBody());
+        assertTrue(HttpRequestEditorContentSummary.from(websocketDraft).isHasBody());
+        assertFalse(HttpRequestEditorContentSummary.from(savedResponseDraft).isHasBody());
     }
 }

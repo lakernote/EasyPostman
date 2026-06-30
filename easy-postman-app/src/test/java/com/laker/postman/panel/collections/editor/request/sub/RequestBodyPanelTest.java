@@ -50,6 +50,23 @@ public class RequestBodyPanelTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void webSocketBodyShouldExposeRawTypeForContentIndicators() throws Exception {
+        RequestBodyPanel[] holder = new RequestBodyPanel[1];
+        String[] bodyType = new String[1];
+        String[] bodyContent = new String[1];
+
+        SwingUtilities.invokeAndWait(() -> {
+            holder[0] = new RequestBodyPanel(RequestItemProtocolEnum.WEBSOCKET);
+            holder[0].setRawBodyText("请问答复");
+            bodyType[0] = holder[0].getBodyType();
+            bodyContent[0] = holder[0].getBodyContent(bodyType[0]);
+        });
+
+        assertEquals(bodyType[0], RequestBodyPanel.BODY_TYPE_RAW);
+        assertEquals(bodyContent[0], "请问答复");
+    }
+
+    @Test
     public void binaryFileSelectionShouldShowFileNameSizeAndTooltip() throws Exception {
         Path file = Files.createTempFile("easy-postman-binary-", ".bin");
         Files.write(file, new byte[]{1, 2, 3, 4});

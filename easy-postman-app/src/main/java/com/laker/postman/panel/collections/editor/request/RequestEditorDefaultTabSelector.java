@@ -50,12 +50,8 @@ final class RequestEditorDefaultTabSelector {
                                   String body,
                                   boolean hasFormData,
                                   boolean hasParams) {
-        if (effectiveProtocol != null && effectiveProtocol.isWebSocketProtocol()) {
+        if (isBodyFirstProtocol(effectiveProtocol)) {
             RequestTabSelector.selectFirstVisible(view.reqTabs, view.requestBodyPanel, view.paramsTabPanel);
-            return;
-        }
-        if (effectiveProtocol != null && effectiveProtocol.isSseProtocol()) {
-            RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsTabPanel, view.requestBodyPanel);
             return;
         }
         if (RequestBodyPanel.BODY_TYPE_BINARY.equals(bodyType)) {
@@ -79,5 +75,9 @@ final class RequestEditorDefaultTabSelector {
             return;
         }
         RequestTabSelector.selectFirstVisible(view.reqTabs, view.paramsTabPanel, view.requestBodyPanel);
+    }
+
+    private boolean isBodyFirstProtocol(RequestItemProtocolEnum protocol) {
+        return protocol != null && (protocol.isWebSocketProtocol() || protocol.isSseProtocol());
     }
 }

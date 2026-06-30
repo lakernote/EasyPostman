@@ -26,4 +26,8 @@ public enum RequestItemProtocolEnum {
     public boolean isSseProtocol() {
         return this == SSE;
     }
+
+    public boolean supportsRequestBodyContent() {
+        return isHttpProtocol() || isSseProtocol() || isWebSocketProtocol();
+    }
 }

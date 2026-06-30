@@ -79,7 +79,7 @@ class RequestEditorUiBinder {
             requestBodyPanel.setWebSocketConnected(false);
         } else if (protocol.isSseProtocol()) {
             RequestTabSelector.removeIfPresent(reqTabs, authTabPanel);
-            RequestTabSelector.selectFirstVisible(reqTabs, paramsTabPanel, requestBodyPanel);
+            RequestTabSelector.selectFirstVisible(reqTabs, requestBodyPanel, paramsTabPanel);
         } else {
             RequestTabSelector.selectFirstVisible(reqTabs, paramsTabPanel, requestBodyPanel);
         }

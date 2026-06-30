@@ -62,7 +62,7 @@ public class HttpRequestEditorContentSummary {
 
     private static boolean hasBody(HttpRequestEditorDraft draft) {
         RequestItemProtocolEnum protocol = draft.getProtocol();
-        if (protocol != null && !protocol.isHttpProtocol()) {
+        if (protocol != null && !protocol.supportsRequestBodyContent()) {
             return false;
         }
 

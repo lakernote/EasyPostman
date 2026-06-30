@@ -14,6 +14,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -82,9 +83,7 @@ public class RequestEditorTabMethodBadgeTest extends AbstractSwingUiTest {
 
             tabbedPane.addTab(item.getName(), requestPanel);
             ClosableTabComponent originalTab = ClosableTabComponent.forRequest(item.getName(), item);
-            originalTab.setDirty(true);
-            originalTab.setNewRequest(true);
-            originalTab.setPreviewMode(true);
+            originalTab.updateMarkers(markers -> markers.withDirty(true).withPreviewMode(true));
             tabbedPane.setTabComponentAt(0, originalTab);
 
             controller.updateRequestDisplay(requestPanel, "POST", RequestItemProtocolEnum.HTTP);
@@ -93,13 +92,50 @@ public class RequestEditorTabMethodBadgeTest extends AbstractSwingUiTest {
 
         ClosableTabComponent updatedTab = updatedTabRef.get();
         assertNotNull(updatedTab);
-        assertTrue(updatedTab.isDirty(), "display refresh should preserve dirty marker");
-        assertTrue(updatedTab.isNewRequest(), "display refresh should preserve new request marker");
-        assertTrue(updatedTab.isPreviewMode(), "display refresh should preserve preview marker");
+        assertTrue(updatedTab.getMarkers().isDirty(), "display refresh should preserve dirty marker");
+        assertFalse(updatedTab.getMarkers().isNewRequest(), "dirty marker should not also be marked as a new request");
+        assertTrue(updatedTab.getMarkers().isPreviewMode(), "display refresh should preserve preview marker");
 
         JLabel label = findLabel(updatedTab);
         assertNotNull(label, "request tab component should contain a title label");
         assertTrue(label.getText().contains("POST"), "request tab should show the refreshed HTTP method");
+    }
+
+    @Test
+    public void savedNewRequestTabShouldClearNewRequestMarker() throws Exception {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId("saved-curl-request");
+        item.setName("Saved cURL Request");
+        item.setMethod("POST");
+        item.setProtocol(RequestItemProtocolEnum.SSE);
+
+        AtomicReference<ClosableTabComponent> updatedTabRef = new AtomicReference<>();
+        AtomicReference<String> updatedTitleRef = new AtomicReference<>();
+        SwingUtilities.invokeAndWait(() -> {
+            JTabbedPane tabbedPane = new JTabbedPane();
+            RequestEditorTabStateController controller = new RequestEditorTabStateController(tabbedPane);
+            RequestEditSubPanel requestPanel = new RequestEditSubPanel("temporary-request", item.getProtocol());
+
+            tabbedPane.addTab("New Request", requestPanel);
+            ClosableTabComponent originalTab = ClosableTabComponent.forRequest("New Request", "GET", item.getProtocol());
+            originalTab.updateMarkers(markers -> markers.withNewRequest(true).withDirty(true));
+            tabbedPane.setTabComponentAt(0, originalTab);
+            tabbedPane.setSelectedIndex(0);
+
+            controller.refreshNewRequestTab(item.getName(), item);
+            updatedTabRef.set((ClosableTabComponent) tabbedPane.getTabComponentAt(0));
+            updatedTitleRef.set(tabbedPane.getTitleAt(0));
+        });
+
+        ClosableTabComponent updatedTab = updatedTabRef.get();
+        assertNotNull(updatedTab);
+        assertFalse(updatedTab.getMarkers().isNewRequest(), "saved new request tab should no longer show the yellow marker");
+        assertFalse(updatedTab.getMarkers().isDirty(), "saved new request tab should no longer show the dirty marker");
+
+        JLabel label = findLabel(updatedTab);
+        assertNotNull(label, "request tab component should contain a title label");
+        assertTrue(label.getText().contains("SSE"), "saved cURL request tab should keep the imported protocol badge");
+        assertEquals(updatedTitleRef.get(), "Saved cURL Request", "saved cURL request tab title should show the saved name");
     }
 
     @Test

@@ -26,7 +26,7 @@ public class OpenedRequestTabSessionRestorer {
                 HttpRequestItem item = restorableRequests.get(i);
                 boolean selectTab = i == restorableRequests.size() - 1;
                 RequestEditSubPanel panel = RequestEditorTabInserter.insertRequestTab(item, selectTab, true);
-                RequestEditorTabInserter.setTabNewRequest(panel, item.isNewRequest());
+                RequestEditorTabInserter.setTabNewRequestMarker(panel, item.isNewRequest());
             }
             OpenedRequestTabsStore.clear();
             if (onComplete != null) {

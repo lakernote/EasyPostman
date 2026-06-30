@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.common.component.tab.ClosableTabComponent;
+import com.laker.postman.common.component.tab.RequestTabMarkers;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
@@ -54,6 +55,7 @@ final class RequestEditorTabStateController {
             replaceRequestTabComponent(currentTabIndex, requestName, item);
         }
         updateCurrentRequest(item);
+        markRequestSaved(currentTabIndex);
     }
 
     void updateRequestDirty(RequestEditSubPanel panel, boolean dirty) {
@@ -66,7 +68,7 @@ final class RequestEditorTabStateController {
         }
         Component tabComponent = tabbedPane.getTabComponentAt(index);
         if (tabComponent instanceof ClosableTabComponent closable) {
-            closable.setDirty(dirty);
+            closable.updateMarkers(markers -> markers.withDirty(dirty));
         }
     }
 
@@ -84,6 +86,7 @@ final class RequestEditorTabStateController {
                 updateRequestDirty(subPanel, false);
                 subPanel.setOriginalRequestItem(updatedItem);
                 replaceRequestTabComponent(i, tabbedPane.getTitleAt(i), updatedItem);
+                markRequestSaved(i);
             }
         }
     }
@@ -144,9 +147,17 @@ final class RequestEditorTabStateController {
         }
 
         ClosableTabComponent updated = ClosableTabComponent.forRequest(title, method, protocol);
-        updated.setDirty(previous.isDirty());
-        updated.setNewRequest(previous.isNewRequest());
-        updated.setPreviewMode(previous.isPreviewMode());
+        updated.updateMarkers(ignored -> previous.getMarkers());
         tabbedPane.setTabComponentAt(index, updated);
+    }
+
+    private void markRequestSaved(int index) {
+        if (index < 0 || index >= tabbedPane.getTabCount()) {
+            return;
+        }
+        Component tabComponent = tabbedPane.getTabComponentAt(index);
+        if (tabComponent instanceof ClosableTabComponent closable) {
+            closable.updateMarkers(RequestTabMarkers::saved);
+        }
     }
 }

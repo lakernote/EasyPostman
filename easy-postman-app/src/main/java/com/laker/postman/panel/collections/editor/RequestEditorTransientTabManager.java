@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.common.component.tab.ClosableTabComponent;
+import com.laker.postman.common.component.tab.RequestTabMarkers;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
@@ -55,7 +56,7 @@ final class RequestEditorTransientTabManager {
         }
         Component tabComponent = tabbedPane.getTabComponentAt(transientTabIndex);
         if (tabComponent instanceof ClosableTabComponent closableTab) {
-            closableTab.setPreviewMode(false);
+            closableTab.updateMarkers(RequestTabMarkers::pinned);
         }
         clear();
     }
@@ -126,7 +127,7 @@ final class RequestEditorTransientTabManager {
     }
 
     private ClosableTabComponent asPreview(ClosableTabComponent tabComponent) {
-        tabComponent.setPreviewMode(true);
+        tabComponent.updateMarkers(markers -> markers.withPreviewMode(true));
         return tabComponent;
     }
 

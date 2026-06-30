@@ -1,9 +1,5 @@
 package com.laker.postman.common.component.tab;
 
-import com.laker.postman.request.model.RequestItemProtocolEnum;
-import com.laker.postman.request.model.HttpRequestItem;
-
-
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -13,11 +9,12 @@ import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.service.setting.ShortcutManager;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
@@ -26,6 +23,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.Objects;
+import java.util.function.UnaryOperator;
 
 /**
  * 可关闭的 Tab 标题组件。
@@ -60,9 +58,7 @@ public class ClosableTabComponent extends JPanel {
     private final JTabbedPane tabbedPane;
 
     // ── 状态 ─────────────────────────────────────────────────────────────────
-    @Getter private boolean dirty      = false; // 红点：内容已修改
-    @Getter private boolean newRequest = false; // 黄点：新建未保存
-    @Getter private boolean previewMode = false; // 斜体：临时 Tab 视觉状态
+    private RequestTabMarkers markers = RequestTabMarkers.clean();
     private boolean hoverTab = false;            // 鼠标是否在整个 Tab 上
     private boolean hoverClose = false;          // 鼠标是否在关闭按钮上
 
@@ -258,10 +254,10 @@ public class ClosableTabComponent extends JPanel {
             int pad = 2;
             g2.drawLine(x + pad, y + pad, x + r - pad, y + r - pad);
             g2.drawLine(x + r - pad, y + pad, x + pad, y + r - pad);
-        } else if (newRequest) {
+        } else if (markers.isNewRequest()) {
             g2.setColor(new Color(255, 204, 0, 180));   // 黄点
             g2.fillOval(x, y, r, r);
-        } else if (dirty) {
+        } else if (markers.isDirty()) {
             g2.setColor(dirtyColor());                   // 红点
             g2.fillOval(x, y, r, r);
         }
@@ -341,24 +337,23 @@ public class ClosableTabComponent extends JPanel {
         }
     }
 
-    // ── 公开状态 setter ──────────────────────────────────────────────────────
+    // ── Marker state ─────────────────────────────────────────────────────────
 
-    public void setDirty(boolean dirty) {
-        this.dirty = dirty;
-        label.setText(labelText);
-        repaint();
+    public RequestTabMarkers getMarkers() {
+        return markers;
     }
 
-    public void setNewRequest(boolean newRequest) {
-        this.newRequest = newRequest;
-        label.setText(labelText);
-        repaint();
+    public void updateMarkers(UnaryOperator<RequestTabMarkers> markerUpdater) {
+        if (markerUpdater == null) {
+            return;
+        }
+        applyMarkers(markerUpdater.apply(markers));
     }
 
-    /** 预览模式用斜体提示这是临时 Tab */
-    public void setPreviewMode(boolean previewMode) {
-        this.previewMode = previewMode;
-        label.setFont(FontsUtil.getDefaultFontWithOffset(previewMode ? Font.ITALIC : Font.PLAIN, -1));
+    private void applyMarkers(RequestTabMarkers markers) {
+        this.markers = markers == null ? RequestTabMarkers.clean() : markers;
+        label.setText(labelText);
+        label.setFont(FontsUtil.getDefaultFontWithOffset(this.markers.isPreviewMode() ? Font.ITALIC : Font.PLAIN, -1));
         repaint();
     }
 }

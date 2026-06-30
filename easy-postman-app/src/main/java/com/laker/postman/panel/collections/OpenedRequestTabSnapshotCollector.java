@@ -19,7 +19,7 @@ class OpenedRequestTabSnapshotCollector {
         List<Integer> unsavedTabs = new ArrayList<>();
         for (int i = 0; i < tabbedPane.getTabCount(); i++) {
             Component tabComp = tabbedPane.getTabComponentAt(i);
-            if (tabComp instanceof ClosableTabComponent closable && closable.isDirty()) {
+            if (tabComp instanceof ClosableTabComponent closable && closable.getMarkers().isDirty()) {
                 unsavedTabs.add(i);
             }
         }
@@ -37,9 +37,9 @@ class OpenedRequestTabSnapshotCollector {
                 }
 
                 HttpRequestItem item;
-                if (closable.isNewRequest()) {
+                if (closable.getMarkers().isNewRequest()) {
                     item = subPanel.getCurrentRequest();
-                } else if (closable.isDirty() && !saveAll) {
+                } else if (closable.getMarkers().isDirty() && !saveAll) {
                     item = subPanel.getOriginalRequestItem();
                 } else {
                     item = subPanel.getCurrentRequest();

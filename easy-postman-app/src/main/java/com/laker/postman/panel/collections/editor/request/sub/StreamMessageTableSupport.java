@@ -12,6 +12,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.JTableHeader;
 import javax.swing.table.TableColumn;
 import java.awt.*;
+import java.util.Locale;
 import java.util.function.IntFunction;
 
 final class StreamMessageTableSupport {
@@ -43,15 +44,27 @@ final class StreamMessageTableSupport {
     }
 
     static void configureTimeColumn(JTable table, int columnIndex, IntFunction<MessageType> rowTypeProvider) {
-        int headerWidth = headerWidth(table, table.getColumnName(columnIndex), "Time", "时间");
+        int headerWidth = headerWidth(table, table.getColumnName(columnIndex), "Time", "时间", "23:59:59.999");
         TableColumn column = table.getColumnModel().getColumn(columnIndex);
-        column.setMinWidth(Math.max(90, headerWidth));
-        column.setPreferredWidth(Math.max(110, headerWidth));
-        column.setMaxWidth(Math.max(150, headerWidth));
+        column.setMinWidth(Math.max(118, headerWidth));
+        column.setPreferredWidth(Math.max(128, headerWidth));
+        column.setMaxWidth(Math.max(170, headerWidth));
 
         DefaultTableCellRenderer centerRenderer = new StatusAwareCellRenderer(rowTypeProvider);
         centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
         column.setCellRenderer(centerRenderer);
+    }
+
+    static void configureIntervalColumn(JTable table, int columnIndex, IntFunction<MessageType> rowTypeProvider) {
+        int headerWidth = headerWidth(table, table.getColumnName(columnIndex), "Delta", "间隔", "+999 ms", "+14.69 s");
+        TableColumn column = table.getColumnModel().getColumn(columnIndex);
+        column.setMinWidth(Math.max(86, headerWidth));
+        column.setPreferredWidth(Math.max(96, headerWidth));
+        column.setMaxWidth(Math.max(130, headerWidth));
+
+        DefaultTableCellRenderer rightRenderer = new StatusAwareCellRenderer(rowTypeProvider);
+        rightRenderer.setHorizontalAlignment(SwingConstants.RIGHT);
+        column.setCellRenderer(rightRenderer);
     }
 
     static void configureContentColumn(JTable table, int columnIndex, int preferredWidth) {
@@ -81,6 +94,22 @@ final class StreamMessageTableSupport {
             return isStatusType(type);
         }
         return StreamMessageUiMetadata.display(type).equals(typeFilter);
+    }
+
+    static String formatInterval(Long intervalMs) {
+        if (intervalMs == null) {
+            return "-";
+        }
+        long normalized = Math.max(0L, intervalMs);
+        if (normalized < 1_000) {
+            return "+" + normalized + " ms";
+        }
+        if (normalized < 60_000) {
+            return "+" + String.format(Locale.US, "%.2f s", normalized / 1_000.0);
+        }
+        long minutes = normalized / 60_000;
+        long seconds = (normalized % 60_000) / 1_000;
+        return "+" + minutes + " min " + seconds + " s";
     }
 
     static boolean isMessageType(MessageType type) {

@@ -23,19 +23,41 @@ public class SseResponsePanelTest extends AbstractSwingUiTest {
 
         SwingUtilities.invokeAndWait(() -> {
             JTable table = panel.getTable();
-            assertEquals(table.getColumnCount(), 4);
+            assertEquals(table.getColumnCount(), 5);
             assertEquals(table.getColumnName(0), I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE));
             assertEquals(table.getColumnName(1), I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TIME));
-            assertEquals(table.getColumnName(2), I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT));
-            assertEquals(table.getColumnName(3), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION));
+            assertEquals(table.getColumnName(2), I18nUtil.getMessage(MessageKeys.STREAM_COLUMN_INTERVAL));
+            assertEquals(table.getColumnName(3), I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT));
+            assertEquals(table.getColumnName(4), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION));
 
             TableColumn typeColumn = table.getColumnModel().getColumn(0);
-            TableColumn contentColumn = table.getColumnModel().getColumn(2);
-            TableColumn assertionColumn = table.getColumnModel().getColumn(3);
+            TableColumn intervalColumn = table.getColumnModel().getColumn(2);
+            TableColumn contentColumn = table.getColumnModel().getColumn(3);
+            TableColumn assertionColumn = table.getColumnModel().getColumn(4);
 
             assertTrue(typeColumn.getPreferredWidth() <= 60);
+            assertHeaderFits(table, intervalColumn, "+14.69 s");
             assertTrue(contentColumn.getPreferredWidth() >= 650);
             assertHeaderFits(table, assertionColumn, "Assertion");
+        });
+    }
+
+    @Test
+    public void intervalColumnShouldShowDeltaBetweenSseEvents() throws Exception {
+        SSEResponsePanel panel = createPanel();
+
+        SwingUtilities.invokeAndWait(() -> {
+            panel.addMessage(MessageType.CONNECTED, "10:00:00.000", 1_000L, null, "open", null,
+                    I18nUtil.getMessage(MessageKeys.SSE_STREAM_CONNECTED), null);
+            panel.addMessage(MessageType.RECEIVED, "10:00:00.031", 1_031L, "evt-1", null, null,
+                    "{\"ok\":true}", null);
+        });
+        flushEdt();
+
+        SwingUtilities.invokeAndWait(() -> {
+            JTable table = panel.getTable();
+            assertEquals(table.getValueAt(0, 2), "-");
+            assertEquals(table.getValueAt(1, 2), "+31 ms");
         });
     }
 
@@ -46,6 +68,7 @@ public class SseResponsePanelTest extends AbstractSwingUiTest {
         SwingUtilities.invokeAndWait(() -> panel.addMessage(
                 MessageType.CONNECTED,
                 "10:00:00",
+                null,
                 null,
                 "open",
                 null,
@@ -58,12 +81,12 @@ public class SseResponsePanelTest extends AbstractSwingUiTest {
             JTable table = panel.getTable();
 
             assertEquals(table.getRowCount(), 1);
-            assertEquals(table.getValueAt(0, 2), I18nUtil.getMessage(MessageKeys.SSE_STREAM_CONNECTED));
+            assertEquals(table.getValueAt(0, 3), I18nUtil.getMessage(MessageKeys.SSE_STREAM_CONNECTED));
             for (int column = 0; column < table.getColumnCount(); column++) {
                 assertTrue(!"open".equals(table.getValueAt(0, column)));
             }
 
-            Component component = table.prepareRenderer(table.getCellRenderer(0, 2), 0, 2);
+            Component component = table.prepareRenderer(table.getCellRenderer(0, 3), 0, 3);
             assertEquals(component.getForeground(), ModernColors.getTextSecondary());
         });
     }

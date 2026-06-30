@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 final class RequestEditorRuntimeController {
-    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
     private final RequestExecutionState executionState;
     private final RequestDirtyStateTracker dirtyStateTracker;

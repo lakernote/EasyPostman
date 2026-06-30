@@ -57,7 +57,7 @@ final class RequestExecutionUiUpdater implements WebSocketConnectionUi {
         }
 
         responsePanel.setResponseHeaders(resp);
-        if (!effectiveWebSocketProtocol.getAsBoolean()) {
+        if (!effectiveSseProtocol.getAsBoolean() && !effectiveWebSocketProtocol.getAsBoolean()) {
             responsePanel.setTiming(resp);
         }
         if (effectiveHttpProtocol.getAsBoolean() && !resp.isSse) {

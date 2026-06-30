@@ -2027,7 +2027,6 @@ public final class MessageKeys {
     public static final String SNIPPET_DIALOG_NOT_FOUND = "snippet.dialog.not_found";
 
     // ============ WaterfallChartPanel 国际化 ============
-    public static final String WATERFALL_APPLICATION_PROTOCOL = "waterfall.application_protocol";
     public static final String WATERFALL_HTTP_VERSION = "waterfall.http_version";
     public static final String WATERFALL_LOCAL_ADDRESS = "waterfall.local_address";
     public static final String WATERFALL_REMOTE_ADDRESS = "waterfall.remote_address";

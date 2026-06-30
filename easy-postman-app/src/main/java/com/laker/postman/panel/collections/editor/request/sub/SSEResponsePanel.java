@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * SSE响应体面板，展示事件时间线以及 event/id/retry 等元信息。
@@ -40,6 +41,7 @@ public class SSEResponsePanel extends JPanel {
     private final StreamMessageLogBuffer<MessageRow> logBuffer;
     private final ConcurrentLinkedQueue<MessageRow> pendingRows = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean pendingFlushQueued = new AtomicBoolean();
+    private final AtomicLong lastMessageTimestampMs = new AtomicLong(Long.MIN_VALUE);
     private final JScrollPane tableScrollPane;
     private final JSplitPane assertionSplitPane;
     private final StreamAssertionDetailsPanel assertionDetailsPanel;
@@ -47,12 +49,14 @@ public class SSEResponsePanel extends JPanel {
 
     private static final int COLUMN_TYPE = 0;
     private static final int COLUMN_TIME = 1;
-    private static final int COLUMN_CONTENT = 2;
-    private static final int COLUMN_ASSERTION = 3;
+    private static final int COLUMN_INTERVAL = 2;
+    private static final int COLUMN_CONTENT = 3;
+    private static final int COLUMN_ASSERTION = 4;
 
     private static final String[] COLUMN_NAMES = {
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TIME),
+            I18nUtil.getMessage(MessageKeys.STREAM_COLUMN_INTERVAL),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT),
             I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION)
     };
@@ -100,6 +104,10 @@ public class SSEResponsePanel extends JPanel {
         });
         StreamMessageTableSupport.configureTypeColumn(table, COLUMN_TYPE);
         StreamMessageTableSupport.configureTimeColumn(table, COLUMN_TIME, viewRow -> {
+            MessageRow row = getVisibleRow(viewRow);
+            return row == null ? null : row.messageType;
+        });
+        StreamMessageTableSupport.configureIntervalColumn(table, COLUMN_INTERVAL, viewRow -> {
             MessageRow row = getVisibleRow(viewRow);
             return row == null ? null : row.messageType;
         });
@@ -215,13 +223,19 @@ public class SSEResponsePanel extends JPanel {
         typeFilterBox.addActionListener(e -> requestFilterAndShow());
     }
 
-    public void addMessage(MessageType messageType, String time, String content, List<TestResult> testResults) {
-        addMessage(messageType, time, null, null, null, content, testResults);
-    }
-
-    public void addMessage(MessageType messageType, String time, String eventId, String eventType, Long retryMs,
-                           String content, List<TestResult> testResults) {
-        MessageRow row = new MessageRow(messageType, time, eventId, eventType, retryMs, content, testResults);
+    public void addMessage(MessageType messageType, String time, Long timestampMs, String eventId, String eventType,
+                           Long retryMs, String content, List<TestResult> testResults) {
+        MessageRow row = new MessageRow(
+                messageType,
+                time,
+                timestampMs,
+                nextIntervalMs(timestampMs),
+                eventId,
+                eventType,
+                retryMs,
+                content,
+                testResults
+        );
         pendingRows.add(row);
         requestPendingRowsFlush();
     }
@@ -281,6 +295,7 @@ public class SSEResponsePanel extends JPanel {
             pendingRows.clear();
             logBuffer.clear();
             tableModel.clear();
+            lastMessageTimestampMs.set(Long.MIN_VALUE);
             assertionDetailsPanel.hideDetails();
             updateAssertionSplitPane();
             searchField.setNoResult(false);
@@ -310,6 +325,7 @@ public class SSEResponsePanel extends JPanel {
         return switch (column) {
             case COLUMN_TYPE -> row.messageType;
             case COLUMN_TIME -> row.time;
+            case COLUMN_INTERVAL -> StreamMessageTableSupport.formatInterval(row.intervalMs);
             case COLUMN_CONTENT -> row.content;
             case COLUMN_ASSERTION -> StreamAssertionSummary.from(row.testResults);
             default -> null;
@@ -355,6 +371,17 @@ public class SSEResponsePanel extends JPanel {
         }
     }
 
+    private Long nextIntervalMs(Long timestampMs) {
+        if (timestampMs == null) {
+            return null;
+        }
+        long previous = lastMessageTimestampMs.getAndSet(timestampMs);
+        if (previous == Long.MIN_VALUE) {
+            return null;
+        }
+        return Math.max(0L, timestampMs - previous);
+    }
+
     private MessageRow getVisibleRow(int viewRow) {
         if (viewRow < 0) {
             return null;
@@ -372,6 +399,8 @@ public class SSEResponsePanel extends JPanel {
 
     public static class MessageRow {
         public final String time;
+        public final Long timestampMs;
+        public final Long intervalMs;
         public final String eventId;
         public final String eventType;
         public final Long retryMs;
@@ -379,10 +408,13 @@ public class SSEResponsePanel extends JPanel {
         public final List<TestResult> testResults;
         public final MessageType messageType;
 
-        public MessageRow(MessageType messageType, String time, String eventId, String eventType, Long retryMs,
+        public MessageRow(MessageType messageType, String time, Long timestampMs, Long intervalMs,
+                          String eventId, String eventType, Long retryMs,
                           String content, List<TestResult> testResults) {
             this.messageType = messageType;
             this.time = time;
+            this.timestampMs = timestampMs;
+            this.intervalMs = intervalMs;
             this.eventId = eventId;
             this.eventType = eventType;
             this.retryMs = retryMs;
@@ -494,6 +526,10 @@ public class SSEResponsePanel extends JPanel {
                 new StreamMessageContentDialog.DetailField(
                         I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TIME),
                         blankToDash(row.time)
+                ),
+                new StreamMessageContentDialog.DetailField(
+                        I18nUtil.getMessage(MessageKeys.STREAM_COLUMN_INTERVAL),
+                        StreamMessageTableSupport.formatInterval(row.intervalMs)
                 ),
                 new StreamMessageContentDialog.DetailField(
                         I18nUtil.getMessage(MessageKeys.SSE_DETAIL_EVENT_ID),

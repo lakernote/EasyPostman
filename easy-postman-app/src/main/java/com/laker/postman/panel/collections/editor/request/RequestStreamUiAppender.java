@@ -8,7 +8,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalTime;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -25,8 +26,14 @@ final class RequestStreamUiAppender {
         if (responsePanel != null
                 && responsePanel.getProtocol().isWebSocketProtocol()
                 && responsePanel.getWebSocketResponsePanel() != null) {
-            String timestamp = currentTimestamp();
-            responsePanel.getWebSocketResponsePanel().addMessage(type, timestamp, text, testResults);
+            long timestampMs = System.currentTimeMillis();
+            responsePanel.getWebSocketResponsePanel().addMessage(
+                    type,
+                    formatTimestamp(timestampMs),
+                    timestampMs,
+                    text,
+                    testResults
+            );
         }
     }
 
@@ -35,9 +42,10 @@ final class RequestStreamUiAppender {
             return;
         }
         String normalizedText = normalizeWebSocketTranscriptText(text);
+        long timestampMs = System.currentTimeMillis();
         webSocketBodyBuilder
                 .append('[')
-                .append(currentTimestamp())
+                .append(formatTimestamp(timestampMs))
                 .append("] ")
                 .append(StreamMessageUiMetadata.display(type))
                 .append(": ")
@@ -50,8 +58,17 @@ final class RequestStreamUiAppender {
         if (responsePanel == null || responsePanel.getSseResponsePanel() == null) {
             return;
         }
-        String timestamp = currentTimestamp();
-        responsePanel.getSseResponsePanel().addMessage(type, timestamp, eventId, eventType, retryMs, text, testResults);
+        long timestampMs = System.currentTimeMillis();
+        responsePanel.getSseResponsePanel().addMessage(
+                type,
+                formatTimestamp(timestampMs),
+                timestampMs,
+                eventId,
+                eventType,
+                retryMs,
+                text,
+                testResults
+        );
     }
 
     void appendSseRawEvent(StringBuilder sseBodyBuilder, String id, String type, String data) {
@@ -91,8 +108,11 @@ final class RequestStreamUiAppender {
         response.endTime = System.currentTimeMillis();
     }
 
-    private String currentTimestamp() {
-        return LocalTime.now().format(timeFormatter);
+    private String formatTimestamp(long timestampMs) {
+        return Instant.ofEpochMilli(timestampMs)
+                .atZone(ZoneId.systemDefault())
+                .toLocalTime()
+                .format(timeFormatter);
     }
 
     private String normalizeWebSocketTranscriptText(String text) {

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * WebSocket响应体面板，展示消息类型、时间、内容和断言结果，支持搜索、清除、类型过滤。
@@ -40,6 +41,7 @@ public class WebSocketResponsePanel extends JPanel {
     private final StreamMessageLogBuffer<MessageRow> logBuffer;
     private final ConcurrentLinkedQueue<MessageRow> pendingRows = new ConcurrentLinkedQueue<>();
     private final AtomicBoolean pendingFlushQueued = new AtomicBoolean();
+    private final AtomicLong lastMessageTimestampMs = new AtomicLong(Long.MIN_VALUE);
     private final JScrollPane tableScrollPane;
     private final JSplitPane assertionSplitPane;
     private final StreamAssertionDetailsPanel assertionDetailsPanel;
@@ -47,12 +49,14 @@ public class WebSocketResponsePanel extends JPanel {
 
     private static final int COLUMN_TYPE = 0;
     private static final int COLUMN_TIME = 1;
-    private static final int COLUMN_CONTENT = 2;
-    private static final int COLUMN_ASSERTION = 3;
+    private static final int COLUMN_INTERVAL = 2;
+    private static final int COLUMN_CONTENT = 3;
+    private static final int COLUMN_ASSERTION = 4;
 
     private static final String[] COLUMN_NAMES = {
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TIME),
+            I18nUtil.getMessage(MessageKeys.STREAM_COLUMN_INTERVAL),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT),
             I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION)
     };
@@ -103,6 +107,10 @@ public class WebSocketResponsePanel extends JPanel {
         });
         StreamMessageTableSupport.configureTypeColumn(table, COLUMN_TYPE);
         StreamMessageTableSupport.configureTimeColumn(table, COLUMN_TIME, viewRow -> {
+            MessageRow row = getVisibleRow(viewRow);
+            return row == null ? null : row.type;
+        });
+        StreamMessageTableSupport.configureIntervalColumn(table, COLUMN_INTERVAL, viewRow -> {
             MessageRow row = getVisibleRow(viewRow);
             return row == null ? null : row.type;
         });
@@ -214,8 +222,8 @@ public class WebSocketResponsePanel extends JPanel {
         typeFilterBox.addActionListener(e -> requestFilterAndShow());
     }
 
-    public void addMessage(MessageType type, String time, String content, List<TestResult> testResults) {
-        MessageRow row = new MessageRow(type, time, content, testResults);
+    public void addMessage(MessageType type, String time, Long timestampMs, String content, List<TestResult> testResults) {
+        MessageRow row = new MessageRow(type, time, timestampMs, nextIntervalMs(timestampMs), content, testResults);
         pendingRows.add(row);
         requestPendingRowsFlush();
     }
@@ -275,6 +283,7 @@ public class WebSocketResponsePanel extends JPanel {
             pendingRows.clear();
             logBuffer.clear();
             tableModel.clear();
+            lastMessageTimestampMs.set(Long.MIN_VALUE);
             assertionDetailsPanel.hideDetails();
             updateAssertionSplitPane();
             searchField.setNoResult(false);
@@ -304,6 +313,7 @@ public class WebSocketResponsePanel extends JPanel {
         return switch (column) {
             case COLUMN_TYPE -> row.type;
             case COLUMN_TIME -> row.time;
+            case COLUMN_INTERVAL -> StreamMessageTableSupport.formatInterval(row.intervalMs);
             case COLUMN_CONTENT -> row.content;
             case COLUMN_ASSERTION -> StreamAssertionSummary.from(row.testResults);
             default -> null;
@@ -344,6 +354,17 @@ public class WebSocketResponsePanel extends JPanel {
         } else {
             SwingUtilities.invokeLater(task);
         }
+    }
+
+    private Long nextIntervalMs(Long timestampMs) {
+        if (timestampMs == null) {
+            return null;
+        }
+        long previous = lastMessageTimestampMs.getAndSet(timestampMs);
+        if (previous == Long.MIN_VALUE) {
+            return null;
+        }
+        return Math.max(0L, timestampMs - previous);
     }
 
     private boolean isScrolledNearBottom() {
@@ -412,12 +433,17 @@ public class WebSocketResponsePanel extends JPanel {
     public static class MessageRow {
         public final MessageType type;
         public final String time;
+        public final Long timestampMs;
+        public final Long intervalMs;
         public final String content;
         public final List<TestResult> testResults;
 
-        public MessageRow(MessageType type, String time, String content, List<TestResult> testResults) {
+        public MessageRow(MessageType type, String time, Long timestampMs, Long intervalMs,
+                          String content, List<TestResult> testResults) {
             this.type = type;
             this.time = time;
+            this.timestampMs = timestampMs;
+            this.intervalMs = intervalMs;
             this.content = content;
             this.testResults = testResults;
         }
@@ -498,6 +524,10 @@ public class WebSocketResponsePanel extends JPanel {
                 new StreamMessageContentDialog.DetailField(
                         I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TIME),
                         row.time == null || row.time.isBlank() ? I18nUtil.getMessage(MessageKeys.SSE_VALUE_NONE) : row.time
+                ),
+                new StreamMessageContentDialog.DetailField(
+                        I18nUtil.getMessage(MessageKeys.STREAM_COLUMN_INTERVAL),
+                        StreamMessageTableSupport.formatInterval(row.intervalMs)
                 )
         );
     }

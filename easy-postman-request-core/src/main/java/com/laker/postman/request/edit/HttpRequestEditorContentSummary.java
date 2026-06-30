@@ -98,7 +98,8 @@ public class HttpRequestEditorContentSummary {
                 || Boolean.FALSE.equals(draft.getCookieJarEnabled())
                 || HttpRequestProxyPolicy.DEFAULT != HttpRequestProxyPolicy.normalize(draft.getProxyPolicy())
                 || !HttpRequestVersions.AUTO.equals(normalizeHttpVersion(draft.getHttpVersion()))
-                || draft.getRequestTimeoutMs() != null;
+                || draft.getRequestTimeoutMs() != null
+                || draft.getWebSocketPingIntervalMs() != null;
     }
 
     private static boolean hasScripts(HttpRequestEditorDraft draft) {

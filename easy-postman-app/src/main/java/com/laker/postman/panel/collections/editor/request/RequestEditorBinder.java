@@ -115,6 +115,7 @@ final class RequestEditorBinder {
                 .proxyPolicy(settings.getProxyPolicy())
                 .httpVersion(settings.getHttpVersion())
                 .requestTimeoutMs(settings.getRequestTimeoutMs())
+                .webSocketPingIntervalMs(settings.getWebSocketPingIntervalMs())
                 .prescript(view.scriptPanel.getPrescript())
                 .postscript(view.scriptPanel.getPostscript())
                 .responses(responses)
@@ -137,6 +138,7 @@ final class RequestEditorBinder {
                 .proxyPolicy(draft.getProxyPolicy())
                 .httpVersion(draft.getHttpVersion())
                 .requestTimeoutMs(draft.getRequestTimeoutMs())
+                .webSocketPingIntervalMs(draft.getWebSocketPingIntervalMs())
                 .build();
     }
 

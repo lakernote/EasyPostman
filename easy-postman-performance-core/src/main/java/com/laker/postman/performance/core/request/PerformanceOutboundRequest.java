@@ -26,6 +26,7 @@ public class PerformanceOutboundRequest {
     String proxyPolicy;
     String httpVersion;
     Integer requestTimeoutMs;
+    Integer webSocketPingIntervalMs;
 
     public PerformanceOutboundRequest(String id,
                                       String name,
@@ -43,7 +44,8 @@ public class PerformanceOutboundRequest {
                                       Boolean cookieJarEnabled,
                                       String proxyPolicy,
                                       String httpVersion,
-                                      Integer requestTimeoutMs) {
+                                      Integer requestTimeoutMs,
+                                      Integer webSocketPingIntervalMs) {
         this.id = blankToEmpty(id);
         this.name = blankToEmpty(name);
         this.protocol = protocol == null ? PerformanceProtocol.HTTP : protocol;
@@ -61,6 +63,7 @@ public class PerformanceOutboundRequest {
         this.proxyPolicy = PerformanceRequestSnapshot.normalizeProxyPolicy(proxyPolicy);
         this.httpVersion = normalizeHttpVersion(httpVersion);
         this.requestTimeoutMs = requestTimeoutMs;
+        this.webSocketPingIntervalMs = webSocketPingIntervalMs;
     }
 
     public static PerformanceOutboundRequest fromSnapshot(PerformanceRequestSnapshot snapshot) {
@@ -91,6 +94,7 @@ public class PerformanceOutboundRequest {
                 .proxyPolicy(source.getProxyPolicy())
                 .httpVersion(source.getHttpVersion())
                 .requestTimeoutMs(source.getRequestTimeoutMs())
+                .webSocketPingIntervalMs(source.getWebSocketPingIntervalMs())
                 .build();
     }
 

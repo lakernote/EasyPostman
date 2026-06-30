@@ -296,6 +296,7 @@ public class HistoryPersistenceService {
         requestJson.set("sslVerificationEnabled", request.sslVerificationEnabled);
         requestJson.set("httpVersion", request.httpVersion);
         requestJson.set("requestTimeoutMs", request.requestTimeoutMs);
+        requestJson.set("webSocketPingIntervalMs", request.webSocketPingIntervalMs);
         requestJson.set("collectBasicInfo", request.collectBasicInfo);
         requestJson.set("collectEventInfo", request.collectEventInfo);
         requestJson.set("enableNetworkLog", request.enableNetworkLog);
@@ -412,6 +413,9 @@ public class HistoryPersistenceService {
         request.sslVerificationEnabled = requestJson.getBool("sslVerificationEnabled", false);
         request.httpVersion = requestJson.getStr("httpVersion");
         request.requestTimeoutMs = requestJson.getInt("requestTimeoutMs", 0);
+        if (requestJson.containsKey("webSocketPingIntervalMs")) {
+            request.webSocketPingIntervalMs = requestJson.getInt("webSocketPingIntervalMs");
+        }
         request.collectBasicInfo = requestJson.getBool("collectBasicInfo", true);
         request.collectEventInfo = requestJson.getBool("collectEventInfo", true);
         request.enableNetworkLog = requestJson.getBool("enableNetworkLog", false);

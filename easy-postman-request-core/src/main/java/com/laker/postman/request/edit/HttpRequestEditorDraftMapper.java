@@ -46,6 +46,7 @@ public class HttpRequestEditorDraftMapper {
                 .proxyPolicy(item.resolveProxyPolicy())
                 .httpVersion(item.getHttpVersion())
                 .requestTimeoutMs(item.getRequestTimeoutMs())
+                .webSocketPingIntervalMs(item.getWebSocketPingIntervalMs())
                 .prescript(item.getPrescript())
                 .postscript(item.getPostscript())
                 .responses(copyList(item.getResponse()))
@@ -104,6 +105,7 @@ public class HttpRequestEditorDraftMapper {
             item.setHttpVersion(draft.getHttpVersion());
         }
         item.setRequestTimeoutMs(draft.getRequestTimeoutMs());
+        item.setWebSocketPingIntervalMs(draft.getWebSocketPingIntervalMs());
         item.setPrescript(string(draft.getPrescript()));
         item.setPostscript(string(draft.getPostscript()));
         item.setResponse(copyList(draft.getResponses()));

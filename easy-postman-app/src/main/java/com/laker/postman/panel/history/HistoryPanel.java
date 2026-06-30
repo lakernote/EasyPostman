@@ -1067,6 +1067,7 @@ public class HistoryPanel extends UiSingletonPanel {
         requestItem.setCookieJarEnabled(request.cookieJarEnabled);
         requestItem.setHttpVersion(request.httpVersion);
         requestItem.setRequestTimeoutMs(request.requestTimeoutMs > 0 ? request.requestTimeoutMs : null);
+        requestItem.setWebSocketPingIntervalMs(request.webSocketPingIntervalMs);
         requestItem.setPrescript(request.prescript == null ? "" : request.prescript);
         requestItem.setPostscript(request.postscript == null ? "" : request.postscript);
 

@@ -103,6 +103,7 @@ public final class HttpClientResolver {
         builder.addNetworkInterceptor(new CompressionDecompressNetworkInterceptor());
 
         applyRequestSettings(builder, preparedRequest);
+        applyWebSocketSettings(builder, preparedRequest);
 
         if (needEventListener) {
             builder.eventListenerFactory(call -> new OkHttpExchangeEventListener(preparedRequest));
@@ -133,6 +134,15 @@ public final class HttpClientResolver {
         } else if (HttpRequestItem.HTTP_VERSION_HTTP_2.equals(httpVersion)) {
             builder.protocols(List.of(Protocol.HTTP_2, Protocol.HTTP_1_1));
         }
+    }
+
+    private void applyWebSocketSettings(OkHttpClient.Builder builder,
+                                        PreparedRequest preparedRequest) {
+        if (!isWebSocketRequest(preparedRequest)) {
+            return;
+        }
+        int intervalMs = Math.max(0, preparedRequest.webSocketPingIntervalMs);
+        builder.pingInterval(intervalMs, TimeUnit.MILLISECONDS);
     }
 
     private void applyDigestAuthenticator(OkHttpClient.Builder builder,
@@ -171,5 +181,13 @@ public final class HttpClientResolver {
 
     private boolean containsUnresolvedPlaceholder(String value) {
         return value != null && value.contains("{{") && value.contains("}}");
+    }
+
+    private boolean isWebSocketRequest(PreparedRequest request) {
+        if (request == null || request.url == null) {
+            return false;
+        }
+        String lower = request.url.toLowerCase(java.util.Locale.ROOT);
+        return lower.startsWith("ws://") || lower.startsWith("wss://");
     }
 }

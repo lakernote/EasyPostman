@@ -42,6 +42,7 @@ public class PerformanceRequestSnapshot {
     String proxyPolicy;
     String httpVersion;
     Integer requestTimeoutMs;
+    Integer webSocketPingIntervalMs;
     String prescript;
     String postscript;
     PerformanceRequestExecutionScopeSnapshot executionScope;
@@ -71,6 +72,7 @@ public class PerformanceRequestSnapshot {
                                       String proxyPolicy,
                                       String httpVersion,
                                       Integer requestTimeoutMs,
+                                      Integer webSocketPingIntervalMs,
                                       String prescript,
                                       String postscript,
                                       PerformanceRequestExecutionScopeSnapshot executionScope) {
@@ -98,6 +100,7 @@ public class PerformanceRequestSnapshot {
         this.proxyPolicy = normalizeProxyPolicy(proxyPolicy);
         this.httpVersion = normalizeHttpVersion(httpVersion);
         this.requestTimeoutMs = requestTimeoutMs;
+        this.webSocketPingIntervalMs = webSocketPingIntervalMs;
         this.prescript = blankToEmpty(prescript);
         this.postscript = blankToEmpty(postscript);
         this.executionScope = executionScope == null

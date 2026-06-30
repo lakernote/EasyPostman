@@ -11,6 +11,7 @@ import okhttp3.OkHttpClient;
 import org.testng.annotations.Test;
 
 import java.net.Proxy;
+import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -31,6 +32,32 @@ public class HttpClientResolverTest {
         assertEquals(client.readTimeoutMillis(), 1000);
         assertEquals(client.writeTimeoutMillis(), 1000);
         assertEquals(client.callTimeoutMillis(), 1000);
+    }
+
+    @Test
+    public void websocketPingIntervalShouldApplyToResolvedClient() {
+        PreparedRequest request = new PreparedRequest();
+        request.url = "wss://api.example.com/socket";
+        request.webSocketPingIntervalMs = 15000;
+        HttpClientResolver resolver = new HttpClientResolver();
+
+        OkHttpClient client = resolver.resolveClient(request, ignored -> new OkHttpClient());
+
+        assertEquals(client.pingIntervalMillis(), 15000);
+    }
+
+    @Test
+    public void websocketPingIntervalCanBeDisabled() {
+        PreparedRequest request = new PreparedRequest();
+        request.url = "wss://api.example.com/socket";
+        request.webSocketPingIntervalMs = 0;
+        HttpClientResolver resolver = new HttpClientResolver();
+
+        OkHttpClient client = resolver.resolveClient(request, ignored -> new OkHttpClient.Builder()
+                .pingInterval(30, TimeUnit.SECONDS)
+                .build());
+
+        assertEquals(client.pingIntervalMillis(), 0);
     }
 
     @Test

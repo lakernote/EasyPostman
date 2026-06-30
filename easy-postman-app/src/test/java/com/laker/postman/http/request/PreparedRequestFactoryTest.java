@@ -332,6 +332,7 @@ public class PreparedRequestFactoryTest {
             item.setProxyPolicy(HttpRequestProxyPolicy.NO_PROXY);
             item.setHttpVersion(HttpRequestItem.HTTP_VERSION_HTTP_1_1);
             item.setRequestTimeoutMs(4321);
+            item.setWebSocketPingIntervalMs(15000);
 
             PreparedRequest req = PreparedRequestFactory.build(item);
 
@@ -341,6 +342,7 @@ public class PreparedRequestFactoryTest {
             assertFalse(req.sslVerificationEnabled);
             assertEquals(req.httpVersion, HttpRequestItem.HTTP_VERSION_HTTP_1_1);
             assertEquals(req.requestTimeoutMs, 4321);
+            assertEquals(req.webSocketPingIntervalMs, 15000);
         } finally {
             SettingManager.setRequestSslVerificationDisabled(oldSslVerificationDisabled);
         }
@@ -371,6 +373,7 @@ public class PreparedRequestFactoryTest {
             assertFalse(req.sslVerificationEnabled);
             assertEquals(req.httpVersion, HttpRequestItem.HTTP_VERSION_AUTO);
             assertEquals(req.requestTimeoutMs, 6789);
+            assertEquals(req.webSocketPingIntervalMs, HttpRequestItem.DEFAULT_WEBSOCKET_PING_INTERVAL_MS);
         } finally {
             SettingManager.setFollowRedirects(oldFollowRedirects);
             SettingManager.setRequestSslVerificationDisabled(oldSslVerificationDisabled);

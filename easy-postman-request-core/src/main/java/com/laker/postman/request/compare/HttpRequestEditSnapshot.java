@@ -42,6 +42,7 @@ record HttpRequestEditSnapshot(
         HttpRequestProxyPolicy proxyPolicy,
         String httpVersion,
         Integer requestTimeoutMs,
+        Integer webSocketPingIntervalMs,
         String prescript,
         String postscript
 ) {
@@ -73,6 +74,7 @@ record HttpRequestEditSnapshot(
                 item.resolveProxyPolicy(),
                 normalizeHttpVersion(item.getHttpVersion()),
                 item.getRequestTimeoutMs(),
+                item.getWebSocketPingIntervalMs(),
                 string(item.getPrescript()),
                 string(item.getPostscript())
         );

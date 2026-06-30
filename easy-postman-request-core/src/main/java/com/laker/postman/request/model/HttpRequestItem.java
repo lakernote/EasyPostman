@@ -18,6 +18,8 @@ public class HttpRequestItem implements Serializable {
     public static final String HTTP_VERSION_AUTO = HttpRequestVersions.AUTO;
     public static final String HTTP_VERSION_HTTP_1_1 = HttpRequestVersions.HTTP_1_1;
     public static final String HTTP_VERSION_HTTP_2 = HttpRequestVersions.HTTP_2;
+    public static final int DEFAULT_WEBSOCKET_PING_INTERVAL_MS = 30_000;
+    public static final int DISABLED_WEBSOCKET_PING_INTERVAL_MS = 0;
 
     private String id = ""; // 唯一标识符
     private String name = ""; // 请求名称
@@ -44,6 +46,7 @@ public class HttpRequestItem implements Serializable {
     private HttpRequestProxyPolicy proxyPolicy = HttpRequestProxyPolicy.DEFAULT; // 代理策略，默认跟随全局设置
     private String httpVersion = HTTP_VERSION_AUTO; // HTTP 协议偏好
     private Integer requestTimeoutMs; // 请求超时（毫秒），null 表示跟随全局设置
+    private Integer webSocketPingIntervalMs; // WebSocket 协议 ping 间隔（毫秒），null 表示默认 30 秒，0 表示关闭
     // 前置脚本（请求前执行）
     private String prescript = "";
     // 后置脚本（响应后执行）

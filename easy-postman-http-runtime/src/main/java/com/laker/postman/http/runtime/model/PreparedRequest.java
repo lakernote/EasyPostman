@@ -40,6 +40,7 @@ public class PreparedRequest {
     public boolean sslVerificationEnabled = false; // 默认禁用 SSL 校验
     public String httpVersion = HttpRequestItem.HTTP_VERSION_AUTO; // HTTP 协议偏好
     public int requestTimeoutMs = 0; // 0 表示不超时
+    public int webSocketPingIntervalMs = HttpRequestItem.DEFAULT_WEBSOCKET_PING_INTERVAL_MS; // 0 表示关闭协议 ping
     public TransportAuth transportAuth; // 发送阶段需要的传输层认证元数据（例如 Digest challenge 认证）
 
     // 事件监听控制（精细化控制）
@@ -93,6 +94,7 @@ public class PreparedRequest {
         copy.sslVerificationEnabled = this.sslVerificationEnabled;
         copy.httpVersion = this.httpVersion;
         copy.requestTimeoutMs = this.requestTimeoutMs;
+        copy.webSocketPingIntervalMs = this.webSocketPingIntervalMs;
         copy.transportAuth = this.transportAuth != null ? this.transportAuth.shallowCopy() : null;
         copy.captureProfile = this.captureProfile;
         copy.collectBasicInfo = this.collectBasicInfo;

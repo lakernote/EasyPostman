@@ -47,6 +47,7 @@ public class HttpRequestEditorDraft {
     HttpRequestProxyPolicy proxyPolicy = HttpRequestProxyPolicy.DEFAULT;
     String httpVersion;
     Integer requestTimeoutMs;
+    Integer webSocketPingIntervalMs;
     String prescript;
     String postscript;
     @Builder.Default

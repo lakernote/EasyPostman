@@ -81,6 +81,7 @@ public class PerformanceCorePlanJsonStorageTest {
         assertEquals(snapshot.getAuthApiKeyValue(), "secret");
         assertEquals(snapshot.getAuthApiKeyPlacement(), PerformanceRequestSnapshot.AUTH_API_KEY_PLACEMENT_HEADER);
         assertEquals(snapshot.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_NO_PROXY);
+        assertEquals(snapshot.getWebSocketPingIntervalMs(), Integer.valueOf(15000));
         assertEquals(snapshot.getExecutionScope().getGroupVariable("tenant"), "core");
 
         TimerData timerData = loadedRequest.getChildren().get(0).getTimerData();
@@ -125,6 +126,7 @@ public class PerformanceCorePlanJsonStorageTest {
                 .proxyPolicy(PerformanceRequestSnapshot.PROXY_POLICY_NO_PROXY)
                 .httpVersion(PerformanceRequestSnapshot.HTTP_VERSION_HTTP_2)
                 .requestTimeoutMs(1500)
+                .webSocketPingIntervalMs(15000)
                 .prescript("pm.variables.set('a', 'b')")
                 .postscript("pm.test('ok')")
                 .executionScope(PerformanceRequestExecutionScopeSnapshot.fromGroupVariables(groupVariables))

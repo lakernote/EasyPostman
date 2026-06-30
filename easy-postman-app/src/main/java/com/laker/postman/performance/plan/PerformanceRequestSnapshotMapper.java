@@ -54,6 +54,7 @@ public class PerformanceRequestSnapshotMapper {
                 .proxyPolicy(item.resolveProxyPolicy().name())
                 .httpVersion(item.resolveHttpVersion())
                 .requestTimeoutMs(item.getRequestTimeoutMs())
+                .webSocketPingIntervalMs(item.getWebSocketPingIntervalMs())
                 .prescript(item.getPrescript())
                 .postscript(item.getPostscript())
                 .executionScope(toScopeSnapshot(scope))
@@ -112,6 +113,7 @@ public class PerformanceRequestSnapshotMapper {
         item.setProxyPolicy(HttpRequestProxyPolicy.normalize(snapshot.getProxyPolicy()));
         item.setHttpVersion(snapshot.getHttpVersion());
         item.setRequestTimeoutMs(snapshot.getRequestTimeoutMs());
+        item.setWebSocketPingIntervalMs(snapshot.getWebSocketPingIntervalMs());
         item.setPrescript(snapshot.getPrescript());
         item.setPostscript(snapshot.getPostscript());
         return item;

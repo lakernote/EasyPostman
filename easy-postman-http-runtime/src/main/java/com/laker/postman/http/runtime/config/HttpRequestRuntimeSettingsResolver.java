@@ -62,6 +62,11 @@ public class HttpRequestRuntimeSettingsResolver {
                 : settings().getRequestTimeout();
     }
 
+    public static int resolveWebSocketPingIntervalMs(HttpRequestItem item) {
+        Integer value = item != null ? item.getWebSocketPingIntervalMs() : null;
+        return value != null ? value : HttpRequestItem.DEFAULT_WEBSOCKET_PING_INTERVAL_MS;
+    }
+
     private static HttpRuntimeSettings settings() {
         return HttpRuntimeSettingsProvider.get();
     }

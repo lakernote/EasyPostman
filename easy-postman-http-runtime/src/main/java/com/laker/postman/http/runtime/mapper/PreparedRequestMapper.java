@@ -46,6 +46,7 @@ public class PreparedRequestMapper {
         req.sslVerificationEnabled = HttpRequestRuntimeSettingsResolver.resolveSslVerificationEnabled(effectiveItem);
         req.httpVersion = HttpRequestRuntimeSettingsResolver.resolveHttpVersion(effectiveItem);
         req.requestTimeoutMs = HttpRequestRuntimeSettingsResolver.resolveRequestTimeoutMs(effectiveItem);
+        req.webSocketPingIntervalMs = HttpRequestRuntimeSettingsResolver.resolveWebSocketPingIntervalMs(effectiveItem);
         req.transportAuth = createTransportAuth(effectiveItem);
         req.headersList = cloneHeaders(buildHeadersListWithResolvedAuth(effectiveItem, variableResolver));
         req.formDataList = cloneFormData(effectiveItem.getFormDataList());

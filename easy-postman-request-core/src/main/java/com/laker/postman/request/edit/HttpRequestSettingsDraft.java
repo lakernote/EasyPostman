@@ -15,4 +15,5 @@ public class HttpRequestSettingsDraft {
     @Builder.Default
     String httpVersion = HttpRequestVersions.AUTO;
     Integer requestTimeoutMs;
+    Integer webSocketPingIntervalMs;
 }

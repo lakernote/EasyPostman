@@ -43,6 +43,7 @@ public class PerformanceOutboundRequestTest {
                 .bodyType("raw")
                 .body("{\"ok\":true}")
                 .requestTimeoutMs(1500)
+                .webSocketPingIntervalMs(60000)
                 .followRedirects(false)
                 .cookieJarEnabled(true)
                 .proxyPolicy(PerformanceRequestSnapshot.PROXY_POLICY_USE_PROXY)
@@ -70,6 +71,7 @@ public class PerformanceOutboundRequestTest {
         assertEquals(request.getBodyType(), "raw");
         assertEquals(request.getBody(), "{\"ok\":true}");
         assertEquals(request.getRequestTimeoutMs(), Integer.valueOf(1500));
+        assertEquals(request.getWebSocketPingIntervalMs(), Integer.valueOf(60000));
         assertEquals(request.getFollowRedirects(), Boolean.FALSE);
         assertEquals(request.getCookieJarEnabled(), Boolean.TRUE);
         assertEquals(request.getProxyPolicy(), PerformanceRequestSnapshot.PROXY_POLICY_USE_PROXY);

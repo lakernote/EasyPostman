@@ -112,6 +112,7 @@ final class RequestTabStateController {
                 .proxyPolicy(settings.getProxyPolicy())
                 .httpVersion(settings.getHttpVersion())
                 .requestTimeoutMs(settings.getRequestTimeoutMs())
+                .webSocketPingIntervalMs(settings.getWebSocketPingIntervalMs())
                 .prescript(view.scriptPanel.getPrescript())
                 .postscript(view.scriptPanel.getPostscript())
                 .build();

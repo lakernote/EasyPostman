@@ -50,7 +50,7 @@ class RequestViewFactory {
         IndicatorTabComponent bodyTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_REQUEST_BODY));
         ScriptPanel scriptPanel = new ScriptPanel();
         IndicatorTabComponent scriptsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_SCRIPTS));
-        RequestSettingsPanel requestSettingsPanel = new RequestSettingsPanel();
+        RequestSettingsPanel requestSettingsPanel = new RequestSettingsPanel(protocol);
         IndicatorTabComponent settingsTabIndicator = new IndicatorTabComponent(I18nUtil.getMessage(MessageKeys.TAB_SETTINGS));
 
         boolean enableSaveButton = protocol.isHttpProtocol()

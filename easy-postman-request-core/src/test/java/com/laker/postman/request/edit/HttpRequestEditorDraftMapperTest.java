@@ -42,6 +42,7 @@ public class HttpRequestEditorDraftMapperTest {
                 .proxyPolicy(HttpRequestProxyPolicy.NO_PROXY)
                 .httpVersion(HttpRequestItem.HTTP_VERSION_HTTP_2)
                 .requestTimeoutMs(3000)
+                .webSocketPingIntervalMs(15000)
                 .prescript("pre")
                 .postscript("post")
                 .responses(List.of(response))
@@ -69,6 +70,7 @@ public class HttpRequestEditorDraftMapperTest {
         assertEquals(item.getProxyPolicy(), HttpRequestProxyPolicy.NO_PROXY);
         assertEquals(item.getHttpVersion(), HttpRequestItem.HTTP_VERSION_HTTP_2);
         assertEquals(item.getRequestTimeoutMs(), Integer.valueOf(3000));
+        assertEquals(item.getWebSocketPingIntervalMs(), Integer.valueOf(15000));
         assertEquals(item.getPrescript(), "pre");
         assertEquals(item.getPostscript(), "post");
         assertEquals(item.getResponse().get(0).getId(), "response-1");
@@ -115,6 +117,7 @@ public class HttpRequestEditorDraftMapperTest {
         item.setMethod("POST");
         item.setPathVariablesList(List.of(new HttpParam(true, "userId", "42")));
         item.setProxyPolicy(HttpRequestProxyPolicy.USE_PROXY);
+        item.setWebSocketPingIntervalMs(60000);
         item.setBody("name=easy");
         item.setHeadersList(List.of(new HttpHeader(true, "Content-Type", "application/x-www-form-urlencoded")));
 
@@ -122,6 +125,7 @@ public class HttpRequestEditorDraftMapperTest {
 
         assertEquals(draft.getId(), "request-2");
         assertEquals(draft.getProxyPolicy(), HttpRequestProxyPolicy.USE_PROXY);
+        assertEquals(draft.getWebSocketPingIntervalMs(), Integer.valueOf(60000));
         assertEquals(draft.getPathVariables().size(), 1);
         assertEquals(draft.getPathVariables().get(0).getKey(), "userId");
         assertEquals(draft.getParams().size(), 2);

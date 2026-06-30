@@ -170,6 +170,7 @@ public class PerformanceCorePlanJsonStorage {
         json.put("proxyPolicy", snapshot.getProxyPolicy());
         json.put("httpVersion", snapshot.getHttpVersion());
         json.put("requestTimeoutMs", snapshot.getRequestTimeoutMs());
+        json.put("webSocketPingIntervalMs", snapshot.getWebSocketPingIntervalMs());
         json.put("prescript", snapshot.getPrescript());
         json.put("postscript", snapshot.getPostscript());
         if (snapshot.getExecutionScope() != null && !snapshot.getExecutionScope().getGroupVariables().isEmpty()) {
@@ -474,6 +475,7 @@ public class PerformanceCorePlanJsonStorage {
                 .proxyPolicy(stringValue(requestJson, "proxyPolicy", null))
                 .httpVersion(stringValue(requestJson, "httpVersion", null))
                 .requestTimeoutMs(integerObjectValue(requestJson, "requestTimeoutMs"))
+                .webSocketPingIntervalMs(integerObjectValue(requestJson, "webSocketPingIntervalMs"))
                 .prescript(stringValue(requestJson, "prescript", null))
                 .postscript(stringValue(requestJson, "postscript", null))
                 .executionScope(deserializeRequestExecutionScopeSnapshot(objectMap(requestJson.get("executionScope"))))

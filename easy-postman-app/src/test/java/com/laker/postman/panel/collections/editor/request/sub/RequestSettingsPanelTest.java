@@ -4,7 +4,9 @@ import com.laker.postman.request.edit.HttpRequestEditorContentSummary;
 import com.laker.postman.request.edit.HttpRequestEditorDraft;
 import com.laker.postman.request.edit.HttpRequestSettingsDraft;
 import com.laker.postman.request.model.HttpRequestProxyPolicy;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
@@ -17,7 +19,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-public class RequestSettingsPanelTest {
+public class RequestSettingsPanelTest extends AbstractSwingUiTest {
 
     @Test
     public void shouldRejectOversizedTimeoutValue() throws Exception {
@@ -152,11 +154,100 @@ public class RequestSettingsPanelTest {
         assertTrue(hasSettingsContent(saved));
     }
 
+    @Test
+    public void shouldCollectPresetWebSocketPingInterval() throws Exception {
+        RequestSettingsPanel panel = new RequestSettingsPanel(RequestItemProtocolEnum.WEBSOCKET);
+        panel.populate(HttpRequestSettingsDraft.builder().webSocketPingIntervalMs(null).build());
+
+        selectIntegerSetting(panel, "webSocketPingIntervalComboBox", 60000);
+
+        HttpRequestSettingsDraft saved = panel.collectSettings();
+
+        assertEquals(saved.getWebSocketPingIntervalMs(), Integer.valueOf(60000));
+        assertTrue(hasSettingsContent(saved));
+    }
+
+    @Test
+    public void shouldCollectCustomWebSocketPingInterval() throws Exception {
+        RequestSettingsPanel panel = new RequestSettingsPanel(RequestItemProtocolEnum.WEBSOCKET);
+        panel.populate(HttpRequestSettingsDraft.builder().webSocketPingIntervalMs(null).build());
+
+        selectIntegerSetting(panel, "webSocketPingIntervalComboBox", -1);
+        setTextField(panel, "webSocketPingIntervalCustomField", "45000");
+
+        HttpRequestSettingsDraft saved = panel.collectSettings();
+
+        assertEquals(saved.getWebSocketPingIntervalMs(), Integer.valueOf(45000));
+        assertTrue(hasSettingsContent(saved));
+    }
+
+    @Test
+    public void shouldUseStandardControlSlotForPresetWebSocketPingInterval() throws Exception {
+        RequestSettingsPanel panel = new RequestSettingsPanel(RequestItemProtocolEnum.WEBSOCKET);
+
+        JPanel proxyControlPanel = (JPanel) comboBox(panel, "proxyPolicyComboBox").getParent();
+        JPanel pingControlPanel = (JPanel) comboBox(panel, "webSocketPingIntervalComboBox").getParent();
+        JPanel customPanel = panelField(panel, "webSocketPingIntervalCustomPanel");
+
+        assertTrue(proxyControlPanel.getPreferredSize().width <= 176);
+        assertTrue(pingControlPanel.getPreferredSize().width <= 176);
+        assertFalse(customPanel.isVisible());
+    }
+
+    @Test
+    public void shouldKeepStandardControlSlotWhenCustomWebSocketPingIntervalIsSelected() throws Exception {
+        RequestSettingsPanel panel = new RequestSettingsPanel(RequestItemProtocolEnum.WEBSOCKET);
+
+        selectIntegerSetting(panel, "webSocketPingIntervalComboBox", -1);
+
+        JPanel proxyControlPanel = (JPanel) comboBox(panel, "proxyPolicyComboBox").getParent();
+        JPanel pingControlPanel = (JPanel) comboBox(panel, "webSocketPingIntervalComboBox").getParent();
+        JPanel customPanel = panelField(panel, "webSocketPingIntervalCustomPanel");
+
+        assertTrue(proxyControlPanel.getPreferredSize().width <= 176);
+        assertTrue(pingControlPanel.getPreferredSize().width <= 176);
+        assertTrue(customPanel.isVisible());
+        assertEquals(customPanel.getComponentCount(), 2);
+    }
+
+    @Test
+    public void shouldRejectTooSmallCustomWebSocketPingInterval() throws Exception {
+        RequestSettingsPanel panel = new RequestSettingsPanel(RequestItemProtocolEnum.WEBSOCKET);
+        selectIntegerSetting(panel, "webSocketPingIntervalComboBox", -1);
+        setTextField(panel, "webSocketPingIntervalCustomField", "1000");
+
+        assertNotNull(panel.validateSettings());
+    }
+
+    @Test
+    public void shouldTrackViewportWidthAfterResize() {
+        RequestSettingsPanel panel = new RequestSettingsPanel(RequestItemProtocolEnum.WEBSOCKET);
+
+        panel.setSize(720, 320);
+        panel.doLayout();
+
+        JViewport viewport = panel.getViewport();
+        assertEquals(viewport.getViewSize().width, viewport.getExtentSize().width);
+    }
+
+    @Test
+    public void shouldLetEasyComboBoxUseItsMaxOptionWidth() throws Exception {
+        RequestSettingsPanel panel = new RequestSettingsPanel(RequestItemProtocolEnum.WEBSOCKET);
+
+        JComboBox<?> proxyComboBox = comboBox(panel, "proxyPolicyComboBox");
+
+        assertTrue(proxyComboBox.getPreferredSize().width < 176);
+    }
+
     private static void setRequestTimeoutText(RequestSettingsPanel panel, String value) throws Exception {
-        Field field = RequestSettingsPanel.class.getDeclaredField("requestTimeoutField");
+        setTextField(panel, "requestTimeoutField", value);
+    }
+
+    private static void setTextField(RequestSettingsPanel panel, String fieldName, String value) throws Exception {
+        Field field = RequestSettingsPanel.class.getDeclaredField(fieldName);
         field.setAccessible(true);
-        JTextField timeoutField = (JTextField) field.get(panel);
-        timeoutField.setText(value);
+        JTextField textField = (JTextField) field.get(panel);
+        textField.setText(value);
     }
 
     private static void selectBooleanSetting(RequestSettingsPanel panel, String fieldName, Boolean value) throws Exception {
@@ -175,6 +266,34 @@ public class RequestSettingsPanelTest {
             }
         }
         throw new IllegalArgumentException("No combo option found for value: " + value);
+    }
+
+    private static void selectIntegerSetting(RequestSettingsPanel panel, String fieldName, Integer value) throws Exception {
+        JComboBox<?> comboBox = comboBox(panel, fieldName);
+        ComboBoxModel<?> model = comboBox.getModel();
+        for (int i = 0; i < model.getSize(); i++) {
+            Object option = model.getElementAt(i);
+            Field valueField = option.getClass().getDeclaredField("value");
+            valueField.setAccessible(true);
+            Object optionValue = valueField.get(option);
+            if (Objects.equals(optionValue, value)) {
+                comboBox.setSelectedIndex(i);
+                return;
+            }
+        }
+        throw new IllegalArgumentException("No combo option found for value: " + value);
+    }
+
+    private static JComboBox<?> comboBox(RequestSettingsPanel panel, String fieldName) throws Exception {
+        Field field = RequestSettingsPanel.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (JComboBox<?>) field.get(panel);
+    }
+
+    private static JPanel panelField(RequestSettingsPanel panel, String fieldName) throws Exception {
+        Field field = RequestSettingsPanel.class.getDeclaredField(fieldName);
+        field.setAccessible(true);
+        return (JPanel) field.get(panel);
     }
 
     private static void selectProxyPolicy(RequestSettingsPanel panel, HttpRequestProxyPolicy value) throws Exception {
@@ -202,6 +321,7 @@ public class RequestSettingsPanelTest {
                 .proxyPolicy(settings.getProxyPolicy())
                 .httpVersion(settings.getHttpVersion())
                 .requestTimeoutMs(settings.getRequestTimeoutMs())
+                .webSocketPingIntervalMs(settings.getWebSocketPingIntervalMs())
                 .build()).isHasSettings();
     }
 

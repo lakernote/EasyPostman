@@ -1296,6 +1296,17 @@ public final class MessageKeys {
     public static final String REQUEST_SETTINGS_TIMEOUT_DESC = "request.settings.timeout.desc";
     public static final String REQUEST_SETTINGS_TIMEOUT_HINT = "request.settings.timeout.hint";
     public static final String REQUEST_SETTINGS_TIMEOUT_VALIDATION = "request.settings.timeout.validation";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_LABEL = "request.settings.websocket_ping.label";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_DESC = "request.settings.websocket_ping.desc";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_HINT = "request.settings.websocket_ping.hint";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_VALIDATION = "request.settings.websocket_ping.validation";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_DEFAULT = "request.settings.websocket_ping.default";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_DISABLED = "request.settings.websocket_ping.disabled";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_15S = "request.settings.websocket_ping.15s";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_30S = "request.settings.websocket_ping.30s";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_60S = "request.settings.websocket_ping.60s";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_CUSTOM = "request.settings.websocket_ping.custom";
+    public static final String REQUEST_SETTINGS_WEBSOCKET_PING_UNIT = "request.settings.websocket_ping.unit";
     public static final String REQUEST_SETTINGS_BOOLEAN_DEFAULT = "request.settings.boolean.default";
     public static final String REQUEST_SETTINGS_BOOLEAN_ENABLED = "request.settings.boolean.enabled";
     public static final String REQUEST_SETTINGS_BOOLEAN_DISABLED = "request.settings.boolean.disabled";
@@ -1946,6 +1957,7 @@ public final class MessageKeys {
     // ============ WebSocket面板相关 ============
     public static final String WEBSOCKET_COLUMN_TYPE = "websocket.column.type";
     public static final String WEBSOCKET_COLUMN_TIME = "websocket.column.time";
+    public static final String STREAM_COLUMN_INTERVAL = "stream.column.interval";
     public static final String WEBSOCKET_COLUMN_CONTENT = "websocket.column.content";
     public static final String WEBSOCKET_TYPE_ALL = "websocket.type.all";
     public static final String WEBSOCKET_TYPE_SENT = "websocket.type.sent";
@@ -2015,6 +2027,7 @@ public final class MessageKeys {
     public static final String SNIPPET_DIALOG_NOT_FOUND = "snippet.dialog.not_found";
 
     // ============ WaterfallChartPanel 国际化 ============
+    public static final String WATERFALL_APPLICATION_PROTOCOL = "waterfall.application_protocol";
     public static final String WATERFALL_HTTP_VERSION = "waterfall.http_version";
     public static final String WATERFALL_LOCAL_ADDRESS = "waterfall.local_address";
     public static final String WATERFALL_REMOTE_ADDRESS = "waterfall.remote_address";

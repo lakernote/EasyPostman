@@ -5,8 +5,10 @@ import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SwitchButton;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.request.edit.HttpRequestSettingsDraft;
+import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import com.laker.postman.request.model.HttpRequestVersions;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -32,15 +34,29 @@ public class RequestSettingsPanel extends JScrollPane {
     private static final int CONTROL_MIN_WIDTH = 120;
     private static final int ROW_COLUMN_GAP = 16;
     private static final int SCROLL_UNIT_INCREMENT = 24;
+    private static final int CUSTOM_WEBSOCKET_PING_INTERVAL_OPTION = -1;
+    private static final int MIN_CUSTOM_WEBSOCKET_PING_INTERVAL_MS = 5_000;
 
+    private final boolean webSocketSettingsVisible;
     private final EasyComboBox<BooleanSettingOption> followRedirectsComboBox;
     private final SwitchButton useCookieJarSwitch;
     private final EasyComboBox<ProxyPolicyOption> proxyPolicyComboBox;
     private final EasyComboBox<HttpVersionOption> httpVersionComboBox;
+    private final EasyComboBox<IntegerSettingOption> webSocketPingIntervalComboBox;
+    private final JTextField webSocketPingIntervalCustomField;
+    private final JLabel webSocketPingIntervalUnitLabel;
+    private JPanel webSocketPingIntervalControlPanel;
+    private JPanel webSocketPingIntervalCustomPanel;
     private final JTextField requestTimeoutField;
     private final JLabel requestTimeoutHintLabel;
+    private boolean editable = true;
 
     public RequestSettingsPanel() {
+        this(RequestItemProtocolEnum.HTTP);
+    }
+
+    public RequestSettingsPanel(RequestItemProtocolEnum protocol) {
+        webSocketSettingsVisible = protocol != null && protocol.isWebSocketProtocol();
         ToolWindowSurfaceStyle.applyScrollPaneCard(this);
         setBorder(BorderFactory.createEmptyBorder());
         setViewportBorder(BorderFactory.createEmptyBorder());
@@ -51,23 +67,33 @@ public class RequestSettingsPanel extends JScrollPane {
         ToolWindowSurfaceStyle.applyCard(content);
         content.setBorder(BorderFactory.createEmptyBorder(6, 10, 8, 10));
 
-        JPanel viewportContent = new JPanel(new BorderLayout());
+        JPanel viewportContent = new ViewportWidthPanel(new BorderLayout());
         ToolWindowSurfaceStyle.applyCard(viewportContent);
         viewportContent.add(content, BorderLayout.NORTH);
         setViewportView(viewportContent);
 
-        followRedirectsComboBox = createBooleanSettingComboBox();
+        followRedirectsComboBox = createSettingComboBox(createBooleanSettingOptions());
         useCookieJarSwitch = new SwitchButton();
-        proxyPolicyComboBox = new EasyComboBox<>(createProxyPolicyOptions(), EasyComboBox.WidthMode.FIXED_MAX);
-        httpVersionComboBox = new EasyComboBox<>(createHttpVersionOptions(), EasyComboBox.WidthMode.FIXED_MAX);
+        proxyPolicyComboBox = createSettingComboBox(createProxyPolicyOptions());
+        httpVersionComboBox = createSettingComboBox(createHttpVersionOptions());
+        webSocketPingIntervalComboBox = createSettingComboBox(createWebSocketPingIntervalOptions());
+        webSocketPingIntervalCustomField = new JTextField();
+        webSocketPingIntervalUnitLabel = new JLabel(I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_UNIT));
         requestTimeoutField = new JTextField();
         requestTimeoutHintLabel = createHintLabel();
 
         ((AbstractDocument) requestTimeoutField.getDocument()).setDocumentFilter(new DigitsOnlyDocumentFilter());
-        proxyPolicyComboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-        httpVersionComboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        ((AbstractDocument) webSocketPingIntervalCustomField.getDocument()).setDocumentFilter(new DigitsOnlyDocumentFilter());
+        webSocketPingIntervalCustomField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        webSocketPingIntervalCustomField.setColumns(8);
+        webSocketPingIntervalUnitLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        webSocketPingIntervalUnitLabel.setForeground(ModernColors.getTextSecondary());
         requestTimeoutField.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         requestTimeoutField.setColumns(10);
+        String webSocketPingHint = webSocketPingIntervalHint();
+        webSocketPingIntervalComboBox.setToolTipText(webSocketPingHint);
+        webSocketPingIntervalCustomField.setToolTipText(webSocketPingHint);
+        webSocketPingIntervalComboBox.addActionListener(e -> updateWebSocketPingCustomFieldState());
 
         content.add(createSelectRow(
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_FOLLOW_REDIRECTS_LABEL),
@@ -89,6 +115,9 @@ public class RequestSettingsPanel extends JScrollPane {
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_HTTP_VERSION_DESC),
                 httpVersionComboBox
         ), "growx, wrap");
+        if (webSocketSettingsVisible) {
+            content.add(createWebSocketPingIntervalRow(), "growx, wrap");
+        }
         content.add(createTimeoutRow(), "growx, wrap");
         populate(null);
     }
@@ -103,6 +132,7 @@ public class RequestSettingsPanel extends JScrollPane {
         useCookieJarSwitch.setSelected(cookieJarEnabled == null || cookieJarEnabled);
         proxyPolicyComboBox.setSelectedItem(findProxyPolicyOption(settings != null ? settings.getProxyPolicy() : null));
         httpVersionComboBox.setSelectedItem(findHttpVersionOption(settings != null ? settings.getHttpVersion() : null));
+        selectWebSocketPingInterval(settings != null ? settings.getWebSocketPingIntervalMs() : null);
         Integer requestTimeout = settings != null ? settings.getRequestTimeoutMs() : null;
         requestTimeoutField.setText(requestTimeout != null ? String.valueOf(requestTimeout) : "");
     }
@@ -114,6 +144,7 @@ public class RequestSettingsPanel extends JScrollPane {
                 .proxyPolicy(getSelectedProxyPolicy())
                 .httpVersion(getStoredHttpVersionValue())
                 .requestTimeoutMs(getStoredRequestTimeoutValue())
+                .webSocketPingIntervalMs(getStoredWebSocketPingIntervalValue())
                 .build();
     }
 
@@ -122,7 +153,11 @@ public class RequestSettingsPanel extends JScrollPane {
     }
 
     public String validateSettings() {
-        return validateRequestTimeout(requestTimeoutField.getText());
+        String timeoutValidation = validateRequestTimeout(requestTimeoutField.getText());
+        if (timeoutValidation != null) {
+            return timeoutValidation;
+        }
+        return validateWebSocketPingInterval();
     }
 
     public void setEditable(boolean editable) {
@@ -130,6 +165,9 @@ public class RequestSettingsPanel extends JScrollPane {
         useCookieJarSwitch.setEnabled(editable);
         proxyPolicyComboBox.setEnabled(editable);
         httpVersionComboBox.setEnabled(editable);
+        webSocketPingIntervalComboBox.setEnabled(editable && webSocketSettingsVisible);
+        this.editable = editable;
+        updateWebSocketPingCustomFieldState();
         requestTimeoutField.setEditable(editable);
         requestTimeoutField.setEnabled(editable);
     }
@@ -142,6 +180,25 @@ public class RequestSettingsPanel extends JScrollPane {
         useCookieJarSwitch.addActionListener(e -> listener.run());
         proxyPolicyComboBox.addActionListener(e -> listener.run());
         httpVersionComboBox.addActionListener(e -> listener.run());
+        webSocketPingIntervalComboBox.addActionListener(e -> {
+            listener.run();
+        });
+        webSocketPingIntervalCustomField.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                listener.run();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                listener.run();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                listener.run();
+            }
+        });
         requestTimeoutField.getDocument().addDocumentListener(new DocumentListener() {
             @Override
             public void insertUpdate(DocumentEvent e) {
@@ -160,11 +217,32 @@ public class RequestSettingsPanel extends JScrollPane {
         });
     }
 
-    private EasyComboBox<BooleanSettingOption> createBooleanSettingComboBox() {
-        EasyComboBox<BooleanSettingOption> comboBox = new EasyComboBox<>(
-                createBooleanSettingOptions(),
-                EasyComboBox.WidthMode.FIXED_MAX
-        );
+    @Override
+    public void doLayout() {
+        super.doLayout();
+        syncViewportViewWidth();
+    }
+
+    private void syncViewportViewWidth() {
+        JViewport viewport = getViewport();
+        Component view = viewport.getView();
+        if (view == null) {
+            return;
+        }
+        Dimension extentSize = viewport.getExtentSize();
+        if (extentSize.width <= 0) {
+            return;
+        }
+        Dimension preferredSize = view.getPreferredSize();
+        Dimension viewSize = viewport.getViewSize();
+        int targetHeight = Math.max(preferredSize.height, extentSize.height);
+        if (viewSize.width != extentSize.width || viewSize.height != targetHeight) {
+            viewport.setViewSize(new Dimension(extentSize.width, targetHeight));
+        }
+    }
+
+    private <T> EasyComboBox<T> createSettingComboBox(T[] options) {
+        EasyComboBox<T> comboBox = new EasyComboBox<>(options, EasyComboBox.WidthMode.FIXED_MAX);
         comboBox.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         return comboBox;
     }
@@ -183,6 +261,16 @@ public class RequestSettingsPanel extends JScrollPane {
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_TIMEOUT_LABEL),
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_TIMEOUT_DESC),
                 rightPanel
+        );
+    }
+
+    private JPanel createWebSocketPingIntervalRow() {
+        webSocketPingIntervalControlPanel = createWebSocketPingIntervalControlPanel();
+        updateWebSocketPingCustomFieldState();
+        return createSettingRow(
+                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_LABEL),
+                I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_DESC),
+                webSocketPingIntervalControlPanel
         );
     }
 
@@ -220,6 +308,31 @@ public class RequestSettingsPanel extends JScrollPane {
                 component,
                 "growx, pushx, wmin " + CONTROL_MIN_WIDTH + ", wmax " + CONTROL_WIDTH + ", alignx right"
         );
+        return panel;
+    }
+
+    private JPanel createWebSocketPingIntervalControlPanel() {
+        JPanel panel = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding, hidemode 3, gap 0",
+                "[grow,fill]",
+                "[]2[]"
+        ));
+        panel.setOpaque(false);
+
+        webSocketPingIntervalCustomPanel = new JPanel(new MigLayout(
+                "insets 0, fillx, novisualpadding, hidemode 3, gap 6 0",
+                "[grow,fill][pref]",
+                "[]"
+        ));
+        webSocketPingIntervalCustomPanel.setOpaque(false);
+        webSocketPingIntervalCustomPanel.add(webSocketPingIntervalCustomField, "growx, wmin 0");
+        webSocketPingIntervalCustomPanel.add(webSocketPingIntervalUnitLabel);
+
+        panel.add(
+                webSocketPingIntervalComboBox,
+                "growx, pushx, wmin " + CONTROL_MIN_WIDTH + ", wmax " + CONTROL_WIDTH + ", wrap"
+        );
+        panel.add(webSocketPingIntervalCustomPanel, "growx");
         return panel;
     }
 
@@ -265,6 +378,14 @@ public class RequestSettingsPanel extends JScrollPane {
         ));
     }
 
+    private String webSocketPingIntervalHint() {
+        return I18nUtil.getMessage(
+                MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_HINT,
+                HttpRequestItem.DEFAULT_WEBSOCKET_PING_INTERVAL_MS,
+                MIN_CUSTOM_WEBSOCKET_PING_INTERVAL_MS
+        );
+    }
+
     private Boolean getStoredCookieJarValue() {
         return useCookieJarSwitch.isSelected() ? Boolean.TRUE : Boolean.FALSE;
     }
@@ -275,6 +396,20 @@ public class RequestSettingsPanel extends JScrollPane {
 
     private Integer getStoredRequestTimeoutValue() {
         return parseRequestTimeoutOrNull();
+    }
+
+    private Integer getStoredWebSocketPingIntervalValue() {
+        if (!webSocketSettingsVisible) {
+            return null;
+        }
+        IntegerSettingOption option = (IntegerSettingOption) webSocketPingIntervalComboBox.getSelectedItem();
+        if (option == null) {
+            return null;
+        }
+        if (Integer.valueOf(CUSTOM_WEBSOCKET_PING_INTERVAL_OPTION).equals(option.value)) {
+            return parseIntegerOrNull(webSocketPingIntervalCustomField.getText());
+        }
+        return option.value;
     }
 
     private BooleanSettingOption[] createBooleanSettingOptions() {
@@ -309,6 +444,35 @@ public class RequestSettingsPanel extends JScrollPane {
                 I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_HTTP_VERSION_HTTP_2)
         ));
         return options.toArray(new HttpVersionOption[0]);
+    }
+
+    private IntegerSettingOption[] createWebSocketPingIntervalOptions() {
+        return new IntegerSettingOption[]{
+                new IntegerSettingOption(
+                        null,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_DEFAULT)
+                ),
+                new IntegerSettingOption(
+                        HttpRequestItem.DISABLED_WEBSOCKET_PING_INTERVAL_MS,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_DISABLED)
+                ),
+                new IntegerSettingOption(
+                        15_000,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_15S)
+                ),
+                new IntegerSettingOption(
+                        30_000,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_30S)
+                ),
+                new IntegerSettingOption(
+                        60_000,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_60S)
+                ),
+                new IntegerSettingOption(
+                        CUSTOM_WEBSOCKET_PING_INTERVAL_OPTION,
+                        I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_CUSTOM)
+                )
+        };
     }
 
     private ProxyPolicyOption[] createProxyPolicyOptions() {
@@ -365,6 +529,57 @@ public class RequestSettingsPanel extends JScrollPane {
         return model.getElementAt(0);
     }
 
+    private void selectWebSocketPingInterval(Integer value) {
+        Integer optionValue = isKnownWebSocketPingInterval(value)
+                ? value
+                : Integer.valueOf(CUSTOM_WEBSOCKET_PING_INTERVAL_OPTION);
+        webSocketPingIntervalComboBox.setSelectedItem(findIntegerOption(webSocketPingIntervalComboBox, optionValue));
+        webSocketPingIntervalCustomField.setText(isKnownWebSocketPingInterval(value) || value == null
+                ? ""
+                : String.valueOf(value));
+        updateWebSocketPingCustomFieldState();
+    }
+
+    private IntegerSettingOption findIntegerOption(EasyComboBox<IntegerSettingOption> comboBox, Integer value) {
+        ComboBoxModel<IntegerSettingOption> model = comboBox.getModel();
+        for (int i = 0; i < model.getSize(); i++) {
+            IntegerSettingOption option = model.getElementAt(i);
+            if ((value == null && option.value == null) || (value != null && value.equals(option.value))) {
+                return option;
+            }
+        }
+        return model.getElementAt(0);
+    }
+
+    private boolean isKnownWebSocketPingInterval(Integer value) {
+        return value == null
+                || Integer.valueOf(0).equals(value)
+                || Integer.valueOf(15_000).equals(value)
+                || Integer.valueOf(30_000).equals(value)
+                || Integer.valueOf(60_000).equals(value);
+    }
+
+    private void updateWebSocketPingCustomFieldState() {
+        boolean customSelected = webSocketSettingsVisible && isCustomWebSocketPingIntervalSelected();
+        if (webSocketPingIntervalCustomPanel != null) {
+            webSocketPingIntervalCustomPanel.setVisible(customSelected);
+        }
+        webSocketPingIntervalCustomField.setVisible(customSelected);
+        webSocketPingIntervalUnitLabel.setVisible(customSelected);
+        webSocketPingIntervalCustomField.setEditable(editable && customSelected);
+        webSocketPingIntervalCustomField.setEnabled(editable && customSelected);
+        Container parent = webSocketPingIntervalControlPanel;
+        if (parent != null) {
+            parent.revalidate();
+            parent.repaint();
+        }
+    }
+
+    private boolean isCustomWebSocketPingIntervalSelected() {
+        IntegerSettingOption option = (IntegerSettingOption) webSocketPingIntervalComboBox.getSelectedItem();
+        return option != null && Integer.valueOf(CUSTOM_WEBSOCKET_PING_INTERVAL_OPTION).equals(option.value);
+    }
+
     private Boolean getSelectedBooleanValue(EasyComboBox<BooleanSettingOption> comboBox) {
         BooleanSettingOption option = (BooleanSettingOption) comboBox.getSelectedItem();
         return option != null ? option.value : null;
@@ -381,7 +596,11 @@ public class RequestSettingsPanel extends JScrollPane {
     }
 
     private Integer parseRequestTimeoutOrNull() {
-        String value = requestTimeoutField.getText().trim();
+        return parseIntegerOrNull(requestTimeoutField.getText());
+    }
+
+    private Integer parseIntegerOrNull(String rawValue) {
+        String value = rawValue == null ? "" : rawValue.trim();
         if (value.isEmpty()) {
             return null;
         }
@@ -409,6 +628,30 @@ public class RequestSettingsPanel extends JScrollPane {
             return null;
         } catch (NumberFormatException ex) {
             return I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_TIMEOUT_VALIDATION);
+        }
+    }
+
+    private String validateWebSocketPingInterval() {
+        if (!webSocketSettingsVisible || !isCustomWebSocketPingIntervalSelected()) {
+            return null;
+        }
+        String normalized = webSocketPingIntervalCustomField.getText() == null
+                ? ""
+                : webSocketPingIntervalCustomField.getText().trim();
+        if (normalized.isEmpty()) {
+            return I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_VALIDATION,
+                    MIN_CUSTOM_WEBSOCKET_PING_INTERVAL_MS);
+        }
+        try {
+            long parsed = Long.parseLong(normalized);
+            if (parsed < MIN_CUSTOM_WEBSOCKET_PING_INTERVAL_MS || parsed > Integer.MAX_VALUE) {
+                return I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_VALIDATION,
+                        MIN_CUSTOM_WEBSOCKET_PING_INTERVAL_MS);
+            }
+            return null;
+        } catch (NumberFormatException ex) {
+            return I18nUtil.getMessage(MessageKeys.REQUEST_SETTINGS_WEBSOCKET_PING_VALIDATION,
+                    MIN_CUSTOM_WEBSOCKET_PING_INTERVAL_MS);
         }
     }
 
@@ -457,6 +700,21 @@ public class RequestSettingsPanel extends JScrollPane {
         }
     }
 
+    private static final class IntegerSettingOption {
+        private final Integer value;
+        private final String label;
+
+        private IntegerSettingOption(Integer value, String label) {
+            this.value = value;
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+    }
+
     private static final class ShrinkableWrapTextArea extends JTextArea {
         private ShrinkableWrapTextArea(String text) {
             super(text);
@@ -495,6 +753,37 @@ public class RequestSettingsPanel extends JScrollPane {
                 }
             }
             return true;
+        }
+    }
+
+    private static final class ViewportWidthPanel extends JPanel implements Scrollable {
+        private ViewportWidthPanel(LayoutManager layout) {
+            super(layout);
+        }
+
+        @Override
+        public Dimension getPreferredScrollableViewportSize() {
+            return getPreferredSize();
+        }
+
+        @Override
+        public int getScrollableUnitIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return SCROLL_UNIT_INCREMENT;
+        }
+
+        @Override
+        public int getScrollableBlockIncrement(Rectangle visibleRect, int orientation, int direction) {
+            return Math.max(SCROLL_UNIT_INCREMENT, visibleRect.height - SCROLL_UNIT_INCREMENT);
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportWidth() {
+            return true;
+        }
+
+        @Override
+        public boolean getScrollableTracksViewportHeight() {
+            return false;
         }
     }
 }

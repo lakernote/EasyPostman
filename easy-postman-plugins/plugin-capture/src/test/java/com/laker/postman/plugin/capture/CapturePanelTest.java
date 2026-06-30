@@ -5,13 +5,16 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
 import javax.swing.JLabel;
+import javax.swing.JComponent;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextArea;
 import javax.swing.JSplitPane;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Point;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -173,6 +176,27 @@ public class CapturePanelTest {
     }
 
     @Test
+    public void shouldPlaceViewFiltersOnSeparateRowFromTypeFilters() {
+        CapturePanel panel = new CapturePanel(null, PluginStorage.noop());
+        panel.setSize(1400, 700);
+        layoutTree(panel);
+        JComponent topBar = (JComponent) panel.getComponent(0);
+        JLabel typeLabel = findLabel(topBar, CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTERS_LABEL));
+        JLabel viewFilterLabel = findLabel(topBar, CaptureI18n.t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER));
+
+        assertTrue(typeLabel != null);
+        assertTrue(viewFilterLabel != null);
+        Point typePoint = SwingUtilities.convertPoint(typeLabel.getParent(), typeLabel.getLocation(), topBar);
+        Point viewFilterPoint = SwingUtilities.convertPoint(
+                viewFilterLabel.getParent(),
+                viewFilterLabel.getLocation(),
+                topBar
+        );
+
+        assertTrue(viewFilterPoint.y > typePoint.y);
+    }
+
+    @Test
     public void shouldUseWiderDragAreaForDetailSplitWithoutChangingDividerStyle() {
         CapturePanel panel = new CapturePanel(null, PluginStorage.noop());
         JSplitPane splitPane = findDetailSplit(panel);
@@ -235,6 +259,30 @@ public class CapturePanelTest {
         if (component instanceof Container container) {
             for (Component child : container.getComponents()) {
                 collectLabelTexts(child, labels);
+            }
+        }
+    }
+
+    private static JLabel findLabel(Component component, String text) {
+        if (component instanceof JLabel label && text.equals(label.getText())) {
+            return label;
+        }
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                JLabel label = findLabel(child, text);
+                if (label != null) {
+                    return label;
+                }
+            }
+        }
+        return null;
+    }
+
+    private static void layoutTree(Component component) {
+        component.doLayout();
+        if (component instanceof Container container) {
+            for (Component child : container.getComponents()) {
+                layoutTree(child);
             }
         }
     }

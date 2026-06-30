@@ -183,7 +183,7 @@ public class CapturePanel extends JPanel {
         JPanel panel = new JPanel(new MigLayout(
                 "insets 8, fillx, novisualpadding",
                 "[][220!]8[104!]10[]12[]6[]4[82!]push[]",
-                "[][][]"));
+                "[][][][]"));
         ToolWindowSurfaceStyle.applySectionHeader(panel, 0, 0, 8, 0);
 
         hostField = new JTextField(defaultHost());
@@ -253,8 +253,6 @@ public class CapturePanel extends JPanel {
         captureStatusPanel.addMouseListener(statusClickListener);
         captureTrustStatusIcon.addMouseListener(statusClickListener);
         captureProxyStatusIcon.addMouseListener(statusClickListener);
-        JPanel filterToolbarPanel = buildFilterToolbarPanel();
-
         panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_BIND)), "gapright 8");
         panel.add(hostField, "growx");
         panel.add(portSpinner, "growx");
@@ -265,21 +263,11 @@ public class CapturePanel extends JPanel {
         panel.add(captureStatusPanel, "gapleft push, wrap");
         panel.add(new JLabel(t(MessageKeys.TOOLBOX_CAPTURE_CAPTURE_HOSTS)), "gapright 8");
         panel.add(captureFilterField, "span 7, growx, wrap");
-        panel.add(filterToolbarPanel, "skip 1, span 7, growx");
+        panel.add(filterGroupLabel(t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTERS_LABEL)), "gapright 8, aligny center");
+        panel.add(quickFilterPanel, "span 7, growx, wrap");
+        panel.add(filterGroupLabel(t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER)), "gapright 8, aligny center");
+        panel.add(viewPresetPanel, "span 7, growx");
         syncQuickFilterButtonsFromField();
-        return panel;
-    }
-
-    private JPanel buildFilterToolbarPanel() {
-        JPanel panel = new JPanel(new MigLayout(
-                "insets 0, fillx, gapx 6, novisualpadding",
-                "[]6[]18[]6[]push",
-                "[]"));
-        panel.setOpaque(false);
-        panel.add(filterGroupLabel(t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTERS_LABEL)), "shrink 0");
-        panel.add(quickFilterPanel, "shrink 0");
-        panel.add(filterGroupLabel(t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER)), "shrink 0");
-        panel.add(viewPresetPanel, "shrink 0");
         return panel;
     }
 
@@ -1090,7 +1078,7 @@ public class CapturePanel extends JPanel {
     }
 
     private JPanel buildQuickFilterPanel() {
-        JPanel panel = new JPanel(new MigLayout("insets 0, gapx 6, gapy 0, novisualpadding", "[]0[]0[]0[]0[]0[]0[]", "[]"));
+        JPanel panel = new JPanel(new MigLayout("insets 0, gapx 4, gapy 0, novisualpadding", "", "[]"));
         panel.setOpaque(false);
         addQuickFilterButton(panel, "http", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_HTTP));
         addQuickFilterButton(panel, "https", t(MessageKeys.TOOLBOX_CAPTURE_QUICK_FILTER_HTTPS));
@@ -1105,7 +1093,7 @@ public class CapturePanel extends JPanel {
     }
 
     private JPanel buildViewPresetPanel() {
-        JPanel panel = new JPanel(new MigLayout("insets 0, gapx 6, gapy 0, novisualpadding", "[]0[]0[]0[]0[]0[]0[]", "[]"));
+        JPanel panel = new JPanel(new MigLayout("insets 0, gapx 4, gapy 0, novisualpadding", "", "[]"));
         panel.setOpaque(false);
         addViewPresetButton(panel, CaptureViewPreset.ERRORS_ONLY, t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER_ERRORS));
         addViewPresetButton(panel, CaptureViewPreset.SLOW_ONLY, t(MessageKeys.TOOLBOX_CAPTURE_VIEW_FILTER_SLOW));
@@ -1120,14 +1108,14 @@ public class CapturePanel extends JPanel {
         JToggleButton button = new QuickFilterButton(text);
         button.addActionListener(e -> toggleQuickFilterToken(token, button.isSelected()));
         quickFilterButtons.put(token, button);
-        panel.add(button);
+        panel.add(button, "shrink 0");
     }
 
     private void addViewPresetButton(JPanel panel, CaptureViewPreset preset, String text) {
         JToggleButton button = new QuickFilterButton(text);
         button.addActionListener(e -> toggleViewPreset(preset, button.isSelected()));
         viewPresetButtons.put(preset, button);
-        panel.add(button);
+        panel.add(button, "shrink 0");
     }
 
     private void toggleQuickFilterToken(String token, boolean selected) {
@@ -2377,15 +2365,32 @@ public class CapturePanel extends JPanel {
 
     private static final class QuickFilterButton extends JToggleButton {
 
+        private boolean hovered;
+
         private QuickFilterButton(String text) {
             super(text);
             setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
-            setBorder(new EmptyBorder(3, 8, 3, 8));
+            setBorder(new EmptyBorder(2, 7, 2, 7));
             setFocusable(false);
             setOpaque(false);
             setContentAreaFilled(false);
             setBorderPainted(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    hovered = true;
+                    updateColors();
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    hovered = false;
+                    updateColors();
+                    repaint();
+                }
+            });
             updateColors();
         }
 
@@ -2410,8 +2415,10 @@ public class CapturePanel extends JPanel {
                 setForeground(ModernColors.getTextDisabled());
             } else if (isSelected()) {
                 setForeground(ChipLabel.foregroundFor(borderColor));
-            } else {
+            } else if (hovered) {
                 setForeground(ModernColors.getTextPrimary());
+            } else {
+                setForeground(ModernColors.getTextSecondary());
             }
         }
 
@@ -2423,23 +2430,34 @@ public class CapturePanel extends JPanel {
             if (borderColor == null) {
                 borderColor = ModernColors.getNeutral();
             }
-            Color fillColor;
+            int fillAlpha;
+            int borderAlpha;
             if (!isEnabled()) {
-                fillColor = ChipLabel.fillFor(borderColor, 18);
+                fillAlpha = 10;
+                borderAlpha = 30;
             } else if (isSelected()) {
-                fillColor = ChipLabel.fillFor(borderColor, 40);
+                fillAlpha = 34;
+                borderAlpha = 150;
+            } else if (hovered) {
+                fillAlpha = 16;
+                borderAlpha = 70;
             } else {
-                fillColor = ChipLabel.fillFor(borderColor, 12);
+                fillAlpha = 0;
+                borderAlpha = 0;
             }
             RoundRectangle2D.Float chipShape = new RoundRectangle2D.Float(
                     0.5f, 0.5f,
                     Math.max(0f, getWidth() - 1f),
                     Math.max(0f, getHeight() - 1f),
-                    10, 10);
-            g2.setColor(fillColor);
-            g2.fill(chipShape);
-            g2.setColor(ChipLabel.borderFor(borderColor, isSelected() ? 160 : 90));
-            g2.draw(chipShape);
+                    8, 8);
+            if (fillAlpha > 0) {
+                g2.setColor(ChipLabel.fillFor(borderColor, fillAlpha));
+                g2.fill(chipShape);
+            }
+            if (borderAlpha > 0) {
+                g2.setColor(ChipLabel.borderFor(borderColor, borderAlpha));
+                g2.draw(chipShape);
+            }
             g2.dispose();
             super.paintComponent(g);
         }

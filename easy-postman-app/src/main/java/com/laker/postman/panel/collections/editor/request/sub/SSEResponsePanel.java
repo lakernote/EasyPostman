@@ -17,8 +17,6 @@ import com.laker.postman.util.MessageKeys;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.MouseAdapter;
@@ -49,27 +47,21 @@ public class SSEResponsePanel extends JPanel {
 
     private static final int COLUMN_TYPE = 0;
     private static final int COLUMN_TIME = 1;
-    private static final int COLUMN_EVENT_ID = 2;
-    private static final int COLUMN_EVENT_TYPE = 3;
-    private static final int COLUMN_RETRY = 4;
-    private static final int COLUMN_CONTENT = 5;
-    private static final int COLUMN_ASSERTION = 6;
+    private static final int COLUMN_CONTENT = 2;
+    private static final int COLUMN_ASSERTION = 3;
 
     private static final String[] COLUMN_NAMES = {
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TIME),
-            I18nUtil.getMessage(MessageKeys.SSE_COLUMN_EVENT_ID),
-            I18nUtil.getMessage(MessageKeys.SSE_COLUMN_EVENT_TYPE),
-            I18nUtil.getMessage(MessageKeys.SSE_COLUMN_RETRY),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT),
             I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION)
     };
 
     private static final String[] TYPE_FILTERS = {
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL),
-            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_CONNECTED),
+            I18nUtil.getMessage(MessageKeys.STREAM_FILTER_MESSAGES),
+            I18nUtil.getMessage(MessageKeys.STREAM_FILTER_STATUS),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_RECEIVED),
-            I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_CLOSED),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_WARNING),
             I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_INFO)
     };
@@ -102,42 +94,17 @@ public class SSEResponsePanel extends JPanel {
         tableModel = new StreamMessageTableModel<>(COLUMN_NAMES, this::messageValueAt);
 
         table = new JTable(tableModel);
-        table.setRowHeight(26);
-        table.setCellSelectionEnabled(true);
-        table.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        table.getColumnModel().getColumn(COLUMN_TYPE).setMinWidth(100);
-        table.getColumnModel().getColumn(COLUMN_TYPE).setPreferredWidth(118);
-        table.getColumnModel().getColumn(COLUMN_TYPE).setMaxWidth(150);
-        table.getColumnModel().getColumn(COLUMN_TYPE).setCellRenderer(new StreamMessageTypeCellRenderer());
-
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        table.getColumnModel().getColumn(COLUMN_TIME).setMinWidth(90);
-        table.getColumnModel().getColumn(COLUMN_TIME).setPreferredWidth(110);
-        table.getColumnModel().getColumn(COLUMN_TIME).setMaxWidth(150);
-        table.getColumnModel().getColumn(COLUMN_TIME).setCellRenderer(centerRenderer);
-
-        table.getColumnModel().getColumn(COLUMN_EVENT_ID).setMinWidth(100);
-        table.getColumnModel().getColumn(COLUMN_EVENT_ID).setPreferredWidth(120);
-        table.getColumnModel().getColumn(COLUMN_EVENT_ID).setMaxWidth(180);
-
-        table.getColumnModel().getColumn(COLUMN_EVENT_TYPE).setMinWidth(90);
-        table.getColumnModel().getColumn(COLUMN_EVENT_TYPE).setPreferredWidth(110);
-        table.getColumnModel().getColumn(COLUMN_EVENT_TYPE).setMaxWidth(160);
-
-        table.getColumnModel().getColumn(COLUMN_RETRY).setMinWidth(90);
-        table.getColumnModel().getColumn(COLUMN_RETRY).setPreferredWidth(100);
-        table.getColumnModel().getColumn(COLUMN_RETRY).setMaxWidth(120);
-        table.getColumnModel().getColumn(COLUMN_RETRY).setCellRenderer(centerRenderer);
-
-        table.getColumnModel().getColumn(COLUMN_CONTENT).setMinWidth(150);
-        table.getColumnModel().getColumn(COLUMN_CONTENT).setPreferredWidth(360);
-
-        table.getColumnModel().getColumn(COLUMN_ASSERTION).setMinWidth(90);
-        table.getColumnModel().getColumn(COLUMN_ASSERTION).setPreferredWidth(100);
-        table.getColumnModel().getColumn(COLUMN_ASSERTION).setMaxWidth(120);
-        table.getColumnModel().getColumn(COLUMN_ASSERTION).setCellRenderer(new StreamAssertionSummaryCellRenderer());
+        StreamMessageTableSupport.configureBaseTable(table, viewRow -> {
+            MessageRow row = getVisibleRow(viewRow);
+            return row == null ? null : row.messageType;
+        });
+        StreamMessageTableSupport.configureTypeColumn(table, COLUMN_TYPE);
+        StreamMessageTableSupport.configureTimeColumn(table, COLUMN_TIME, viewRow -> {
+            MessageRow row = getVisibleRow(viewRow);
+            return row == null ? null : row.messageType;
+        });
+        StreamMessageTableSupport.configureContentColumn(table, COLUMN_CONTENT, 680);
+        StreamMessageTableSupport.configureAssertionColumn(table, COLUMN_ASSERTION);
 
         table.addMouseListener(new MouseAdapter() {
             @Override
@@ -174,7 +141,7 @@ public class SSEResponsePanel extends JPanel {
                     table.setRowSelectionInterval(row, row);
                     table.setColumnSelectionInterval(viewCol, viewCol);
                     showAssertionDetails(messageRow);
-                } else if (e.getClickCount() == 2 && col >= COLUMN_EVENT_ID && col <= COLUMN_CONTENT) {
+                } else if (e.getClickCount() == 2 && col == COLUMN_CONTENT) {
                     showContentDialog(messageRow);
                 }
             }
@@ -189,7 +156,7 @@ public class SSEResponsePanel extends JPanel {
                     return;
                 }
                 int col = table.convertColumnIndexToModel(viewCol);
-                if (col < COLUMN_EVENT_ID || col > COLUMN_CONTENT) {
+                if (col != COLUMN_CONTENT) {
                     return;
                 }
                 MessageRow messageRow = getVisibleRow(row);
@@ -227,22 +194,6 @@ public class SSEResponsePanel extends JPanel {
         assertionSplitPane.setResizeWeight(1.0);
         assertionSplitPane.setDividerSize(0);
         add(assertionSplitPane, BorderLayout.CENTER);
-
-        JTableHeader header = table.getTableHeader();
-        header.setFont(header.getFont().deriveFont(Font.BOLD));
-        table.setGridColor(ModernColors.getTableGridColor());
-        table.setShowGrid(true);
-        table.setRowHeight(24);
-        table.setBorder(BorderFactory.createEmptyBorder());
-        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                           boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                c.setFont(c.getFont().deriveFont(isSelected ? Font.BOLD : Font.PLAIN));
-                return c;
-            }
-        });
 
         clearButton.addActionListener(e -> clearMessages());
         searchField.getDocument().addDocumentListener(new DocumentListener() {
@@ -359,9 +310,6 @@ public class SSEResponsePanel extends JPanel {
         return switch (column) {
             case COLUMN_TYPE -> row.messageType;
             case COLUMN_TIME -> row.time;
-            case COLUMN_EVENT_ID -> blankToDash(row.eventId);
-            case COLUMN_EVENT_TYPE -> blankToDash(row.eventType);
-            case COLUMN_RETRY -> row.retryMs != null ? row.retryMs : blankToDash(null);
             case COLUMN_CONTENT -> row.content;
             case COLUMN_ASSERTION -> StreamAssertionSummary.from(row.testResults);
             default -> null;
@@ -369,8 +317,7 @@ public class SSEResponsePanel extends JPanel {
     }
 
     private boolean matchesFilter(MessageRow row, String search, String typeFilter) {
-        return (I18nUtil.getMessage(MessageKeys.WEBSOCKET_TYPE_ALL).equals(typeFilter)
-                || StreamMessageUiMetadata.display(row.messageType).equals(typeFilter))
+        return StreamMessageTableSupport.matchesTypeFilter(row.messageType, typeFilter)
                 && (search.isEmpty()
                 || safeLower(row.content).contains(search)
                 || safeLower(row.eventId).contains(search)
@@ -417,6 +364,10 @@ public class SSEResponsePanel extends JPanel {
             return null;
         }
         return tableModel.getRow(modelRow);
+    }
+
+    JTable getTable() {
+        return table;
     }
 
     public static class MessageRow {
@@ -504,14 +455,14 @@ public class SSEResponsePanel extends JPanel {
     }
 
     private void showContentDialog(MessageRow row) {
-        String rawContent = buildDetailContent(row);
         boolean isJson = JSONUtil.isTypeJSON(row.content);
         StreamMessageContentDialog.show(
                 this,
                 I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TITLE),
-                rawContent,
+                buildDetailFields(row),
+                row.content,
                 isJson,
-                () -> buildFormattedDetailContent(row)
+                () -> formatJson(row.content)
         );
     }
 
@@ -526,22 +477,37 @@ public class SSEResponsePanel extends JPanel {
     }
 
     private String buildDetailContent(MessageRow row) {
-        String none = I18nUtil.getMessage(MessageKeys.SSE_VALUE_NONE);
-        return I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TYPE) + ": " + StreamMessageUiMetadata.display(row.messageType) + "\n"
-                + I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TIME) + ": " + blankToDash(row.time) + "\n"
-                + I18nUtil.getMessage(MessageKeys.SSE_DETAIL_EVENT_ID) + ": " + blankToDash(row.eventId) + "\n"
-                + I18nUtil.getMessage(MessageKeys.SSE_DETAIL_EVENT_TYPE) + ": " + blankToDash(row.eventType) + "\n"
-                + I18nUtil.getMessage(MessageKeys.SSE_DETAIL_RETRY) + ": "
-                + (row.retryMs != null ? row.retryMs : none) + "\n\n"
-                + I18nUtil.getMessage(MessageKeys.SSE_DETAIL_CONTENT) + ":\n"
-                + (row.content == null ? none : row.content);
+        return StreamMessageContentDialog.buildDetailCopyText(buildDetailFields(row), row.content);
     }
 
-    private String buildFormattedDetailContent(MessageRow row) {
-        String formattedContent = row.content == null ? null : formatJson(row.content);
-        MessageRow formatted = new MessageRow(row.messageType, row.time, row.eventId, row.eventType,
-                row.retryMs, formattedContent, row.testResults);
-        return buildDetailContent(formatted);
+    private List<StreamMessageContentDialog.DetailField> buildDetailFields(MessageRow row) {
+        String none = I18nUtil.getMessage(MessageKeys.SSE_VALUE_NONE);
+        return List.of(
+                new StreamMessageContentDialog.DetailField(
+                        I18nUtil.getMessage(MessageKeys.STREAM_DETAIL_SOURCE),
+                        StreamMessageTableSupport.sourceDisplay(row.messageType)
+                ),
+                new StreamMessageContentDialog.DetailField(
+                        I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TYPE),
+                        StreamMessageUiMetadata.display(row.messageType)
+                ),
+                new StreamMessageContentDialog.DetailField(
+                        I18nUtil.getMessage(MessageKeys.SSE_DETAIL_TIME),
+                        blankToDash(row.time)
+                ),
+                new StreamMessageContentDialog.DetailField(
+                        I18nUtil.getMessage(MessageKeys.SSE_DETAIL_EVENT_ID),
+                        row.messageType == MessageType.RECEIVED ? blankToDash(row.eventId) : none
+                ),
+                new StreamMessageContentDialog.DetailField(
+                        I18nUtil.getMessage(MessageKeys.SSE_DETAIL_EVENT_TYPE),
+                        row.messageType == MessageType.RECEIVED ? blankToDash(row.eventType) : none
+                ),
+                new StreamMessageContentDialog.DetailField(
+                        I18nUtil.getMessage(MessageKeys.SSE_DETAIL_RETRY),
+                        row.retryMs != null ? String.valueOf(row.retryMs) : none
+                )
+        );
     }
 
     private String formatJson(String str) {
@@ -558,4 +524,5 @@ public class SSEResponsePanel extends JPanel {
     private String blankToDash(String value) {
         return value == null || value.isBlank() ? I18nUtil.getMessage(MessageKeys.SSE_VALUE_NONE) : value;
     }
+
 }

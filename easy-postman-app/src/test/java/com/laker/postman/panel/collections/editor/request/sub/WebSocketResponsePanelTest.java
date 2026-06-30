@@ -1,18 +1,23 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.panel.collections.editor.request.StreamMessageUiMetadata;
 import com.laker.postman.script.model.TestResult;
 import com.laker.postman.stream.MessageType;
 import com.laker.postman.test.AbstractSwingUiTest;
+import com.laker.postman.util.I18nUtil;
+import com.laker.postman.util.MessageKeys;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
+import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -69,6 +74,79 @@ public class WebSocketResponsePanelTest extends AbstractSwingUiTest {
             assertEquals(table.getValueAt(0, 0), MessageType.RECEIVED);
             assertEquals(table.getValueAt(0, 3).toString(), "1/2");
         });
+    }
+
+    @Test
+    public void defaultColumnsShouldFitLocalizedHeaders() throws Exception {
+        WebSocketResponsePanel panel = createPanel();
+
+        SwingUtilities.invokeAndWait(() -> {
+            JTable table = panel.getTable();
+            assertEquals(table.getColumnCount(), 4);
+            assertEquals(table.getColumnName(0), I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TYPE));
+            assertEquals(table.getColumnName(1), I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_TIME));
+            assertEquals(table.getColumnName(2), I18nUtil.getMessage(MessageKeys.WEBSOCKET_COLUMN_CONTENT));
+            assertEquals(table.getColumnName(3), I18nUtil.getMessage(MessageKeys.FUNCTIONAL_TABLE_ASSERTION));
+
+            TableColumn assertionColumn = table.getColumnModel().getColumn(3);
+            FontMetrics metrics = table.getFontMetrics(table.getTableHeader().getFont());
+            assertTrue(assertionColumn.getPreferredWidth() >= metrics.stringWidth("Assertion") + 30);
+        });
+    }
+
+    @Test
+    public void statusRowsShouldRenderQuieterThanMessageRows() throws Exception {
+        WebSocketResponsePanel panel = createPanel();
+
+        SwingUtilities.invokeAndWait(() -> panel.addMessage(
+                MessageType.CONNECTED,
+                "10:00:00",
+                I18nUtil.getMessage(MessageKeys.WEBSOCKET_STREAM_CONNECTED),
+                null
+        ));
+        flushEdt();
+
+        SwingUtilities.invokeAndWait(() -> {
+            JTable table = panel.getTable();
+            assertEquals(table.getValueAt(0, 2), I18nUtil.getMessage(MessageKeys.WEBSOCKET_STREAM_CONNECTED));
+
+            Component component = table.prepareRenderer(table.getCellRenderer(0, 2), 0, 2);
+            assertEquals(component.getForeground(), ModernColors.getTextSecondary());
+        });
+    }
+
+    @Test
+    public void contentCellTooltipShouldNotExposeFullLongPayload() throws Exception {
+        WebSocketResponsePanel panel = createPanel();
+        String longPayload = "{\"id\":\"chunk\",\"content\":\"" + "payload ".repeat(80) + "\"}";
+
+        SwingUtilities.invokeAndWait(() -> panel.addMessage(MessageType.RECEIVED, "10:00:00", longPayload, null));
+        flushEdt();
+
+        SwingUtilities.invokeAndWait(() -> {
+            JTable table = panel.getTable();
+            Component component = table.prepareRenderer(table.getCellRenderer(0, 2), 0, 2);
+
+            assertTrue(component instanceof JComponent);
+            String tooltip = ((JComponent) component).getToolTipText();
+            assertEquals(tooltip, I18nUtil.getMessage(MessageKeys.STREAM_TOOLTIP_OPEN_DETAIL));
+            assertTrue(!longPayload.equals(tooltip));
+        });
+    }
+
+    @Test
+    public void streamTypeRendererShouldShowOnlyIconWithTooltip() {
+        JTable table = new JTable(1, 1);
+        StreamMessageTypeCellRenderer renderer = new StreamMessageTypeCellRenderer();
+
+        Component component = renderer.getTableCellRendererComponent(
+                table, MessageType.RECEIVED, false, false, 0, 0);
+
+        assertTrue(component instanceof JLabel);
+        JLabel label = (JLabel) component;
+        assertEquals(label.getText(), "");
+        assertNotNull(label.getIcon());
+        assertEquals(label.getToolTipText(), StreamMessageUiMetadata.display(MessageType.RECEIVED));
     }
 
     @Test
@@ -134,7 +212,7 @@ public class WebSocketResponsePanelTest extends AbstractSwingUiTest {
                 """, new Dimension(1440, 900));
 
         assertTrue(size.width <= 680, "Short message detail width should not look like a large document viewer");
-        assertTrue(size.height <= 360, "Short message detail height should not leave a large empty area");
+        assertTrue(size.height >= 420, "Message detail should leave enough room for the content editor");
     }
 
     @Test

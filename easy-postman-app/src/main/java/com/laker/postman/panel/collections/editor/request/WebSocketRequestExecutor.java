@@ -160,7 +160,8 @@ final class WebSocketRequestExecutor {
                         responsePanel.setResponseDetails(WebSocketSession.this.response);
                     });
                     if (shouldHandleActiveCallback(null)) {
-                        requestStreamUiAppender.appendWebSocketMessage(MessageType.CONNECTED, response.message());
+                        requestStreamUiAppender.appendWebSocketMessage(MessageType.CONNECTED,
+                                I18nUtil.getMessage(MessageKeys.WEBSOCKET_STREAM_CONNECTED));
                     }
                 }
 
@@ -259,7 +260,7 @@ final class WebSocketRequestExecutor {
             }
             requestExecutionState.clearCurrentWebSocket();
             requestExecutionState.clearCurrentWebSocketConnectionId();
-            appendTerminalEvent(MessageType.WARNING, "User canceled");
+            appendTerminalEvent(MessageType.WARNING, I18nUtil.getMessage(MessageKeys.STREAM_USER_CANCELED));
             finalizeResponse();
             runUiTeardown(() -> {
             });
@@ -290,7 +291,11 @@ final class WebSocketRequestExecutor {
         }
 
         private void finishClosedResponse(int code, String reason) {
-            appendTerminalEvent(MessageType.CLOSED, code + " " + reason);
+            String displayReason = reason == null || reason.isBlank()
+                    ? I18nUtil.getMessage(MessageKeys.SSE_VALUE_NONE)
+                    : reason;
+            appendTerminalEvent(MessageType.CLOSED,
+                    I18nUtil.getMessage(MessageKeys.WEBSOCKET_STREAM_CLOSED, code, displayReason));
             finishTerminalResponse();
         }
 

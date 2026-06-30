@@ -93,7 +93,8 @@ final class RequestEditorCommandController {
 
         if (Boolean.TRUE.equals(isBaseHttpProtocolSupplier.get()) && executionState.isAutoDetectedHttpSseOpen()) {
             responsePanel.switchTabButtonHttpOrSse("sse");
-            requestStreamUiAppender.appendSseMessage(MessageType.CLOSED, null, "closed", null, "User canceled", null);
+            requestStreamUiAppender.appendSseMessage(MessageType.CLOSED, null, "closed", null,
+                    I18nUtil.getMessage(MessageKeys.STREAM_USER_CANCELED), null);
         }
     }
 

@@ -18,7 +18,7 @@ final class StreamMessageTypeCellRenderer extends DefaultTableCellRenderer {
         super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
         if (value instanceof MessageType messageType) {
             String text = StreamMessageUiMetadata.display(messageType);
-            setText(text);
+            setText("");
             setToolTipText(text);
             setIcon(iconCache.computeIfAbsent(messageType, StreamMessageUiMetadata::icon));
         } else {
@@ -26,8 +26,8 @@ final class StreamMessageTypeCellRenderer extends DefaultTableCellRenderer {
             setToolTipText(null);
             setIcon(null);
         }
-        setHorizontalAlignment(LEFT);
-        setIconTextGap(6);
+        setHorizontalAlignment(CENTER);
+        setIconTextGap(0);
         return this;
     }
 }

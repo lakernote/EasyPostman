@@ -450,6 +450,9 @@ public final class MessageKeys {
     public static final String SSE_STREAM_CONNECTED = "sse.stream.connected";
     public static final String SSE_STREAM_CLOSED = "sse.stream.closed";
     public static final String SSE_STREAM_FAILED = "sse.stream.failed";
+    public static final String WEBSOCKET_STREAM_CONNECTED = "websocket.stream.connected";
+    public static final String WEBSOCKET_STREAM_CLOSED = "websocket.stream.closed";
+    public static final String STREAM_USER_CANCELED = "stream.user_canceled";
 
     // ============ 脚本相关 ============
     public static final String SCRIPT_BUTTON_SNIPPETS = "script.button.snippets";
@@ -1952,6 +1955,13 @@ public final class MessageKeys {
     public static final String WEBSOCKET_TYPE_WARNING = "websocket.type.warning";
     public static final String WEBSOCKET_TYPE_INFO = "websocket.type.info";
     public static final String WEBSOCKET_TYPE_BINARY = "websocket.type.binary";
+    public static final String STREAM_FILTER_MESSAGES = "stream.filter.messages";
+    public static final String STREAM_FILTER_STATUS = "stream.filter.status";
+    public static final String STREAM_DETAIL_SOURCE = "stream.detail.source";
+    public static final String STREAM_SOURCE_SERVER = "stream.source.server";
+    public static final String STREAM_SOURCE_CLIENT = "stream.source.client";
+    public static final String STREAM_SOURCE_STATUS = "stream.source.status";
+    public static final String STREAM_TOOLTIP_OPEN_DETAIL = "stream.tooltip.open_detail";
     public static final String STREAM_ASSERTION_TOOLTIP = "stream.assertion.tooltip";
     public static final String STREAM_ASSERTION_DETAILS_TITLE = "stream.assertion.details.title";
     public static final String STREAM_ASSERTION_DETAILS_META = "stream.assertion.details.meta";

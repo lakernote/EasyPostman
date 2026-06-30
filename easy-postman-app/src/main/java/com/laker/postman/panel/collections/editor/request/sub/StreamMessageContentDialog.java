@@ -4,6 +4,7 @@ import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -15,12 +16,13 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.util.List;
 import java.util.function.Supplier;
 
 final class StreamMessageContentDialog {
 
     private static final int MIN_WIDTH = 520;
-    private static final int MIN_HEIGHT = 260;
+    private static final int MIN_HEIGHT = 420;
     private static final int MAX_WIDTH = 900;
     private static final int MAX_HEIGHT = 620;
     private static final double VIEWPORT_RATIO = 0.72;
@@ -33,30 +35,53 @@ final class StreamMessageContentDialog {
 
     static void show(Component owner, String title, String rawContent, boolean formatAvailable,
                      Supplier<String> formattedContentSupplier) {
+        show(owner, title, List.of(), rawContent, formatAvailable, formattedContentSupplier);
+    }
+
+    static void show(Component owner, String title, List<DetailField> detailFields, String rawContent,
+                     boolean formatAvailable, Supplier<String> formattedContentSupplier) {
         String safeRawContent = safeText(rawContent);
+        List<DetailField> safeDetailFields = detailFields == null ? List.of() : detailFields;
         Window window = SwingUtilities.getWindowAncestor(owner);
         JDialog dialog = new JDialog(window, title, Dialog.ModalityType.MODELESS);
         ToolWindowSurfaceStyle.applyDialogWindowChrome(dialog);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
         RSyntaxTextArea textArea = createContentEditor();
-        setEditorText(textArea, safeRawContent);
+        InitialContent initialContent = resolveInitialContent(safeRawContent, formatAvailable, formattedContentSupplier);
+        setEditorText(textArea, initialContent.text());
         SearchableTextArea searchableTextArea = new SearchableTextArea(textArea, false);
         ToolWindowSurfaceStyle.applyDialogSurface(searchableTextArea);
 
-        JPanel contentPanel = new JPanel(new BorderLayout());
+        JPanel contentPanel = new JPanel(new BorderLayout(0, 6));
         ToolWindowSurfaceStyle.applyDialogSurface(contentPanel);
         contentPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 0, 10));
+        if (!safeDetailFields.isEmpty()) {
+            JPanel metadataPanel = createMetadataPanel(safeDetailFields);
+            contentPanel.add(metadataPanel, BorderLayout.NORTH);
+        }
         contentPanel.add(searchableTextArea, BorderLayout.CENTER);
 
-        JButton copyButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_COPY), false);
-        JButton formatButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_FORMAT), false);
-        JButton rawButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_RAW), false);
-        JButton closeButton = ModernButtonFactory.createButton(I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE), false);
-        setCompactButtonSize(copyButton);
-        setCompactButtonSize(formatButton);
-        setCompactButtonSize(rawButton);
-        setCompactButtonSize(closeButton);
+        JButton copyButton = createFooterButton(
+                I18nUtil.getMessage(MessageKeys.BUTTON_COPY),
+                false,
+                FooterAction.COPY
+        );
+        JButton formatButton = createFooterButton(
+                I18nUtil.getMessage(MessageKeys.BUTTON_FORMAT),
+                false,
+                FooterAction.FORMAT
+        );
+        JButton rawButton = createFooterButton(
+                I18nUtil.getMessage(MessageKeys.BUTTON_RAW),
+                false,
+                FooterAction.RAW
+        );
+        JButton closeButton = createFooterButton(
+                I18nUtil.getMessage(MessageKeys.BUTTON_CLOSE),
+                true,
+                FooterAction.CLOSE
+        );
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         ToolWindowSurfaceStyle.applyDialogFooter(buttonPanel);
@@ -70,16 +95,16 @@ final class StreamMessageContentDialog {
         rootPanel.add(contentPanel, BorderLayout.CENTER);
         rootPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        String[] formattedContent = new String[1];
-        formatButton.setEnabled(formatAvailable && formattedContentSupplier != null);
-        rawButton.setEnabled(false);
+        String[] formattedContent = new String[]{initialContent.showingFormatted() ? initialContent.text() : null};
+        formatButton.setEnabled(formatAvailable && formattedContentSupplier != null && !initialContent.showingFormatted());
+        rawButton.setEnabled(initialContent.showingFormatted());
 
         copyButton.addActionListener(e -> Toolkit.getDefaultToolkit()
                 .getSystemClipboard()
-                .setContents(new StringSelection(textArea.getText()), null));
+                .setContents(new StringSelection(buildDetailCopyText(safeDetailFields, textArea.getText())), null));
         formatButton.addActionListener(e -> {
             if (formattedContent[0] == null) {
-                formattedContent[0] = safeText(formattedContentSupplier.get());
+                formattedContent[0] = resolveFormattedContent(safeRawContent, formattedContentSupplier);
             }
             setEditorText(textArea, formattedContent[0]);
             formatButton.setEnabled(false);
@@ -102,6 +127,50 @@ final class StreamMessageContentDialog {
         dialog.setLocationRelativeTo(owner);
         SwingUtilities.invokeLater(closeButton::requestFocusInWindow);
         dialog.setVisible(true);
+    }
+
+    static JPanel createMetadataPanel(List<DetailField> detailFields) {
+        JPanel panel = new JPanel(new GridLayout(0, 4, 12, 4));
+        ToolWindowSurfaceStyle.applyDialogSection(panel);
+        for (DetailField field : detailFields) {
+            JLabel label = new JLabel(field.label());
+            label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            label.setForeground(ModernColors.getTextSecondary());
+
+            JLabel value = new JLabel(safeText(field.value()));
+            value.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            value.setToolTipText(safeText(field.value()));
+            panel.add(label);
+            panel.add(value);
+        }
+        return panel;
+    }
+
+    static String buildDetailCopyText(List<DetailField> detailFields, String content) {
+        StringBuilder sb = new StringBuilder();
+        if (detailFields != null) {
+            for (DetailField field : detailFields) {
+                sb.append(field.label()).append(": ").append(safeText(field.value())).append('\n');
+            }
+        }
+        if (!sb.isEmpty()) {
+            sb.append('\n');
+        }
+        sb.append(safeText(content));
+        return sb.toString();
+    }
+
+    static InitialContent resolveInitialContent(String rawContent, boolean formatAvailable,
+                                                Supplier<String> formattedContentSupplier) {
+        String safeRawContent = safeText(rawContent);
+        if (!formatAvailable || formattedContentSupplier == null) {
+            return new InitialContent(safeRawContent, false);
+        }
+        return new InitialContent(resolveFormattedContent(safeRawContent, formattedContentSupplier), true);
+    }
+
+    static JButton createFooterButton(String text, boolean primary, FooterAction action) {
+        return ModernButtonFactory.createCompactButton(text, primary, action.iconPath());
     }
 
     private static RSyntaxTextArea createContentEditor() {
@@ -181,16 +250,41 @@ final class StreamMessageContentDialog {
         return new TextMetrics(maxLineLength, Math.max(1, visualLineCount));
     }
 
-    private static void setCompactButtonSize(AbstractButton button) {
-        Dimension size = new Dimension(88, 30);
-        button.setPreferredSize(size);
-        button.setMinimumSize(size);
-    }
-
     private static String safeText(String text) {
         return text == null ? "" : text;
     }
 
+    private static String resolveFormattedContent(String fallback, Supplier<String> formattedContentSupplier) {
+        try {
+            return safeText(formattedContentSupplier.get());
+        } catch (RuntimeException ignored) {
+            return safeText(fallback);
+        }
+    }
+
     private record TextMetrics(int maxLineLength, int visualLineCount) {
+    }
+
+    record DetailField(String label, String value) {
+    }
+
+    record InitialContent(String text, boolean showingFormatted) {
+    }
+
+    enum FooterAction {
+        COPY("icons/copy.svg"),
+        FORMAT("icons/format.svg"),
+        RAW("icons/code.svg"),
+        CLOSE("icons/close.svg");
+
+        private final String iconPath;
+
+        FooterAction(String iconPath) {
+            this.iconPath = iconPath;
+        }
+
+        String iconPath() {
+            return iconPath;
+        }
     }
 }

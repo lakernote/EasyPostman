@@ -25,9 +25,13 @@ public class RequestTreePopupMenu {
     private final RequestTreeCoordinator coordinator;
 
     public RequestTreePopupMenu(JTree requestTree, CollectionTreePanel leftPanel) {
+        this(requestTree, leftPanel, new RequestTreeCoordinator(requestTree, leftPanel));
+    }
+
+    RequestTreePopupMenu(JTree requestTree, CollectionTreePanel leftPanel, RequestTreeCoordinator coordinator) {
         this.requestTree = requestTree;
         this.leftPanel = leftPanel;
-        this.coordinator = new RequestTreeCoordinator(requestTree, leftPanel);
+        this.coordinator = coordinator;
     }
 
     /**

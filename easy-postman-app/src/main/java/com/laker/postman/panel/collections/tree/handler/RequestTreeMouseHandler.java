@@ -5,12 +5,10 @@ import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
-import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
-import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
@@ -37,11 +35,26 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     private final JTree requestTree;
     private final RequestTreePopupMenu popupMenu;
     private final RequestTreeCoordinator coordinator;
+    private final RequestTreeOpenActions openActions;
 
     public RequestTreeMouseHandler(JTree requestTree, CollectionTreePanel leftPanel) {
+        this(requestTree, leftPanel, new RequestTreeCoordinator(requestTree, leftPanel));
+    }
+
+    public RequestTreeMouseHandler(JTree requestTree, CollectionTreePanel leftPanel, RequestTreeCoordinator coordinator) {
+        this(requestTree, leftPanel, coordinator, new RequestEditorTreeOpenActions());
+    }
+
+    RequestTreeMouseHandler(
+            JTree requestTree,
+            CollectionTreePanel leftPanel,
+            RequestTreeCoordinator coordinator,
+            RequestTreeOpenActions openActions
+    ) {
         this.requestTree = requestTree;
-        this.popupMenu = new RequestTreePopupMenu(requestTree, leftPanel);
-        this.coordinator = new RequestTreeCoordinator(requestTree, leftPanel);
+        this.popupMenu = new RequestTreePopupMenu(requestTree, leftPanel, coordinator);
+        this.coordinator = coordinator;
+        this.openActions = openActions;
     }
 
     // ==================== hover 追踪 ====================
@@ -115,14 +128,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 根据 Y 坐标找到对应的行号（鼠标在整行高度范围内均有效，不限于节点文本宽度内）
      */
     private int getRowForYPosition(int y) {
-        int rowCount = requestTree.getRowCount();
-        for (int i = 0; i < rowCount; i++) {
-            Rectangle bounds = requestTree.getRowBounds(i);
-            if (bounds != null && y >= bounds.y && y < bounds.y + bounds.height) {
-                return i;
-            }
-        }
-        return -1;
+        return RequestTreeHitTest.rowAtY(requestTree, y);
     }
 
     private void updateHoveredRow(int row) {
@@ -288,14 +294,13 @@ public class RequestTreeMouseHandler extends MouseAdapter {
 
         if (CollectionTreeNodes.isRequest(node)) {
             CollectionTreeNodes.request(node)
-                    .ifPresent(item -> UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTab(item));
+                    .ifPresent(openActions::openFixedRequest);
         } else if (CollectionTreeNodes.isGroup(node)) {
             RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
             if (group == null) {
                 return;
             }
-            RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-            editPanel.showGroupEditPanel(node, group);
+            openActions.openFixedGroup(node, group);
             e.consume(); // 阻止展开/收起
         } else if (CollectionTreeNodes.isSavedResponse(node)) {
             // 双击保存的响应：打开固定 Tab
@@ -308,7 +313,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 处理右键点击：显示弹出菜单
      */
     private void handleRightClick(MouseEvent e) {
-        int row = requestTree.getClosestRowForLocation(e.getX(), e.getY());
+        int row = getRowForYPosition(e.getY());
         if (row != -1) {
             TreePath clickedPath = requestTree.getPathForRow(row);
             // 只有当点击的路径未被选中时，才设置为当前选中项
@@ -335,8 +340,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
             if (group == null) {
                 return;
             }
-            RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-            editPanel.showOrCreateTransientTabForGroup(node, group);
+            openActions.openTransientGroup(node, group);
         }
     }
 
@@ -344,23 +348,21 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 处理请求点击事件
      */
     private void handleRequestClick(HttpRequestItem item) {
-        UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTransientTab(item);
+        openActions.openTransientRequest(item);
     }
 
     /**
      * 处理保存的响应单击事件：临时打开
      */
     private void handleSavedResponseClick(SavedResponse savedResponse) {
-        RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-        editPanel.showOrCreateTransientTabForSavedResponse(savedResponse);
+        openActions.openTransientSavedResponse(savedResponse);
     }
 
     /**
      * 处理保存的响应双击事件：打开固定 Tab
      */
     private void handleSavedResponseDoubleClick(SavedResponse savedResponse) {
-        RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-        editPanel.showOrCreateTabForSavedResponse(savedResponse);
+        openActions.openFixedSavedResponse(savedResponse);
     }
 
     /**
@@ -382,24 +384,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 获取鼠标位置的树路径
      */
     private TreePath getTreePathAt(int x, int y) {
-        TreePath selPath = requestTree.getPathForLocation(x, y);
-
-        if (selPath == null) {
-            selPath = requestTree.getClosestPathForLocation(x, y);
-            if (selPath != null) {
-                // 判断Y坐标是否在树节点的矩形范围内，解决Y轴被误选中问题
-                Rectangle bounds = requestTree.getPathBounds(selPath);
-                if (bounds == null) {
-                    return null;
-                }
-                if (y > bounds.y && y < bounds.y + bounds.height) {
-                    return selPath;
-                } else {
-                    return null;
-                }
-            }
-        }
-        return selPath;
+        return RequestTreeHitTest.pathAt(requestTree, x, y);
     }
 
 }

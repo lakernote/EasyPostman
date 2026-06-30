@@ -16,6 +16,7 @@ import com.laker.postman.panel.collections.OpenedRequestTabSessionRestorer;
 import com.laker.postman.panel.collections.tree.action.TreeNodeCloner;
 import com.laker.postman.panel.collections.tree.handler.RequestTreeKeyboardHandler;
 import com.laker.postman.panel.collections.tree.handler.RequestTreeMouseHandler;
+import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
 import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.WorkspaceService;
 import com.laker.postman.service.collections.CollectionDocumentRegistry;
@@ -155,8 +156,9 @@ public class CollectionTreePanel extends UiSingletonPanel {
 
     @Override
     protected void registerListeners() {
-        requestTree.addKeyListener(new RequestTreeKeyboardHandler(requestTree, this));
-        RequestTreeMouseHandler mouseHandler = new RequestTreeMouseHandler(requestTree, this);
+        RequestTreeCoordinator treeCoordinator = new RequestTreeCoordinator(requestTree, this);
+        requestTree.addKeyListener(new RequestTreeKeyboardHandler(requestTree, this, treeCoordinator));
+        RequestTreeMouseHandler mouseHandler = new RequestTreeMouseHandler(requestTree, this, treeCoordinator);
         requestTree.addMouseListener(mouseHandler);
         requestTree.addMouseMotionListener(mouseHandler);
 

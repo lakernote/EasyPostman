@@ -5,10 +5,8 @@ import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
-import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
 import com.laker.postman.panel.collections.tree.coordinator.RequestTreeCoordinator;
-import com.laker.postman.panel.collections.editor.RequestEditorPanel;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 
 import javax.swing.*;
@@ -26,11 +24,26 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
     private final JTree requestTree;
     private final CollectionTreePanel leftPanel;
     private final RequestTreeCoordinator coordinator;
+    private final RequestTreeOpenActions openActions;
 
     public RequestTreeKeyboardHandler(JTree requestTree, CollectionTreePanel leftPanel) {
+        this(requestTree, leftPanel, new RequestTreeCoordinator(requestTree, leftPanel));
+    }
+
+    public RequestTreeKeyboardHandler(JTree requestTree, CollectionTreePanel leftPanel, RequestTreeCoordinator coordinator) {
+        this(requestTree, leftPanel, coordinator, new RequestEditorTreeOpenActions());
+    }
+
+    RequestTreeKeyboardHandler(
+            JTree requestTree,
+            CollectionTreePanel leftPanel,
+            RequestTreeCoordinator coordinator,
+            RequestTreeOpenActions openActions
+    ) {
         this.requestTree = requestTree;
         this.leftPanel = leftPanel;
-        this.coordinator = new RequestTreeCoordinator(requestTree, leftPanel);
+        this.coordinator = coordinator;
+        this.openActions = openActions;
     }
 
     @Override
@@ -54,7 +67,7 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
         }
 
         DefaultMutableTreeNode selectedNode = getSelectedNode();
-        if (selectedNode == null || selectedNode == leftPanel.getRootTreeNode()) {
+        if (selectedNode == null || (leftPanel != null && selectedNode == leftPanel.getRootTreeNode())) {
             return;
         }
 
@@ -112,29 +125,25 @@ public class RequestTreeKeyboardHandler extends KeyAdapter {
      * 处理分组 Enter 键事件：临时打开分组
      */
     private void handleGroupEnter(DefaultMutableTreeNode node) {
-        if (node.getChildCount() == 0) return;
-
         RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
         if (group == null) {
             return;
         }
-        RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-        editPanel.showOrCreateTransientTabForGroup(node, group);
+        openActions.openTransientGroup(node, group);
     }
 
     /**
      * 处理请求 Enter 键事件：临时打开请求
      */
     private void handleRequestEnter(HttpRequestItem item) {
-        UiSingletonFactory.getInstance(RequestEditorPanel.class).showOrCreateTransientTab(item);
+        openActions.openTransientRequest(item);
     }
 
     /**
      * 处理保存的响应 Enter 键事件：临时打开响应
      */
     private void handleSavedResponseEnter(SavedResponse savedResponse) {
-        RequestEditorPanel editPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
-        editPanel.showOrCreateTransientTabForSavedResponse(savedResponse);
+        openActions.openTransientSavedResponse(savedResponse);
     }
 
 }

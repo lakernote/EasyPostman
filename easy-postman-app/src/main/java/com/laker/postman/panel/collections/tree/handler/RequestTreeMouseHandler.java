@@ -4,7 +4,6 @@ import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.request.model.HttpRequestItem;
 
-
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.tree.RequestTreeCellRenderer;
 import com.laker.postman.panel.collections.tree.CollectionTreePanel;
@@ -13,33 +12,25 @@ import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.MessageKeys;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.TreeCellRenderer;
 import javax.swing.tree.TreePath;
-import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
-import static com.laker.postman.panel.collections.tree.CollectionTreePanel.*;
 
 /**
  * 请求树鼠标事件处理器
  * 负责处理树节点的单击、双击和右键菜单
  */
-@Slf4j
 public class RequestTreeMouseHandler extends MouseAdapter {
     private final JTree requestTree;
     private final RequestTreePopupMenu popupMenu;
     private final RequestTreeCoordinator coordinator;
     private final RequestTreeOpenActions openActions;
-
-    public RequestTreeMouseHandler(JTree requestTree, CollectionTreePanel leftPanel) {
-        this(requestTree, leftPanel, new RequestTreeCoordinator(requestTree, leftPanel));
-    }
+    private final CollectionTreeClickResolver clickResolver;
 
     public RequestTreeMouseHandler(JTree requestTree, CollectionTreePanel leftPanel, RequestTreeCoordinator coordinator) {
         this(requestTree, leftPanel, coordinator, new RequestEditorTreeOpenActions());
@@ -55,6 +46,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
         this.popupMenu = new RequestTreePopupMenu(requestTree, leftPanel, coordinator);
         this.coordinator = coordinator;
         this.openActions = openActions;
+        this.clickResolver = new CollectionTreeClickResolver(requestTree);
     }
 
     // ==================== hover 追踪 ====================
@@ -70,9 +62,9 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     }
 
     private void handleHover(MouseEvent e) {
-        int row = getRowForYPosition(e.getY());
+        int row = clickResolver.rowAtY(e.getY());
         updateHoveredRow(row);
-        updateTooltip(e.getX(), row);
+        updateTooltip(e);
     }
 
     @Override
@@ -84,51 +76,17 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     /**
      * 根据鼠标位置动态设置 tooltip
      */
-    private void updateTooltip(int mouseX, int row) {
-        if (row >= 0 && isGroupRow(row)) {
-            if (isOnMoreButtonX(mouseX)) {
-                requestTree.setToolTipText("More actions");
-                return;
-            }
-            if (isOnAddButtonX(mouseX)) {
-                requestTree.setToolTipText("Add Request");
-                return;
-            }
+    private void updateTooltip(MouseEvent e) {
+        CollectionTreeClickTarget target = clickResolver.resolve(e.getX(), e.getY());
+        if (target != null && target.isGroupMoreActions()) {
+            requestTree.setToolTipText("More actions");
+            return;
+        }
+        if (target != null && target.isGroupAddRequestAction()) {
+            requestTree.setToolTipText("Add Request");
+            return;
         }
         requestTree.setToolTipText(null);
-    }
-
-    /**
-     * 最右侧 MORE_BUTTON_WIDTH 像素 → more 按钮
-     */
-    private boolean isOnMoreButtonX(int mouseX) {
-        return mouseX >= requestTree.getWidth() - RequestTreeCellRenderer.MORE_BUTTON_WIDTH;
-    }
-
-    /**
-     * more 按钮左侧 ADD_BUTTON_WIDTH 像素 → plus 按钮
-     */
-    private boolean isOnAddButtonX(int mouseX) {
-        int treeWidth = requestTree.getWidth();
-        return mouseX >= treeWidth - RequestTreeCellRenderer.MORE_BUTTON_WIDTH - RequestTreeCellRenderer.ADD_BUTTON_WIDTH
-                && mouseX < treeWidth - RequestTreeCellRenderer.MORE_BUTTON_WIDTH;
-    }
-
-    /**
-     * 判断指定行是否是 GROUP 节点
-     */
-    private boolean isGroupRow(int row) {
-        TreePath path = requestTree.getPathForRow(row);
-        if (path == null) return false;
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) path.getLastPathComponent();
-        return CollectionTreeNodes.isGroup(node);
-    }
-
-    /**
-     * 根据 Y 坐标找到对应的行号（鼠标在整行高度范围内均有效，不限于节点文本宽度内）
-     */
-    private int getRowForYPosition(int y) {
-        return RequestTreeHitTest.rowAtY(requestTree, y);
     }
 
     private void updateHoveredRow(int row) {
@@ -144,17 +102,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     @Override
     public void mousePressed(MouseEvent e) {
         if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1) {
-            if (isClickOnMoreButton(e)) {
-                e.consume();
-                handleMoreButtonClick(e);
-                return;
-            }
-            if (isClickOnAddButton(e)) {
-                e.consume(); // 阻止 BasicTreeUI 在 mousePressed/mouseReleased 里把选中覆盖回 group 节点
-                handleAddButtonClick(e);
-                return;
-            }
-            handleSingleClick(e);
+            handleLeftSingleClick(e);
         } else if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 2) {
             handleDoubleClick(e);
         } else if (SwingUtilities.isRightMouseButton(e)) {
@@ -168,55 +116,47 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     @Override
     public void mouseReleased(MouseEvent e) {
         if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount() == 1) {
-            if (isClickOnMoreButton(e) || isClickOnAddButton(e)) {
+            CollectionTreeClickTarget target = clickResolver.resolve(e.getX(), e.getY());
+            if (isGroupRowAction(target)) {
                 e.consume();
             }
         }
     }
 
-    /**
-     * 是否点到 "+" 按钮（more 左侧区域，GROUP 行）
-     */
-    private boolean isClickOnAddButton(MouseEvent e) {
-        int row = getRowForYPosition(e.getY());
-        if (row < 0 || !isGroupRow(row)) return false;
-        return isOnAddButtonX(e.getX());
+    private void handleLeftSingleClick(MouseEvent e) {
+        CollectionTreeClickTarget target = clickResolver.resolve(e.getX(), e.getY());
+        if (target == null) {
+            return;
+        }
+
+        if (target.isGroupMoreActions()) {
+            e.consume();
+            handleGroupMoreActionsClick(target, e.getX(), e.getY());
+            return;
+        }
+
+        if (target.isGroupAddRequestAction()) {
+            e.consume();
+            handleGroupAddRequestClick(target.node());
+            return;
+        }
+
+        openTargetTransiently(target);
     }
 
-    /**
-     * 是否点到 "⋯" more 按钮（最右侧区域，GROUP 行）
-     */
-    private boolean isClickOnMoreButton(MouseEvent e) {
-        int row = getRowForYPosition(e.getY());
-        if (row < 0 || !isGroupRow(row)) return false;
-        return isOnMoreButtonX(e.getX());
+    private boolean isGroupRowAction(CollectionTreeClickTarget target) {
+        return target != null && (target.isGroupMoreActions() || target.isGroupAddRequestAction());
     }
 
-    /**
-     * 点击 "+" 按钮：直接创建 HTTP 请求，不弹对话框
-     */
-    private void handleAddButtonClick(MouseEvent e) {
-        int row = getRowForYPosition(e.getY());
-        if (row < 0) return;
-        TreePath path = requestTree.getPathForRow(row);
-        if (path == null) return;
-        DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) path.getLastPathComponent();
+    private void handleGroupAddRequestClick(DefaultMutableTreeNode groupNode) {
         // 不在此处 setSelectionPath(path)，避免 group 选中状态与后续 invokeLater 里的
         // 新请求节点选中产生竞争（addHttpRequestDirectly 内部会定位到新请求节点）
         coordinator.addHttpRequestDirectly(groupNode);
     }
 
-    /**
-     * 点击 "⋯" more 按钮：弹出 group 专属操作菜单
-     */
-    private void handleMoreButtonClick(MouseEvent e) {
-        int row = getRowForYPosition(e.getY());
-        if (row < 0) return;
-        TreePath path = requestTree.getPathForRow(row);
-        if (path == null) return;
-        requestTree.setSelectionPath(path);
-        DefaultMutableTreeNode groupNode = (DefaultMutableTreeNode) path.getLastPathComponent();
-        showGroupActionMenu(groupNode, e.getX(), e.getY());
+    private void handleGroupMoreActionsClick(CollectionTreeClickTarget target, int x, int y) {
+        requestTree.setSelectionPath(target.path());
+        showGroupActionMenu(target.node(), x, y);
     }
 
     /**
@@ -268,14 +208,11 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     /**
      * 处理单击事件：临时打开请求或分组
      */
-    private void handleSingleClick(MouseEvent e) {
-        TreePath selPath = getTreePathAt(e.getX(), e.getY());
-        if (selPath == null) return;
-
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+    private void openTargetTransiently(CollectionTreeClickTarget target) {
+        DefaultMutableTreeNode node = target.node();
 
         if (CollectionTreeNodes.isGroup(node)) {
-            handleGroupClick(e, node, selPath);
+            toggleGroupAndOpenTransiently(target);
         } else if (CollectionTreeNodes.isRequest(node)) {
             CollectionTreeNodes.request(node).ifPresent(this::handleRequestClick);
         } else if (CollectionTreeNodes.isSavedResponse(node)) {
@@ -287,10 +224,10 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 处理双击事件：打开请求或分组编辑面板
      */
     private void handleDoubleClick(MouseEvent e) {
-        TreePath selPath = getTreePathAt(e.getX(), e.getY());
-        if (selPath == null) return;
+        CollectionTreeClickTarget target = clickResolver.resolve(e.getX(), e.getY());
+        if (target == null) return;
 
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode) selPath.getLastPathComponent();
+        DefaultMutableTreeNode node = target.node();
 
         if (CollectionTreeNodes.isRequest(node)) {
             CollectionTreeNodes.request(node)
@@ -313,7 +250,7 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      * 处理右键点击：显示弹出菜单
      */
     private void handleRightClick(MouseEvent e) {
-        int row = getRowForYPosition(e.getY());
+        int row = clickResolver.rowAtY(e.getY());
         if (row != -1) {
             TreePath clickedPath = requestTree.getPathForRow(row);
             // 只有当点击的路径未被选中时，才设置为当前选中项
@@ -330,17 +267,23 @@ public class RequestTreeMouseHandler extends MouseAdapter {
     /**
      * 处理分组点击事件
      */
-    private void handleGroupClick(MouseEvent e, DefaultMutableTreeNode node, TreePath selPath) {
+    private void toggleGroupAndOpenTransiently(CollectionTreeClickTarget target) {
+        if (target.isExpansionHandle()) {
+            return;
+        }
 
-        Rectangle rowBounds = requestTree.getRowBounds(requestTree.getRowForPath(selPath));
-        if (rowBounds == null) return;
+        toggleGroupExpansion(target.path());
+        RequestGroup group = CollectionTreeNodes.group(target.node()).orElse(null);
+        if (group != null) {
+            openActions.openTransientGroup(target.node(), group);
+        }
+    }
 
-        if (!isClickOnHandle(e.getX(), selPath)) {
-            RequestGroup group = CollectionTreeNodes.group(node).orElse(null);
-            if (group == null) {
-                return;
-            }
-            openActions.openTransientGroup(node, group);
+    private void toggleGroupExpansion(TreePath path) {
+        if (requestTree.isExpanded(path)) {
+            requestTree.collapsePath(path);
+        } else {
+            requestTree.expandPath(path);
         }
     }
 
@@ -363,28 +306,6 @@ public class RequestTreeMouseHandler extends MouseAdapter {
      */
     private void handleSavedResponseDoubleClick(SavedResponse savedResponse) {
         openActions.openFixedSavedResponse(savedResponse);
-    }
-
-    /**
-     * 判断是否点击在展开/收起图标上
-     */
-    private boolean isClickOnHandle(int clickX, TreePath path) {
-        Integer leftIndent = UIManager.getInt("Tree.leftChildIndent");
-        Integer rightIndent = UIManager.getInt("Tree.rightChildIndent");
-        int totalIndent = leftIndent + rightIndent;
-
-        int depth = path.getPathCount() - (requestTree.isRootVisible() ? 1 : 2);
-        int depthOffset = depth * totalIndent;
-        int handleEndX = depthOffset + totalIndent;
-
-        return clickX <= handleEndX;
-    }
-
-    /**
-     * 获取鼠标位置的树路径
-     */
-    private TreePath getTreePathAt(int x, int y) {
-        return RequestTreeHitTest.pathAt(requestTree, x, y);
     }
 
 }

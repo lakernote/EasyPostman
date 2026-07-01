@@ -4,7 +4,6 @@ import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.setting.SettingsInputStyle;
-import com.laker.postman.common.component.tree.CollectionGroupTreeFactory;
 import com.laker.postman.frame.MainFrame;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.service.collections.CollectionTreeNodes;
@@ -86,7 +85,6 @@ public class CollectionGroupSelectionDialog {
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets = new Insets(0, 0, 0, 0);
         JTree groupTree = CollectionGroupTreeFactory.createTree(groupTreeModel);
-        expandRows(groupTree);
         mainPanel.add(wrapTree(groupTree, 350, 200), gbc);
 
         JDialog dialog = createDialog(I18nUtil.getMessage(MessageKeys.SAVE_REQUEST), mainPanel);
@@ -129,7 +127,6 @@ public class CollectionGroupSelectionDialog {
         }
 
         JTree groupTree = CollectionGroupTreeFactory.createTree(groupTreeModel);
-        expandRows(groupTree);
         JPanel mainPanel = new JPanel(new BorderLayout(0, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(16, 20, 16, 20));
 
@@ -198,12 +195,6 @@ public class CollectionGroupSelectionDialog {
         return treeScroll;
     }
 
-    private static void expandRows(JTree groupTree) {
-        for (int i = 0; i < groupTree.getRowCount(); i++) {
-            groupTree.expandRow(i);
-        }
-    }
-
     private static Optional<RequestGroup> selectedGroup(JTree groupTree) {
         TreePath selectedPath = groupTree.getSelectionPath();
         if (selectedPath == null) {
@@ -225,6 +216,4 @@ public class CollectionGroupSelectionDialog {
         NotificationCenter.showWarning(I18nUtil.getMessage(MessageKeys.PLEASE_SELECT_VALID_GROUP));
     }
 
-    public record RequestNameSelection(RequestGroup group, String requestName) {
-    }
 }

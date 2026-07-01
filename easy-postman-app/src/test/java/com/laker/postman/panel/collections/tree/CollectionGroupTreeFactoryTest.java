@@ -1,9 +1,7 @@
-package com.laker.postman.common.component.tree;
+package com.laker.postman.panel.collections.tree;
 
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.request.model.HttpRequestItem;
-
-
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import org.testng.annotations.Test;
 
@@ -29,7 +27,7 @@ public class CollectionGroupTreeFactoryTest {
         collectionNode.add(CollectionTreeNodes.groupNode(folder));
         root.add(collectionNode);
 
-        TreeModel model = CollectionGroupTreeFactory.createModel(new DefaultTreeModel(root));
+        TreeModel model = CollectionGroupTreeFactory.createTree(new DefaultTreeModel(root)).getModel();
 
         assertEquals(model.getChildCount(root), 1);
         assertSame(model.getChild(root, 0), collectionNode);

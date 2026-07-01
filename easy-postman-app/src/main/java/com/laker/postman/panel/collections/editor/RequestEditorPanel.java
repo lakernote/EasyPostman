@@ -7,6 +7,7 @@ import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanelType;
 import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
+import com.laker.postman.panel.collections.tree.RequestNameSelection;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
@@ -123,7 +124,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
         return saveController.saveCurrentRequest();
     }
 
-    protected Optional<CollectionGroupSelectionDialog.RequestNameSelection> chooseGroupAndRequestName(
+    protected Optional<RequestNameSelection> chooseGroupAndRequestName(
             TreeModel groupTreeModel,
             String defaultName
     ) {

@@ -1,4 +1,4 @@
-package com.laker.postman.common.component.tree;
+package com.laker.postman.panel.collections.tree;
 
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 import com.laker.postman.collection.model.RequestGroup;
@@ -11,11 +11,12 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeModel;
 import java.awt.Component;
+import java.util.Objects;
 
 @UtilityClass
-public class CollectionGroupTreeFactory {
+class CollectionGroupTreeFactory {
 
-    public static JTree createTree(TreeModel sourceModel) {
+    static JTree createTree(TreeModel sourceModel) {
         JTree groupTree = new JTree(createModel(sourceModel));
         groupTree.setRootVisible(false);
         groupTree.setShowsRootHandles(true);
@@ -44,16 +45,16 @@ public class CollectionGroupTreeFactory {
                 return this;
             }
         });
-        expandAllRows(groupTree);
         if (groupTree.getRowCount() > 0) {
             groupTree.setSelectionRow(0);
         }
         return groupTree;
     }
 
-    public static TreeModel createModel(TreeModel sourceModel) {
-        if (sourceModel == null || !(sourceModel.getRoot() instanceof DefaultMutableTreeNode rootNode)) {
-            return new DefaultTreeModel(new DefaultMutableTreeNode("root"));
+    private static TreeModel createModel(TreeModel sourceModel) {
+        Object root = Objects.requireNonNull(sourceModel, "sourceModel").getRoot();
+        if (!(root instanceof DefaultMutableTreeNode rootNode)) {
+            throw new IllegalArgumentException("Group tree model root must be a DefaultMutableTreeNode");
         }
         return new DefaultTreeModel(rootNode) {
             @Override
@@ -102,9 +103,4 @@ public class CollectionGroupTreeFactory {
         return null;
     }
 
-    private static void expandAllRows(JTree tree) {
-        for (int i = 0; i < tree.getRowCount(); i++) {
-            tree.expandRow(i);
-        }
-    }
 }

@@ -3,7 +3,7 @@ package com.laker.postman.panel.collections.editor;
 import cn.hutool.core.util.IdUtil;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
-import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
+import com.laker.postman.panel.collections.tree.RequestNameSelection;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -30,7 +30,7 @@ final class RequestEditorSaveController {
     private final Component dialogParent;
     private final Supplier<RequestEditSubPanel> currentSubPanelSupplier;
     private final Runnable transientTabPinAction;
-    private final BiFunction<TreeModel, String, Optional<CollectionGroupSelectionDialog.RequestNameSelection>> requestNameChooser;
+    private final BiFunction<TreeModel, String, Optional<RequestNameSelection>> requestNameChooser;
     private final BiConsumer<String, HttpRequestItem> newRequestTabRefresher;
     private final CollectionTreeEditorGateway collectionGateway;
     private final RequestEditorSaveCoordinator saveCoordinator = new RequestEditorSaveCoordinator();
@@ -79,7 +79,7 @@ final class RequestEditorSaveController {
             }
 
             @Override
-            public Optional<CollectionGroupSelectionDialog.RequestNameSelection> chooseGroupAndRequestName(
+            public Optional<RequestNameSelection> chooseGroupAndRequestName(
                     TreeModel groupTreeModel,
                     String defaultName
             ) {

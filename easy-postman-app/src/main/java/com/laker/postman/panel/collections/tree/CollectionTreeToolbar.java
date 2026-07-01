@@ -599,7 +599,7 @@ public class CollectionTreeToolbar extends UiSingletonPanel {
         CollectionTreePanel collectionPanel = UiSingletonFactory.getInstance(CollectionTreePanel.class);
         RequestEditorPanel requestEditPanel = UiSingletonFactory.getInstance(RequestEditorPanel.class);
         TreeModel groupTreeModel = collectionPanel.getGroupTreeModel();
-        CollectionGroupSelectionDialog.RequestNameSelection selection = CollectionGroupSelectionDialog
+        RequestNameSelection selection = CollectionGroupSelectionDialog
                 .chooseGroupAndRequestName(groupTreeModel, item.getName())
                 .orElse(null);
         if (selection == null) return false;

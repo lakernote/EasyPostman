@@ -1,7 +1,7 @@
 package com.laker.postman.panel.collections.editor;
 
 import com.laker.postman.collection.model.RequestGroup;
-import com.laker.postman.panel.collections.tree.CollectionGroupSelectionDialog;
+import com.laker.postman.panel.collections.tree.RequestNameSelection;
 import com.laker.postman.request.model.HttpRequestItem;
 
 import javax.swing.tree.TreeModel;
@@ -40,7 +40,7 @@ final class RequestEditorSaveCoordinator {
     }
 
     private boolean saveNewRequest(SaveContext context, HttpRequestItem item) {
-        Optional<CollectionGroupSelectionDialog.RequestNameSelection> selection = context.chooseGroupAndRequestName(
+        Optional<RequestNameSelection> selection = context.chooseGroupAndRequestName(
                 context.groupTreeModel(),
                 item.getName()
         );
@@ -48,7 +48,7 @@ final class RequestEditorSaveCoordinator {
             return false;
         }
 
-        CollectionGroupSelectionDialog.RequestNameSelection requestSelection = selection.get();
+        RequestNameSelection requestSelection = selection.get();
         String requestName = requestSelection.requestName();
         item.setName(requestName);
         item.setId(context.newRequestId());
@@ -74,7 +74,7 @@ final class RequestEditorSaveCoordinator {
 
         TreeModel groupTreeModel();
 
-        Optional<CollectionGroupSelectionDialog.RequestNameSelection> chooseGroupAndRequestName(
+        Optional<RequestNameSelection> chooseGroupAndRequestName(
                 TreeModel groupTreeModel,
                 String defaultName
         );

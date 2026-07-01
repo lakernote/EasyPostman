@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (GitHub)",
-  "generatedAt": "2026-06-26T15:07:47Z",
+  "generatedAt": "2026-07-01T06:34:00Z",
   "plugins": [
     {
       "id": "plugin-capture",
@@ -8,6 +8,14 @@
       "description": "HTTP capture toolbox panel with a local explicit proxy.",
       "homepage": "https://github.com/lakernote/EasyPostman",
       "releases": [
+        {
+          "version": "6.0.11",
+          "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-capture-v6.0.11/easy-postman-6.0.11-plugin-capture.jar",
+          "sha256": "c2b70f066deda4550038dcf0a79f9a12ec8f351d676bb7532fc95ae2f6065278",
+          "minAppVersion": "6.0.10",
+          "minPlatformVersion": "4.0.0",
+          "maxPlatformVersion": "4.0.0"
+        },
         {
           "version": "6.0.10",
           "downloadUrl": "https://github.com/lakernote/EasyPostman/releases/download/plugin-capture-v6.0.10/easy-postman-6.0.10-plugin-capture.jar",

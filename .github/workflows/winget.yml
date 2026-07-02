@@ -215,7 +215,7 @@ jobs:
             'UpgradeBehavior: install'
             'ProductCode: 8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E_is1'
             "ReleaseDate: $releaseDate"
-            'ElevationRequirement: elevationRequired'
+            'ElevationRequirement: elevatesSelf'
             'AppsAndFeaturesEntries:'
             '- ProductCode: 8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E_is1'
             '  DisplayName: EasyPostman'
@@ -284,6 +284,7 @@ jobs:
             manifests/l/Laker/EasyPostman
 
       - name: Commit and push initial manifest（提交并推送首版清单）
+        id: initial_commit
         if: steps.meta.outputs.mode == 'initial' && steps.meta.outputs.submit == 'true'
         shell: pwsh
         run: |
@@ -305,17 +306,20 @@ jobs:
 
           git -C winget-pkgs add "manifests/l/Laker/EasyPostman/$version"
 
-          git -C winget-pkgs diff --cached --quiet
-          if ($LASTEXITCODE -ne 0) {
+          $changedFiles = @(git -C winget-pkgs diff --cached --name-only)
+          if ($changedFiles.Count -gt 0) {
+            Write-Host 'Changed manifest files:'
+            $changedFiles | ForEach-Object { Write-Host "  $_" }
             git -C winget-pkgs commit -m "Add Laker.EasyPostman version $version"
+            git -C winget-pkgs push --force origin $branchName
+            "changed=true" >> $env:GITHUB_OUTPUT
           } else {
             Write-Host 'No manifest changes to commit.'
+            "changed=false" >> $env:GITHUB_OUTPUT
           }
 
-          git -C winget-pkgs push --force-with-lease origin $branchName
-
       - name: Create initial WinGet PR（创建首版 WinGet PR）
-        if: steps.meta.outputs.mode == 'initial' && steps.meta.outputs.submit == 'true'
+        if: steps.meta.outputs.mode == 'initial' && steps.meta.outputs.submit == 'true' && steps.initial_commit.outputs.changed == 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
@@ -328,9 +332,9 @@ jobs:
           $releaseUrl = '${{ steps.meta.outputs.release_url }}'
           $sha256 = '${{ steps.installer_hash.outputs.sha256 }}'
           $headRef = "${forkOwner}:$branchName"
-          $existingPr = gh pr list --repo microsoft/winget-pkgs --head $headRef --json url --jq '.[0].url'
+          $existingPr = (gh pr list --repo microsoft/winget-pkgs --head $headRef --json url --jq '.[0].url').Trim()
 
-          if ($existingPr) {
+          if ($existingPr -and $existingPr -ne 'null') {
             Write-Host "Existing PR: $existingPr"
             exit 0
           }
@@ -385,10 +389,11 @@ jobs:
           $version = '${{ steps.meta.outputs.version }}'
           $installerUrl = '${{ steps.meta.outputs.installer_url }}'
           $releaseUrl = '${{ steps.meta.outputs.release_url }}'
-          $prTitle = "Update $env:PACKAGE_IDENTIFIER to $version"
+          $packageIdentifier = $env:PACKAGE_IDENTIFIER
+          $prTitle = "Update $packageIdentifier to $version"
 
           .\wingetcreate.exe update `
-            $env:PACKAGE_IDENTIFIER `
+            $packageIdentifier `
             --version $version `
             --urls "$installerUrl|x64" `
             --release-notes-url $releaseUrl `
@@ -404,10 +409,11 @@ jobs:
           $version = '${{ steps.meta.outputs.version }}'
           $installerUrl = '${{ steps.meta.outputs.installer_url }}'
           $releaseUrl = '${{ steps.meta.outputs.release_url }}'
+          $packageIdentifier = $env:PACKAGE_IDENTIFIER
 
           New-Item -ItemType Directory -Path winget-manifests -Force | Out-Null
           .\wingetcreate.exe update `
-            $env:PACKAGE_IDENTIFIER `
+            $packageIdentifier `
             --version $version `
             --urls "$installerUrl|x64" `
             --release-notes-url $releaseUrl `

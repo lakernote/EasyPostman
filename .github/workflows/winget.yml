@@ -93,7 +93,15 @@ jobs:
 
           $releaseUrl = "https://github.com/$repository/releases/tag/$tagName"
           $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repository/releases/tags/$tagName"
-          $releaseDate = $release.published_at.Substring(0, 10)
+          $publishedAt = $release.published_at
+          if (-not $publishedAt) {
+            throw "Release $tagName is not published or has no published_at timestamp."
+          }
+          if ($publishedAt -is [DateTime]) {
+            $releaseDate = $publishedAt.ToUniversalTime().ToString('yyyy-MM-dd')
+          } else {
+            $releaseDate = ([DateTimeOffset]::Parse([string] $publishedAt)).UtcDateTime.ToString('yyyy-MM-dd')
+          }
           $branchName = "codex/add-laker-easypostman-$version"
 
           "mode=$mode" >> $env:GITHUB_OUTPUT

@@ -193,6 +193,7 @@ jobs:
           New-Item -ItemType Directory -Path $manifestRoot -Force | Out-Null
 
           @(
+            '# yaml-language-server: $schema=https://aka.ms/winget-manifest.version.1.10.0.schema.json'
             'PackageIdentifier: Laker.EasyPostman'
             "PackageVersion: $version"
             'DefaultLocale: en-US'
@@ -201,6 +202,7 @@ jobs:
           ) | Set-Content -Path (Join-Path $manifestRoot 'Laker.EasyPostman.yaml') -Encoding utf8
 
           @(
+            '# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.10.0.schema.json'
             'PackageIdentifier: Laker.EasyPostman'
             "PackageVersion: $version"
             'InstallerType: inno'
@@ -232,6 +234,7 @@ jobs:
           ) | Set-Content -Path (Join-Path $manifestRoot 'Laker.EasyPostman.installer.yaml') -Encoding utf8
 
           @(
+            '# yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.10.0.schema.json'
             'PackageIdentifier: Laker.EasyPostman'
             "PackageVersion: $version"
             'PackageLocale: en-US'

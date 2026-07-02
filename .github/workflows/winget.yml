@@ -145,7 +145,7 @@ jobs:
                 exit 0
               }
             } catch {
-              Write-Host "Attempt $attempt/$maxAttempts: installer asset is not available yet."
+              Write-Host "Attempt ${attempt}/${maxAttempts}: installer asset is not available yet."
             }
 
             Start-Sleep -Seconds $sleepSeconds

@@ -1,0 +1,415 @@
+name: Publish WinGet Manifest（提交 WinGet 清单）
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'initial creates the first manifest PR; update updates an existing WinGet package.'
+        required: true
+        default: update
+        type: choice
+        options:
+          - update
+          - initial
+      version:
+        description: 'Release version without leading v, for example 6.0.11. Empty means read pom.xml.'
+        required: false
+        type: string
+      installer_url:
+        description: 'Optional Windows EXE URL override. Empty means GitHub Release asset URL.'
+        required: false
+        type: string
+      fork_owner:
+        description: 'GitHub owner of the winget-pkgs fork used by initial mode.'
+        required: true
+        default: lakernote
+        type: string
+      submit:
+        description: 'Submit a PR. Disable for dry-run manifest generation.'
+        required: true
+        default: true
+        type: boolean
+
+concurrency:
+  group: winget-${{ inputs.mode }}-${{ inputs.version || github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  PACKAGE_IDENTIFIER: Laker.EasyPostman
+  WINGET_CREATE_URL: https://aka.ms/wingetcreate/latest
+
+jobs:
+  publish-winget:
+    name: Publish WinGet Manifest（提交 WinGet 清单）
+    runs-on: windows-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout EasyPostman（检出 EasyPostman）
+        uses: actions/checkout@v4
+
+      - name: Resolve release metadata（解析发版元数据）
+        id: meta
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $repository = '${{ github.repository }}'
+          $mode = '${{ inputs.mode }}'.Trim()
+          $manualVersion = '${{ inputs.version }}'.Trim()
+          $manualInstallerUrl = '${{ inputs.installer_url }}'.Trim()
+          $forkOwner = '${{ inputs.fork_owner }}'.Trim()
+
+          if ($manualVersion) {
+            $version = $manualVersion -replace '^v', ''
+          } else {
+            $pom = Get-Content 'pom.xml' -Raw
+            $match = [regex]::Match($pom, '<revision>(.*?)</revision>')
+            if (-not $match.Success) {
+              throw 'Failed to read <revision> from pom.xml.'
+            }
+            $version = $match.Groups[1].Value.Trim()
+          }
+
+          if (-not $version) {
+            throw 'Resolved version is empty.'
+          }
+
+          if (-not $forkOwner) {
+            throw 'fork_owner is required.'
+          }
+
+          $tagName = "v$version"
+          $submit = '${{ inputs.submit }}'.ToLowerInvariant()
+
+          if ($manualInstallerUrl) {
+            $installerUrl = $manualInstallerUrl
+          } else {
+            $installerUrl = "https://github.com/$repository/releases/download/$tagName/EasyPostman-$version-windows-x64.exe"
+          }
+
+          $releaseUrl = "https://github.com/$repository/releases/tag/$tagName"
+          $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repository/releases/tags/$tagName"
+          $releaseDate = $release.published_at.Substring(0, 10)
+          $branchName = "codex/add-laker-easypostman-$version"
+
+          "mode=$mode" >> $env:GITHUB_OUTPUT
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "tag_name=$tagName" >> $env:GITHUB_OUTPUT
+          "installer_url=$installerUrl" >> $env:GITHUB_OUTPUT
+          "release_url=$releaseUrl" >> $env:GITHUB_OUTPUT
+          "release_date=$releaseDate" >> $env:GITHUB_OUTPUT
+          "fork_owner=$forkOwner" >> $env:GITHUB_OUTPUT
+          "branch_name=$branchName" >> $env:GITHUB_OUTPUT
+          "submit=$submit" >> $env:GITHUB_OUTPUT
+
+          Write-Host "Mode: $mode"
+          Write-Host "Version: $version"
+          Write-Host "Tag: $tagName"
+          Write-Host "Release date: $releaseDate"
+          Write-Host "Installer URL: $installerUrl"
+          Write-Host "Fork owner: $forkOwner"
+          Write-Host "Branch: $branchName"
+          Write-Host "Submit: $submit"
+
+      - name: Wait for Windows installer asset（等待 Windows 安装包上传）
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installerUrl = '${{ steps.meta.outputs.installer_url }}'
+          $maxAttempts = 180
+          $sleepSeconds = 30
+
+          for ($attempt = 1; $attempt -le $maxAttempts; $attempt++) {
+            try {
+              $response = Invoke-WebRequest `
+                -Uri $installerUrl `
+                -Method Head `
+                -MaximumRedirection 5 `
+                -TimeoutSec 30 `
+                -UseBasicParsing
+
+              if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
+                Write-Host "Installer asset is available: $installerUrl"
+                exit 0
+              }
+            } catch {
+              Write-Host "Attempt $attempt/$maxAttempts: installer asset is not available yet."
+            }
+
+            Start-Sleep -Seconds $sleepSeconds
+          }
+
+          throw "Timed out waiting for installer asset: $installerUrl"
+
+      - name: Validate WinGet token（校验 WinGet 提交令牌）
+        if: steps.meta.outputs.submit == 'true'
+        shell: pwsh
+        env:
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+        run: |
+          if (-not $env:WINGET_CREATE_GITHUB_TOKEN) {
+            throw 'Missing repository secret WINGET_CREATE_GITHUB_TOKEN. Use a GitHub classic PAT with public_repo access.'
+          }
+
+      - name: Download installer and compute hash（下载安装包并计算哈希）
+        id: installer_hash
+        if: steps.meta.outputs.mode == 'initial'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installerUrl = '${{ steps.meta.outputs.installer_url }}'
+          $installerPath = Join-Path $env:RUNNER_TEMP 'EasyPostman-windows-x64.exe'
+
+          Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath -MaximumRedirection 5 -UseBasicParsing
+          $sha256 = (Get-FileHash -Path $installerPath -Algorithm SHA256).Hash.ToUpperInvariant()
+          "sha256=$sha256" >> $env:GITHUB_OUTPUT
+          Write-Host "Installer SHA256: $sha256"
+
+      - name: Generate initial WinGet manifests（生成首版 WinGet 清单）
+        if: steps.meta.outputs.mode == 'initial'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $version = '${{ steps.meta.outputs.version }}'
+          $installerUrl = '${{ steps.meta.outputs.installer_url }}'
+          $releaseUrl = '${{ steps.meta.outputs.release_url }}'
+          $releaseDate = '${{ steps.meta.outputs.release_date }}'
+          $sha256 = '${{ steps.installer_hash.outputs.sha256 }}'
+          $manifestRoot = Join-Path 'winget-manifests' "manifests/l/Laker/EasyPostman/$version"
+
+          New-Item -ItemType Directory -Path $manifestRoot -Force | Out-Null
+
+          @(
+            'PackageIdentifier: Laker.EasyPostman'
+            "PackageVersion: $version"
+            'DefaultLocale: en-US'
+            'ManifestType: version'
+            'ManifestVersion: 1.10.0'
+          ) | Set-Content -Path (Join-Path $manifestRoot 'Laker.EasyPostman.yaml') -Encoding utf8
+
+          @(
+            'PackageIdentifier: Laker.EasyPostman'
+            "PackageVersion: $version"
+            'InstallerType: inno'
+            'Scope: machine'
+            'InstallModes:'
+            '- interactive'
+            '- silent'
+            '- silentWithProgress'
+            'InstallerSwitches:'
+            '  Silent: /SP- /VERYSILENT /SUPPRESSMSGBOXES /NORESTART'
+            '  SilentWithProgress: /SP- /SILENT /SUPPRESSMSGBOXES /NORESTART'
+            'UpgradeBehavior: install'
+            'ProductCode: 8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E_is1'
+            "ReleaseDate: $releaseDate"
+            'ElevationRequirement: elevationRequired'
+            'AppsAndFeaturesEntries:'
+            '- ProductCode: 8B9C5D6E-7F8A-9B0C-1D2E-3F4A5B6C7D8E_is1'
+            '  DisplayName: EasyPostman'
+            '  Publisher: Laker'
+            "  DisplayVersion: $version"
+            'InstallationMetadata:'
+            "  DefaultInstallLocation: '%ProgramFiles%\EasyPostman'"
+            'Installers:'
+            '- Architecture: x64'
+            "  InstallerUrl: $installerUrl"
+            "  InstallerSha256: $sha256"
+            'ManifestType: installer'
+            'ManifestVersion: 1.10.0'
+          ) | Set-Content -Path (Join-Path $manifestRoot 'Laker.EasyPostman.installer.yaml') -Encoding utf8
+
+          @(
+            'PackageIdentifier: Laker.EasyPostman'
+            "PackageVersion: $version"
+            'PackageLocale: en-US'
+            'Publisher: Laker'
+            'PublisherUrl: https://github.com/lakernote'
+            'PublisherSupportUrl: https://github.com/lakernote/EasyPostman/issues'
+            'PackageName: EasyPostman'
+            'PackageUrl: https://github.com/lakernote/EasyPostman'
+            'License: Apache-2.0'
+            'LicenseUrl: https://github.com/lakernote/EasyPostman/blob/master/LICENSE'
+            'ShortDescription: An open-source Postman-style API client and JMeter-style load testing desktop app.'
+            'Description: EasyPostman combines a Postman-style API debugging workspace with JMeter-style performance testing in one local-first desktop app.'
+            'Moniker: easypostman'
+            'Tags:'
+            '- api'
+            '- api-client'
+            '- http'
+            '- jmeter'
+            '- postman'
+            '- rest'
+            '- testing'
+            "ReleaseNotesUrl: $releaseUrl"
+            'Documentations:'
+            '- DocumentLabel: Documentation'
+            '  DocumentUrl: https://github.com/lakernote/EasyPostman/blob/master/docs/FEATURES.md'
+            'ManifestType: defaultLocale'
+            'ManifestVersion: 1.10.0'
+          ) | Set-Content -Path (Join-Path $manifestRoot 'Laker.EasyPostman.locale.en-US.yaml') -Encoding utf8
+
+          Get-ChildItem -Path $manifestRoot -File | ForEach-Object { Write-Host "Generated $($_.FullName)" }
+
+      - name: Upload initial dry-run manifests（上传首版清单预览）
+        if: steps.meta.outputs.mode == 'initial' && steps.meta.outputs.submit != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: winget-initial-manifests-${{ steps.meta.outputs.version }}
+          path: winget-manifests
+          retention-days: 7
+
+      - name: Checkout winget-pkgs fork（检出 winget-pkgs fork）
+        if: steps.meta.outputs.mode == 'initial' && steps.meta.outputs.submit == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.meta.outputs.fork_owner }}/winget-pkgs
+          token: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+          ref: master
+          path: winget-pkgs
+          filter: blob:none
+          sparse-checkout: |
+            manifests/l/Laker/EasyPostman
+
+      - name: Commit and push initial manifest（提交并推送首版清单）
+        if: steps.meta.outputs.mode == 'initial' && steps.meta.outputs.submit == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.meta.outputs.version }}'
+          $branchName = '${{ steps.meta.outputs.branch_name }}'
+          $targetDir = "winget-pkgs/manifests/l/Laker/EasyPostman/$version"
+
+          git -C winget-pkgs config user.name 'github-actions[bot]'
+          git -C winget-pkgs config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C winget-pkgs checkout -B $branchName
+
+          if (Test-Path $targetDir) {
+            Remove-Item -Recurse -Force $targetDir
+          }
+
+          New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+          Copy-Item -Path "winget-manifests/manifests/l/Laker/EasyPostman/$version/*" -Destination $targetDir
+
+          git -C winget-pkgs add "manifests/l/Laker/EasyPostman/$version"
+
+          git -C winget-pkgs diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git -C winget-pkgs commit -m "Add Laker.EasyPostman version $version"
+          } else {
+            Write-Host 'No manifest changes to commit.'
+          }
+
+          git -C winget-pkgs push --force-with-lease origin $branchName
+
+      - name: Create initial WinGet PR（创建首版 WinGet PR）
+        if: steps.meta.outputs.mode == 'initial' && steps.meta.outputs.submit == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.meta.outputs.version }}'
+          $branchName = '${{ steps.meta.outputs.branch_name }}'
+          $forkOwner = '${{ steps.meta.outputs.fork_owner }}'
+          $installerUrl = '${{ steps.meta.outputs.installer_url }}'
+          $releaseUrl = '${{ steps.meta.outputs.release_url }}'
+          $sha256 = '${{ steps.installer_hash.outputs.sha256 }}'
+          $headRef = "${forkOwner}:$branchName"
+          $existingPr = gh pr list --repo microsoft/winget-pkgs --head $headRef --json url --jq '.[0].url'
+
+          if ($existingPr) {
+            Write-Host "Existing PR: $existingPr"
+            exit 0
+          }
+
+          $bodyPath = Join-Path $env:RUNNER_TEMP 'winget-pr-body.md'
+          @(
+            '### What'
+            ''
+            "Adds the initial WinGet manifest for EasyPostman version $version."
+            ''
+            '### Installer'
+            ''
+            '- Installer type: Inno Setup'
+            '- Architecture: x64'
+            "- Release: $releaseUrl"
+            "- Installer URL: $installerUrl"
+            "- SHA256: $sha256"
+            ''
+            '### Notes'
+            ''
+            'The installer is produced by the upstream EasyPostman GitHub Release workflow and supports silent installation with Inno Setup switches.'
+          ) | Set-Content -Path $bodyPath -Encoding utf8
+
+          gh pr create `
+            --repo microsoft/winget-pkgs `
+            --base master `
+            --head $headRef `
+            --title "Add Laker.EasyPostman version $version" `
+            --body-file $bodyPath
+
+      - name: Setup .NET 6 runtime（配置 .NET 6 运行时）
+        if: steps.meta.outputs.mode == 'update'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x'
+
+      - name: Download wingetcreate（下载 wingetcreate）
+        if: steps.meta.outputs.mode == 'update'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          Invoke-WebRequest -Uri $env:WINGET_CREATE_URL -OutFile wingetcreate.exe -UseBasicParsing
+          .\wingetcreate.exe info
+
+      - name: Submit WinGet update PR（提交 WinGet 更新 PR）
+        if: steps.meta.outputs.mode == 'update' && steps.meta.outputs.submit == 'true'
+        shell: pwsh
+        env:
+          WINGET_CREATE_GITHUB_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.meta.outputs.version }}'
+          $installerUrl = '${{ steps.meta.outputs.installer_url }}'
+          $releaseUrl = '${{ steps.meta.outputs.release_url }}'
+          $prTitle = "Update $env:PACKAGE_IDENTIFIER to $version"
+
+          .\wingetcreate.exe update `
+            $env:PACKAGE_IDENTIFIER `
+            --version $version `
+            --urls "$installerUrl|x64" `
+            --release-notes-url $releaseUrl `
+            --prtitle $prTitle `
+            --submit `
+            --no-open
+
+      - name: Generate WinGet update dry run（生成 WinGet 更新清单预览）
+        if: steps.meta.outputs.mode == 'update' && steps.meta.outputs.submit != 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = '${{ steps.meta.outputs.version }}'
+          $installerUrl = '${{ steps.meta.outputs.installer_url }}'
+          $releaseUrl = '${{ steps.meta.outputs.release_url }}'
+
+          New-Item -ItemType Directory -Path winget-manifests -Force | Out-Null
+          .\wingetcreate.exe update `
+            $env:PACKAGE_IDENTIFIER `
+            --version $version `
+            --urls "$installerUrl|x64" `
+            --release-notes-url $releaseUrl `
+            --out winget-manifests `
+            --format yaml
+
+      - name: Upload update dry-run manifests（上传更新清单预览）
+        if: steps.meta.outputs.mode == 'update' && steps.meta.outputs.submit != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: winget-update-manifests-${{ steps.meta.outputs.version }}
+          path: winget-manifests
+          retention-days: 7

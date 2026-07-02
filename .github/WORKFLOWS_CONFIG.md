@@ -14,6 +14,7 @@
 │   ├── auto-label.yml                 # 自动标签
 │   ├── sync-labels.yml                # 同步标签定义
 │   ├── release.yml                    # 发布构建（多平台）
+│   ├── winget.yml                     # WinGet 清单提交
 │   └── codeql-analysis.yml            # CodeQL 代码安全分析
 ├── ISSUE_TEMPLATE/                    # Issue 模板
 │   ├── bug_report.yml                 # Bug 报告模板
@@ -131,6 +132,36 @@
 - ⚠️ 在仓库的 Security 标签中显示警报
 
 **作用**: 持续监控代码安全性，及早发现和修复安全问题
+
+---
+
+### 7. WinGet 清单提交 (`winget.yml`)
+
+**触发时机**:
+- 仅支持手动触发，适合按需把稳定版同步到 WinGet
+- `mode=initial` 用于首次进入 WinGet 仓库
+- `mode=update` 用于首版合并后的后续版本更新
+- 可关闭 `submit` 只生成清单预览，不提交 PR
+
+**功能**:
+- 等待 GitHub Release 中的 `EasyPostman-{version}-windows-x64.exe` 上传完成
+- `initial` 模式会下载安装包、计算 SHA256、生成首版三文件 manifest
+- `initial` 模式会把 manifest 推送到 `fork_owner/winget-pkgs` 分支，并向 `microsoft/winget-pkgs` 创建 PR
+- `update` 模式会下载官方 `wingetcreate`，调用 `wingetcreate update Laker.EasyPostman`
+
+**前置条件**:
+- 仓库 Secrets 配置 `WINGET_CREATE_GITHUB_TOKEN`
+- 该 token 使用 GitHub classic PAT，至少需要 `public_repo` 权限，用于向 `fork_owner/winget-pkgs` 推分支并向 `microsoft/winget-pkgs` 开 PR
+- `initial` 模式要求已经 fork `microsoft/winget-pkgs`，默认 fork owner 为 `lakernote`
+- `update` 模式要求 `Laker.EasyPostman` 首版清单已经被 `microsoft/winget-pkgs` 合并
+
+**首次提交示例**:
+在 Actions 页面运行 `Publish WinGet Manifest`，选择 `mode=initial`，填写 `version=6.0.11`，`fork_owner=lakernote`，`submit=true`。
+
+**后续更新示例**:
+在 Actions 页面运行 `Publish WinGet Manifest`，选择 `mode=update`，填写要同步的稳定版本号，`submit=true`。
+
+**作用**: 按需把 Windows 稳定版同步到 WinGet 仓库，用户可通过 `winget install --id Laker.EasyPostman -e` 安装或升级。
 
 ---
 

@@ -328,6 +328,10 @@ jobs:
           GH_TOKEN: ${{ secrets.WINGET_CREATE_GITHUB_TOKEN }}
         run: |
           $ErrorActionPreference = 'Stop'
+          if (Get-Variable PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue) {
+            $PSNativeCommandUseErrorActionPreference = $false
+          }
+
           $version = '${{ steps.meta.outputs.version }}'
           $branchName = '${{ steps.meta.outputs.branch_name }}'
           $forkOwner = '${{ steps.meta.outputs.fork_owner }}'
@@ -335,7 +339,7 @@ jobs:
           $releaseUrl = '${{ steps.meta.outputs.release_url }}'
           $sha256 = '${{ steps.installer_hash.outputs.sha256 }}'
           $headRef = "${forkOwner}:$branchName"
-          $existingPr = (gh pr list --repo microsoft/winget-pkgs --head $headRef --json url --jq '.[0].url').Trim()
+          $existingPr = (gh pr list --repo microsoft/winget-pkgs --search "head:$headRef" --json url --jq '.[0].url').Trim()
 
           if ($existingPr -and $existingPr -ne 'null') {
             Write-Host "Existing PR: $existingPr"
@@ -361,12 +365,25 @@ jobs:
             'The installer is produced by the upstream EasyPostman GitHub Release workflow and supports silent installation with Inno Setup switches.'
           ) | Set-Content -Path $bodyPath -Encoding utf8
 
-          gh pr create `
+          $createOutput = gh pr create `
             --repo microsoft/winget-pkgs `
             --base master `
             --head $headRef `
             --title "Add Laker.EasyPostman version $version" `
-            --body-file $bodyPath
+            --body-file $bodyPath 2>&1
+
+          $createText = ($createOutput | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0) {
+            if ($createText -match 'already exists') {
+              Write-Host $createText
+              exit 0
+            }
+
+            Write-Error $createText
+            exit $LASTEXITCODE
+          }
+
+          Write-Host $createText
 
       - name: Setup .NET 6 runtime（配置 .NET 6 运行时）
         if: steps.meta.outputs.mode == 'update'

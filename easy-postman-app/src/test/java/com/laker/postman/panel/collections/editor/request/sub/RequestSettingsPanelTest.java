@@ -235,8 +235,12 @@ public class RequestSettingsPanelTest extends AbstractSwingUiTest {
         RequestSettingsPanel panel = new RequestSettingsPanel(RequestItemProtocolEnum.WEBSOCKET);
 
         JComboBox<?> proxyComboBox = comboBox(panel, "proxyPolicyComboBox");
+        int fixedMaxPreferredWidth = proxyComboBox.getPreferredSize().width;
 
-        assertTrue(proxyComboBox.getPreferredSize().width < 176);
+        for (int i = 0; i < proxyComboBox.getItemCount(); i++) {
+            proxyComboBox.setSelectedIndex(i);
+            assertEquals(proxyComboBox.getPreferredSize().width, fixedMaxPreferredWidth);
+        }
     }
 
     private static void setRequestTimeoutText(RequestSettingsPanel panel, String value) throws Exception {

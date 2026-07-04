@@ -16,6 +16,7 @@ import com.laker.postman.common.component.tab.IndicatorTabComponent;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.snippet.Snippet;
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.util.EditorFontManager;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -450,7 +451,7 @@ public class WebSocketStagePropertyPanel extends JPanel {
         area.setWrapStyleWord(true);
         area.setCaretColor(ModernColors.getPrimary());
         EditorThemeUtil.loadTheme(area);
-        area.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, 0));
+        EditorFontManager.applyConfiguredEditorFont(area);
     }
 
     private JTextArea createHintArea(String text, int rows) {

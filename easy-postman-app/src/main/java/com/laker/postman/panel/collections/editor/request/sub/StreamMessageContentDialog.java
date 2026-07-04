@@ -5,6 +5,7 @@ import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.constants.ModernColors;
+import com.laker.postman.util.EditorFontManager;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -182,7 +183,7 @@ final class StreamMessageContentDialog {
         textArea.setShowMatchedBracketPopup(false);
         textArea.setTokenPainterFactory(ignored -> new ViewportClippedTokenPainter());
         EditorThemeUtil.loadTheme(textArea);
-        textArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        EditorFontManager.applyConfiguredEditorFont(textArea);
         return textArea;
     }
 

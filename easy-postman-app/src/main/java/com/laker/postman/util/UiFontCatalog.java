@@ -14,6 +14,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 @UtilityClass
@@ -22,6 +23,13 @@ public class UiFontCatalog {
     private static final int INSPECTION_FONT_SIZE = 13;
     private static final String CJK_SAMPLE = "界面字体汉字";
     private static final String EMOJI_SAMPLE = "😀🚀✨";
+    private static final List<String> LOGICAL_FONT_FAMILIES = List.of(
+            Font.DIALOG,
+            Font.DIALOG_INPUT,
+            Font.MONOSPACED,
+            Font.SANS_SERIF,
+            Font.SERIF
+    );
     private static final ExecutorService FONT_LOAD_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
         Thread thread = new Thread(r, "ui-font-catalog-loader");
         thread.setDaemon(true);
@@ -83,6 +91,72 @@ public class UiFontCatalog {
                 .toList();
     }
 
+    public static List<String> mergeUiFamiliesForCombo(String currentFamily,
+                                                       Collection<FontOption> loadedOptions,
+                                                       Locale locale) {
+        return mergeFontOptionsForCombo(
+                currentFamily,
+                loadedOptions,
+                option -> isUiFontAllowedForLocale(option.support(), locale)
+        );
+    }
+
+    public static List<String> mergeEditorPrimaryFamiliesForCombo(String currentFamily,
+                                                                  Collection<FontOption> loadedOptions) {
+        return mergeFontOptionsForCombo(
+                currentFamily,
+                loadedOptions,
+                option -> isLikelyEditorPrimaryFont(option.family())
+        );
+    }
+
+    public static List<String> mergeEditorFallbackFamiliesForCombo(String currentFamily,
+                                                                   Collection<FontOption> loadedOptions) {
+        return mergeFontOptionsForCombo(
+                currentFamily,
+                loadedOptions,
+                option -> option.support() != FontSupport.NO_CJK
+        );
+    }
+
+    private static List<String> mergeFontOptionsForCombo(String currentFamily,
+                                                         Collection<FontOption> loadedOptions,
+                                                         Predicate<FontOption> optionFilter) {
+        List<String> filteredFamilies = loadedOptions == null
+                ? List.of()
+                : loadedOptions.stream()
+                .filter(option -> option != null && optionFilter.test(option))
+                .map(FontOption::family)
+                .toList();
+        return mergeFamiliesForCombo(currentFamily, filteredFamilies);
+    }
+
+    static boolean isLikelyEditorPrimaryFont(String familyName) {
+        if (familyName == null || familyName.isBlank()) {
+            return false;
+        }
+
+        String normalized = familyName.toLowerCase(Locale.ROOT)
+                .replace(" ", "")
+                .replace("-", "")
+                .replace("_", "");
+        if (normalized.contains("mono") || normalized.contains("code")) {
+            return true;
+        }
+
+        return normalized.equals("consolas")
+                || normalized.equals("menlo")
+                || normalized.equals("monaco")
+                || normalized.equals("courier")
+                || normalized.equals("couriernew")
+                || normalized.equals("hack")
+                || normalized.equals("iosevka")
+                || normalized.equals("inconsolata")
+                || normalized.equals("firamono")
+                || normalized.equals("firacode")
+                || normalized.equals("sfmono");
+    }
+
     static List<String> normalizeFamilies(Collection<String> familyNames) {
         Map<String, String> normalized = new LinkedHashMap<>();
         for (String familyName : familyNames) {
@@ -114,6 +188,9 @@ public class UiFontCatalog {
         }
 
         Font font = new Font(familyName, Font.PLAIN, INSPECTION_FONT_SIZE);
+        if (!isRequestedFamilyResolved(familyName, font)) {
+            return FontSupport.NO_CJK;
+        }
         boolean supportsCjk = font.canDisplayUpTo(CJK_SAMPLE) == -1;
         if (!supportsCjk) {
             return FontSupport.NO_CJK;
@@ -121,6 +198,27 @@ public class UiFontCatalog {
 
         boolean supportsEmoji = font.canDisplayUpTo(EMOJI_SAMPLE) == -1;
         return supportsEmoji ? FontSupport.FULL : FontSupport.NO_EMOJI;
+    }
+
+    private static boolean isRequestedFamilyResolved(String requestedFamily, Font resolvedFont) {
+        String requested = normalizeFamilyKey(requestedFamily);
+        if (LOGICAL_FONT_FAMILIES.stream().map(UiFontCatalog::normalizeFamilyKey).anyMatch(requested::equals)) {
+            return true;
+        }
+        return requested.equals(normalizeFamilyKey(resolvedFont.getFamily(Locale.ROOT)))
+                || requested.equals(normalizeFamilyKey(resolvedFont.getFontName(Locale.ROOT)));
+    }
+
+    private static String normalizeFamilyKey(String familyName) {
+        return familyName == null ? "" : familyName.trim().toLowerCase(Locale.ROOT);
+    }
+
+    public static boolean isUiFontAllowedForLocale(FontSupport support, Locale locale) {
+        if (support == null) {
+            return true;
+        }
+        boolean chineseUi = locale != null && "zh".equalsIgnoreCase(locale.getLanguage());
+        return !chineseUi || support.isUiSafe();
     }
 
     static final class FontOptionCache {

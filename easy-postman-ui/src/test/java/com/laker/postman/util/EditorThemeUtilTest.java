@@ -23,11 +23,13 @@ public class EditorThemeUtilTest {
     public void rememberLookAndFeel() {
         previousLookAndFeel = UIManager.getLookAndFeel();
         EditorThemeUtil.clearConfiguredThemeResources();
+        EditorThemeUtil.clearConfiguredEditorFontApplier();
     }
 
     @AfterMethod
     public void tearDown() throws Exception {
         EditorThemeUtil.clearConfiguredThemeResources();
+        EditorThemeUtil.clearConfiguredEditorFontApplier();
         if (previousLookAndFeel != null) {
             UIManager.setLookAndFeel(previousLookAndFeel);
         }
@@ -82,6 +84,18 @@ public class EditorThemeUtilTest {
         assertEquals(textArea.getBackground(), Color.WHITE);
         assertEquals(textArea.getCaretColor(), new Color(0x11, 0x18, 0x27));
         assertEquals(textArea.getSelectionColor(), new Color(0xA6, 0xD2, 0xFF));
+    }
+
+    @Test
+    public void loadThemeShouldInvokeConfiguredEditorFontApplierAfterTheme() {
+        FlatLightLaf.setup();
+        RSyntaxTextArea textArea = new RSyntaxTextArea();
+        Font expectedFont = new Font(Font.SERIF, Font.BOLD, 19);
+        EditorThemeUtil.configureEditorFontApplier(area -> area.setFont(expectedFont));
+
+        EditorThemeUtil.loadTheme(textArea);
+
+        assertEquals(textArea.getFont(), expectedFont);
     }
 
     @Test

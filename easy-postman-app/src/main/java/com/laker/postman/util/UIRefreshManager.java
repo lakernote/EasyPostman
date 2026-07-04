@@ -76,6 +76,7 @@ public class UIRefreshManager {
         if (component instanceof RSyntaxTextArea textArea) {
             try {
                 EditorThemeUtil.loadTheme(textArea);
+                EditorFontManager.applyConfiguredEditorFont(textArea);
                 log.debug("Refreshed editor theme: {}", component.getClass().getSimpleName());
             } catch (Exception e) {
                 log.error("Failed to refresh editor theme: {}", component.getClass().getSimpleName(), e);

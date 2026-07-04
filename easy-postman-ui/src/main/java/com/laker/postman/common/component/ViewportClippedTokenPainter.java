@@ -32,11 +32,14 @@ public class ViewportClippedTokenPainter implements TokenPainter {
             return x;
         }
 
+        Font primaryFont = host.getFontForToken(token);
+        Font fallbackFont = resolveFallbackFont(host, primaryFont);
         FontMetrics fm = host.getFontMetricsForToken(token);
+        FontMetrics fallbackFm = fallbackFont == null ? null : host.getFontMetrics(fallbackFont);
         char[] text = token.getTextArray();
         int start = token.getTextOffset();
         int end = Math.min(start + charCount, start + token.length());
-        return measureRange(text, start, end, fm, e, x);
+        return measureRange(text, start, end, primaryFont, fm, fallbackFont, fallbackFm, e, x);
     }
 
     @Override
@@ -77,7 +80,10 @@ public class ViewportClippedTokenPainter implements TokenPainter {
             return x;
         }
 
+        Font primaryFont = host.getFontForToken(token);
+        Font fallbackFont = resolveFallbackFont(host, primaryFont);
         FontMetrics fm = host.getFontMetricsForToken(token);
+        FontMetrics fallbackFm = fallbackFont == null ? null : host.getFontMetrics(fallbackFont);
         char[] text = token.getTextArray();
         int start = token.getTextOffset();
         int end = start + token.length();
@@ -85,7 +91,7 @@ public class ViewportClippedTokenPainter implements TokenPainter {
         Color bg = paintTokenBackground ? host.getBackgroundForToken(token) : null;
         boolean underline = host.getUnderlineForToken(token);
 
-        g.setFont(host.getFontForToken(token));
+        g.setFont(primaryFont);
         g.setColor(fg);
 
         ClipRange clipRange = resolveClipRange(g, clipStart);
@@ -96,10 +102,12 @@ public class ViewportClippedTokenPainter implements TokenPainter {
         }
         try {
             if (token.length() > LONG_TOKEN_THRESHOLD) {
-                return paintLongToken(text, start, end, g, x, y, fm, fg, bg, underline, host, e, clipRange);
+                return paintLongToken(text, start, end, g, x, y, primaryFont, fm, fallbackFont, fallbackFm,
+                        fg, bg, underline, host, e, clipRange);
             }
 
-            return paintRange(text, start, end, g, x, y, fm, fg, bg, underline, host, e, clipRange);
+            return paintRange(text, start, end, g, x, y, primaryFont, fm, fallbackFont, fallbackFm,
+                    fg, bg, underline, host, e, clipRange);
         } finally {
             if (originalClip != null) {
                 g.setClip(originalClip);
@@ -108,22 +116,25 @@ public class ViewportClippedTokenPainter implements TokenPainter {
     }
 
     private float paintLongToken(char[] text, int start, int end, Graphics2D g, float x, float y,
-                                 FontMetrics fm, Color fg, Color bg, boolean underline,
+                                 Font primaryFont, FontMetrics fm, Font fallbackFont, FontMetrics fallbackFm,
+                                 Color fg, Color bg, boolean underline,
                                  RSyntaxTextArea host, TabExpander e, ClipRange clipRange) {
         float currentX = x;
         for (int chunkStart = start; chunkStart < end; chunkStart += LONG_TOKEN_CHUNK_SIZE) {
             int chunkEnd = Math.min(chunkStart + LONG_TOKEN_CHUNK_SIZE, end);
-            float nextX = measureRange(text, chunkStart, chunkEnd, fm, e, currentX);
+            float nextX = measureRange(text, chunkStart, chunkEnd, primaryFont, fm, fallbackFont, fallbackFm,
+                    e, currentX);
 
             // 后续块已经在视口右侧之外，后面只需要测量剩余宽度并返回 token 结束坐标。
             // 调用方依赖返回值继续绘制下一个 token，因此不能直接提前返回 currentX。
             if (currentX > clipRange.right) {
-                return measureRange(text, chunkStart, end, fm, e, currentX);
+                return measureRange(text, chunkStart, end, primaryFont, fm, fallbackFont, fallbackFm, e, currentX);
             }
 
             // 只绘制和当前 clip 相交的块；完全在左侧或右侧之外的块不调用 drawChars。
             if (isRangeVisible(currentX, nextX, clipRange)) {
-                paintRange(text, chunkStart, chunkEnd, g, currentX, y, fm, fg, bg, underline, host, e, clipRange);
+                paintRange(text, chunkStart, chunkEnd, g, currentX, y, primaryFont, fm, fallbackFont, fallbackFm,
+                        fg, bg, underline, host, e, clipRange);
             }
 
             currentX = nextX;
@@ -132,7 +143,8 @@ public class ViewportClippedTokenPainter implements TokenPainter {
     }
 
     private float paintRange(char[] text, int start, int end, Graphics2D g, float x, float y,
-                             FontMetrics fm, Color fg, Color bg, boolean underline,
+                             Font primaryFont, FontMetrics fm, Font fallbackFont, FontMetrics fallbackFm,
+                             Color fg, Color bg, boolean underline,
                              RSyntaxTextArea host, TabExpander e, ClipRange clipRange) {
         float currentX = x;
         int flushStart = start;
@@ -140,9 +152,11 @@ public class ViewportClippedTokenPainter implements TokenPainter {
 
         for (int i = start; i < end; i++) {
             if (text[i] == '\t') {
-                float flushEndX = currentX + fm.charsWidth(text, flushStart, flushLen);
+                float flushEndX = currentX + measureDisplaySegment(text, flushStart, flushStart + flushLen,
+                        primaryFont, fm, fallbackFont, fallbackFm);
                 float tabEndX = e.nextTabStop(flushEndX, 0);
-                paintSegment(text, flushStart, flushLen, g, currentX, flushEndX, y, fm,
+                paintSegment(text, flushStart, flushLen, g, currentX, flushEndX, y,
+                        primaryFont, fm, fallbackFont, fallbackFm,
                         fg, bg, underline, host, clipRange);
                 if (isRangeVisible(flushEndX, tabEndX, clipRange)) {
                     if (bg != null) {
@@ -160,14 +174,17 @@ public class ViewportClippedTokenPainter implements TokenPainter {
             }
         }
 
-        float nextX = currentX + fm.charsWidth(text, flushStart, flushLen);
-        paintSegment(text, flushStart, flushLen, g, currentX, nextX, y, fm,
+        float nextX = currentX + measureDisplaySegment(text, flushStart, flushStart + flushLen,
+                primaryFont, fm, fallbackFont, fallbackFm);
+        paintSegment(text, flushStart, flushLen, g, currentX, nextX, y,
+                primaryFont, fm, fallbackFont, fallbackFm,
                 fg, bg, underline, host, clipRange);
         return nextX;
     }
 
     private void paintSegment(char[] text, int start, int length, Graphics2D g,
-                              float x, float nextX, float y, FontMetrics fm,
+                              float x, float nextX, float y,
+                              Font primaryFont, FontMetrics fm, Font fallbackFont, FontMetrics fallbackFm,
                               Color fg, Color bg, boolean underline, RSyntaxTextArea host,
                               ClipRange clipRange) {
         // 短 token 也必须做 clip 判断。压缩 JSON 往往由大量短 token 组成；
@@ -180,7 +197,7 @@ public class ViewportClippedTokenPainter implements TokenPainter {
         }
         if (length > 0) {
             g.setColor(fg);
-            g.drawChars(text, start, length, (int) x, (int) y);
+            paintTextRuns(text, start, start + length, g, x, y, primaryFont, fm, fallbackFont, fallbackFm);
         }
         if (underline) {
             paintUnderline(g, x, nextX, y, fg);
@@ -200,7 +217,9 @@ public class ViewportClippedTokenPainter implements TokenPainter {
         g.drawLine((int) x, underlineY, (int) nextX, underlineY);
     }
 
-    private float measureRange(char[] text, int start, int end, FontMetrics fm, TabExpander e, float x) {
+    private float measureRange(char[] text, int start, int end,
+                               Font primaryFont, FontMetrics fm, Font fallbackFont, FontMetrics fallbackFm,
+                               TabExpander e, float x) {
         float currentX = x;
         int flushStart = start;
         int flushLen = 0;
@@ -209,7 +228,8 @@ public class ViewportClippedTokenPainter implements TokenPainter {
         // tab 交给 TabExpander 处理，保证滚动条宽度、caret 定位和后续 token 起点不漂移。
         for (int i = start; i < end; i++) {
             if (text[i] == '\t') {
-                currentX += fm.charsWidth(text, flushStart, flushLen);
+                currentX += measureDisplaySegment(text, flushStart, flushStart + flushLen,
+                        primaryFont, fm, fallbackFont, fallbackFm);
                 currentX = e.nextTabStop(currentX, 0);
                 flushStart = i + 1;
                 flushLen = 0;
@@ -218,7 +238,125 @@ public class ViewportClippedTokenPainter implements TokenPainter {
             }
         }
 
-        return currentX + fm.charsWidth(text, flushStart, flushLen);
+        return currentX + measureDisplaySegment(text, flushStart, flushStart + flushLen,
+                primaryFont, fm, fallbackFont, fallbackFm);
+    }
+
+    private float measureDisplaySegment(char[] text, int start, int end,
+                                        Font primaryFont, FontMetrics primaryFm,
+                                        Font fallbackFont, FontMetrics fallbackFm) {
+        if (start >= end) {
+            return 0f;
+        }
+        if (fallbackFont == null || fallbackFm == null) {
+            return primaryFm.charsWidth(text, start, end - start);
+        }
+
+        float width = 0f;
+        int runStart = start;
+        FontMetrics runMetrics = selectMetrics(text, start, end, primaryFont, primaryFm, fallbackFont, fallbackFm);
+        for (int i = start; i < end; ) {
+            int charCount = codePointCharCount(text, i, end);
+            FontMetrics metrics = selectMetrics(text, i, end, primaryFont, primaryFm, fallbackFont, fallbackFm);
+            if (metrics != runMetrics) {
+                width += runMetrics.charsWidth(text, runStart, i - runStart);
+                runStart = i;
+                runMetrics = metrics;
+            }
+            i += charCount;
+        }
+        return width + runMetrics.charsWidth(text, runStart, end - runStart);
+    }
+
+    private void paintTextRuns(char[] text, int start, int end, Graphics2D g, float x, float y,
+                               Font primaryFont, FontMetrics primaryFm,
+                               Font fallbackFont, FontMetrics fallbackFm) {
+        if (start >= end) {
+            return;
+        }
+        if (fallbackFont == null || fallbackFm == null) {
+            g.setFont(primaryFont);
+            g.drawChars(text, start, end - start, (int) x, (int) y);
+            return;
+        }
+
+        float currentX = x;
+        int runStart = start;
+        Font runFont = selectFont(text, start, end, primaryFont, fallbackFont);
+        FontMetrics runMetrics = runFont == fallbackFont ? fallbackFm : primaryFm;
+        for (int i = start; i < end; ) {
+            int charCount = codePointCharCount(text, i, end);
+            Font font = selectFont(text, i, end, primaryFont, fallbackFont);
+            if (font != runFont) {
+                g.setFont(runFont);
+                g.drawChars(text, runStart, i - runStart, (int) currentX, (int) y);
+                currentX += runMetrics.charsWidth(text, runStart, i - runStart);
+                runStart = i;
+                runFont = font;
+                runMetrics = runFont == fallbackFont ? fallbackFm : primaryFm;
+            }
+            i += charCount;
+        }
+        g.setFont(runFont);
+        g.drawChars(text, runStart, end - runStart, (int) currentX, (int) y);
+        g.setFont(primaryFont);
+    }
+
+    private FontMetrics selectMetrics(char[] text, int index, int end,
+                                      Font primaryFont, FontMetrics primaryFm,
+                                      Font fallbackFont, FontMetrics fallbackFm) {
+        Font font = selectFont(text, index, end, primaryFont, fallbackFont);
+        return font == fallbackFont ? fallbackFm : primaryFm;
+    }
+
+    private Font selectFont(char[] text, int index, int end, Font primaryFont, Font fallbackFont) {
+        if (fallbackFont == null || canDisplay(primaryFont, text, index, end)) {
+            return primaryFont;
+        }
+        if (canDisplay(fallbackFont, text, index, end)) {
+            return fallbackFont;
+        }
+        return primaryFont;
+    }
+
+    private boolean canDisplay(Font font, char[] text, int index, int end) {
+        if (font == null || index >= end) {
+            return false;
+        }
+        try {
+            char ch = text[index];
+            if (Character.isHighSurrogate(ch) && index + 1 < end && Character.isLowSurrogate(text[index + 1])) {
+                return font.canDisplay(Character.toCodePoint(ch, text[index + 1]));
+            }
+            return font.canDisplay(ch);
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private int codePointCharCount(char[] text, int index, int end) {
+        if (index + 1 < end && Character.isHighSurrogate(text[index]) && Character.isLowSurrogate(text[index + 1])) {
+            return 2;
+        }
+        return 1;
+    }
+
+    private Font resolveFallbackFont(RSyntaxTextArea host, Font primaryFont) {
+        Object value = host.getClientProperty(EditorFontProperties.FALLBACK_FONT_CLIENT_PROPERTY);
+        if (!(value instanceof Font fallbackFont) || primaryFont == null) {
+            return null;
+        }
+        Font derivedFallback = fallbackFont.deriveFont(primaryFont.getStyle(), primaryFont.getSize2D());
+        if (samePhysicalFont(primaryFont, derivedFallback)) {
+            return null;
+        }
+        return derivedFallback;
+    }
+
+    private boolean samePhysicalFont(Font first, Font second) {
+        return first.getFamily().equals(second.getFamily())
+                && first.getStyle() == second.getStyle()
+                && first.getSize() == second.getSize();
     }
 
     private ClipRange resolveClipRange(Graphics2D g, float clipStart) {

@@ -46,6 +46,7 @@ class AppSettingKeys {
     static final int DEFAULT_MAX_OPENED_REQUESTS_COUNT = 10;
     static final int DEFAULT_PROXY_PORT = 8080;
     static final int DEFAULT_UI_FONT_SIZE = 13;
+    static final int DEFAULT_EDITOR_FONT_SIZE = 13;
 
     static final SettingKey<Integer> MAX_BODY_SIZE = SettingKey.integerKey(
             "max_body_size",
@@ -346,6 +347,19 @@ class AppSettingKeys {
             "ui_font_size",
             DEFAULT_UI_FONT_SIZE,
             value -> clamp(value, 10, 24)
+    );
+    static final SettingKey<String> EDITOR_FONT_NAME = SettingKey.stringKey(
+            "editor_font_name",
+            ""
+    ).normalized(value -> value == null ? "" : value.trim());
+    static final SettingKey<String> EDITOR_FONT_FALLBACK_NAME = SettingKey.stringKey(
+            "editor_font_fallback_name",
+            ""
+    ).normalized(value -> value == null ? "" : value.trim());
+    static final SettingKey<Integer> EDITOR_FONT_SIZE = SettingKey.integerKey(
+            "editor_font_size",
+            DEFAULT_EDITOR_FONT_SIZE,
+            value -> clamp(value, 8, 32)
     );
 
     static int defaultPerformanceJsContextPoolSize() {

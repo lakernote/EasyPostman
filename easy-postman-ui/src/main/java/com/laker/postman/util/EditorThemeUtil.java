@@ -14,6 +14,7 @@ import javax.swing.ScrollPaneConstants;
 import java.awt.Color;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.function.Consumer;
 
 /**
  * 编辑器主题工具类
@@ -36,6 +37,7 @@ public class EditorThemeUtil {
 
     private static volatile String configuredThemeResourcePath;
     private static volatile String configuredFallbackThemeResourcePath;
+    private static volatile Consumer<RSyntaxTextArea> configuredEditorFontApplier;
 
     /**
      * 加载并应用编辑器主题 - 支持亮色和暗色主题自适应
@@ -61,11 +63,16 @@ public class EditorThemeUtil {
         } catch (IOException e) {
             log.error("Failed to load editor theme: {}", themeFile, e);
         }
+        applyConfiguredEditorFont(area);
     }
 
     public static void configureThemeResources(String themeResourcePath, String fallbackThemeResourcePath) {
         configuredThemeResourcePath = normalizeConfiguredPath(themeResourcePath);
         configuredFallbackThemeResourcePath = normalizeConfiguredPath(fallbackThemeResourcePath);
+    }
+
+    public static void configureEditorFontApplier(Consumer<RSyntaxTextArea> editorFontApplier) {
+        configuredEditorFontApplier = editorFontApplier;
     }
 
     /**
@@ -121,6 +128,22 @@ public class EditorThemeUtil {
     public static void clearConfiguredThemeResources() {
         configuredThemeResourcePath = null;
         configuredFallbackThemeResourcePath = null;
+    }
+
+    public static void clearConfiguredEditorFontApplier() {
+        configuredEditorFontApplier = null;
+    }
+
+    private static void applyConfiguredEditorFont(RSyntaxTextArea area) {
+        Consumer<RSyntaxTextArea> editorFontApplier = configuredEditorFontApplier;
+        if (editorFontApplier == null || area == null) {
+            return;
+        }
+        try {
+            editorFontApplier.accept(area);
+        } catch (Exception e) {
+            log.error("Failed to apply configured editor font", e);
+        }
     }
 
     static String themeResourcePath() {

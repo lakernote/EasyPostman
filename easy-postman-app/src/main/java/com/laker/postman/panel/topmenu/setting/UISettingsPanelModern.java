@@ -11,11 +11,13 @@ import com.laker.postman.panel.sidebar.SidebarTab;
 import com.laker.postman.panel.sidebar.SidebarTabSettingsResolver;
 import com.laker.postman.panel.sidebar.SidebarTabPanel;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.util.EditorFontManager;
 import com.laker.postman.util.FontManager;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.common.component.notification.NotificationCenter;
+import com.laker.postman.util.UIRefreshManager;
 import com.laker.postman.util.UiFontCatalog;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,12 +60,23 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
     private JTextField fontSizeField;
     private JLabel fontPreviewLabel;
     private JLabel fontSupportHintLabel;
+    private JComboBox<String> editorFontNameComboBox;
+    private JComboBox<String> editorFontFallbackNameComboBox;
+    private JTextField editorFontSizeField;
+    private JLabel editorFontPreviewLabel;
     private DefaultListModel<SidebarTabSettingItem> sidebarTabListModel;
     private JList<SidebarTabSettingItem> sidebarTabList;
     private JTextField sidebarTabsStateField;
     private List<UiFontCatalog.FontOption> availableFontOptions = List.of();
     private boolean fontOptionsLoaded;
     private boolean fontOptionsLoading;
+
+    private enum FontComboRole {
+        UI,
+        EDITOR_PRIMARY,
+        EDITOR_FALLBACK,
+        ALL
+    }
 
     @Override
     protected void buildContent(JPanel contentPanel) {
@@ -242,68 +255,75 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         contentPanel.add(generalSection);
         contentPanel.add(createVerticalSpace(SECTION_SPACING));
 
-        // 字体设置区域
+        contentPanel.add(createUiFontSection());
+        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+        contentPanel.add(createEditorFontSection());
+        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+
+        setupValidators();
+
+        // 跟踪所有组件的初始值
+        trackComponentValue(showDownloadProgressCheckBox);
+        trackComponentValue(downloadProgressDialogThresholdField);
+        trackComponentValue(gitDiffLargeFileThresholdField);
+        trackComponentValue(maxHistoryCountField);
+        trackComponentValue(maxOpenedRequestsCountField);
+        trackComponentValue(requestEditorTabsMultiLineCheckBox);
+        trackComponentValue(autoFormatResponseCheckBox);
+        trackComponentValue(startupSplashCheckBox);
+        trackComponentValue(sidebarExpandedCheckBox);
+        trackComponentValue(notificationPositionComboBox);
+        trackComponentValue(fontNameComboBox);
+        trackComponentValue(fontSizeField);
+        trackComponentValue(editorFontNameComboBox);
+        trackComponentValue(editorFontFallbackNameComboBox);
+        trackComponentValue(editorFontSizeField);
+        trackComponentValue(sidebarTabsStateField);
+    }
+
+    private JPanel createUiFontSection() {
         JPanel fontSection = createModernSection(
                 I18nUtil.getMessage(MessageKeys.SETTINGS_UI_TITLE),
                 I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_RESTART_RECOMMENDED)
         );
         String fontNameLabel = I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_NAME);
         String fontSizeLabel = I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SIZE);
-        int fontFieldLabelWidth = calculateFieldLabelWidth(List.of(fontNameLabel, fontSizeLabel));
+        int uiFontFieldLabelWidth = calculateFieldLabelWidth(List.of(fontNameLabel, fontSizeLabel));
 
-        // 创建字体选择下拉框，添加"系统默认"选项
-        fontNameComboBox = new JComboBox<>();
-        fontNameComboBox.setMaximumRowCount(20);
-        fontNameComboBox.setRenderer(new FontFamilyListCellRenderer());
-
-        // 设置当前字体
-        String currentFont = SettingManager.getUiFontName();
-        resetFontComboItems(currentFont);
-        if (currentFont.isEmpty()) {
-            fontNameComboBox.setSelectedIndex(0); // 系统默认
-        } else {
-            fontNameComboBox.setSelectedItem(currentFont);
-        }
+        fontNameComboBox = createFontComboBox();
+        String currentFont = FontManager.resolveAllowedUiFontNameForLocale(SettingManager.getUiFontName(), I18nUtil.currentLocale());
+        resetFontComboItems(
+                fontNameComboBox,
+                currentFont,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SYSTEM_DEFAULT),
+                FontComboRole.UI
+        );
+        selectFontComboValue(fontNameComboBox, currentFont);
         preloadFontOptionsInBackground();
-        fontNameComboBox.addPopupMenuListener(new PopupMenuListener() {
-            @Override
-            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-                loadFontOptionsIfNeeded();
-            }
-
-            @Override
-            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-            }
-
-            @Override
-            public void popupMenuCanceled(PopupMenuEvent e) {
-            }
-        });
+        installFontComboLazyLoader(fontNameComboBox);
 
         JPanel fontNameRow = createFieldRow(
                 fontNameLabel,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_NAME_TOOLTIP),
                 fontNameComboBox,
-                fontFieldLabelWidth,
+                uiFontFieldLabelWidth,
                 SettingsFieldRow.DEFAULT_FIELD_WIDTH
         );
         fontSection.add(fontNameRow);
         fontSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 字体大小
         fontSizeField = new JTextField(10);
         fontSizeField.setText(String.valueOf(SettingManager.getUiFontSize()));
         JPanel fontSizeRow = createFieldRow(
                 fontSizeLabel,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SIZE_TOOLTIP),
                 fontSizeField,
-                fontFieldLabelWidth,
+                uiFontFieldLabelWidth,
                 SettingsFieldRow.DEFAULT_FIELD_WIDTH
         );
         fontSection.add(fontSizeRow);
         fontSection.add(createVerticalSpace(FIELD_SPACING));
 
-        // 字体预览
         fontPreviewLabel = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_PREVIEW));
         fontPreviewLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
         fontPreviewLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -317,7 +337,6 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
 
         updateFontPreview();
 
-        // 监听字体变化以更新预览
         fontNameComboBox.addActionListener(e -> updateFontPreview());
         fontSizeField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             public void changedUpdate(javax.swing.event.DocumentEvent e) {
@@ -336,26 +355,103 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         fontSection.add(fontPreviewLabel);
         fontSection.add(createVerticalSpace(FIELD_SPACING));
         fontSection.add(fontSupportHintLabel);
+        return fontSection;
+    }
 
-        contentPanel.add(fontSection);
-        contentPanel.add(createVerticalSpace(SECTION_SPACING));
+    private JPanel createEditorFontSection() {
+        JPanel editorFontSection = createModernSection(
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_TITLE),
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_DESCRIPTION)
+        );
+        String editorFontNameLabel = I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_NAME);
+        String editorFontFallbackLabel = I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_FALLBACK_NAME);
+        String editorFontSizeLabel = I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_SIZE);
+        int editorFontFieldLabelWidth = calculateFieldLabelWidth(List.of(
+                editorFontNameLabel,
+                editorFontFallbackLabel,
+                editorFontSizeLabel
+        ));
 
-        setupValidators();
+        editorFontNameComboBox = createFontComboBox();
+        String currentEditorFont = SettingManager.getEditorFontName();
+        resetFontComboItems(
+                editorFontNameComboBox,
+                currentEditorFont,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_DEFAULT)
+        );
+        selectFontComboValue(editorFontNameComboBox, currentEditorFont);
+        installFontComboLazyLoader(editorFontNameComboBox);
 
-        // 跟踪所有组件的初始值
-        trackComponentValue(showDownloadProgressCheckBox);
-        trackComponentValue(downloadProgressDialogThresholdField);
-        trackComponentValue(gitDiffLargeFileThresholdField);
-        trackComponentValue(maxHistoryCountField);
-        trackComponentValue(maxOpenedRequestsCountField);
-        trackComponentValue(requestEditorTabsMultiLineCheckBox);
-        trackComponentValue(autoFormatResponseCheckBox);
-        trackComponentValue(startupSplashCheckBox);
-        trackComponentValue(sidebarExpandedCheckBox);
-        trackComponentValue(notificationPositionComboBox);
-        trackComponentValue(fontNameComboBox);
-        trackComponentValue(fontSizeField);
-        trackComponentValue(sidebarTabsStateField);
+        JPanel editorFontNameRow = createFieldRow(
+                editorFontNameLabel,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_NAME_TOOLTIP),
+                editorFontNameComboBox,
+                editorFontFieldLabelWidth,
+                SettingsFieldRow.DEFAULT_FIELD_WIDTH
+        );
+        editorFontSection.add(editorFontNameRow);
+        editorFontSection.add(createVerticalSpace(FIELD_SPACING));
+
+        editorFontFallbackNameComboBox = createFontComboBox();
+        String currentEditorFallbackFont = SettingManager.getEditorFontFallbackName();
+        resetFontComboItems(
+                editorFontFallbackNameComboBox,
+                currentEditorFallbackFont,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_FALLBACK_AUTO),
+                FontComboRole.EDITOR_FALLBACK
+        );
+        selectFontComboValue(editorFontFallbackNameComboBox, currentEditorFallbackFont);
+        installFontComboLazyLoader(editorFontFallbackNameComboBox);
+
+        JPanel editorFontFallbackRow = createFieldRow(
+                editorFontFallbackLabel,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_FALLBACK_NAME_TOOLTIP),
+                editorFontFallbackNameComboBox,
+                editorFontFieldLabelWidth,
+                SettingsFieldRow.DEFAULT_FIELD_WIDTH
+        );
+        editorFontSection.add(editorFontFallbackRow);
+        editorFontSection.add(createVerticalSpace(FIELD_SPACING));
+
+        editorFontSizeField = new JTextField(10);
+        editorFontSizeField.setText(String.valueOf(SettingManager.getEditorFontSize()));
+        JPanel editorFontSizeRow = createFieldRow(
+                editorFontSizeLabel,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_SIZE_TOOLTIP),
+                editorFontSizeField,
+                editorFontFieldLabelWidth,
+                SettingsFieldRow.DEFAULT_FIELD_WIDTH
+        );
+        editorFontSection.add(editorFontSizeRow);
+        editorFontSection.add(createVerticalSpace(FIELD_SPACING));
+
+        editorFontPreviewLabel = new EditorFontPreviewLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_PREVIEW));
+        editorFontPreviewLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        editorFontPreviewLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        editorFontPreviewLabel.setOpaque(true);
+        editorFontPreviewLabel.setBackground(getInputBackgroundColor());
+        editorFontPreviewLabel.setForeground(getTextPrimaryColor());
+
+        updateEditorFontPreview();
+
+        editorFontNameComboBox.addActionListener(e -> updateEditorFontPreview());
+        editorFontFallbackNameComboBox.addActionListener(e -> updateEditorFontPreview());
+        editorFontSizeField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                updateEditorFontPreview();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                updateEditorFontPreview();
+            }
+
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                updateEditorFontPreview();
+            }
+        });
+
+        editorFontSection.add(editorFontPreviewLabel);
+        return editorFontSection;
     }
 
     private JPanel createSidebarTabsRow(int labelWidth) {
@@ -602,6 +698,51 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         }
     }
 
+    private void updateEditorFontPreview() {
+        try {
+            int fontSize = SettingManager.getEditorFontSize();
+            String sizeText = editorFontSizeField.getText().trim();
+            if (!sizeText.isEmpty()) {
+                try {
+                    fontSize = Integer.parseInt(sizeText);
+                    fontSize = Math.max(8, Math.min(32, fontSize));
+                } catch (NumberFormatException e) {
+                    // 使用默认大小
+                }
+            }
+
+            String selectedFont = getSelectedCustomFont(editorFontNameComboBox);
+            String family = selectedFont.isBlank() ? EditorFontManager.getDefaultEditorFontFamily() : selectedFont;
+            Font primaryFont = new Font(family, Font.PLAIN, fontSize);
+            Font fallbackFont = resolveSelectedEditorPreviewFallbackFont(fontSize);
+            editorFontPreviewLabel.setFont(primaryFont);
+            if (editorFontPreviewLabel instanceof EditorFontPreviewLabel editorPreviewLabel) {
+                editorPreviewLabel.setPreviewFonts(primaryFont, fallbackFont);
+            }
+
+            String fallbackFontName = getSelectedCustomFont(editorFontFallbackNameComboBox);
+            if (fallbackFontName.isBlank()) {
+                editorFontPreviewLabel.setToolTipText(
+                        I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_PREVIEW_TOOLTIP_NO_FALLBACK)
+                );
+            } else {
+                editorFontPreviewLabel.setToolTipText(
+                        I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_PREVIEW_TOOLTIP_WITH_FALLBACK, fallbackFontName)
+                );
+            }
+        } catch (Exception e) {
+            // 忽略预览更新错误
+        }
+    }
+
+    private Font resolveSelectedEditorPreviewFallbackFont(int fontSize) {
+        String fallbackFamily = getSelectedCustomFont(editorFontFallbackNameComboBox);
+        if (fallbackFamily.isBlank()) {
+            fallbackFamily = EditorFontManager.getDefaultEditorFallbackFontFamily();
+        }
+        return new Font(fallbackFamily, Font.PLAIN, fontSize);
+    }
+
     private UiFontCatalog.FontSupport getFontSupport(String fontName) {
         return availableFontOptions.stream()
                 .filter(option -> option.family().equals(fontName))
@@ -610,15 +751,38 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 .orElseGet(() -> UiFontCatalog.inspectFamily(fontName));
     }
 
+    private JComboBox<String> createFontComboBox() {
+        JComboBox<String> comboBox = new JComboBox<>();
+        comboBox.setMaximumRowCount(20);
+        comboBox.setRenderer(new FontFamilyListCellRenderer());
+        return comboBox;
+    }
+
+    private void installFontComboLazyLoader(JComboBox<String> comboBox) {
+        comboBox.addPopupMenuListener(new PopupMenuListener() {
+            @Override
+            public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                loadFontOptionsIfNeeded();
+            }
+
+            @Override
+            public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+            }
+
+            @Override
+            public void popupMenuCanceled(PopupMenuEvent e) {
+            }
+        });
+    }
+
     private void loadFontOptionsIfNeeded() {
         if (fontOptionsLoaded || fontOptionsLoading) {
             return;
         }
 
         List<UiFontCatalog.FontOption> cachedOptions = UiFontCatalog.getCachedAvailableFontOptions();
-        String selectedFont = getSelectedCustomFont();
         if (cachedOptions != null) {
-            applyLoadedFontOptions(cachedOptions, selectedFont);
+            applyLoadedFontOptions(cachedOptions);
             return;
         }
 
@@ -630,11 +794,13 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                         log.warn("Failed to load UI font options", throwable);
                         return;
                     }
-                    if (fontNameComboBox.isPopupVisible()) {
-                        applyLoadedFontOptions(fontOptions, selectedFont);
-                        fontNameComboBox.hidePopup();
-                        fontNameComboBox.showPopup();
-                    }
+                    boolean uiPopupVisible = fontNameComboBox.isPopupVisible();
+                    boolean editorPopupVisible = editorFontNameComboBox.isPopupVisible();
+                    boolean fallbackPopupVisible = editorFontFallbackNameComboBox.isPopupVisible();
+                    applyLoadedFontOptions(fontOptions);
+                    refreshPopupIfVisible(fontNameComboBox, uiPopupVisible);
+                    refreshPopupIfVisible(editorFontNameComboBox, editorPopupVisible);
+                    refreshPopupIfVisible(editorFontFallbackNameComboBox, fallbackPopupVisible);
                 }));
     }
 
@@ -653,37 +819,87 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 }));
     }
 
-    private void applyLoadedFontOptions(List<UiFontCatalog.FontOption> fontOptions, String selectedFont) {
+    private void applyLoadedFontOptions(List<UiFontCatalog.FontOption> fontOptions) {
+        String selectedUiFont = getSelectedCustomFont(fontNameComboBox);
+        String selectedEditorFont = getSelectedCustomFont(editorFontNameComboBox);
+        String selectedEditorFallbackFont = getSelectedCustomFont(editorFontFallbackNameComboBox);
         availableFontOptions = fontOptions;
-        resetFontComboItems(selectedFont);
-        if (selectedFont == null || selectedFont.isBlank()) {
-            fontNameComboBox.setSelectedIndex(0);
-        } else {
-            fontNameComboBox.setSelectedItem(selectedFont);
-        }
+        resetFontComboItems(
+                fontNameComboBox,
+                selectedUiFont,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SYSTEM_DEFAULT),
+                FontComboRole.UI
+        );
+        resetFontComboItems(
+                editorFontNameComboBox,
+                selectedEditorFont,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_DEFAULT),
+                FontComboRole.EDITOR_PRIMARY
+        );
+        resetFontComboItems(
+                editorFontFallbackNameComboBox,
+                selectedEditorFallbackFont,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_FALLBACK_AUTO),
+                FontComboRole.EDITOR_FALLBACK
+        );
+        selectFontComboValue(fontNameComboBox, selectedUiFont);
+        selectFontComboValue(editorFontNameComboBox, selectedEditorFont);
+        selectFontComboValue(editorFontFallbackNameComboBox, selectedEditorFallbackFont);
         fontOptionsLoaded = true;
     }
 
-    private void resetFontComboItems(String currentFont) {
-        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-        model.addElement(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_SYSTEM_DEFAULT));
+    private void refreshPopupIfVisible(JComboBox<String> comboBox, boolean wasVisible) {
+        if (!wasVisible) {
+            return;
+        }
+        comboBox.hidePopup();
+        comboBox.showPopup();
+    }
 
-        List<String> families = UiFontCatalog.mergeFamiliesForCombo(
-                currentFont,
-                availableFontOptions.stream().map(UiFontCatalog.FontOption::family).toList()
-        );
+    private void resetFontComboItems(JComboBox<String> comboBox, String currentFont, String defaultLabel) {
+        resetFontComboItems(comboBox, currentFont, defaultLabel, FontComboRole.ALL);
+    }
+
+    private void resetFontComboItems(JComboBox<String> comboBox,
+                                     String currentFont,
+                                     String defaultLabel,
+                                     FontComboRole role) {
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+        model.addElement(defaultLabel);
+
+        List<String> families = switch (role) {
+            case UI -> UiFontCatalog.mergeUiFamiliesForCombo(currentFont, availableFontOptions, I18nUtil.currentLocale());
+            case EDITOR_PRIMARY -> UiFontCatalog.mergeEditorPrimaryFamiliesForCombo(currentFont, availableFontOptions);
+            case EDITOR_FALLBACK -> UiFontCatalog.mergeEditorFallbackFamiliesForCombo(currentFont, availableFontOptions);
+            case ALL -> UiFontCatalog.mergeFamiliesForCombo(
+                    currentFont,
+                    availableFontOptions.stream().map(UiFontCatalog.FontOption::family).toList()
+            );
+        };
         for (String family : families) {
             model.addElement(family);
         }
-        fontNameComboBox.setModel(model);
+        comboBox.setModel(model);
     }
 
     private String getSelectedCustomFont() {
-        if (fontNameComboBox.getSelectedIndex() <= 0) {
+        return getSelectedCustomFont(fontNameComboBox);
+    }
+
+    private String getSelectedCustomFont(JComboBox<String> comboBox) {
+        if (comboBox.getSelectedIndex() <= 0) {
             return "";
         }
-        Object selectedItem = fontNameComboBox.getSelectedItem();
+        Object selectedItem = comboBox.getSelectedItem();
         return selectedItem == null ? "" : selectedItem.toString();
+    }
+
+    private void selectFontComboValue(JComboBox<String> comboBox, String fontName) {
+        if (fontName == null || fontName.isBlank()) {
+            comboBox.setSelectedIndex(0);
+        } else {
+            comboBox.setSelectedItem(fontName);
+        }
     }
 
     private void setupValidators() {
@@ -712,6 +928,11 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 this::isValidFontSize,
                 I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_FONT_SIZE_ERROR)
         );
+        setupValidator(
+                editorFontSizeField,
+                this::isValidEditorFontSize,
+                I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_EDITOR_FONT_SIZE_ERROR)
+        );
     }
 
     private boolean isValidFontSize(String value) {
@@ -721,6 +942,30 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         } catch (NumberFormatException e) {
             return false;
         }
+    }
+
+    private boolean isValidEditorFontSize(String value) {
+        try {
+            int size = Integer.parseInt(value.trim());
+            return size >= 8 && size <= 32;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private boolean validateUiFontSelection() {
+        String selectedFont = getSelectedCustomFont();
+        if (selectedFont.isBlank()) {
+            return true;
+        }
+
+        UiFontCatalog.FontSupport support = getFontSupport(selectedFont);
+        if (UiFontCatalog.isUiFontAllowedForLocale(support, I18nUtil.currentLocale())) {
+            return true;
+        }
+
+        NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_UNSUPPORTED_CHINESE_ERROR));
+        return false;
     }
 
     private boolean isValidGitDiffLargeFileThreshold(String value) {
@@ -756,6 +1001,9 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         }
         if (countVisibleSidebarTabs() == 0) {
             NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_AT_LEAST_ONE));
+            return;
+        }
+        if (!validateUiFontSelection()) {
             return;
         }
 
@@ -797,6 +1045,9 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             // 检测字体是否有变化（在保存前获取旧值）
             String oldFontName = SettingManager.getUiFontName();
             int oldFontSize = SettingManager.getUiFontSize();
+            String oldEditorFontName = SettingManager.getEditorFontName();
+            String oldEditorFontFallbackName = SettingManager.getEditorFontFallbackName();
+            int oldEditorFontSize = SettingManager.getEditorFontSize();
 
             // 保存字体设置
             int fontNameIndex = fontNameComboBox.getSelectedIndex();
@@ -815,12 +1066,24 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             int newFontSize = Integer.parseInt(fontSizeField.getText().trim());
             SettingManager.setUiFontSize(newFontSize);
 
+            String newEditorFontName = getSelectedCustomFont(editorFontNameComboBox);
+            String newEditorFontFallbackName = getSelectedCustomFont(editorFontFallbackNameComboBox);
+            int newEditorFontSize = Integer.parseInt(editorFontSizeField.getText().trim());
+            SettingManager.setEditorFontName(newEditorFontName);
+            SettingManager.setEditorFontFallbackName(newEditorFontFallbackName);
+            SettingManager.setEditorFontSize(newEditorFontSize);
+
             // 判断字体是否真的有变化（处理 null 情况）
             boolean fontChanged = !Objects.equals(newFontName, oldFontName) || newFontSize != oldFontSize;
+            boolean editorFontChanged = !Objects.equals(newEditorFontName, oldEditorFontName)
+                    || !Objects.equals(newEditorFontFallbackName, oldEditorFontFallbackName)
+                    || newEditorFontSize != oldEditorFontSize;
 
             // 如果字体有变化，立即应用字体设置到整个应用
             if (fontChanged) {
                 FontManager.applyFont(newFontName, newFontSize);
+            } else if (editorFontChanged) {
+                UIRefreshManager.refreshAllWindows();
             }
 
             // 重新跟踪当前值
@@ -837,11 +1100,14 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             trackComponentValue(notificationPositionComboBox);
             trackComponentValue(fontNameComboBox);
             trackComponentValue(fontSizeField);
+            trackComponentValue(editorFontNameComboBox);
+            trackComponentValue(editorFontFallbackNameComboBox);
+            trackComponentValue(editorFontSizeField);
             trackComponentValue(sidebarTabsStateField);
             setHasUnsavedChanges(false);
 
             // 根据是否修改了字体显示不同的提示信息
-            if (fontChanged) {
+            if (fontChanged || editorFontChanged) {
                 NotificationCenter.showInfo(I18nUtil.getMessage(MessageKeys.SETTINGS_UI_FONT_APPLIED));
             } else {
                 NotificationCenter.showSuccess(I18nUtil.getMessage(MessageKeys.SETTINGS_SAVE_SUCCESS_MESSAGE));
@@ -876,6 +1142,122 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             UiSingletonFactory.getInstance(RequestEditorPanel.class).updateRequestEditorTabsLayoutPolicy();
         } catch (Exception ex) {
             log.debug("Failed to refresh request editor tabs layout policy", ex);
+        }
+    }
+
+    private static final class EditorFontPreviewLabel extends JLabel {
+        private Font primaryFont;
+        private Font fallbackFont;
+
+        private EditorFontPreviewLabel(String text) {
+            super(text);
+        }
+
+        private void setPreviewFonts(Font primaryFont, Font fallbackFont) {
+            this.primaryFont = primaryFont;
+            this.fallbackFont = fallbackFont;
+            setFont(primaryFont);
+            revalidate();
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                if (isOpaque()) {
+                    g2.setColor(getBackground());
+                    g2.fillRect(0, 0, getWidth(), getHeight());
+                }
+                paintPreviewText(g2);
+            } finally {
+                g2.dispose();
+            }
+        }
+
+        @Override
+        public Dimension getPreferredSize() {
+            Insets insets = getInsets();
+            Font primary = resolvePrimaryFont();
+            Font fallback = resolveFallbackFont(primary);
+            int width = calculatePreviewTextWidth(primary, fallback);
+            FontMetrics primaryMetrics = getFontMetrics(primary);
+            FontMetrics fallbackMetrics = getFontMetrics(fallback);
+            int height = Math.max(primaryMetrics.getHeight(), fallbackMetrics.getHeight());
+            return new Dimension(
+                    width + insets.left + insets.right,
+                    height + insets.top + insets.bottom
+            );
+        }
+
+        private void paintPreviewText(Graphics2D g2) {
+            String text = Objects.toString(getText(), "");
+            if (text.isEmpty()) {
+                return;
+            }
+
+            Font primary = resolvePrimaryFont();
+            Font fallback = resolveFallbackFont(primary);
+            FontMetrics primaryMetrics = g2.getFontMetrics(primary);
+            FontMetrics fallbackMetrics = g2.getFontMetrics(fallback);
+            int maxAscent = Math.max(primaryMetrics.getAscent(), fallbackMetrics.getAscent());
+            int maxDescent = Math.max(primaryMetrics.getDescent(), fallbackMetrics.getDescent());
+            int textHeight = maxAscent + maxDescent;
+
+            Insets insets = getInsets();
+            int availableHeight = getHeight() - insets.top - insets.bottom;
+            int baseline = insets.top + Math.max(maxAscent, (availableHeight - textHeight) / 2 + maxAscent);
+            int x = insets.left;
+
+            g2.setColor(getForeground());
+            for (int offset = 0; offset < text.length(); ) {
+                int codePoint = text.codePointAt(offset);
+                int charCount = Character.charCount(codePoint);
+                String glyph = text.substring(offset, offset + charCount);
+                Font glyphFont = choosePreviewFont(codePoint, primary, fallback);
+                FontMetrics glyphMetrics = g2.getFontMetrics(glyphFont);
+
+                g2.setFont(glyphFont);
+                g2.drawString(glyph, x, baseline);
+                x += glyphMetrics.stringWidth(glyph);
+                offset += charCount;
+            }
+        }
+
+        private int calculatePreviewTextWidth(Font primary, Font fallback) {
+            String text = Objects.toString(getText(), "");
+            int width = 0;
+            for (int offset = 0; offset < text.length(); ) {
+                int codePoint = text.codePointAt(offset);
+                int charCount = Character.charCount(codePoint);
+                String glyph = text.substring(offset, offset + charCount);
+                Font glyphFont = choosePreviewFont(codePoint, primary, fallback);
+                width += getFontMetrics(glyphFont).stringWidth(glyph);
+                offset += charCount;
+            }
+            return width;
+        }
+
+        private Font choosePreviewFont(int codePoint, Font primary, Font fallback) {
+            if (primary.canDisplay(codePoint)) {
+                return primary;
+            }
+            if (fallback.canDisplay(codePoint)) {
+                return fallback;
+            }
+            return primary;
+        }
+
+        private Font resolvePrimaryFont() {
+            if (primaryFont != null) {
+                return primaryFont;
+            }
+            Font font = getFont();
+            return font == null ? new Font(Font.MONOSPACED, Font.PLAIN, 13) : font;
+        }
+
+        private Font resolveFallbackFont(Font primary) {
+            return fallbackFont == null ? primary : fallbackFont;
         }
     }
 

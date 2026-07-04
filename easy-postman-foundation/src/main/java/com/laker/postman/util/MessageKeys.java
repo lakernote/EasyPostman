@@ -1946,6 +1946,21 @@ public final class MessageKeys {
     public static final String SETTINGS_UI_FONT_STATUS_NO_EMOJI = "settings.ui.font.status.no_emoji";
     public static final String SETTINGS_UI_FONT_STATUS_NO_CJK = "settings.ui.font.status.no_cjk";
     public static final String SETTINGS_UI_FONT_UNSUPPORTED_WARNING = "settings.ui.font.unsupported_warning";
+    public static final String SETTINGS_UI_FONT_UNSUPPORTED_CHINESE_ERROR = "settings.ui.font.unsupported_chinese_error";
+    public static final String SETTINGS_EDITOR_TITLE = "settings.editor.title";
+    public static final String SETTINGS_EDITOR_DESCRIPTION = "settings.editor.description";
+    public static final String SETTINGS_EDITOR_FONT_NAME = "settings.editor.font_name";
+    public static final String SETTINGS_EDITOR_FONT_NAME_TOOLTIP = "settings.editor.font_name.tooltip";
+    public static final String SETTINGS_EDITOR_FONT_FALLBACK_NAME = "settings.editor.font_fallback_name";
+    public static final String SETTINGS_EDITOR_FONT_FALLBACK_NAME_TOOLTIP = "settings.editor.font_fallback_name.tooltip";
+    public static final String SETTINGS_EDITOR_FONT_SIZE = "settings.editor.font_size";
+    public static final String SETTINGS_EDITOR_FONT_SIZE_TOOLTIP = "settings.editor.font_size.tooltip";
+    public static final String SETTINGS_EDITOR_FONT_DEFAULT = "settings.editor.font.default";
+    public static final String SETTINGS_EDITOR_FONT_FALLBACK_AUTO = "settings.editor.font.fallback_auto";
+    public static final String SETTINGS_EDITOR_FONT_PREVIEW = "settings.editor.font.preview";
+    public static final String SETTINGS_EDITOR_FONT_PREVIEW_TOOLTIP_NO_FALLBACK = "settings.editor.font.preview.tooltip.no_fallback";
+    public static final String SETTINGS_EDITOR_FONT_PREVIEW_TOOLTIP_WITH_FALLBACK = "settings.editor.font.preview.tooltip.with_fallback";
+    public static final String SETTINGS_VALIDATION_EDITOR_FONT_SIZE_ERROR = "settings.validation.editor_font_size_error";
 
     // WebSocket面板相关
     public static final String WEBSOCKET_PANEL_LABEL_SEND_MESSAGE = "websocket.panel.label.send_message";

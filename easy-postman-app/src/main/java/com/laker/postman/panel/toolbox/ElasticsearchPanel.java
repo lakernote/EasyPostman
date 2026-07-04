@@ -19,6 +19,7 @@ import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.common.component.table.EnhancedTablePanel;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
+import com.laker.postman.util.EditorFontManager;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -1849,7 +1850,7 @@ public class ElasticsearchPanel extends JPanel {
 
     private void updateEditorFont(RSyntaxTextArea editor) {
         if (editor != null) {
-            editor.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+            EditorFontManager.applyConfiguredEditorFont(editor);
         }
     }
 }

@@ -624,10 +624,10 @@ public class ResponseBodyPanel extends JPanel {
 
     /**
      * 更新编辑器字体
-     * 使用用户设置的字体大小
+     * 使用独立编辑器字体设置
      */
     private void updateEditorFont() {
-        responseBodyPane.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+        EditorFontManager.applyConfiguredEditorFont(responseBodyPane);
     }
 
 }

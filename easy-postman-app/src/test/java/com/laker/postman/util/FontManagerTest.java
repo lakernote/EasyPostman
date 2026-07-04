@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 import javax.swing.*;
 import javax.swing.plaf.FontUIResource;
 import java.awt.*;
+import java.util.Locale;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -52,5 +53,32 @@ public class FontManagerTest {
         assertNotNull(defaultFont);
         assertEquals(installedFont.getSize(), 19);
         assertEquals(defaultFont.getSize(), 19);
+    }
+
+    @Test
+    public void shouldRestoreCapturedLookAndFeelFontWhenSystemDefaultIsSelected() {
+        UIManager.put("Label.font", new FontUIResource(Font.DIALOG, Font.PLAIN, 13));
+        FontManager.captureLookAndFeelDefaultFont();
+
+        UIManager.put("Label.font", new FontUIResource(Font.MONOSPACED, Font.PLAIN, 13));
+        UIManager.put("defaultFont", new FontUIResource(Font.MONOSPACED, Font.PLAIN, 13));
+
+        Font installedFont = FontManager.installFontDefaults("", 18);
+
+        assertEquals(installedFont.getFamily(), Font.DIALOG);
+        assertEquals(installedFont.getSize(), 18);
+        assertEquals(UIManager.getFont("defaultFont").getFamily(), Font.DIALOG);
+    }
+
+    @Test
+    public void shouldIgnoreSavedCjkUnsafeUiFontForChineseLocale() {
+        assertEquals(
+                FontManager.resolveAllowedUiFontName("Consolas", Locale.CHINESE, UiFontCatalog.FontSupport.NO_CJK),
+                ""
+        );
+        assertEquals(
+                FontManager.resolveAllowedUiFontName("Consolas", Locale.ENGLISH, UiFontCatalog.FontSupport.NO_CJK),
+                "Consolas"
+        );
     }
 }

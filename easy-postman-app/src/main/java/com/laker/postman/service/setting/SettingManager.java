@@ -826,4 +826,30 @@ public class SettingManager {
     public static void setUiFontSize(int size) {
         put(AppSettingKeys.UI_FONT_SIZE, size);
     }
+
+    // ===== 编辑器字体设置 =====
+
+    public static String getEditorFontName() {
+        return get(AppSettingKeys.EDITOR_FONT_NAME);
+    }
+
+    public static void setEditorFontName(String fontName) {
+        put(AppSettingKeys.EDITOR_FONT_NAME, fontName);
+    }
+
+    public static String getEditorFontFallbackName() {
+        return get(AppSettingKeys.EDITOR_FONT_FALLBACK_NAME);
+    }
+
+    public static void setEditorFontFallbackName(String fontName) {
+        put(AppSettingKeys.EDITOR_FONT_FALLBACK_NAME, fontName);
+    }
+
+    public static int getEditorFontSize() {
+        return get(AppSettingKeys.EDITOR_FONT_SIZE);
+    }
+
+    public static void setEditorFontSize(int size) {
+        put(AppSettingKeys.EDITOR_FONT_SIZE, size);
+    }
 }

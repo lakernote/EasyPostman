@@ -878,11 +878,11 @@ public class RequestBodyPanel extends JPanel {
 
     /**
      * 更新编辑器字体
-     * 使用用户设置的字体大小
+     * 使用独立编辑器字体设置
      */
     private void updateEditorFont() {
         if (bodyArea != null) {
-            bodyArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+            EditorFontManager.applyConfiguredEditorFont(bodyArea);
         }
     }
 

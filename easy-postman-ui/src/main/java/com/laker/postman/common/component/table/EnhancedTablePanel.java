@@ -1088,7 +1088,6 @@ public class EnhancedTablePanel extends JPanel {
         textArea.setWrapStyleWord(true);
         textArea.setHighlightCurrentLine(false);
         EditorThemeUtil.loadTheme(textArea);
-        textArea.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
 
         // 判断是否是 JSON
         boolean isJson = JsonUtil.isTypeJSON(text);

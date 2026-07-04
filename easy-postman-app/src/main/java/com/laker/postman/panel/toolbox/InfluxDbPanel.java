@@ -1366,7 +1366,7 @@ public class InfluxDbPanel extends JPanel {
 
     private void updateEditorFont(RSyntaxTextArea editor) {
         if (editor != null) {
-            editor.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
+            EditorFontManager.applyConfiguredEditorFont(editor);
         }
     }
 

@@ -61,6 +61,7 @@ public class SimpleThemeManager {
     }
 
     private static void applyEditorThemeResources(ThemeDescriptor theme) {
+        EditorThemeUtil.configureEditorFontApplier(EditorFontManager::applyConfiguredEditorFont);
         if (theme != null) {
             EditorThemeUtil.configureThemeResources(
                     theme.editorThemeResourcePath(),
@@ -109,6 +110,7 @@ public class SimpleThemeManager {
                 applyEditorThemeResources(theme);
 
                 // Look and Feel 切换会重建 UIDefaults，先恢复用户字体再刷新窗口。
+                FontManager.captureLookAndFeelDefaultFont();
                 FontManager.installSavedFontDefaults();
                 ToolWindowSurfaceStyle.installGlobalDialogWindowChrome();
 

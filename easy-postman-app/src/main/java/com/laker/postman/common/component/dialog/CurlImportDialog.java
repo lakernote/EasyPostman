@@ -3,8 +3,8 @@ package com.laker.postman.common.component.dialog;
 import com.laker.postman.common.component.SyntaxEditorScrollPane;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ModernButtonFactory;
+import com.laker.postman.util.EditorFontManager;
 import com.laker.postman.util.EditorThemeUtil;
-import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -82,8 +82,8 @@ public class CurlImportDialog extends JDialog {
         editor.setAntiAliasingEnabled(true);
         editor.setAutoIndentEnabled(true);
         editor.setTabSize(2);
-        editor.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, +1));
         EditorThemeUtil.loadTheme(editor);
+        EditorFontManager.applyConfiguredEditorFont(editor);
         return editor;
     }
 

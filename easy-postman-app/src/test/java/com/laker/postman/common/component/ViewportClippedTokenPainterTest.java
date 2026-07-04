@@ -17,6 +17,8 @@ import java.awt.image.ImageObserver;
 import java.awt.image.RenderedImage;
 import java.awt.image.renderable.RenderableImage;
 import java.text.AttributedCharacterIterator;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
@@ -110,6 +112,25 @@ public class ViewportClippedTokenPainterTest {
                 "Selected-token rendering must still constrain the real Graphics clip to clipStart");
     }
 
+    @Test
+    public void shouldUseConfiguredFallbackFontForUnsupportedCharacters() {
+        Font primaryFont = new AsciiOnlyFont(Font.MONOSPACED, Font.PLAIN, 13);
+        Font fallbackFont = new Font(Font.SERIF, Font.PLAIN, 13);
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        host.setFont(primaryFont);
+        host.putClientProperty(EditorFontProperties.FALLBACK_FONT_CLIENT_PROPERTY, fallbackFont);
+        Token token = token("ab汉cd");
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 200, 40);
+
+        new ViewportClippedTokenPainter()
+                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertTrue(graphics.drawCharsCalls > 1,
+                "Mixed supported and fallback characters should be drawn as separate font runs");
+        assertTrue(graphics.fontsAtDraw.contains(fallbackFont),
+                "Unsupported characters should be drawn with the configured fallback font");
+    }
+
     private Token token(String text) {
         char[] chars = text.toCharArray();
         return new TokenImpl(chars, 0, chars.length - 1, 0, TokenTypes.IDENTIFIER, 0);
@@ -126,11 +147,28 @@ public class ViewportClippedTokenPainterTest {
         return (x, tabOffset) -> x + 40;
     }
 
+    private static final class AsciiOnlyFont extends Font {
+        private AsciiOnlyFont(String name, int style, int size) {
+            super(name, style, size);
+        }
+
+        @Override
+        public boolean canDisplay(int codePoint) {
+            return codePoint >= 0 && codePoint < 128;
+        }
+
+        @Override
+        public boolean canDisplay(char c) {
+            return c < 128;
+        }
+    }
+
     private static class RecordingGraphics2D extends Graphics2D {
         private final Graphics2D delegate;
         private int drawCharsCalls;
         private int leftMostClipAtDraw = Integer.MAX_VALUE;
         private int longestDrawCharsLength;
+        private final List<Font> fontsAtDraw = new ArrayList<>();
 
         private RecordingGraphics2D(Graphics2D delegate) {
             this.delegate = delegate;
@@ -140,6 +178,7 @@ public class ViewportClippedTokenPainterTest {
         public void drawChars(char[] data, int offset, int length, int x, int y) {
             drawCharsCalls++;
             longestDrawCharsLength = Math.max(longestDrawCharsLength, length);
+            fontsAtDraw.add(delegate.getFont());
             Rectangle clip = delegate.getClipBounds();
             if (clip != null) {
                 leftMostClipAtDraw = Math.min(leftMostClipAtDraw, clip.x);

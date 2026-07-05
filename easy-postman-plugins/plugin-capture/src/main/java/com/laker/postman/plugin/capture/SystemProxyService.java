@@ -26,126 +26,12 @@ final class SystemProxyService {
     private static final String WINDOWS_PROXY_KEY = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
     private static final List<String> REQUIRED_BYPASS_DOMAINS = List.of("localhost", "127.0.0.1", "::1");
     private static final String EMPTY = "Empty";
-    private static final int WINDOWS_PROXY_TYPE_DIRECT = 1;
-    private static final int WINDOWS_PROXY_TYPE_PROXY = 2;
-    private static final int WINDOWS_PROXY_TYPE_AUTO_PROXY_URL = 4;
-    private static final int WINDOWS_PROXY_TYPE_AUTO_DETECT = 8;
     private static final String WININET_REFRESH_SCRIPT = """
             $ErrorActionPreference='Stop';
             Add-Type -Namespace EasyPostman -Name WinInet -MemberDefinition '[System.Runtime.InteropServices.DllImport("wininet.dll", SetLastError=true)] public static extern bool InternetSetOption(System.IntPtr hInternet, int dwOption, System.IntPtr lpBuffer, int dwBufferLength);';
             [EasyPostman.WinInet]::InternetSetOption([System.IntPtr]::Zero, 39, [System.IntPtr]::Zero, 0) | Out-Null;
             [EasyPostman.WinInet]::InternetSetOption([System.IntPtr]::Zero, 95, [System.IntPtr]::Zero, 0) | Out-Null;
             [EasyPostman.WinInet]::InternetSetOption([System.IntPtr]::Zero, 37, [System.IntPtr]::Zero, 0) | Out-Null;
-            """;
-    private static final String WININET_SET_PROXY_SCRIPT = """
-            Add-Type -Namespace EasyPostman -Name WinInetProxy -MemberDefinition @'
-            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-            public struct INTERNET_PER_CONN_OPTION_LIST
-            {
-                public int Size;
-                public System.IntPtr Connection;
-                public int OptionCount;
-                public int OptionError;
-                public System.IntPtr Options;
-            }
-
-            [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-            public struct INTERNET_PER_CONN_OPTION
-            {
-                public int Option;
-                public System.IntPtr Value;
-            }
-
-            private const int INTERNET_OPTION_PER_CONNECTION_OPTION = 75;
-            private const int INTERNET_OPTION_SETTINGS_CHANGED = 39;
-            private const int INTERNET_OPTION_REFRESH = 37;
-            private const int INTERNET_OPTION_PROXY_SETTINGS_CHANGED = 95;
-            private const int INTERNET_PER_CONN_FLAGS = 1;
-            private const int INTERNET_PER_CONN_PROXY_SERVER = 2;
-            private const int INTERNET_PER_CONN_PROXY_BYPASS = 3;
-            private const int INTERNET_PER_CONN_AUTOCONFIG_URL = 4;
-            private const int PROXY_TYPE_DIRECT = 1;
-            private const int PROXY_TYPE_PROXY = 2;
-            private const int PROXY_TYPE_AUTO_PROXY_URL = 4;
-            private const int PROXY_TYPE_AUTO_DETECT = 8;
-
-            [System.Runtime.InteropServices.DllImport("wininet.dll", SetLastError=true, CharSet=System.Runtime.InteropServices.CharSet.Unicode)]
-            private static extern bool InternetSetOption(System.IntPtr hInternet, int option, System.IntPtr buffer, int bufferLength);
-
-            public static void SetProxy(string proxyServer, string proxyBypass)
-            {
-                SetInternetOptions(PROXY_TYPE_DIRECT | PROXY_TYPE_PROXY, proxyServer, proxyBypass, "");
-            }
-
-            public static void SetInternetOptions(int proxyFlags, string proxyServer, string proxyBypass, string autoConfigUrl)
-            {
-                INTERNET_PER_CONN_OPTION[] optionValues = new INTERNET_PER_CONN_OPTION[4];
-                System.IntPtr proxyPtr = System.Runtime.InteropServices.Marshal.StringToHGlobalUni(proxyServer);
-                System.IntPtr bypassPtr = System.Runtime.InteropServices.Marshal.StringToHGlobalUni(proxyBypass);
-                System.IntPtr autoConfigPtr = System.Runtime.InteropServices.Marshal.StringToHGlobalUni(autoConfigUrl);
-                System.IntPtr optionsPtr = System.IntPtr.Zero;
-                System.IntPtr listPtr = System.IntPtr.Zero;
-                try
-                {
-                    optionValues[0].Option = INTERNET_PER_CONN_FLAGS;
-                    optionValues[0].Value = new System.IntPtr(proxyFlags);
-                    optionValues[1].Option = INTERNET_PER_CONN_PROXY_SERVER;
-                    optionValues[1].Value = proxyPtr;
-                    optionValues[2].Option = INTERNET_PER_CONN_PROXY_BYPASS;
-                    optionValues[2].Value = bypassPtr;
-                    optionValues[3].Option = INTERNET_PER_CONN_AUTOCONFIG_URL;
-                    optionValues[3].Value = autoConfigPtr;
-
-                    int optionSize = System.Runtime.InteropServices.Marshal.SizeOf(typeof(INTERNET_PER_CONN_OPTION));
-                    optionsPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(optionSize * optionValues.Length);
-                    for (int i = 0; i < optionValues.Length; i++)
-                    {
-                        System.Runtime.InteropServices.Marshal.StructureToPtr(optionValues[i], System.IntPtr.Add(optionsPtr, i * optionSize), false);
-                    }
-
-                    INTERNET_PER_CONN_OPTION_LIST list = new INTERNET_PER_CONN_OPTION_LIST();
-                    list.Size = System.Runtime.InteropServices.Marshal.SizeOf(typeof(INTERNET_PER_CONN_OPTION_LIST));
-                    list.Connection = System.IntPtr.Zero;
-                    list.OptionCount = optionValues.Length;
-                    list.OptionError = 0;
-                    list.Options = optionsPtr;
-
-                    listPtr = System.Runtime.InteropServices.Marshal.AllocHGlobal(list.Size);
-                    System.Runtime.InteropServices.Marshal.StructureToPtr(list, listPtr, false);
-                    if (!InternetSetOption(System.IntPtr.Zero, INTERNET_OPTION_PER_CONNECTION_OPTION, listPtr, list.Size))
-                    {
-                        throw new System.ComponentModel.Win32Exception(System.Runtime.InteropServices.Marshal.GetLastWin32Error());
-                    }
-                    InternetSetOption(System.IntPtr.Zero, INTERNET_OPTION_SETTINGS_CHANGED, System.IntPtr.Zero, 0);
-                    InternetSetOption(System.IntPtr.Zero, INTERNET_OPTION_PROXY_SETTINGS_CHANGED, System.IntPtr.Zero, 0);
-                    InternetSetOption(System.IntPtr.Zero, INTERNET_OPTION_REFRESH, System.IntPtr.Zero, 0);
-                }
-                finally
-                {
-                    if (proxyPtr != System.IntPtr.Zero)
-                    {
-                        System.Runtime.InteropServices.Marshal.FreeHGlobal(proxyPtr);
-                    }
-                    if (bypassPtr != System.IntPtr.Zero)
-                    {
-                        System.Runtime.InteropServices.Marshal.FreeHGlobal(bypassPtr);
-                    }
-                    if (autoConfigPtr != System.IntPtr.Zero)
-                    {
-                        System.Runtime.InteropServices.Marshal.FreeHGlobal(autoConfigPtr);
-                    }
-                    if (optionsPtr != System.IntPtr.Zero)
-                    {
-                        System.Runtime.InteropServices.Marshal.FreeHGlobal(optionsPtr);
-                    }
-                    if (listPtr != System.IntPtr.Zero)
-                    {
-                        System.Runtime.InteropServices.Marshal.FreeHGlobal(listPtr);
-                    }
-                }
-            }
-            '@;
-            [EasyPostman.WinInetProxy]::SetInternetOptions($proxyFlags, $proxyServer, $proxyBypass, $autoConfigUrl);
             """;
 
     private final Thread shutdownHook;
@@ -618,22 +504,7 @@ final class SystemProxyService {
     }
 
     private void applyWindowsProxy(String host, int port, String originalBypass) throws Exception {
-        try {
-            applyWindowsProxyWithWinInet(host, port, originalBypass);
-            return;
-        } catch (Exception ex) {
-            log.debug("Failed to apply Windows proxy through WinINet; falling back to registry", ex);
-        }
         applyWindowsProxyWithRegistry(host, port, originalBypass);
-    }
-
-    private void applyWindowsProxyWithWinInet(String host, int port, String originalBypass) throws Exception {
-        applyWindowsInternetOptionsWithWinInet(
-                WINDOWS_PROXY_TYPE_DIRECT | WINDOWS_PROXY_TYPE_PROXY,
-                host + ":" + port,
-                mergeWindowsBypass(originalBypass),
-                ""
-        );
     }
 
     private void applyWindowsProxyWithRegistry(String host, int port, String originalBypass) throws Exception {
@@ -643,6 +514,7 @@ final class SystemProxyService {
         deleteWindowsRegistryValue("AutoConfigURL");
         writeWindowsRegistryValue("AutoDetect", "REG_DWORD", "0");
         refreshWindowsInternetOptions();
+        verifyWindowsProxyApplied(host, port);
     }
 
     private void restoreSnapshot(String service, ProxyServiceSnapshot snapshot) throws Exception {
@@ -791,12 +663,7 @@ final class SystemProxyService {
             return;
         }
         try {
-            try {
-                restoreWindowsSnapshotWithWinInet(snapshot);
-            } catch (Exception ex) {
-                log.debug("Failed to restore Windows proxy through WinINet; falling back to registry", ex);
-                restoreWindowsSnapshotWithRegistry(snapshot);
-            }
+            restoreWindowsSnapshotWithRegistry(snapshot);
             deleteRecoverySnapshotQuietly();
         } finally {
             active = false;
@@ -806,15 +673,6 @@ final class SystemProxyService {
         }
     }
 
-    private void restoreWindowsSnapshotWithWinInet(WindowsProxySnapshot snapshot) throws Exception {
-        applyWindowsInternetOptionsWithWinInet(
-                windowsProxyFlags(snapshot),
-                registryData(snapshot.proxyServer()),
-                registryData(snapshot.proxyOverride()),
-                registryData(snapshot.autoConfigUrl())
-        );
-    }
-
     private void restoreWindowsSnapshotWithRegistry(WindowsProxySnapshot snapshot) throws Exception {
         restoreWindowsValue("ProxyEnable", snapshot.proxyEnable());
         restoreWindowsValue("ProxyServer", snapshot.proxyServer());
@@ -822,6 +680,7 @@ final class SystemProxyService {
         restoreWindowsValue("AutoConfigURL", snapshot.autoConfigUrl());
         restoreWindowsValue("AutoDetect", snapshot.autoDetect());
         refreshWindowsInternetOptions();
+        verifyWindowsSnapshotRestored(snapshot);
     }
 
     private void restoreWindowsValue(String name, WindowsRegistryValue value) throws Exception {
@@ -851,6 +710,48 @@ final class SystemProxyService {
         return new WindowsRegistryValue(false, "", "");
     }
 
+    private void verifyWindowsProxyApplied(String host, int port) throws Exception {
+        WindowsProxySnapshot current = readWindowsSnapshot();
+        if (!isRegistryDwordEnabled(current.proxyEnable())) {
+            throw new IllegalStateException("Windows system proxy was not enabled after update");
+        }
+        if (!windowsProxyServerMatches(registryData(current.proxyServer()), host, port)) {
+            throw new IllegalStateException("Windows system proxy endpoint was not applied: expected "
+                    + host + ":" + port + ", actual " + registryData(current.proxyServer()));
+        }
+    }
+
+    private void verifyWindowsSnapshotRestored(WindowsProxySnapshot expected) throws Exception {
+        WindowsProxySnapshot current = readWindowsSnapshot();
+        verifyWindowsRegistryValueRestored("ProxyEnable", expected.proxyEnable(), current.proxyEnable());
+        verifyWindowsRegistryValueRestored("ProxyServer", expected.proxyServer(), current.proxyServer());
+        verifyWindowsRegistryValueRestored("ProxyOverride", expected.proxyOverride(), current.proxyOverride());
+        verifyWindowsRegistryValueRestored("AutoConfigURL", expected.autoConfigUrl(), current.autoConfigUrl());
+        verifyWindowsRegistryValueRestored("AutoDetect", expected.autoDetect(), current.autoDetect());
+    }
+
+    private void verifyWindowsRegistryValueRestored(
+            String name,
+            WindowsRegistryValue expected,
+            WindowsRegistryValue actual
+    ) {
+        boolean expectedPresent = expected != null && expected.present();
+        boolean actualPresent = actual != null && actual.present();
+        if (expectedPresent != actualPresent) {
+            throw new IllegalStateException("Windows system proxy value was not restored: "
+                    + name + " expected present=" + expectedPresent + ", actual present=" + actualPresent);
+        }
+        if (!expectedPresent) {
+            return;
+        }
+        if (!expected.type().equalsIgnoreCase(actual.type())
+                || !expected.data().equalsIgnoreCase(actual.data())) {
+            throw new IllegalStateException("Windows system proxy value was not restored: "
+                    + name + " expected " + expected.type() + " " + expected.data()
+                    + ", actual " + actual.type() + " " + actual.data());
+        }
+    }
+
     private void writeWindowsRegistryValue(String name, String type, String data) throws Exception {
         runCommand(REG, "add", WINDOWS_PROXY_KEY, "/v", name, "/t", type, "/d", data, "/f");
     }
@@ -876,43 +777,6 @@ final class SystemProxyService {
         return String.join(";", values);
     }
 
-    private void applyWindowsInternetOptionsWithWinInet(
-            int proxyFlags,
-            String proxyServer,
-            String proxyBypass,
-            String autoConfigUrl
-    ) throws Exception {
-        String script = "$ErrorActionPreference='Stop';" + System.lineSeparator()
-                + "$proxyFlags=" + proxyFlags + ";" + System.lineSeparator()
-                + "$proxyServer=" + powerShellSingleQuoted(proxyServer) + ";" + System.lineSeparator()
-                + "$proxyBypass=" + powerShellSingleQuoted(proxyBypass) + ";" + System.lineSeparator()
-                + "$autoConfigUrl=" + powerShellSingleQuoted(autoConfigUrl) + ";" + System.lineSeparator()
-                + WININET_SET_PROXY_SCRIPT;
-        runCommand(List.of(
-                POWERSHELL,
-                "-NoProfile",
-                "-NonInteractive",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-Command",
-                script
-        ));
-    }
-
-    private int windowsProxyFlags(WindowsProxySnapshot snapshot) {
-        int flags = WINDOWS_PROXY_TYPE_DIRECT;
-        if (isRegistryDwordEnabled(snapshot.proxyEnable()) && !registryData(snapshot.proxyServer()).isBlank()) {
-            flags |= WINDOWS_PROXY_TYPE_PROXY;
-        }
-        if (!registryData(snapshot.autoConfigUrl()).isBlank()) {
-            flags |= WINDOWS_PROXY_TYPE_AUTO_PROXY_URL;
-        }
-        if (isRegistryDwordEnabled(snapshot.autoDetect())) {
-            flags |= WINDOWS_PROXY_TYPE_AUTO_DETECT;
-        }
-        return flags;
-    }
-
     private boolean isRegistryDwordEnabled(WindowsRegistryValue value) {
         if (value == null || !value.present() || value.data() == null || value.data().isBlank()) {
             return false;
@@ -930,11 +794,6 @@ final class SystemProxyService {
             return "";
         }
         return value.data();
-    }
-
-    private String powerShellSingleQuoted(String value) {
-        String safeValue = value == null ? "" : value;
-        return "'" + safeValue.replace("'", "''") + "'";
     }
 
     private void refreshWindowsInternetOptions() throws Exception {

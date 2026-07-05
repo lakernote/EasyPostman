@@ -377,7 +377,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         resetFontComboItems(
                 editorFontNameComboBox,
                 currentEditorFont,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_DEFAULT)
+                createEditorPrimaryAutoFontLabel()
         );
         selectFontComboValue(editorFontNameComboBox, currentEditorFont);
         installFontComboLazyLoader(editorFontNameComboBox);
@@ -397,7 +397,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         resetFontComboItems(
                 editorFontFallbackNameComboBox,
                 currentEditorFallbackFont,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_FALLBACK_AUTO),
+                createEditorFallbackAutoFontLabel(),
                 FontComboRole.EDITOR_FALLBACK
         );
         selectFontComboValue(editorFontFallbackNameComboBox, currentEditorFallbackFont);
@@ -833,19 +833,33 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         resetFontComboItems(
                 editorFontNameComboBox,
                 selectedEditorFont,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_DEFAULT),
+                createEditorPrimaryAutoFontLabel(),
                 FontComboRole.EDITOR_PRIMARY
         );
         resetFontComboItems(
                 editorFontFallbackNameComboBox,
                 selectedEditorFallbackFont,
-                I18nUtil.getMessage(MessageKeys.SETTINGS_EDITOR_FONT_FALLBACK_AUTO),
+                createEditorFallbackAutoFontLabel(),
                 FontComboRole.EDITOR_FALLBACK
         );
         selectFontComboValue(fontNameComboBox, selectedUiFont);
         selectFontComboValue(editorFontNameComboBox, selectedEditorFont);
         selectFontComboValue(editorFontFallbackNameComboBox, selectedEditorFallbackFont);
         fontOptionsLoaded = true;
+    }
+
+    private String createEditorPrimaryAutoFontLabel() {
+        return I18nUtil.getMessage(
+                MessageKeys.SETTINGS_EDITOR_FONT_DEFAULT_RESOLVED,
+                EditorFontManager.getDefaultEditorFontFamily()
+        );
+    }
+
+    private String createEditorFallbackAutoFontLabel() {
+        return I18nUtil.getMessage(
+                MessageKeys.SETTINGS_EDITOR_FONT_FALLBACK_AUTO_RESOLVED,
+                EditorFontManager.getDefaultEditorFallbackFontFamily()
+        );
     }
 
     private void refreshPopupIfVisible(JComboBox<String> comboBox, boolean wasVisible) {
@@ -1083,7 +1097,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
             if (fontChanged) {
                 FontManager.applyFont(newFontName, newFontSize);
             } else if (editorFontChanged) {
-                UIRefreshManager.refreshAllWindows();
+                UIRefreshManager.refreshEditorFonts();
             }
 
             // 重新跟踪当前值

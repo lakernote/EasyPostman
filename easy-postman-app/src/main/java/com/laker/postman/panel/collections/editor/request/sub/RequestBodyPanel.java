@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.variable.VariableParser;
 import com.laker.postman.variable.VariableSegment;
 import com.laker.postman.request.model.RequestBodyTypes;
@@ -397,7 +398,7 @@ public class RequestBodyPanel extends JPanel {
         binaryFilePathField.setColumns(BINARY_FILE_FIELD_COLUMNS);
         binaryFilePathField.getAccessibleContext().setAccessibleName(
                 I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_FILE));
-        binaryFilePathField.putClientProperty("JTextField.placeholderText",
+        binaryFilePathField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT,
                 I18nUtil.getMessage(MessageKeys.REQUEST_BODY_BINARY_PLACEHOLDER));
         capBinaryFilePathFieldWidth();
 

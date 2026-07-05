@@ -1,5 +1,6 @@
 package com.laker.postman.panel.topmenu.setting;
 
+import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.panel.topmenu.setting.SettingsSearchSupport.SettingsSearchMatch;
 import com.laker.postman.panel.topmenu.setting.SettingsSearchSupport.SettingsSearchPage;
 import org.testng.annotations.Test;
@@ -60,7 +61,7 @@ public class SettingsSearchSupportTest {
         panel.add(button);
         panel.add(new JComboBox<>(new String[]{"Top Right", "Bottom Center"}));
         JTextField field = new JTextField();
-        field.putClientProperty("JTextField.placeholderText", "Git Diff large file threshold");
+        field.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Git Diff large file threshold");
         panel.add(field);
 
         SettingsSearchPage page = page("General", panel);
@@ -85,10 +86,25 @@ public class SettingsSearchSupportTest {
     }
 
     @Test
+    public void visibleTextMatchShouldBePreferredOverEarlierTooltipMatchForPageLocation() {
+        JPanel panel = new JPanel();
+        JCheckBox requestTabs = new JCheckBox("请求标签页多行显示");
+        requestTabs.setToolTipText("开启后，请求编辑器顶部打开的请求标签页会自动换行显示");
+        JLabel editorFontSection = new JLabel("编辑器字体");
+        panel.add(requestTabs);
+        panel.add(editorFontSection);
+
+        SettingsSearchMatch match =
+                SettingsSearchSupport.firstMatch(page("通用设置", panel), "编辑器").orElseThrow();
+
+        assertEquals(match.component(), editorFontSection);
+    }
+
+    @Test
     public void queryTermsShouldMatchWhenTheyAppearInTheSameSettingText() {
         JPanel panel = new JPanel();
         JTextField field = new JTextField();
-        field.putClientProperty("JTextField.placeholderText", "Git Diff large file threshold");
+        field.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Git Diff large file threshold");
         panel.add(field);
 
         assertTrue(SettingsSearchSupport.matches(page("General", panel), "git threshold"));

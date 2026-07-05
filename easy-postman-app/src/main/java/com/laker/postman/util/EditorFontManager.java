@@ -17,54 +17,89 @@ import java.util.stream.Collectors;
 public class EditorFontManager {
 
     public static final String FALLBACK_FONT_CLIENT_PROPERTY = EditorFontProperties.FALLBACK_FONT_CLIENT_PROPERTY;
-    private static final List<String> DEFAULT_EDITOR_FONT_CANDIDATES = List.of(
-            "JetBrains Mono",
+    private static final String JETBRAINS_MONO = "JetBrains Mono";
+    private static final String PINGFANG_SC = "PingFang SC";
+    private static final String MICROSOFT_YAHEI_UI = "Microsoft YaHei UI";
+    private static final String MICROSOFT_YAHEI = "Microsoft YaHei";
+    private static final String NOTO_SANS_CJK_SC = "Noto Sans CJK SC";
+    private static final String NOTO_SANS_CJK = "Noto Sans CJK";
+    private static final String NOTO_SANS_SC = "Noto Sans SC";
+    private static final String SOURCE_HAN_SANS_SC = "Source Han Sans SC";
+    private static final String HIRAGINO_SANS_GB = "Hiragino Sans GB";
+    private static final String WENQUANYI_MICRO_HEI = "WenQuanYi Micro Hei";
+    private static final List<String> WINDOWS_EDITOR_FONT_CANDIDATES = List.of(
+            JETBRAINS_MONO,
+            "Cascadia Code",
+            "Consolas",
+            Font.MONOSPACED
+    );
+    private static final List<String> MAC_EDITOR_FONT_CANDIDATES = List.of(
+            JETBRAINS_MONO,
+            "Menlo",
+            "Monaco",
+            "SF Mono",
+            Font.MONOSPACED
+    );
+    private static final List<String> LINUX_EDITOR_FONT_CANDIDATES = List.of(
+            JETBRAINS_MONO,
+            "Noto Sans Mono",
+            "DejaVu Sans Mono",
+            "Ubuntu Mono",
+            "Liberation Mono",
+            "Droid Sans Mono",
+            Font.MONOSPACED
+    );
+    private static final List<String> GENERIC_EDITOR_FONT_CANDIDATES = List.of(
+            JETBRAINS_MONO,
             "Cascadia Code",
             "Consolas",
             "Menlo",
             "Monaco",
+            "Noto Sans Mono",
+            "DejaVu Sans Mono",
+            "Ubuntu Mono",
             Font.MONOSPACED
     );
     private static final List<String> WINDOWS_EDITOR_FALLBACK_FONT_CANDIDATES = List.of(
-            "Microsoft YaHei UI",
-            "Microsoft YaHei",
+            MICROSOFT_YAHEI_UI,
+            MICROSOFT_YAHEI,
             "SimHei",
             "SimSun",
-            "Noto Sans CJK SC",
-            "Noto Sans CJK",
-            "Noto Sans SC",
-            "Source Han Sans SC",
-            "WenQuanYi Micro Hei",
-            "PingFang SC",
-            "Hiragino Sans GB",
+            NOTO_SANS_CJK_SC,
+            NOTO_SANS_CJK,
+            NOTO_SANS_SC,
+            SOURCE_HAN_SANS_SC,
+            WENQUANYI_MICRO_HEI,
+            PINGFANG_SC,
+            HIRAGINO_SANS_GB,
             Font.SANS_SERIF
     );
     private static final List<String> MAC_EDITOR_FALLBACK_FONT_CANDIDATES = List.of(
-            "PingFang SC",
-            "Hiragino Sans GB",
-            "Noto Sans CJK SC",
-            "Noto Sans CJK",
-            "Noto Sans SC",
-            "Source Han Sans SC",
-            "Microsoft YaHei UI",
-            "Microsoft YaHei",
+            PINGFANG_SC,
+            HIRAGINO_SANS_GB,
+            NOTO_SANS_CJK_SC,
+            NOTO_SANS_CJK,
+            NOTO_SANS_SC,
+            SOURCE_HAN_SANS_SC,
+            MICROSOFT_YAHEI_UI,
+            MICROSOFT_YAHEI,
             "SimHei",
             "SimSun",
-            "WenQuanYi Micro Hei",
+            WENQUANYI_MICRO_HEI,
             Font.SANS_SERIF
     );
     private static final List<String> LINUX_EDITOR_FALLBACK_FONT_CANDIDATES = List.of(
-            "Noto Sans CJK SC",
-            "Noto Sans CJK",
-            "Noto Sans SC",
-            "Source Han Sans SC",
-            "WenQuanYi Micro Hei",
-            "Microsoft YaHei UI",
-            "Microsoft YaHei",
+            NOTO_SANS_CJK_SC,
+            NOTO_SANS_CJK,
+            NOTO_SANS_SC,
+            SOURCE_HAN_SANS_SC,
+            WENQUANYI_MICRO_HEI,
+            MICROSOFT_YAHEI_UI,
+            MICROSOFT_YAHEI,
             "SimHei",
             "SimSun",
-            "PingFang SC",
-            "Hiragino Sans GB",
+            PINGFANG_SC,
+            HIRAGINO_SANS_GB,
             Font.SANS_SERIF
     );
     private static volatile List<String> cachedAvailableFontFamilyNames;
@@ -78,7 +113,7 @@ public class EditorFontManager {
     }
 
     public static String getDefaultEditorFontFamily() {
-        return resolveDefaultEditorFontFamily();
+        return resolveDefaultEditorFontFamily(availableFontFamilyNames(), System.getProperty("os.name", ""));
     }
 
     public static Font getConfiguredEditorFallbackFont() {
@@ -106,15 +141,12 @@ public class EditorFontManager {
         }
     }
 
-    private static String resolveDefaultEditorFontFamily() {
-        Set<String> availableFamilies = availableFontFamilyNames().stream()
-                .map(name -> name.toLowerCase(Locale.ROOT))
-                .collect(Collectors.toSet());
-
-        return DEFAULT_EDITOR_FONT_CANDIDATES.stream()
-                .filter(candidate -> availableFamilies.contains(candidate.toLowerCase(Locale.ROOT)))
-                .findFirst()
-                .orElse(Font.MONOSPACED);
+    static String resolveDefaultEditorFontFamily(Collection<String> availableFamilyNames, String osName) {
+        return resolveFirstAvailableFont(
+                availableFamilyNames,
+                resolveEditorFontCandidates(osName),
+                Font.MONOSPACED
+        );
     }
 
     private static List<String> availableFontFamilyNames() {
@@ -132,30 +164,63 @@ public class EditorFontManager {
         }
     }
 
-    static String resolveDefaultEditorFallbackFontFamily(Collection<String> availableFamilyNames) {
-        return resolveDefaultEditorFallbackFontFamily(availableFamilyNames, System.getProperty("os.name", ""));
+    static String resolveDefaultEditorFallbackFontFamily(Collection<String> availableFamilyNames, String osName) {
+        return resolveFirstAvailableFont(
+                availableFamilyNames,
+                resolveEditorFallbackFontCandidates(osName),
+                Font.SANS_SERIF
+        );
     }
 
-    static String resolveDefaultEditorFallbackFontFamily(Collection<String> availableFamilyNames, String osName) {
+    private static String resolveFirstAvailableFont(Collection<String> availableFamilyNames,
+                                                    List<String> candidates,
+                                                    String logicalFallback) {
         Set<String> availableFamilies = availableFamilyNames.stream()
                 .map(name -> name.toLowerCase(Locale.ROOT))
                 .collect(Collectors.toSet());
 
-        return resolveEditorFallbackFontCandidates(osName).stream()
-                .filter(candidate -> Font.SANS_SERIF.equals(candidate)
+        return candidates.stream()
+                .filter(candidate -> logicalFallback.equals(candidate)
                         || availableFamilies.contains(candidate.toLowerCase(Locale.ROOT)))
                 .findFirst()
-                .orElse(Font.SANS_SERIF);
+                .orElse(logicalFallback);
+    }
+
+    private static List<String> resolveEditorFontCandidates(String osName) {
+        return switch (resolveOperatingSystem(osName)) {
+            case WINDOWS -> WINDOWS_EDITOR_FONT_CANDIDATES;
+            case MACOS -> MAC_EDITOR_FONT_CANDIDATES;
+            case LINUX -> LINUX_EDITOR_FONT_CANDIDATES;
+            case OTHER -> GENERIC_EDITOR_FONT_CANDIDATES;
+        };
     }
 
     private static List<String> resolveEditorFallbackFontCandidates(String osName) {
+        return switch (resolveOperatingSystem(osName)) {
+            case WINDOWS -> WINDOWS_EDITOR_FALLBACK_FONT_CANDIDATES;
+            case MACOS -> MAC_EDITOR_FALLBACK_FONT_CANDIDATES;
+            case LINUX, OTHER -> LINUX_EDITOR_FALLBACK_FONT_CANDIDATES;
+        };
+    }
+
+    private static OperatingSystemFamily resolveOperatingSystem(String osName) {
         String normalizedOsName = osName == null ? "" : osName.toLowerCase(Locale.ROOT);
-        if (normalizedOsName.contains("win")) {
-            return WINDOWS_EDITOR_FALLBACK_FONT_CANDIDATES;
-        }
         if (normalizedOsName.contains("mac") || normalizedOsName.contains("darwin")) {
-            return MAC_EDITOR_FALLBACK_FONT_CANDIDATES;
+            return OperatingSystemFamily.MACOS;
         }
-        return LINUX_EDITOR_FALLBACK_FONT_CANDIDATES;
+        if (normalizedOsName.startsWith("win")) {
+            return OperatingSystemFamily.WINDOWS;
+        }
+        if (normalizedOsName.contains("linux")) {
+            return OperatingSystemFamily.LINUX;
+        }
+        return OperatingSystemFamily.OTHER;
+    }
+
+    private enum OperatingSystemFamily {
+        WINDOWS,
+        MACOS,
+        LINUX,
+        OTHER
     }
 }

@@ -103,6 +103,7 @@ public class UISettingsPanelLayoutTest {
         assertEquals(zh.getProperty("settings.editor.font_fallback_name"), "缺字回退字体:");
         assertTrue(zh.getProperty("settings.editor.description").contains("主字体缺字"));
         assertTrue(zh.getProperty("settings.editor.font_fallback_name.tooltip").contains("符号或 emoji"));
+        assertEquals(zh.getProperty("settings.editor.font.default"), "自动选择");
         assertEquals(zh.getProperty("settings.editor.font.fallback_auto"), "自动选择（推荐）");
         assertFalse(zh.containsKey("settings.editor.font.fallback_none"));
 
@@ -111,9 +112,58 @@ public class UISettingsPanelLayoutTest {
         assertEquals(en.getProperty("settings.editor.font_fallback_name"), "Missing Glyph Fallback Font:");
         assertTrue(en.getProperty("settings.editor.description").contains("missing glyphs"));
         assertTrue(en.getProperty("settings.editor.font_fallback_name.tooltip").contains("symbols, or emoji"));
+        assertEquals(en.getProperty("settings.editor.font.default"), "Auto");
         assertEquals(en.getProperty("settings.editor.font.fallback_auto"), "Auto (Recommended)");
         assertFalse(en.containsKey("settings.editor.font.fallback_none"));
+        assertTrue(messageKeysSource.contains("""
+                @Deprecated(since = "6.0.12")
+                    public static final String SETTINGS_EDITOR_FONT_DEFAULT = "settings.editor.font.default";
+                """));
+        assertTrue(messageKeysSource.contains("""
+                @Deprecated(since = "6.0.12")
+                    public static final String SETTINGS_EDITOR_FONT_FALLBACK_AUTO = "settings.editor.font.fallback_auto";
+                """));
+        assertTrue(messageKeysSource.contains("SETTINGS_EDITOR_FONT_DEFAULT = \"settings.editor.font.default\""));
+        assertTrue(messageKeysSource.contains("SETTINGS_EDITOR_FONT_FALLBACK_AUTO = \"settings.editor.font.fallback_auto\""));
         assertFalse(messageKeysSource.contains("SETTINGS_EDITOR_FONT_FALLBACK_NONE"));
+    }
+
+    @Test
+    public void editorFontAutoOptionsShouldDisplayResolvedFontNames() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/topmenu/setting/UISettingsPanelModern.java"
+        ));
+        Properties zh = loadProperties("src/main/resources/messages_zh.properties");
+        Properties en = loadProperties("src/main/resources/messages_en.properties");
+        String messageKeysSource = Files.readString(Path.of(
+                "../easy-postman-foundation/src/main/java/com/laker/postman/util/MessageKeys.java"
+        ));
+
+        assertEquals(zh.getProperty("settings.editor.font.default_resolved"), "自动选择（{0}）");
+        assertEquals(zh.getProperty("settings.editor.font.fallback_auto_resolved"), "自动选择（{0}，推荐）");
+        assertEquals(en.getProperty("settings.editor.font.default_resolved"), "Auto ({0})");
+        assertEquals(en.getProperty("settings.editor.font.fallback_auto_resolved"), "Auto ({0}, Recommended)");
+        assertTrue(messageKeysSource.contains("SETTINGS_EDITOR_FONT_DEFAULT_RESOLVED"));
+        assertTrue(messageKeysSource.contains("SETTINGS_EDITOR_FONT_FALLBACK_AUTO_RESOLVED"));
+        assertTrue(source.contains("createEditorPrimaryAutoFontLabel()"));
+        assertTrue(source.contains("createEditorFallbackAutoFontLabel()"));
+        assertTrue(source.contains("EditorFontManager.getDefaultEditorFontFamily()"));
+        assertTrue(source.contains("EditorFontManager.getDefaultEditorFallbackFontFamily()"));
+    }
+
+    @Test
+    public void editorFontSaveShouldRefreshEditorsWithoutReinstallingLookAndFeel() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/laker/postman/panel/topmenu/setting/UISettingsPanelModern.java"
+        ));
+
+        String editorFontBranch = source.substring(
+                source.indexOf("} else if (editorFontChanged) {"),
+                source.indexOf("            }", source.indexOf("} else if (editorFontChanged) {")) + "            }".length()
+        );
+
+        assertTrue(editorFontBranch.contains("UIRefreshManager.refreshEditorFonts();"));
+        assertFalse(editorFontBranch.contains("UIRefreshManager.refreshAllWindows();"));
     }
 
     private static void assertBefore(String source, String first, String second) {

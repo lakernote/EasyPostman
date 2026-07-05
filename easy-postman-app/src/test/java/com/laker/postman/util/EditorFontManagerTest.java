@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -101,6 +100,69 @@ public class EditorFontManagerTest {
         ), "Linux");
 
         assertEquals(fallback, "Noto Sans CJK SC");
+    }
+
+    @Test
+    public void defaultEditorFontShouldPreferJetBrainsMonoOnEveryPlatform() {
+        List<String> fonts = List.of(
+                "Consolas",
+                "Menlo",
+                "DejaVu Sans Mono",
+                "JetBrains Mono"
+        );
+
+        assertEquals(EditorFontManager.resolveDefaultEditorFontFamily(fonts, "Windows 11"), "JetBrains Mono");
+        assertEquals(EditorFontManager.resolveDefaultEditorFontFamily(fonts, "Mac OS X"), "JetBrains Mono");
+        assertEquals(EditorFontManager.resolveDefaultEditorFontFamily(fonts, "Linux"), "JetBrains Mono");
+    }
+
+    @Test
+    public void defaultEditorFontShouldPreferWindowsNativeMonospaceWhenJetBrainsMonoIsUnavailable() {
+        String font = EditorFontManager.resolveDefaultEditorFontFamily(List.of(
+                "Menlo",
+                "Consolas",
+                "Cascadia Code",
+                "DejaVu Sans Mono"
+        ), "Windows 11");
+
+        assertEquals(font, "Cascadia Code");
+    }
+
+    @Test
+    public void defaultEditorFontShouldPreferMacNativeMonospaceWhenJetBrainsMonoIsUnavailable() {
+        String font = EditorFontManager.resolveDefaultEditorFontFamily(List.of(
+                "Consolas",
+                "Menlo",
+                "DejaVu Sans Mono"
+        ), "Mac OS X");
+
+        assertEquals(font, "Menlo");
+    }
+
+    @Test
+    public void defaultEditorFontsShouldTreatDarwinAsMacos() {
+        List<String> fonts = List.of(
+                "Consolas",
+                "Menlo",
+                "PingFang SC",
+                "Microsoft YaHei UI"
+        );
+
+        assertEquals(EditorFontManager.resolveDefaultEditorFontFamily(fonts, "Darwin"), "Menlo");
+        assertEquals(EditorFontManager.resolveDefaultEditorFallbackFontFamily(fonts, "Darwin"), "PingFang SC");
+    }
+
+    @Test
+    public void defaultEditorFontShouldPreferLinuxNativeMonospaceWhenJetBrainsMonoIsUnavailable() {
+        String font = EditorFontManager.resolveDefaultEditorFontFamily(List.of(
+                "Consolas",
+                "Menlo",
+                "Ubuntu Mono",
+                "DejaVu Sans Mono",
+                "Noto Sans Mono"
+        ), "Linux");
+
+        assertEquals(font, "Noto Sans Mono");
     }
 
     @Test

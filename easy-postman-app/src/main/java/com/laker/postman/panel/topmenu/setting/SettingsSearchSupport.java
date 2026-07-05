@@ -15,6 +15,7 @@ import java.awt.Component;
 import java.awt.Container;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -61,7 +62,7 @@ class SettingsSearchSupport {
         collectSearchableText(page.component(), searchableText);
         Optional<SettingsSearchMatch> componentMatch = searchableText.stream()
                 .filter(entry -> matchesText(entry.text(), normalizedQuery))
-                .findFirst()
+                .min(Comparator.comparing(SearchableTextEntry::priority))
                 .map(entry -> new SettingsSearchMatch(page, entry.component()));
         if (componentMatch.isPresent()) {
             return componentMatch;
@@ -77,37 +78,38 @@ class SettingsSearchSupport {
             return;
         }
         if (component instanceof JComponent jComponent) {
-            addText(searchableText, component, jComponent.getToolTipText());
+            addText(searchableText, component, jComponent.getToolTipText(), SearchTextPriority.SECONDARY);
             AccessibleContext accessibleContext = jComponent.getAccessibleContext();
             if (accessibleContext != null) {
-                addText(searchableText, component, accessibleContext.getAccessibleName());
-                addText(searchableText, component, accessibleContext.getAccessibleDescription());
+                addText(searchableText, component, accessibleContext.getAccessibleName(), SearchTextPriority.SECONDARY);
+                addText(searchableText, component, accessibleContext.getAccessibleDescription(), SearchTextPriority.SECONDARY);
             }
-            Object placeholder = jComponent.getClientProperty(FlatClientProperties.PLACEHOLDER_TEXT);
-            if (placeholder == null) {
-                placeholder = jComponent.getClientProperty("JTextField.placeholderText");
-            }
-            addText(searchableText, component, placeholder);
+            addText(
+                    searchableText,
+                    component,
+                    jComponent.getClientProperty(FlatClientProperties.PLACEHOLDER_TEXT),
+                    SearchTextPriority.SECONDARY
+            );
         }
         if (component instanceof JLabel label) {
-            addText(searchableText, component, label.getText());
+            addText(searchableText, component, label.getText(), SearchTextPriority.VISIBLE);
         }
         if (component instanceof AbstractButton button) {
-            addText(searchableText, component, button.getText());
+            addText(searchableText, component, button.getText(), SearchTextPriority.VISIBLE);
         }
         if (component instanceof JTextComponent textComponent
                 && !(component instanceof JPasswordField)
                 && !textComponent.isEditable()) {
-            addText(searchableText, component, textComponent.getText());
+            addText(searchableText, component, textComponent.getText(), SearchTextPriority.VISIBLE);
         }
         if (component instanceof JComboBox<?> comboBox) {
             for (int i = 0; i < comboBox.getItemCount(); i++) {
-                addText(searchableText, component, comboBox.getItemAt(i));
+                addText(searchableText, component, comboBox.getItemAt(i), SearchTextPriority.SECONDARY);
             }
         }
         if (component instanceof JTabbedPane tabbedPane) {
             for (int i = 0; i < tabbedPane.getTabCount(); i++) {
-                addText(searchableText, component, tabbedPane.getTitleAt(i));
+                addText(searchableText, component, tabbedPane.getTitleAt(i), SearchTextPriority.VISIBLE);
             }
         }
         if (component instanceof Container container) {
@@ -123,13 +125,16 @@ class SettingsSearchSupport {
         }
     }
 
-    private static void addText(List<SearchableTextEntry> searchableText, Component component, Object value) {
+    private static void addText(List<SearchableTextEntry> searchableText,
+                                Component component,
+                                Object value,
+                                SearchTextPriority priority) {
         if (value == null) {
             return;
         }
         String text = stripHtml(String.valueOf(value));
         if (!normalize(text).isEmpty()) {
-            searchableText.add(new SearchableTextEntry(text, component));
+            searchableText.add(new SearchableTextEntry(text, component, priority));
         }
     }
 
@@ -182,6 +187,11 @@ class SettingsSearchSupport {
         }
     }
 
-    private record SearchableTextEntry(String text, Component component) {
+    private enum SearchTextPriority {
+        VISIBLE,
+        SECONDARY
+    }
+
+    private record SearchableTextEntry(String text, Component component, SearchTextPriority priority) {
     }
 }

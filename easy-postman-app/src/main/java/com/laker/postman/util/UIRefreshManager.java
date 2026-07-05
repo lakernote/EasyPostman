@@ -12,6 +12,7 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.function.Consumer;
 
 /**
  * UI 刷新管理器
@@ -68,7 +69,38 @@ public class UIRefreshManager {
         }
     }
 
+    /**
+     * 只刷新编辑器字体设置。
+     * <p>
+     * 编辑器字体变化不需要重装 Look and Feel。避免调用 {@link FlatLaf#updateUI()}，
+     * 防止请求页签、响应页签、工具栏等非编辑器组件在运行时被重新安装 UI delegate 后丢失自定义状态颜色。
+     */
+    public static void refreshEditorFonts() {
+        try {
+            Window[] windows = Window.getWindows();
+            int refreshedCount = 0;
+
+            for (Window window : windows) {
+                if (window.isDisplayable()) {
+                    refreshEditorFonts(window);
+                    window.validate();
+                    window.repaint();
+                    refreshedCount++;
+                    log.debug("Refreshed editor fonts in window: {}", window.getClass().getSimpleName());
+                }
+            }
+
+            log.debug("Successfully refreshed editor fonts in {} window(s)", refreshedCount);
+        } catch (Exception e) {
+            log.error("Failed to refresh editor fonts", e);
+        }
+    }
+
     static void refreshEditorThemes(Component component) {
+        visitComponentTree(component, UIRefreshManager::refreshEditorThemeComponent);
+    }
+
+    private static void refreshEditorThemeComponent(Component component) {
         if (component == null) {
             return;
         }
@@ -88,17 +120,44 @@ public class UIRefreshManager {
         } else if (component instanceof RTextScrollPane scrollPane) {
             EditorThemeUtil.applyScrollPaneChrome(scrollPane);
         }
+    }
 
+    static void refreshEditorFonts(Component component) {
+        visitComponentTree(component, UIRefreshManager::refreshEditorFontComponent);
+    }
+
+    private static void refreshEditorFontComponent(Component component) {
+        if (component == null) {
+            return;
+        }
+
+        if (component instanceof RSyntaxTextArea textArea) {
+            try {
+                EditorFontManager.applyConfiguredEditorFont(textArea);
+                textArea.revalidate();
+                textArea.repaint();
+                log.debug("Refreshed editor font: {}", component.getClass().getSimpleName());
+            } catch (Exception e) {
+                log.error("Failed to refresh editor font: {}", component.getClass().getSimpleName(), e);
+            }
+        }
+    }
+
+    private static void visitComponentTree(Component component, Consumer<Component> visitor) {
+        if (component == null) {
+            return;
+        }
+        visitor.accept(component);
         if (component instanceof Container container) {
             for (Component child : container.getComponents()) {
-                refreshEditorThemes(child);
+                visitComponentTree(child, visitor);
             }
         }
 
         if (component instanceof JFrame frame) {
             JMenuBar menuBar = frame.getJMenuBar();
             if (menuBar != null) {
-                refreshEditorThemes(menuBar);
+                visitComponentTree(menuBar, visitor);
             }
         }
     }

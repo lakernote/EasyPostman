@@ -48,6 +48,30 @@ public class UIRefreshManagerTest extends AbstractSwingUiTest {
         });
     }
 
+    @Test
+    public void editorFontRefreshShouldApplyEditorFontWithoutReinstallingComponentUiDelegates() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            JFrame frame = new JFrame("editor-font-refresh-test");
+            CountingRefreshablePanel panel = new CountingRefreshablePanel();
+            RSyntaxTextArea area = new RSyntaxTextArea();
+            area.setFont(new Font(Font.SERIF, Font.BOLD, EditorFontManager.getConfiguredEditorFont().getSize() + 4));
+
+            try {
+                panel.add(area);
+                frame.setContentPane(panel);
+                frame.pack();
+                panel.resetCounters();
+
+                UIRefreshManager.refreshEditorFonts();
+
+                assertEquals(area.getFont(), EditorFontManager.getConfiguredEditorFont());
+                assertEquals(panel.getUpdateUiCount(), 0);
+            } finally {
+                frame.dispose();
+            }
+        });
+    }
+
     private static class CountingRefreshablePanel extends JPanel implements IRefreshable {
         private int refreshCount;
         private int updateUiCount;

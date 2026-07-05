@@ -1955,8 +1955,12 @@ public final class MessageKeys {
     public static final String SETTINGS_EDITOR_FONT_FALLBACK_NAME_TOOLTIP = "settings.editor.font_fallback_name.tooltip";
     public static final String SETTINGS_EDITOR_FONT_SIZE = "settings.editor.font_size";
     public static final String SETTINGS_EDITOR_FONT_SIZE_TOOLTIP = "settings.editor.font_size.tooltip";
+    @Deprecated(since = "6.0.12")
     public static final String SETTINGS_EDITOR_FONT_DEFAULT = "settings.editor.font.default";
+    @Deprecated(since = "6.0.12")
     public static final String SETTINGS_EDITOR_FONT_FALLBACK_AUTO = "settings.editor.font.fallback_auto";
+    public static final String SETTINGS_EDITOR_FONT_DEFAULT_RESOLVED = "settings.editor.font.default_resolved";
+    public static final String SETTINGS_EDITOR_FONT_FALLBACK_AUTO_RESOLVED = "settings.editor.font.fallback_auto_resolved";
     public static final String SETTINGS_EDITOR_FONT_PREVIEW = "settings.editor.font.preview";
     public static final String SETTINGS_EDITOR_FONT_PREVIEW_TOOLTIP_NO_FALLBACK = "settings.editor.font.preview.tooltip.no_fallback";
     public static final String SETTINGS_EDITOR_FONT_PREVIEW_TOOLTIP_WITH_FALLBACK = "settings.editor.font.preview.tooltip.with_fallback";

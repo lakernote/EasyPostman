@@ -220,7 +220,7 @@ public class RequestTreePopupMenu {
         // 重命名
         JMenuItem rename = createMenuItem(
                 MessageKeys.COLLECTIONS_MENU_RENAME,
-                "icons/refresh.svg",
+                "icons/edit.svg",
                 e -> coordinator.renameSelectedItem()
         );
         rename.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F2, 0));

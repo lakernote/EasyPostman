@@ -463,7 +463,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 270));
 
         JLabel label = new JLabel(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS));
-        label.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+        label.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
         label.setForeground(getTextPrimaryColor());
         label.setToolTipText(I18nUtil.getMessage(MessageKeys.SETTINGS_GENERAL_SIDEBAR_TABS_TOOLTIP));
         label.setPreferredSize(new Dimension(labelWidth, 32));
@@ -1267,7 +1267,7 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                 return primaryFont;
             }
             Font font = getFont();
-            return font == null ? new Font(Font.MONOSPACED, Font.PLAIN, 13) : font;
+            return font == null ? FontsUtil.getDefaultFont(Font.PLAIN) : font;
         }
 
         private Font resolveFallbackFont(Font primary) {
@@ -1315,10 +1315,10 @@ public class UISettingsPanelModern extends ModernSettingsPanel {
                                                       boolean cellHasFocus) {
             visibleCheckBox.setSelected(value.visible);
             titleLabel.setText(value.tab.getDisplayTitle());
-            titleLabel.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
+            titleLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -1));
             titleLabel.setForeground(getTextPrimaryColor());
 
-            dragHintLabel.setFont(com.laker.postman.util.FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
+            dragHintLabel.setFont(FontsUtil.getDefaultFontWithOffset(Font.PLAIN, -2));
             dragHintLabel.setForeground(getTextSecondaryColor());
 
             Color background = isSelected ? list.getSelectionBackground() : list.getBackground();

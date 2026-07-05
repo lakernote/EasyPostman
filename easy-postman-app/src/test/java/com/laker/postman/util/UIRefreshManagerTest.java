@@ -2,6 +2,7 @@ package com.laker.postman.util;
 
 import com.laker.postman.common.IRefreshable;
 import com.laker.postman.test.AbstractSwingUiTest;
+import lombok.Getter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
@@ -72,6 +73,7 @@ public class UIRefreshManagerTest extends AbstractSwingUiTest {
         });
     }
 
+    @Getter
     private static class CountingRefreshablePanel extends JPanel implements IRefreshable {
         private int refreshCount;
         private int updateUiCount;
@@ -90,14 +92,6 @@ public class UIRefreshManagerTest extends AbstractSwingUiTest {
         void resetCounters() {
             refreshCount = 0;
             updateUiCount = 0;
-        }
-
-        int getRefreshCount() {
-            return refreshCount;
-        }
-
-        int getUpdateUiCount() {
-            return updateUiCount;
         }
     }
 }

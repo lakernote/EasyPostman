@@ -103,8 +103,8 @@ public class UISettingsPanelLayoutTest {
         assertEquals(zh.getProperty("settings.editor.font_fallback_name"), "缺字回退字体:");
         assertTrue(zh.getProperty("settings.editor.description").contains("主字体缺字"));
         assertTrue(zh.getProperty("settings.editor.font_fallback_name.tooltip").contains("符号或 emoji"));
-        assertEquals(zh.getProperty("settings.editor.font.default"), "自动选择");
-        assertEquals(zh.getProperty("settings.editor.font.fallback_auto"), "自动选择（推荐）");
+        assertFalse(zh.containsKey("settings.editor.font.default"));
+        assertFalse(zh.containsKey("settings.editor.font.fallback_auto"));
         assertFalse(zh.containsKey("settings.editor.font.fallback_none"));
 
         assertEquals(en.getProperty("settings.editor.title"), "Editor Font");
@@ -112,19 +112,11 @@ public class UISettingsPanelLayoutTest {
         assertEquals(en.getProperty("settings.editor.font_fallback_name"), "Missing Glyph Fallback Font:");
         assertTrue(en.getProperty("settings.editor.description").contains("missing glyphs"));
         assertTrue(en.getProperty("settings.editor.font_fallback_name.tooltip").contains("symbols, or emoji"));
-        assertEquals(en.getProperty("settings.editor.font.default"), "Auto");
-        assertEquals(en.getProperty("settings.editor.font.fallback_auto"), "Auto (Recommended)");
+        assertFalse(en.containsKey("settings.editor.font.default"));
+        assertFalse(en.containsKey("settings.editor.font.fallback_auto"));
         assertFalse(en.containsKey("settings.editor.font.fallback_none"));
-        assertTrue(messageKeysSource.contains("""
-                @Deprecated(since = "6.0.12")
-                    public static final String SETTINGS_EDITOR_FONT_DEFAULT = "settings.editor.font.default";
-                """));
-        assertTrue(messageKeysSource.contains("""
-                @Deprecated(since = "6.0.12")
-                    public static final String SETTINGS_EDITOR_FONT_FALLBACK_AUTO = "settings.editor.font.fallback_auto";
-                """));
-        assertTrue(messageKeysSource.contains("SETTINGS_EDITOR_FONT_DEFAULT = \"settings.editor.font.default\""));
-        assertTrue(messageKeysSource.contains("SETTINGS_EDITOR_FONT_FALLBACK_AUTO = \"settings.editor.font.fallback_auto\""));
+        assertFalse(messageKeysSource.contains("SETTINGS_EDITOR_FONT_DEFAULT ="));
+        assertFalse(messageKeysSource.contains("SETTINGS_EDITOR_FONT_FALLBACK_AUTO ="));
         assertFalse(messageKeysSource.contains("SETTINGS_EDITOR_FONT_FALLBACK_NONE"));
     }
 

@@ -16,7 +16,6 @@ import java.util.stream.Collectors;
 @UtilityClass
 public class EditorFontManager {
 
-    public static final String FALLBACK_FONT_CLIENT_PROPERTY = EditorFontProperties.FALLBACK_FONT_CLIENT_PROPERTY;
     private static final String JETBRAINS_MONO = "JetBrains Mono";
     private static final String PINGFANG_SC = "PingFang SC";
     private static final String MICROSOFT_YAHEI_UI = "Microsoft YaHei UI";
@@ -133,12 +132,10 @@ public class EditorFontManager {
             return;
         }
         area.setFont(getConfiguredEditorFont());
-        Font fallbackFont = getConfiguredEditorFallbackFont();
-        if (fallbackFont == null) {
-            area.putClientProperty(FALLBACK_FONT_CLIENT_PROPERTY, null);
-        } else {
-            area.putClientProperty(FALLBACK_FONT_CLIENT_PROPERTY, fallbackFont);
-        }
+        area.putClientProperty(
+                EditorFontProperties.FALLBACK_FONT_CLIENT_PROPERTY,
+                getConfiguredEditorFallbackFont()
+        );
     }
 
     static String resolveDefaultEditorFontFamily(Collection<String> availableFamilyNames, String osName) {

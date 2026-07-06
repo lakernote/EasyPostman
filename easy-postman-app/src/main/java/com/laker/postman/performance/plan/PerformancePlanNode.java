@@ -42,7 +42,6 @@ public class PerformancePlanNode {
     SsePerformanceData ssePerformanceData;
     WebSocketPerformanceData webSocketPerformanceData;
     RequestExecutionScope requestExecutionScope;
-    boolean requestInheritanceSnapshot;
     List<PerformancePlanNode> children;
 
     @Builder
@@ -62,7 +61,6 @@ public class PerformancePlanNode {
                                SsePerformanceData ssePerformanceData,
                                WebSocketPerformanceData webSocketPerformanceData,
                                RequestExecutionScope requestExecutionScope,
-                               Boolean requestInheritanceSnapshot,
                                List<PerformancePlanNode> children) {
         this.name = name;
         this.type = type;
@@ -86,7 +84,6 @@ public class PerformancePlanNode {
         this.ssePerformanceData = PerformancePlanDataCopies.copySsePerformanceData(ssePerformanceData);
         this.webSocketPerformanceData = PerformancePlanDataCopies.copyWebSocketPerformanceData(webSocketPerformanceData);
         this.requestExecutionScope = PerformancePlanDataCopies.copyRequestExecutionScope(canonicalRequestExecutionScope(type, requestExecutionScope, canonicalSnapshot));
-        this.requestInheritanceSnapshot = requestInheritanceSnapshot != null && requestInheritanceSnapshot;
         this.children = Collections.unmodifiableList(new ArrayList<>(children == null ? List.of() : children));
     }
 

@@ -14,9 +14,14 @@ import com.laker.postman.panel.performance.controller.ConditionPropertyPanel;
 import com.laker.postman.panel.performance.controller.LoopPropertyPanel;
 import com.laker.postman.panel.performance.controller.WhilePropertyPanel;
 import com.laker.postman.panel.performance.extractor.ExtractorPropertyPanel;
+import com.laker.postman.panel.performance.tree.PerformanceRequestNodeStateSynchronizer;
+import com.laker.postman.panel.performance.tree.PerformanceRequestScopeResolver;
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.performance.plan.PerformanceRequestSnapshotMapper;
 import com.laker.postman.panel.performance.threadgroup.ThreadGroupPropertyPanel;
 import com.laker.postman.panel.performance.timer.TimerPropertyPanel;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.JsonUtil;
 import com.laker.postman.util.MessageKeys;
@@ -189,7 +194,10 @@ final class PerformanceTreeSelectionSupport {
                 } else {
                     propertyCardLayout.show(propertyPanel, requestCard);
                     currentRequestNodeSetter.accept(node);
+                    PerformanceRequestNodeStateSynchronizer.refreshFromCollection(nodeData);
                     syncRequestStructureAction.accept(node, nodeData);
+                    treeModel.nodeChanged(node);
+                    syncVariableResolutionScope(nodeData);
                     switchRequestEditorAction.accept(nodeData.httpRequestItem);
                 }
             }
@@ -286,5 +294,24 @@ final class PerformanceTreeSelectionSupport {
             propertyCardLayout.show(propertyPanel, emptyCard);
         }
         currentRequestNodeSetter.accept(null);
+    }
+
+    private void syncVariableResolutionScope(PerformanceTreeNode nodeData) {
+        RequestExecutionScope scope = resolveVariableResolutionScope(nodeData);
+        RequestExecutionContext.setCurrentScope(scope);
+    }
+
+    private RequestExecutionScope resolveVariableResolutionScope(PerformanceTreeNode nodeData) {
+        if (nodeData == null) {
+            return RequestExecutionScope.empty();
+        }
+        var latestCollectionScope = PerformanceRequestNodeStateSynchronizer.refreshLatestCollectionScope(nodeData);
+        if (latestCollectionScope.isPresent()) {
+            return latestCollectionScope.get();
+        }
+        if (nodeData.requestExecutionScope != null) {
+            return nodeData.requestExecutionScope;
+        }
+        return PerformanceRequestSnapshotMapper.toRequestExecutionScope(nodeData.requestSnapshot);
     }
 }

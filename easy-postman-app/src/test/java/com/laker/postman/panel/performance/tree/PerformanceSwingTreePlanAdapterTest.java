@@ -15,6 +15,7 @@ import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.plan.PerformancePlanDocumentCompiler;
 import com.laker.postman.performance.plan.PerformancePlanNode;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
+import com.laker.postman.performance.plan.PerformanceRequestSnapshotMapper;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.variable.RequestExecutionScope;
@@ -146,13 +147,101 @@ public class PerformanceSwingTreePlanAdapterTest {
     }
 
     @Test
+    public void shouldRefreshLoadedRequestExecutionScopeFromCollectionTreeWhenSourceRequestStillExists() {
+        HttpRequestItem collectionRequest = requestItem("latest-scope-request");
+        RequestGroup group = new RequestGroup("scope group");
+        group.setVariables(new ArrayList<>(List.of(new Variable(true, "testname", "1111"))));
+        DefaultMutableTreeNode collectionRoot = new DefaultMutableTreeNode("root");
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
+        groupNode.add(CollectionTreeNodes.requestNode(collectionRequest));
+        collectionRoot.add(groupNode);
+
+        CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
+        try {
+            DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(
+                    new PerformanceTreeNode(
+                            collectionRequest.getName(),
+                            NodeType.REQUEST,
+                            collectionRequest
+                    )
+            );
+            PerformancePlanNode firstSnapshot = PerformanceSwingTreePlanAdapter.toDocumentNode(performanceRequestNode);
+            assertEquals(firstSnapshot.getRequestExecutionScope().getGroupVariable("testname"), "1111");
+
+            DefaultMutableTreeNode loadedTreeNode = PerformanceSwingTreePlanAdapter.toTreeNode(firstSnapshot);
+            group.setVariables(new ArrayList<>(List.of(new Variable(true, "testname", "2222"))));
+
+            PerformancePlanNode refreshedSnapshot = PerformanceSwingTreePlanAdapter.toDocumentNode(loadedTreeNode);
+
+            assertEquals(refreshedSnapshot.getRequestExecutionScope().getGroupVariable("testname"), "2222");
+            assertEquals(refreshedSnapshot.getRequestSnapshot().getExecutionScope().getGroupVariable("testname"), "2222");
+        } finally {
+            CollectionTreeRootRegistry.clear();
+        }
+    }
+
+    @Test
+    public void shouldBuildRequestSnapshotFromCurrentItemWhenExistingSnapshotIsStale() {
+        HttpRequestItem oldItem = requestItem("stale-snapshot-request");
+        oldItem.setUrl("https://httpbin.org/get?test={{testname}}");
+        HttpRequestItem latestItem = requestItem("stale-snapshot-request");
+        latestItem.setUrl("https://httpbingo.org/get?test={{testname}}");
+        PerformanceTreeNode requestData = new PerformanceTreeNode(latestItem.getName(), NodeType.REQUEST, latestItem);
+        requestData.requestExecutionScope = RequestExecutionScope.fromGroupVariables(Map.of("testname", "888"));
+        requestData.requestSnapshot = PerformanceRequestSnapshotMapper.fromHttpRequestItem(
+                oldItem,
+                RequestExecutionScope.fromGroupVariables(Map.of("testname", "333"))
+        );
+        DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(requestData);
+
+        PerformancePlanNode documentNode = PerformanceSwingTreePlanAdapter.toDocumentNode(performanceRequestNode);
+
+        assertEquals(documentNode.getRequestSnapshot().getUrl(), "https://httpbingo.org/get?test={{testname}}");
+        assertEquals(documentNode.getRequestSnapshot().getExecutionScope().getGroupVariable("testname"), "888");
+    }
+
+    @Test
+    public void shouldBuildRequestSnapshotFromLatestCollectionRequestWhenSourceRequestExists() {
+        HttpRequestItem staleItem = requestItem("linked-latest-request");
+        staleItem.setUrl("https://httpbin.org/get?test={{testname}}");
+        HttpRequestItem latestCollectionItem = requestItem("linked-latest-request");
+        latestCollectionItem.setName("latest collection request");
+        latestCollectionItem.setUrl("https://httpbingo.org/get?test={{testname}}");
+        RequestGroup group = new RequestGroup("latest group");
+        group.setVariables(new ArrayList<>(List.of(new Variable(true, "testname", "888"))));
+        DefaultMutableTreeNode collectionRoot = new DefaultMutableTreeNode("root");
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
+        groupNode.add(CollectionTreeNodes.requestNode(latestCollectionItem));
+        collectionRoot.add(groupNode);
+
+        CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
+        try {
+            PerformanceTreeNode requestData = new PerformanceTreeNode(staleItem.getName(), NodeType.REQUEST, staleItem);
+            requestData.requestSnapshot = PerformanceRequestSnapshotMapper.fromHttpRequestItem(
+                    staleItem,
+                    RequestExecutionScope.fromGroupVariables(Map.of("testname", "333"))
+            );
+            DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(requestData);
+
+            PerformancePlanNode documentNode = PerformanceSwingTreePlanAdapter.toDocumentNode(performanceRequestNode);
+
+            assertEquals(documentNode.getName(), "latest collection request");
+            assertEquals(documentNode.getRequestSnapshot().getName(), "latest collection request");
+            assertEquals(documentNode.getHttpRequestItem().getUrl(), "https://httpbingo.org/get?test={{testname}}");
+            assertEquals(documentNode.getRequestSnapshot().getUrl(), "https://httpbingo.org/get?test={{testname}}");
+            assertEquals(documentNode.getRequestSnapshot().getExecutionScope().getGroupVariable("testname"), "888");
+        } finally {
+            CollectionTreeRootRegistry.clear();
+        }
+    }
+
+    @Test
     public void shouldPreserveLoadedRequestExecutionScope() {
         PerformancePlanNode loadedRequest = PerformancePlanNode.builder()
                 .name("Loaded Request")
                 .type(NodeType.REQUEST)
                 .httpRequestItem(requestItem("loaded-scope-request"))
                 .requestExecutionScope(RequestExecutionScope.fromGroupVariables(Map.of("tenantId", "loaded-tenant")))
-                .requestInheritanceSnapshot(true)
                 .build();
 
         DefaultMutableTreeNode treeNode = PerformanceSwingTreePlanAdapter.toTreeNode(loadedRequest);
@@ -171,7 +260,6 @@ public class PerformanceSwingTreePlanAdapterTest {
                 .type(NodeType.REQUEST)
                 .httpRequestItem(requestItem("loaded-scope-copy-request"))
                 .requestExecutionScope(RequestExecutionScope.fromGroupVariables(Map.of("tenantId", "copied-tenant")))
-                .requestInheritanceSnapshot(true)
                 .build();
 
         DefaultMutableTreeNode treeNode = PerformanceSwingTreePlanAdapter.toTreeNode(loadedRequest);

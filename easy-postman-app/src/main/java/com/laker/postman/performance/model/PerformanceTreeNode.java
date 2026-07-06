@@ -36,7 +36,6 @@ public class PerformanceTreeNode {
     public WebSocketPerformanceData webSocketPerformanceData; // WebSocket 压测配置，REQUEST/WS 节点共用
     public boolean enabled = true;        // 是否启用，默认启用
     public RequestExecutionScope requestExecutionScope; // REQUEST 节点执行所需分组变量快照
-    public boolean requestInheritanceSnapshot = false; // REQUEST 节点是否已快照集合分组继承
 
     public PerformanceTreeNode(String name, NodeType type) {
         this.name = name;

@@ -35,7 +35,6 @@ public class PerformanceCorePlanNode {
     TimerData timerData;
     SsePerformanceData ssePerformanceData;
     WebSocketPerformanceData webSocketPerformanceData;
-    boolean requestInheritanceSnapshot;
     List<PerformanceCorePlanNode> children;
 
     @Builder
@@ -53,7 +52,6 @@ public class PerformanceCorePlanNode {
                                    TimerData timerData,
                                    SsePerformanceData ssePerformanceData,
                                    WebSocketPerformanceData webSocketPerformanceData,
-                                   Boolean requestInheritanceSnapshot,
                                    List<PerformanceCorePlanNode> children) {
         this.name = name;
         this.type = type;
@@ -69,7 +67,6 @@ public class PerformanceCorePlanNode {
         this.timerData = PerformancePlanCoreDataCopies.copyTimerData(timerData);
         this.ssePerformanceData = PerformancePlanCoreDataCopies.copySsePerformanceData(ssePerformanceData);
         this.webSocketPerformanceData = PerformancePlanCoreDataCopies.copyWebSocketPerformanceData(webSocketPerformanceData);
-        this.requestInheritanceSnapshot = requestInheritanceSnapshot != null && requestInheritanceSnapshot;
         this.children = Collections.unmodifiableList(new ArrayList<>(children == null ? List.of() : children));
     }
 

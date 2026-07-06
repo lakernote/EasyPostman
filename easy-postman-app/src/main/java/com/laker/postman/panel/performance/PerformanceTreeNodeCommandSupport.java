@@ -10,6 +10,7 @@ import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.common.component.dialog.TextInputDialog;
 import com.laker.postman.panel.collections.RequestSelectionDialogSupport;
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.panel.performance.tree.PerformanceRequestNodeStateSynchronizer;
 import com.laker.postman.panel.performance.tree.PerformanceTreeNodeFactory;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -263,7 +264,9 @@ final class PerformanceTreeNodeCommandSupport {
 
         List<DefaultMutableTreeNode> newNodes = new ArrayList<>();
         for (HttpRequestItem reqItem : supportedList) {
-            DefaultMutableTreeNode req = new DefaultMutableTreeNode(new PerformanceTreeNode(reqItem.getName(), NodeType.REQUEST, reqItem));
+            PerformanceTreeNode requestData = new PerformanceTreeNode(reqItem.getName(), NodeType.REQUEST);
+            PerformanceRequestNodeStateSynchronizer.replaceRequestItem(requestData, reqItem);
+            DefaultMutableTreeNode req = new DefaultMutableTreeNode(requestData);
             treeModel.insertNodeInto(req, parentNode, parentNode.getChildCount());
             treeSupport.ensureRequestStructure(req, (PerformanceTreeNode) req.getUserObject());
             newNodes.add(req);

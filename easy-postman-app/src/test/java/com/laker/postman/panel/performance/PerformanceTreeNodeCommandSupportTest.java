@@ -2,6 +2,8 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestItemProtocolEnum;
 import org.testng.annotations.Test;
 
 import javax.swing.JPanel;
@@ -11,11 +13,14 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 import java.awt.CardLayout;
 import java.awt.event.ActionEvent;
+import java.lang.reflect.Method;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -102,15 +107,42 @@ public class PerformanceTreeNodeCommandSupportTest {
         assertTrue(fixture.saveCount.get() >= 1);
     }
 
+    @Test
+    public void addSelectedRequestsShouldStorePerformanceOwnedRequestCopy() throws Exception {
+        TreeFixture fixture = new TreeFixture();
+        HttpRequestItem selectedRequest = new HttpRequestItem();
+        selectedRequest.setId("selected-request");
+        selectedRequest.setName("Selected Request");
+        selectedRequest.setUrl("https://example.test/selected");
+        selectedRequest.setProtocol(RequestItemProtocolEnum.HTTP);
+
+        Method method = PerformanceTreeNodeCommandSupport.class.getDeclaredMethod(
+                "addSelectedRequests",
+                DefaultMutableTreeNode.class,
+                List.class
+        );
+        method.setAccessible(true);
+        method.invoke(fixture.commandSupport, fixture.threadGroup, List.of(selectedRequest));
+
+        DefaultMutableTreeNode addedNode = (DefaultMutableTreeNode) fixture.threadGroup.getChildAt(1);
+        PerformanceTreeNode addedData = (PerformanceTreeNode) addedNode.getUserObject();
+        assertNotSame(addedData.httpRequestItem, selectedRequest);
+        assertEquals(addedData.httpRequestItem.getUrl(), "https://example.test/selected");
+        assertSame(fixture.switchedRequest.get(), addedData.httpRequestItem);
+    }
+
     private static final class TreeFixture {
         private final DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("root", NodeType.ROOT));
         private final DefaultMutableTreeNode threadGroup = new DefaultMutableTreeNode(new PerformanceTreeNode("group", NodeType.THREAD_GROUP));
         private final DefaultMutableTreeNode request = new DefaultMutableTreeNode(new PerformanceTreeNode("request", NodeType.REQUEST));
         private final DefaultTreeModel treeModel;
         private final JTree tree;
+        private final CardLayout propertyCardLayout = new CardLayout();
+        private final JPanel propertyPanel = new JPanel(propertyCardLayout);
         private final AtomicInteger saveCount = new AtomicInteger();
         private final AtomicInteger persistCount = new AtomicInteger();
         private final AtomicReference<DefaultMutableTreeNode> currentRequest = new AtomicReference<>();
+        private final AtomicReference<HttpRequestItem> switchedRequest = new AtomicReference<>();
         private final PerformanceTreeNodeCommandSupport commandSupport;
 
         private TreeFixture() {
@@ -118,17 +150,17 @@ public class PerformanceTreeNodeCommandSupportTest {
             threadGroup.add(request);
             treeModel = new DefaultTreeModel(root);
             tree = new JTree(treeModel);
+            propertyPanel.add(new JPanel(), "request");
             PerformanceTreeSupport treeSupport = new PerformanceTreeSupport(treeModel);
             commandSupport = new PerformanceTreeNodeCommandSupport(
                     new JPanel(),
                     tree,
                     treeModel,
-                    new CardLayout(),
-                    new JPanel(),
+                    propertyCardLayout,
+                    propertyPanel,
                     treeSupport,
                     persistCount::incrementAndGet,
-                    ignored -> {
-                    },
+                    switchedRequest::set,
                     currentRequest::get,
                     currentRequest::set,
                     saveCount::incrementAndGet,

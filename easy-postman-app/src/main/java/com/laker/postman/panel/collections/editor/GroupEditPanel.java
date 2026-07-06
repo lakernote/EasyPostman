@@ -544,6 +544,7 @@ public class GroupEditPanel extends JPanel {
         if (onSave != null) {
             onSave.run();
         }
+        UiSingletonFactory.getInstance(RequestEditorPanel.class).refreshSelectedRequestExecutionScope();
 
         // 如果名称改变了，更新 Tab 标题
         if (nameChanged) {

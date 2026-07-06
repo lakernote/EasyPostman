@@ -2,6 +2,11 @@ package com.laker.postman.panel.collections.editor.request;
 
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.component.ToolWindowStripeMetrics;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.service.collections.CollectionTreeRootRegistry;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
+import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.testng.annotations.Test;
 
@@ -19,6 +24,7 @@ import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -84,6 +90,38 @@ public class RequestSideAssistantPanelLayoutTest extends AbstractSwingUiTest {
         assertTrue(selectedBackground.x <= 1);
         assertTrue(selectedBackground.width <= 27);
         assertTrue(selectedBackground.getCenterX() < actionSize.width / 2.0);
+    }
+
+    @Test
+    public void assistantRefreshShouldClearStaleGroupScopeWhenRequestIsMissing() {
+        HttpRequestItem missingRequest = new HttpRequestItem();
+        missingRequest.setId("missing-request");
+        RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromGroupVariables(Map.of("testname", "333")));
+        CollectionTreeRootRegistry.clear();
+        try {
+            RequestSideAssistantPanel panel = new RequestSideAssistantPanel(() -> missingRequest);
+            JLabel variablesTool = collectIconLabels(findToolbar(panel)).get(0);
+
+            MouseEvent mousePressed = new MouseEvent(
+                    variablesTool,
+                    MouseEvent.MOUSE_PRESSED,
+                    System.currentTimeMillis(),
+                    0,
+                    1,
+                    1,
+                    1,
+                    false,
+                    MouseEvent.BUTTON1
+            );
+            for (var listener : variablesTool.getMouseListeners()) {
+                listener.mousePressed(mousePressed);
+            }
+
+            assertEquals(VariableResolver.resolveVariable("testname"), null);
+        } finally {
+            RequestExecutionContext.clearCurrentScope();
+            CollectionTreeRootRegistry.clear();
+        }
     }
 
     private static List<JLabel> collectIconLabels(JPanel panel) {

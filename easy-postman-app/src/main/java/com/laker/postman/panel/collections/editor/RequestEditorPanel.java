@@ -13,6 +13,8 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.SavedResponse;
 import com.laker.postman.service.collections.RequestSaveEventPublisher;
 import com.laker.postman.service.setting.SettingManager;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import lombok.Getter;
@@ -60,6 +62,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
     private RequestEditorTabLifecycleController tabLifecycleController;
     private RequestEditorTabRemovalController tabRemovalController;
     private RequestEditorTabInitializationScheduler tabInitializationScheduler;
+    private RequestEditorExecutionScopeSynchronizer executionScopeSynchronizer;
     private final CollectionTreeEditorGateway collectionTreeGateway = new CollectionTreeEditorGateway();
 
 
@@ -206,11 +209,15 @@ public class RequestEditorPanel extends UiSingletonPanel {
             @Override
             public void componentAdded(ContainerEvent e) {
                 if (tabbedPane.getTabCount() > 0 && autoInitializeSelectedTabOnTabAdd) {
+                    refreshSelectedRequestExecutionScope();
                     tabInitializationScheduler.initializeSelectedTabSoon();
                 }
             }
         });
-        tabbedPane.addChangeListener(e -> tabInitializationScheduler.initializeSelectedTabSoon());
+        tabbedPane.addChangeListener(e -> {
+            refreshSelectedRequestExecutionScope();
+            tabInitializationScheduler.initializeSelectedTabSoon();
+        });
     }
 
     private void installTransientTabAndDragSupport() {
@@ -226,6 +233,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
     }
 
     private void createTabControllers() {
+        executionScopeSynchronizer = new RequestEditorExecutionScopeSynchronizer();
         tabStateController = new RequestEditorTabStateController(tabbedPane, transientTabManager::pinIfTransient);
         tabRemovalController = new RequestEditorTabRemovalController(tabbedPane, transientTabManager);
         saveController = new RequestEditorSaveController(
@@ -244,7 +252,7 @@ public class RequestEditorPanel extends UiSingletonPanel {
         tabOpenController = new RequestEditorTabOpenController(
                 tabbedPane,
                 transientTabManager,
-                new RequestEditorExecutionScopeSynchronizer(),
+                executionScopeSynchronizer,
                 this::cancelStartupRestoreAutoSelectionIfNeeded,
                 this::addPlusTab,
                 this::isPlusTab,
@@ -260,6 +268,19 @@ public class RequestEditorPanel extends UiSingletonPanel {
      */
     void initializeSelectedTabSoon() {
         tabInitializationScheduler.initializeSelectedTabSoon();
+    }
+
+    void refreshSelectedRequestExecutionScope() {
+        if (executionScopeSynchronizer == null || tabbedPane == null) {
+            return;
+        }
+        Component selectedComponent = tabbedPane.getSelectedComponent();
+        if (selectedComponent instanceof RequestEditSubPanel subPanel
+                && subPanel.getPanelType() == RequestEditSubPanelType.NORMAL) {
+            executionScopeSynchronizer.syncScopeForRequest(subPanel.getId());
+            return;
+        }
+        RequestExecutionContext.setCurrentScope(RequestExecutionScope.empty());
     }
 
     public void initializeSelectedStartupRestoreTab() {

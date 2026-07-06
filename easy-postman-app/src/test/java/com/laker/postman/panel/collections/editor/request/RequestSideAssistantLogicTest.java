@@ -11,11 +11,18 @@ import com.laker.postman.request.model.HttpParam;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.service.collections.CollectionDocumentRegistry;
+import com.laker.postman.service.collections.CollectionTreeNodes;
+import com.laker.postman.service.collections.CollectionTreeRootRegistry;
+import com.laker.postman.service.collections.CollectionRequestExecutionScopeResolver;
 import com.laker.postman.service.variable.IterationDataVariableService;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
+import com.laker.postman.service.variable.VariableResolver;
 import com.laker.postman.service.variable.VariablesService;
 import com.laker.postman.variable.VariableType;
 import org.testng.annotations.Test;
 
+import javax.swing.tree.DefaultMutableTreeNode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
@@ -184,5 +191,32 @@ public class RequestSideAssistantLogicTest {
         } finally {
             CollectionDocumentRegistry.registerDocumentSupplier(CollectionDocument::empty);
         }
+    }
+
+    @Test
+    public void variableResolutionScopeSyncShouldUseLatestCollectionGroupVariables() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setId("request-scope-sync");
+        item.setUrl("{{testname}}");
+        RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromGroupVariables(Map.of("testname", "333")));
+        registerCollectionRequest(item, "888");
+        try {
+            assertTrue(CollectionRequestExecutionScopeResolver.syncCurrentScope(item));
+
+            assertEquals(VariableResolver.resolveVariable("testname"), "888");
+        } finally {
+            RequestExecutionContext.clearCurrentScope();
+            CollectionTreeRootRegistry.clear();
+        }
+    }
+
+    private static void registerCollectionRequest(HttpRequestItem item, String variableValue) {
+        RequestGroup group = new RequestGroup("Group");
+        group.setVariables(List.of(new Variable(true, "testname", variableValue)));
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
+        groupNode.add(CollectionTreeNodes.requestNode(item));
+        rootNode.add(groupNode);
+        CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
     }
 }

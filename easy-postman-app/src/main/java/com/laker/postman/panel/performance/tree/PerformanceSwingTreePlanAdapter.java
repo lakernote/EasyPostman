@@ -9,14 +9,18 @@ import com.laker.postman.performance.plan.PerformancePlanDataCopies;
 import com.laker.postman.performance.plan.PerformancePlanDocument;
 import com.laker.postman.performance.plan.PerformancePlanNode;
 import com.laker.postman.performance.plan.PerformanceRequestSnapshotMapper;
+import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.service.collections.ActiveCollectionTreeNodeRepository;
+import com.laker.postman.service.collections.CollectionRequestExecutionScopeResolver;
+import com.laker.postman.service.collections.CollectionRequestItemResolver;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import lombok.experimental.UtilityClass;
 
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @UtilityClass
 public class PerformanceSwingTreePlanAdapter {
@@ -38,8 +42,10 @@ public class PerformanceSwingTreePlanAdapter {
         if (data == null) {
             return null;
         }
+        HttpRequestItem effectiveRequestItem = resolveEffectiveRequestItem(data);
+        RequestExecutionScope requestExecutionScope = resolveRequestExecutionScope(data);
         return PerformancePlanNode.builder()
-                .name(data.name)
+                .name(resolveNodeName(data, effectiveRequestItem))
                 .type(data.type)
                 .enabled(data.enabled)
                 .threadGroupData(data.threadGroupData)
@@ -47,15 +53,14 @@ public class PerformanceSwingTreePlanAdapter {
                 .loopData(data.loopData)
                 .conditionData(data.conditionData)
                 .whileData(data.whileData)
-                .httpRequestItem(resolveEffectiveRequestItem(data))
-                .requestSnapshot(resolveRequestSnapshot(data))
+                .httpRequestItem(effectiveRequestItem)
+                .requestSnapshot(resolveRequestSnapshot(data, effectiveRequestItem, requestExecutionScope))
                 .assertionData(data.assertionData)
                 .extractorData(data.extractorData)
                 .timerData(data.timerData)
                 .ssePerformanceData(data.ssePerformanceData)
                 .webSocketPerformanceData(data.webSocketPerformanceData)
-                .requestExecutionScope(resolveRequestExecutionScope(data))
-                .requestInheritanceSnapshot(resolveRequestInheritanceSnapshot(data))
+                .requestExecutionScope(requestExecutionScope)
                 .children(children(treeNode))
                 .build();
     }
@@ -105,26 +110,48 @@ public class PerformanceSwingTreePlanAdapter {
         data.ssePerformanceData = PerformancePlanDataCopies.copySsePerformanceData(node.getSsePerformanceData());
         data.webSocketPerformanceData = PerformancePlanDataCopies.copyWebSocketPerformanceData(node.getWebSocketPerformanceData());
         data.requestExecutionScope = PerformancePlanDataCopies.copyRequestExecutionScope(node.getRequestExecutionScope());
-        data.requestInheritanceSnapshot = node.isRequestInheritanceSnapshot();
         return data;
     }
 
-    private com.laker.postman.performance.core.request.PerformanceRequestSnapshot resolveRequestSnapshot(PerformanceTreeNode data) {
+    private String resolveNodeName(PerformanceTreeNode data, HttpRequestItem effectiveRequestItem) {
+        if (data != null
+                && data.type == NodeType.REQUEST
+                && effectiveRequestItem != null
+                && effectiveRequestItem.getName() != null
+                && !effectiveRequestItem.getName().trim().isEmpty()) {
+            return effectiveRequestItem.getName();
+        }
+        return data == null ? null : data.name;
+    }
+
+    private PerformanceRequestSnapshot resolveRequestSnapshot(PerformanceTreeNode data,
+                                                              HttpRequestItem item,
+                                                              RequestExecutionScope scope) {
         if (data == null || data.type != NodeType.REQUEST) {
             return null;
         }
-        if (data.requestSnapshot != null) {
-            return data.requestSnapshot;
+        if (item != null) {
+            return PerformanceRequestSnapshotMapper.fromHttpRequestItem(item, scope);
         }
-        return PerformanceRequestSnapshotMapper.fromHttpRequestItem(
-                resolveEffectiveRequestItem(data),
-                resolveRequestExecutionScope(data)
-        );
+        return withExecutionScope(data.requestSnapshot, scope);
+    }
+
+    private PerformanceRequestSnapshot withExecutionScope(PerformanceRequestSnapshot snapshot, RequestExecutionScope scope) {
+        if (snapshot == null || scope == null) {
+            return snapshot;
+        }
+        return snapshot.toBuilder()
+                .executionScope(PerformanceRequestSnapshotMapper.toScopeSnapshot(scope))
+                .build();
     }
 
     private RequestExecutionScope resolveRequestExecutionScope(PerformanceTreeNode data) {
         if (data == null || data.type != NodeType.REQUEST || data.httpRequestItem == null) {
             return null;
+        }
+        var latestCollectionScope = PerformanceRequestScopeResolver.resolveLatestCollectionScope(data);
+        if (latestCollectionScope.isPresent()) {
+            return latestCollectionScope.get();
         }
         if (data.requestExecutionScope != null) {
             return data.requestExecutionScope;
@@ -133,10 +160,7 @@ public class PerformanceSwingTreePlanAdapter {
         if (requestId == null || requestId.trim().isEmpty()) {
             return null;
         }
-        return new ActiveCollectionTreeNodeRepository()
-                .findNodeByRequestId(requestId)
-                .map(SwingCollectionInheritanceAdapter::getMergedGroupVariables)
-                .map(RequestExecutionScope::fromVariables)
+        return CollectionRequestExecutionScopeResolver.resolveCurrentScope(requestId)
                 .orElse(null);
     }
 
@@ -144,18 +168,27 @@ public class PerformanceSwingTreePlanAdapter {
         if (data == null || data.type != NodeType.REQUEST || data.httpRequestItem == null) {
             return data == null ? null : data.httpRequestItem;
         }
-        if (data.requestInheritanceSnapshot) {
-            return data.httpRequestItem;
-        }
         String requestId = data.httpRequestItem.getId();
         if (requestId == null || requestId.trim().isEmpty()) {
             return data.httpRequestItem;
         }
+        HttpRequestItem baseItem = resolveLatestCollectionRequestItem(data).orElse(data.httpRequestItem);
         return new ActiveCollectionTreeNodeRepository()
                 .findNodeByRequestId(requestId)
                 .map(SwingCollectionInheritanceAdapter::collectGroupChain)
-                .map(groupChain -> applyCollectionInheritance(data.httpRequestItem, groupChain))
-                .orElse(data.httpRequestItem);
+                .map(groupChain -> applyCollectionInheritance(baseItem, groupChain))
+                .orElse(baseItem);
+    }
+
+    private Optional<HttpRequestItem> resolveLatestCollectionRequestItem(PerformanceTreeNode data) {
+        if (data == null || data.type != NodeType.REQUEST || data.httpRequestItem == null) {
+            return Optional.empty();
+        }
+        String requestId = data.httpRequestItem.getId();
+        if (requestId == null || requestId.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        return CollectionRequestItemResolver.resolveCurrentRequest(requestId);
     }
 
     private HttpRequestItem applyCollectionInheritance(HttpRequestItem item, List<RequestGroup> groupChain) {
@@ -163,24 +196,6 @@ public class PerformanceSwingTreePlanAdapter {
             return item;
         }
         return CollectionInheritance.apply(item, groupChain);
-    }
-
-    private boolean resolveRequestInheritanceSnapshot(PerformanceTreeNode data) {
-        if (data == null || data.type != NodeType.REQUEST || data.httpRequestItem == null) {
-            return false;
-        }
-        if (data.requestInheritanceSnapshot) {
-            return true;
-        }
-        String requestId = data.httpRequestItem.getId();
-        if (requestId == null || requestId.trim().isEmpty()) {
-            return false;
-        }
-        return new ActiveCollectionTreeNodeRepository()
-                .findNodeByRequestId(requestId)
-                .map(SwingCollectionInheritanceAdapter::collectGroupChain)
-                .map(groupChain -> !groupChain.isEmpty())
-                .orElse(false);
     }
 
     private PerformanceTreeNode nodeData(DefaultMutableTreeNode node) {

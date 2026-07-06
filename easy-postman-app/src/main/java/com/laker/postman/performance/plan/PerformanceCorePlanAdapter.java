@@ -53,7 +53,6 @@ public class PerformanceCorePlanAdapter {
                 .timerData(node.getTimerData())
                 .ssePerformanceData(node.getSsePerformanceData())
                 .webSocketPerformanceData(node.getWebSocketPerformanceData())
-                .requestInheritanceSnapshot(node.isRequestInheritanceSnapshot())
                 .children(toCoreNodes(node.getChildren()))
                 .build();
     }
@@ -77,7 +76,6 @@ public class PerformanceCorePlanAdapter {
                 .timerData(node.getTimerData())
                 .ssePerformanceData(node.getSsePerformanceData())
                 .webSocketPerformanceData(node.getWebSocketPerformanceData())
-                .requestInheritanceSnapshot(node.isRequestInheritanceSnapshot())
                 .children(toAppNodes(node.getChildren()))
                 .build();
     }

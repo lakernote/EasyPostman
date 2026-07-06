@@ -39,6 +39,7 @@ public class PerformanceCorePlanJsonStorageTest {
         assertTrue(json.contains("\"conditionData\""));
         assertFalse(json.contains("\"requestItem\""));
         assertFalse(json.contains("\"requestItemId\""));
+        assertFalse(json.contains("\"requestInheritanceSnapshot\""));
 
         PerformanceCorePlanDocument loaded = storage.fromJson(json);
 
@@ -64,7 +65,6 @@ public class PerformanceCorePlanJsonStorageTest {
         assertEquals(loadedCondition.getType(), NodeType.CONDITION);
         assertEquals(loadedCondition.getConditionData().expression, "{{enabled}} == true");
         PerformanceCorePlanNode loadedRequest = loadedCondition.getChildren().get(0);
-        assertTrue(loadedRequest.isRequestInheritanceSnapshot());
         assertEquals(loadedRequest.getWebSocketPerformanceData().connectTimeoutMs, 2468);
         assertEquals(loadedRequest.getWebSocketPerformanceData().sendMode,
                 WebSocketPerformanceData.SendMode.REQUEST_BODY_REPEAT);
@@ -163,7 +163,6 @@ public class PerformanceCorePlanJsonStorageTest {
                 .name("socket request")
                 .type(NodeType.REQUEST)
                 .requestSnapshot(snapshot)
-                .requestInheritanceSnapshot(true)
                 .webSocketPerformanceData(webSocketData)
                 .children(List.of(timer))
                 .build();

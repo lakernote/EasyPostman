@@ -42,7 +42,6 @@ public final class PerformanceTestPlanNode {
                 .ssePerformanceData(data.ssePerformanceData)
                 .webSocketPerformanceData(data.webSocketPerformanceData)
                 .requestExecutionScope(data.requestExecutionScope)
-                .requestInheritanceSnapshot(data.requestInheritanceSnapshot)
                 .children(children.stream()
                         .map(PerformanceTestPlanNode::toPlanNode)
                         .toList())

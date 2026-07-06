@@ -1,10 +1,19 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.model.Variable;
+import com.laker.postman.performance.plan.PerformanceRequestSnapshotMapper;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.service.collections.CollectionTreeNodes;
+import com.laker.postman.service.collections.CollectionTreeRootRegistry;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
+import com.laker.postman.test.AbstractSwingUiTest;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
@@ -12,13 +21,21 @@ import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
-public class PerformanceRequestSyncSupportTest {
+public class PerformanceRequestSyncSupportTest extends AbstractSwingUiTest {
+
+    @AfterMethod
+    public void clearCollectionRootAndRequestScope() {
+        CollectionTreeRootRegistry.clear();
+        RequestExecutionContext.clearCurrentScope();
+    }
 
     @Test(description = "syncRequestItem 应更新树中匹配请求，并同步当前编辑器内容")
     public void shouldSyncMatchingRequestAndRefreshCurrentEditor() {
@@ -29,7 +46,6 @@ public class PerformanceRequestSyncSupportTest {
         PerformanceRequestSyncSupport support = new PerformanceRequestSyncSupport(
                 context.treeModel,
                 new JTree(context.treeModel),
-                new PerformanceCollectionRequestResolver(),
                 (node, data) -> syncEvents.add(data.httpRequestItem.getId())
         );
         HttpRequestItem latestItem = requestItem("req-1", "New Request", "https://new.example.com");
@@ -37,10 +53,77 @@ public class PerformanceRequestSyncSupportTest {
         support.syncRequestItem(context.rootNode, latestItem, context.requestNode, switchedItem::set);
 
         PerformanceTreeNode requestData = (PerformanceTreeNode) context.requestNode.getUserObject();
-        assertSame(requestData.httpRequestItem, latestItem);
+        assertNotSame(requestData.httpRequestItem, latestItem);
+        assertEquals(requestData.httpRequestItem.getUrl(), "https://new.example.com");
         assertEquals(requestData.name, "New Request");
         assertEquals(syncEvents, List.of("req-1"));
-        assertSame(switchedItem.get(), latestItem);
+        assertSame(switchedItem.get(), requestData.httpRequestItem);
+    }
+
+    @Test(description = "syncRequestItem 应刷新当前请求的分组变量作用域，避免 tooltip 使用旧快照")
+    public void shouldRefreshCurrentRequestScopeWhenSyncingMatchingRequest() {
+        HttpRequestItem oldItem = requestItem("req-1", "Old Request", "https://old.example.com?test={{testname}}");
+        TestContext context = newTestContext(oldItem);
+        PerformanceTreeNode requestData = (PerformanceTreeNode) context.requestNode.getUserObject();
+        requestData.requestExecutionScope = RequestExecutionScope.fromGroupVariables(Map.of("testname", "333"));
+        requestData.requestSnapshot = PerformanceRequestSnapshotMapper.fromHttpRequestItem(
+                oldItem,
+                requestData.requestExecutionScope
+        );
+        RequestExecutionContext.setCurrentScope(requestData.requestExecutionScope);
+
+        HttpRequestItem latestItem = requestItem("req-1", "New Request", "https://new.example.com?test={{testname}}");
+        registerCollectionRequest(latestItem, "888");
+        PerformanceRequestSyncSupport support = new PerformanceRequestSyncSupport(
+                context.treeModel,
+                new JTree(context.treeModel),
+                (node, data) -> {
+                }
+        );
+
+        support.syncRequestItem(context.rootNode, latestItem, context.requestNode, ignored -> {
+        });
+
+        assertEquals(requestData.requestExecutionScope.getGroupVariable("testname"), "888");
+        assertEquals(requestData.requestSnapshot.getExecutionScope().getGroupVariable("testname"), "888");
+        assertEquals(RequestExecutionContext.getCurrentScope().getGroupVariable("testname"), "888");
+    }
+
+    @Test(description = "刷新 collection 请求时应同步执行快照，避免编辑器显示新 URL 但实际发送旧 URL")
+    public void shouldRefreshRequestSnapshotWhenRefreshingFromCollections() {
+        HttpRequestItem oldItem = requestItem("req-1", "GET Example", "https://httpbin.org/get?test={{testname}}");
+        TestContext context = newTestContext(oldItem);
+        PerformanceTreeNode requestData = (PerformanceTreeNode) context.requestNode.getUserObject();
+        requestData.requestExecutionScope = RequestExecutionScope.fromGroupVariables(Map.of("testname", "333"));
+        requestData.requestSnapshot = PerformanceRequestSnapshotMapper.fromHttpRequestItem(
+                oldItem,
+                requestData.requestExecutionScope
+        );
+
+        HttpRequestItem latestItem = requestItem("req-1", "GET Example", "https://httpbingo.org/get?test={{testname}}");
+        registerCollectionRequest(latestItem, "888");
+        PerformanceRequestSyncSupport support = new PerformanceRequestSyncSupport(
+                context.treeModel,
+                new JTree(context.treeModel),
+                (node, data) -> {
+                }
+        );
+
+        support.refreshRequestsFromCollections(
+                context.requestNode,
+                ignored -> {
+                },
+                () -> {
+                },
+                () -> {
+                },
+                () -> {
+                }
+        );
+
+        assertEquals(requestData.httpRequestItem.getUrl(), "https://httpbingo.org/get?test={{testname}}");
+        assertEquals(requestData.requestSnapshot.getUrl(), "https://httpbingo.org/get?test={{testname}}");
+        assertEquals(requestData.requestSnapshot.getExecutionScope().getGroupVariable("testname"), "888");
     }
 
     @Test(description = "syncRequestItem 遇到空请求或空 id 时应直接忽略")
@@ -52,7 +135,6 @@ public class PerformanceRequestSyncSupportTest {
         PerformanceRequestSyncSupport support = new PerformanceRequestSyncSupport(
                 context.treeModel,
                 new JTree(context.treeModel),
-                new PerformanceCollectionRequestResolver(),
                 (node, data) -> syncEvents.add(data.httpRequestItem.getId())
         );
         HttpRequestItem invalidItem = new HttpRequestItem();
@@ -83,6 +165,16 @@ public class PerformanceRequestSyncSupportTest {
         item.setName(name);
         item.setUrl(url);
         return item;
+    }
+
+    private static void registerCollectionRequest(HttpRequestItem item, String variableValue) {
+        RequestGroup group = new RequestGroup("Group");
+        group.setVariables(List.of(new Variable(true, "testname", variableValue)));
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
+        groupNode.add(CollectionTreeNodes.requestNode(item));
+        rootNode.add(groupNode);
+        CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
     }
 
     private record TestContext(

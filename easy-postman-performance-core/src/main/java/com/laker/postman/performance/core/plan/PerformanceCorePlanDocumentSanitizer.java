@@ -34,7 +34,6 @@ public class PerformanceCorePlanDocumentSanitizer {
                 .timerData(node.getTimerData())
                 .ssePerformanceData(node.getSsePerformanceData())
                 .webSocketPerformanceData(node.getWebSocketPerformanceData())
-                .requestInheritanceSnapshot(node.isRequestInheritanceSnapshot())
                 .children(sanitizeChildren(node.getChildren()))
                 .build();
     }

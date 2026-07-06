@@ -996,6 +996,43 @@ public class ModuleArchitectureBoundaryTest {
     }
 
     @Test
+    public void performanceRequestNodeStateMutationsStayCentralized() throws IOException {
+        Path root = repositoryRoot();
+        Path sourceRoot = root.resolve("easy-postman-app/src/main/java");
+        Set<String> allowedFiles = Set.of(
+                "com/laker/postman/performance/model/PerformanceTreeNode.java",
+                "com/laker/postman/panel/performance/PerformanceTreeSnapshot.java",
+                "com/laker/postman/panel/performance/tree/PerformanceRequestNodeStateSynchronizer.java",
+                "com/laker/postman/panel/performance/tree/PerformanceSwingTreePlanAdapter.java"
+        );
+
+        List<String> violations = new ArrayList<>();
+        try (Stream<Path> paths = Files.walk(sourceRoot)) {
+            paths.filter(path -> path.toString().endsWith(".java"))
+                    .filter(path -> {
+                        String relative = sourceRoot.relativize(path).toString();
+                        return relative.startsWith("com/laker/postman/panel/performance/")
+                                || relative.equals("com/laker/postman/performance/model/PerformanceTreeNode.java");
+                    })
+                    .filter(path -> !allowedFiles.contains(sourceRoot.relativize(path).toString()))
+                    .forEach(path -> {
+                        try {
+                            String source = Files.readString(path);
+                            if (source.matches("(?s).*\\.(?:httpRequestItem|requestSnapshot|requestExecutionScope)\\s*=(?!=).*")) {
+                                violations.add(sourceRoot.relativize(path).toString());
+                            }
+                        } catch (IOException e) {
+                            throw new IllegalStateException("Failed to scan " + path, e);
+                        }
+                    });
+        }
+
+        assertTrue(violations.isEmpty(),
+                "Performance request node item/snapshot/scope mutations must go through PerformanceRequestNodeStateSynchronizer: "
+                        + violations);
+    }
+
+    @Test
     public void performanceThreadGroupPlannerDoesNotHavePanelWrapper() {
         Path root = repositoryRoot();
         assertTrue(Files.isRegularFile(root.resolve(

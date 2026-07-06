@@ -116,7 +116,6 @@ public class PerformanceCorePlanJsonStorage {
                 if (requestSnapshot != null) {
                     jsonNode.put("requestSnapshot", serializeRequestSnapshot(requestSnapshot));
                 }
-                jsonNode.put("requestInheritanceSnapshot", planNode.isRequestInheritanceSnapshot());
                 putIfNotNull(jsonNode, "webSocketPerformanceData",
                         serializeWebSocketPerformanceData(planNode.getWebSocketPerformanceData()));
             }
@@ -413,7 +412,6 @@ public class PerformanceCorePlanJsonStorage {
             }
             case REQUEST -> {
                 builder.requestSnapshot(deserializeRequestSnapshot(objectMap(jsonNode.get("requestSnapshot"))));
-                builder.requestInheritanceSnapshot(booleanValue(jsonNode, "requestInheritanceSnapshot", false));
                 builder.webSocketPerformanceData(deserializeWebSocketPerformanceData(objectMap(jsonNode.get("webSocketPerformanceData"))));
             }
             case ASSERTION -> builder.assertionData(deserializeAssertionData(objectMap(jsonNode.get("assertionData"))));

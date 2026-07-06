@@ -5,6 +5,10 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.panel.performance.tree.PerformanceRequestNodeStateSynchronizer;
+import com.laker.postman.service.collections.CollectionRequestItemResolver;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import com.laker.postman.common.component.notification.NotificationCenter;
@@ -26,7 +30,6 @@ final class PerformanceRequestSyncSupport {
 
     private final DefaultTreeModel treeModel;
     private final JTree performanceTree;
-    private final PerformanceCollectionRequestResolver requestResolver;
     private final BiConsumer<DefaultMutableTreeNode, PerformanceTreeNode> syncRequestStructureAction;
 
     void syncRequestItem(DefaultMutableTreeNode root,
@@ -98,12 +101,12 @@ final class PerformanceRequestSyncSupport {
                 && nodeData.type == NodeType.REQUEST
                 && nodeData.httpRequestItem != null
                 && item.getId().equals(nodeData.httpRequestItem.getId())) {
-            nodeData.httpRequestItem = item;
+            RequestExecutionScope latestScope = PerformanceRequestNodeStateSynchronizer.replaceRequestItem(nodeData, item);
             syncRequestStructureAction.accept(node, nodeData);
-            nodeData.name = item.getName();
             treeModel.nodeChanged(node);
             if (node == currentRequestNode) {
-                switchRequestEditorAction.accept(item);
+                RequestExecutionContext.setCurrentScope(latestScope);
+                switchRequestEditorAction.accept(nodeData.httpRequestItem);
             }
         }
         for (int i = 0; i < node.getChildCount(); i++) {
@@ -146,8 +149,8 @@ final class PerformanceRequestSyncSupport {
 
         HttpRequestItem itemToLoad = refreshedCurrentItem != null ? refreshedCurrentItem : nodeData.httpRequestItem;
         if (itemToLoad != null) {
-            nodeData.httpRequestItem = itemToLoad;
-            switchRequestEditorAction.accept(itemToLoad);
+            RequestExecutionContext.setCurrentScope(PerformanceRequestNodeStateSynchronizer.replaceRequestItem(nodeData, itemToLoad));
+            switchRequestEditorAction.accept(nodeData.httpRequestItem);
         }
         return newNode;
     }
@@ -164,14 +167,14 @@ final class PerformanceRequestSyncSupport {
                 log.warn("刷新集合请求时发现请求节点 id 为空，已移除: {}", requestNodeData.name);
                 nodesToRemove.add(treeNode);
             } else {
-                HttpRequestItem latestRequestItem = requestResolver.findRequestItemById(requestId);
+                HttpRequestItem latestRequestItem = CollectionRequestItemResolver.resolveCurrentRequest(requestId)
+                        .orElse(null);
                 if (latestRequestItem == null) {
                     log.warn("刷新集合请求时找不到 requestId={}，已移除: {}", requestId, requestNodeData.name);
                     nodesToRemove.add(treeNode);
                 } else {
-                    requestNodeData.httpRequestItem = latestRequestItem;
+                    PerformanceRequestNodeStateSynchronizer.replaceRequestItem(requestNodeData, latestRequestItem);
                     syncRequestStructureAction.accept(treeNode, requestNodeData);
-                    requestNodeData.name = latestRequestItem.getName();
                     treeModel.nodeChanged(treeNode);
                     updatedCount++;
                 }

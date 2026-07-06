@@ -204,7 +204,6 @@ public class PerformancePanel extends UiSingletonPanel {
         requestSyncSupport = new PerformanceRequestSyncSupport(
                 treeModel,
                 performanceTree,
-                new PerformanceCollectionRequestResolver(),
                 this::syncRequestStructure
         );
         PerformancePanelViewFactory.PropertySection propertySection = viewFactory.createPropertySection(

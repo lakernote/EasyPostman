@@ -52,7 +52,6 @@ public class PerformancePlanStorageTest {
                                                         .type(NodeType.REQUEST)
                                                         .httpRequestItem(requestItem)
                                                         .webSocketPerformanceData(webSocketData)
-                                                        .requestInheritanceSnapshot(true)
                                                         .build()
                                         ))
                                         .build()
@@ -77,12 +76,12 @@ public class PerformancePlanStorageTest {
         assertTrue(savedJson.contains("\"requestSnapshot\""));
         assertFalse(savedJson.contains("\"requestItem\""));
         assertFalse(savedJson.contains("\"requestItemId\""));
+        assertFalse(savedJson.contains("\"requestInheritanceSnapshot\""));
         PerformancePlanNode loadedRequest = loaded.getPlanDocument().getRoot().getChildren().get(0).getChildren().get(0);
         assertEquals(loadedRequest.getHttpRequestItem().getUrl(), "https://example.test/snapshot");
         assertEquals(loadedRequest.getRequestSnapshot().getUrl(), "https://example.test/snapshot");
         assertEquals(loadedRequest.getRequestSnapshot().getId(), "snapshot-request");
         assertEquals(loadedRequest.getWebSocketPerformanceData().connectTimeoutMs, 2468);
-        assertTrue(loadedRequest.isRequestInheritanceSnapshot());
     }
 
     @Test

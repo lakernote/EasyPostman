@@ -1,5 +1,7 @@
 package com.laker.postman.panel.performance;
 
+import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.model.Variable;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpRequestItem;
 
@@ -10,9 +12,14 @@ import com.laker.postman.performance.core.model.PerformanceProtocol;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
+import com.laker.postman.service.collections.CollectionTreeNodes;
+import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
+import com.laker.postman.service.variable.RequestExecutionContext;
+import com.laker.postman.service.variable.RequestExecutionScope;
+import com.laker.postman.service.variable.VariableResolver;
 import org.testng.annotations.Test;
 
 import javax.swing.JLabel;
@@ -22,7 +29,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
+import javax.swing.event.TreeModelEvent;
+import javax.swing.event.TreeModelListener;
 import java.awt.CardLayout;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,6 +69,166 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
             assertSame(currentRequest.get(), fixture.requestNode);
             assertTrue(fixture.requestCard.isVisible());
             assertFalse(fixture.emptyCard.isVisible());
+        });
+    }
+
+    @Test
+    public void requestSelectionShouldUsePerformanceRequestScopeForVariableResolution() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            try {
+                RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromGroupVariables(Map.of(
+                        "testname",
+                        "1111"
+                )));
+                TreeFixture fixture = new TreeFixture();
+                PerformanceTreeNode requestData = (PerformanceTreeNode) fixture.requestNode.getUserObject();
+                requestData.requestExecutionScope = RequestExecutionScope.fromGroupVariables(Map.of(
+                        "testname",
+                        "2222"
+                ));
+                PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                        ignored -> {
+                        },
+                        ignored -> {
+                        },
+                        (node, treeNode) -> {
+                        },
+                        ignored -> {
+                        }
+                );
+                support.install();
+
+                fixture.tree.setSelectionPath(new TreePath(fixture.requestNode.getPath()));
+
+                assertEquals(VariableResolver.resolveVariable("testname"), "2222");
+            } finally {
+                RequestExecutionContext.clearCurrentScope();
+            }
+        });
+    }
+
+    @Test
+    public void requestSelectionShouldPreferLatestCollectionScopeForVariableResolution() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            try {
+                RequestExecutionContext.setCurrentScope(RequestExecutionScope.fromGroupVariables(Map.of(
+                        "testname",
+                        "333"
+                )));
+                TreeFixture fixture = new TreeFixture();
+                fixture.requestItem.setId("latest-selection-scope-request");
+                PerformanceTreeNode requestData = (PerformanceTreeNode) fixture.requestNode.getUserObject();
+                requestData.requestExecutionScope = RequestExecutionScope.fromGroupVariables(Map.of(
+                        "testname",
+                        "333"
+                ));
+                registerCollectionRequest(fixture.requestItem, "888");
+                PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                        ignored -> {
+                        },
+                        ignored -> {
+                        },
+                        (node, treeNode) -> {
+                        },
+                        ignored -> {
+                        }
+                );
+                support.install();
+
+                fixture.tree.setSelectionPath(new TreePath(fixture.requestNode.getPath()));
+
+                assertEquals(VariableResolver.resolveVariable("testname"), "888");
+            } finally {
+                RequestExecutionContext.clearCurrentScope();
+                CollectionTreeRootRegistry.clear();
+            }
+        });
+    }
+
+    @Test
+    public void requestSelectionShouldSwitchEditorToLatestCollectionRequestWhenSourceExists() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            try {
+                TreeFixture fixture = new TreeFixture();
+                fixture.requestItem.setId("latest-selection-request");
+                fixture.requestItem.setUrl("https://httpbin.org/get?test={{testname}}");
+                HttpRequestItem latestItem = new HttpRequestItem();
+                latestItem.setId("latest-selection-request");
+                latestItem.setName("request");
+                latestItem.setUrl("https://httpbingo.org/get?test={{testname}}");
+                registerCollectionRequest(latestItem, "888");
+                AtomicReference<HttpRequestItem> switchedItem = new AtomicReference<>();
+                PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                        ignored -> {
+                        },
+                        switchedItem::set,
+                        (node, treeNode) -> {
+                        },
+                        ignored -> {
+                        }
+                );
+                support.install();
+
+                fixture.tree.setSelectionPath(new TreePath(fixture.requestNode.getPath()));
+
+                assertEquals(switchedItem.get().getUrl(), "https://httpbingo.org/get?test={{testname}}");
+                assertEquals(fixture.requestItem.getUrl(), "https://httpbin.org/get?test={{testname}}");
+                PerformanceTreeNode requestData = (PerformanceTreeNode) fixture.requestNode.getUserObject();
+                assertEquals(requestData.httpRequestItem.getUrl(), "https://httpbingo.org/get?test={{testname}}");
+            } finally {
+                CollectionTreeRootRegistry.clear();
+            }
+        });
+    }
+
+    @Test
+    public void requestSelectionShouldNotifyTreeNodeChangedAfterLatestCollectionRefresh() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            try {
+                TreeFixture fixture = new TreeFixture();
+                fixture.requestItem.setId("latest-selection-render-request");
+                HttpRequestItem latestItem = new HttpRequestItem();
+                latestItem.setId("latest-selection-render-request");
+                latestItem.setName("renamed request");
+                latestItem.setUrl("https://httpbingo.org/get?test={{testname}}");
+                registerCollectionRequest(latestItem, "888");
+                AtomicInteger changedCount = new AtomicInteger();
+                fixture.treeModel.addTreeModelListener(new TreeModelListener() {
+                    @Override
+                    public void treeNodesChanged(TreeModelEvent e) {
+                        changedCount.incrementAndGet();
+                    }
+
+                    @Override
+                    public void treeNodesInserted(TreeModelEvent e) {
+                    }
+
+                    @Override
+                    public void treeNodesRemoved(TreeModelEvent e) {
+                    }
+
+                    @Override
+                    public void treeStructureChanged(TreeModelEvent e) {
+                    }
+                });
+                PerformanceTreeSelectionSupport support = fixture.createSelectionSupport(
+                        ignored -> {
+                        },
+                        ignored -> {
+                        },
+                        (node, treeNode) -> {
+                        },
+                        ignored -> {
+                        }
+                );
+                support.install();
+
+                fixture.tree.setSelectionPath(new TreePath(fixture.requestNode.getPath()));
+
+                assertEquals(changedCount.get(), 1);
+            } finally {
+                CollectionTreeRootRegistry.clear();
+            }
         });
     }
 
@@ -249,6 +420,16 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
             assertEquals(connectData.webSocketPerformanceData.connectTimeoutMs, 4321);
             assertNotSame(connectData.webSocketPerformanceData, requestData.webSocketPerformanceData);
         });
+    }
+
+    private static void registerCollectionRequest(HttpRequestItem item, String variableValue) {
+        RequestGroup group = new RequestGroup("Group");
+        group.setVariables(List.of(new Variable(true, "testname", variableValue)));
+        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
+        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
+        groupNode.add(CollectionTreeNodes.requestNode(item));
+        rootNode.add(groupNode);
+        CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
     }
 
     private static final class TreeFixture {

@@ -80,7 +80,6 @@ public class PerformanceTreeSnapshot {
         copy.ssePerformanceData = JsonUtil.deepCopy(source.ssePerformanceData, SsePerformanceData.class);
         copy.webSocketPerformanceData = JsonUtil.deepCopy(source.webSocketPerformanceData, WebSocketPerformanceData.class);
         copy.requestExecutionScope = copyRequestExecutionScope(source.requestExecutionScope);
-        copy.requestInheritanceSnapshot = source.requestInheritanceSnapshot;
         return copy;
     }
 

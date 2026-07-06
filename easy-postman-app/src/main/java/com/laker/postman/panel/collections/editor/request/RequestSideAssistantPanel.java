@@ -5,6 +5,7 @@ import com.laker.postman.common.component.ToolWindowStripeMetrics;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.service.collections.CollectionRequestExecutionScopeResolver;
 import com.laker.postman.util.IconUtil;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -214,6 +215,7 @@ public final class RequestSideAssistantPanel extends JPanel {
 
     private void refreshNow() {
         HttpRequestItem item = requestSupplier.get();
+        CollectionRequestExecutionScopeResolver.syncCurrentScopeOrEmpty(item == null ? null : item.getId());
         variablesPanel.updateRequest(item);
         codeSnippetPanel.updateRequest(item);
     }

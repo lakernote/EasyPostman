@@ -53,24 +53,6 @@ public class PerformanceTreeSnapshotTest {
         assertEquals(snapshotRequestData.webSocketPerformanceData.connectTimeoutMs, 15000);
     }
 
-    @Test(description = "执行快照应保留已合并的集合继承快照标记，避免运行前再次合并")
-    public void shouldPreserveRequestInheritanceSnapshotFlag() {
-        HttpRequestItem item = new HttpRequestItem();
-        item.setId("snapshot-request-id");
-        item.setName("Snapshot Request");
-
-        PerformanceTreeNode requestData = new PerformanceTreeNode("Snapshot Request", NodeType.REQUEST, item);
-        requestData.requestInheritanceSnapshot = true;
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode(new PerformanceTreeNode("Plan", NodeType.ROOT));
-        root.add(new DefaultMutableTreeNode(requestData));
-
-        DefaultMutableTreeNode snapshotRoot = PerformanceTreeSnapshot.copy(root);
-        PerformanceTreeNode snapshotRequestData =
-                (PerformanceTreeNode) ((DefaultMutableTreeNode) snapshotRoot.getChildAt(0)).getUserObject();
-
-        assertEquals(snapshotRequestData.requestInheritanceSnapshot, true);
-    }
-
     @Test(description = "执行快照应保留仅存在于请求快照中的旧请求数据")
     public void shouldCopyRequestSnapshotWhenRequestItemIsAbsent() {
         PerformanceRequestSnapshot requestSnapshot = PerformanceRequestSnapshot.builder()

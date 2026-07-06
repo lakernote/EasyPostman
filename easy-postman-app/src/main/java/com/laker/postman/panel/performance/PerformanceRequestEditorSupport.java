@@ -9,6 +9,7 @@ import com.laker.postman.performance.core.model.NodeType;
 
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
 import com.laker.postman.performance.model.PerformanceTreeNode;
+import com.laker.postman.panel.performance.tree.PerformanceRequestNodeStateSynchronizer;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -64,7 +65,7 @@ final class PerformanceRequestEditorSupport {
         }
         Object userObj = node.getUserObject();
         if (userObj instanceof PerformanceTreeNode nodeData && nodeData.type == NodeType.REQUEST) {
-            nodeData.httpRequestItem = requestEditSubPanel.getCurrentRequest();
+            PerformanceRequestNodeStateSynchronizer.replaceRequestItem(nodeData, requestEditSubPanel.getCurrentRequest());
             syncRequestStructureAction.accept(node, nodeData);
         }
     }

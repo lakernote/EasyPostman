@@ -8,6 +8,8 @@ import com.laker.postman.request.model.HttpRequestItem;
 
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.NodeType;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeDocumentMapper;
+import com.laker.postman.service.collections.CollectionDocumentRegistry;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.variable.RequestExecutionContext;
@@ -34,6 +36,7 @@ public class PerformanceRequestSyncSupportTest extends AbstractSwingUiTest {
     @AfterMethod
     public void clearCollectionRootAndRequestScope() {
         CollectionTreeRootRegistry.clear();
+        CollectionDocumentRegistry.registerDocumentSupplier(com.laker.postman.collection.model.CollectionDocument::empty);
         RequestExecutionContext.clearCurrentScope();
     }
 
@@ -175,6 +178,7 @@ public class PerformanceRequestSyncSupportTest extends AbstractSwingUiTest {
         groupNode.add(CollectionTreeNodes.requestNode(item));
         rootNode.add(groupNode);
         CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
+        CollectionDocumentRegistry.registerDocumentSupplier(() -> SwingCollectionTreeDocumentMapper.fromRoot(rootNode));
     }
 
     private record TestContext(

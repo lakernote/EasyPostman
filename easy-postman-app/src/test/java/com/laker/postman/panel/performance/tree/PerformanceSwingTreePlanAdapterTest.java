@@ -16,6 +16,8 @@ import com.laker.postman.performance.plan.PerformancePlanDocumentCompiler;
 import com.laker.postman.performance.plan.PerformancePlanNode;
 import com.laker.postman.performance.plan.PerformanceRequestSampler;
 import com.laker.postman.performance.plan.PerformanceRequestSnapshotMapper;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeDocumentMapper;
+import com.laker.postman.service.collections.CollectionDocumentRegistry;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.variable.RequestExecutionScope;
@@ -50,7 +52,7 @@ public class PerformanceSwingTreePlanAdapterTest {
         groupNode.add(CollectionTreeNodes.requestNode(collectionRequest));
         collectionRoot.add(groupNode);
 
-        CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
+        registerCollectionRoot(collectionRoot);
         try {
             DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(
                     new PerformanceTreeNode(
@@ -79,7 +81,7 @@ public class PerformanceSwingTreePlanAdapterTest {
             assertTrue(samplerRequest.getPostscript().contains("groupPost"));
             assertTrue(samplerRequest.getPostscript().contains("requestPost"));
         } finally {
-            CollectionTreeRootRegistry.clear();
+            clearCollectionRegistries();
         }
     }
 
@@ -94,7 +96,7 @@ public class PerformanceSwingTreePlanAdapterTest {
         groupNode.add(CollectionTreeNodes.requestNode(collectionRequest));
         collectionRoot.add(groupNode);
 
-        CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
+        registerCollectionRoot(collectionRoot);
         try {
             DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(
                     new PerformanceTreeNode(
@@ -110,7 +112,7 @@ public class PerformanceSwingTreePlanAdapterTest {
 
             assertEquals(countOccurrences(secondSnapshot.getHttpRequestItem().getPrescript(), "groupPre"), 1);
         } finally {
-            CollectionTreeRootRegistry.clear();
+            clearCollectionRegistries();
         }
     }
 
@@ -125,7 +127,7 @@ public class PerformanceSwingTreePlanAdapterTest {
         groupNode.add(CollectionTreeNodes.requestNode(collectionRequest));
         collectionRoot.add(groupNode);
 
-        CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
+        registerCollectionRoot(collectionRoot);
         try {
             DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(
                     new PerformanceTreeNode(
@@ -142,7 +144,7 @@ public class PerformanceSwingTreePlanAdapterTest {
 
             assertEquals(countOccurrences(secondSnapshot.getHttpRequestItem().getPrescript(), "groupPre"), 1);
         } finally {
-            CollectionTreeRootRegistry.clear();
+            clearCollectionRegistries();
         }
     }
 
@@ -156,7 +158,7 @@ public class PerformanceSwingTreePlanAdapterTest {
         groupNode.add(CollectionTreeNodes.requestNode(collectionRequest));
         collectionRoot.add(groupNode);
 
-        CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
+        registerCollectionRoot(collectionRoot);
         try {
             DefaultMutableTreeNode performanceRequestNode = new DefaultMutableTreeNode(
                     new PerformanceTreeNode(
@@ -176,7 +178,7 @@ public class PerformanceSwingTreePlanAdapterTest {
             assertEquals(refreshedSnapshot.getRequestExecutionScope().getGroupVariable("testname"), "2222");
             assertEquals(refreshedSnapshot.getRequestSnapshot().getExecutionScope().getGroupVariable("testname"), "2222");
         } finally {
-            CollectionTreeRootRegistry.clear();
+            clearCollectionRegistries();
         }
     }
 
@@ -214,7 +216,7 @@ public class PerformanceSwingTreePlanAdapterTest {
         groupNode.add(CollectionTreeNodes.requestNode(latestCollectionItem));
         collectionRoot.add(groupNode);
 
-        CollectionTreeRootRegistry.registerRootSupplier(() -> collectionRoot);
+        registerCollectionRoot(collectionRoot);
         try {
             PerformanceTreeNode requestData = new PerformanceTreeNode(staleItem.getName(), NodeType.REQUEST, staleItem);
             requestData.requestSnapshot = PerformanceRequestSnapshotMapper.fromHttpRequestItem(
@@ -231,7 +233,7 @@ public class PerformanceSwingTreePlanAdapterTest {
             assertEquals(documentNode.getRequestSnapshot().getUrl(), "https://httpbingo.org/get?test={{testname}}");
             assertEquals(documentNode.getRequestSnapshot().getExecutionScope().getGroupVariable("testname"), "888");
         } finally {
-            CollectionTreeRootRegistry.clear();
+            clearCollectionRegistries();
         }
     }
 
@@ -286,5 +288,15 @@ public class PerformanceSwingTreePlanAdapterTest {
             index += needle.length();
         }
         return count;
+    }
+
+    private static void registerCollectionRoot(DefaultMutableTreeNode rootNode) {
+        CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
+        CollectionDocumentRegistry.registerDocumentSupplier(() -> SwingCollectionTreeDocumentMapper.fromRoot(rootNode));
+    }
+
+    private static void clearCollectionRegistries() {
+        CollectionTreeRootRegistry.clear();
+        CollectionDocumentRegistry.registerDocumentSupplier(com.laker.postman.collection.model.CollectionDocument::empty);
     }
 }

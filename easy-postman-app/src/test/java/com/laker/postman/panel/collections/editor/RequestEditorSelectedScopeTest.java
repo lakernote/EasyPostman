@@ -4,8 +4,10 @@ import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.common.UiSingletonPanel;
 import com.laker.postman.model.Variable;
 import com.laker.postman.panel.collections.editor.request.RequestEditSubPanel;
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeDocumentMapper;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
+import com.laker.postman.service.collections.CollectionDocumentRegistry;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
 import com.laker.postman.service.variable.RequestExecutionContext;
@@ -27,6 +29,7 @@ public class RequestEditorSelectedScopeTest {
     public void clearScopeAndCollectionRoot() {
         RequestExecutionContext.clearCurrentScope();
         CollectionTreeRootRegistry.clear();
+        CollectionDocumentRegistry.registerDocumentSupplier(com.laker.postman.collection.model.CollectionDocument::empty);
     }
 
     @Test
@@ -109,5 +112,6 @@ public class RequestEditorSelectedScopeTest {
         groupNode.add(CollectionTreeNodes.requestNode(request));
         rootNode.add(groupNode);
         CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
+        CollectionDocumentRegistry.registerDocumentSupplier(() -> SwingCollectionTreeDocumentMapper.fromRoot(rootNode));
     }
 }

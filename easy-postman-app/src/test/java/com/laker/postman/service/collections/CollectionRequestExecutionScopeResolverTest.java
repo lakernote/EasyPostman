@@ -1,5 +1,7 @@
 package com.laker.postman.service.collections;
 
+import com.laker.postman.collection.model.CollectionDocument;
+import com.laker.postman.collection.model.CollectionNode;
 import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.model.Variable;
 import com.laker.postman.request.model.HttpRequestItem;
@@ -9,7 +11,6 @@ import com.laker.postman.service.variable.VariableResolver;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
-import javax.swing.tree.DefaultMutableTreeNode;
 import java.util.List;
 import java.util.Map;
 
@@ -23,7 +24,7 @@ public class CollectionRequestExecutionScopeResolverTest {
     @AfterMethod(alwaysRun = true)
     public void tearDown() {
         RequestExecutionContext.clearCurrentScope();
-        CollectionTreeRootRegistry.clear();
+        CollectionDocumentRegistry.registerDocumentSupplier(CollectionDocument::empty);
     }
 
     @Test
@@ -87,10 +88,9 @@ public class CollectionRequestExecutionScopeResolverTest {
     private static void registerCollectionRequest(HttpRequestItem item, List<Variable> variables) {
         RequestGroup group = new RequestGroup("Group");
         group.setVariables(variables);
-        DefaultMutableTreeNode rootNode = new DefaultMutableTreeNode("root");
-        DefaultMutableTreeNode groupNode = CollectionTreeNodes.groupNode(group);
-        groupNode.add(CollectionTreeNodes.requestNode(item));
-        rootNode.add(groupNode);
-        CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
+        CollectionNode groupNode = CollectionNode.group(group);
+        groupNode.addChild(CollectionNode.request(item));
+        CollectionDocument document = new CollectionDocument(List.of(groupNode));
+        CollectionDocumentRegistry.registerDocumentSupplier(() -> document);
     }
 }

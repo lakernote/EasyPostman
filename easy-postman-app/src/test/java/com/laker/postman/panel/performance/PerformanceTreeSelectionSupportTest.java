@@ -6,6 +6,7 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.request.model.HttpRequestItem;
 
 
+import com.laker.postman.panel.collections.tree.adapter.SwingCollectionTreeDocumentMapper;
 import com.laker.postman.panel.performance.config.CsvDataSetPropertyPanel;
 import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.model.PerformanceProtocol;
@@ -14,6 +15,7 @@ import com.laker.postman.performance.core.model.WebSocketPerformanceData;
 import com.laker.postman.performance.core.request.PerformanceRequestSnapshot;
 import com.laker.postman.service.collections.CollectionTreeNodes;
 import com.laker.postman.service.collections.CollectionTreeRootRegistry;
+import com.laker.postman.service.collections.CollectionDocumentRegistry;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
@@ -140,7 +142,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                 assertEquals(VariableResolver.resolveVariable("testname"), "888");
             } finally {
                 RequestExecutionContext.clearCurrentScope();
-                CollectionTreeRootRegistry.clear();
+                clearCollectionRegistries();
             }
         });
     }
@@ -176,7 +178,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
                 PerformanceTreeNode requestData = (PerformanceTreeNode) fixture.requestNode.getUserObject();
                 assertEquals(requestData.httpRequestItem.getUrl(), "https://httpbingo.org/get?test={{testname}}");
             } finally {
-                CollectionTreeRootRegistry.clear();
+                clearCollectionRegistries();
             }
         });
     }
@@ -227,7 +229,7 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
 
                 assertEquals(changedCount.get(), 1);
             } finally {
-                CollectionTreeRootRegistry.clear();
+                clearCollectionRegistries();
             }
         });
     }
@@ -430,6 +432,12 @@ public class PerformanceTreeSelectionSupportTest extends AbstractSwingUiTest {
         groupNode.add(CollectionTreeNodes.requestNode(item));
         rootNode.add(groupNode);
         CollectionTreeRootRegistry.registerRootSupplier(() -> rootNode);
+        CollectionDocumentRegistry.registerDocumentSupplier(() -> SwingCollectionTreeDocumentMapper.fromRoot(rootNode));
+    }
+
+    private static void clearCollectionRegistries() {
+        CollectionTreeRootRegistry.clear();
+        CollectionDocumentRegistry.registerDocumentSupplier(com.laker.postman.collection.model.CollectionDocument::empty);
     }
 
     private static final class TreeFixture {

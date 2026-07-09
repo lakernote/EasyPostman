@@ -144,6 +144,21 @@ public class NotificationCenterTest {
     }
 
     @Test
+    public void toastBodyScrollPaneShouldStayChromeFreeAfterUiUpdate() throws Exception {
+        JTextArea body = ToastStyle.createBodyTextArea(
+                "Language changed. Please restart the application for changes to take full effect.");
+        JScrollPane scrollPane = ToastStyle.createBodyScrollPane(body);
+
+        SwingUtilities.invokeAndWait(scrollPane::updateUI);
+
+        assertEquals(scrollPane.getBorder(), null);
+        assertEquals(scrollPane.getViewportBorder(), null);
+        assertTrue(!scrollPane.isOpaque());
+        assertTrue(!scrollPane.getViewport().isOpaque());
+        assertEquals(scrollPane.getVerticalScrollBarPolicy(), ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+    }
+
+    @Test
     public void toastHoverTargetsShouldIncludeBodyTextArea() throws IOException {
         String source = Files.readString(Path.of(
                 "src/main/java/com/laker/postman/common/component/notification/ToastWindow.java"));

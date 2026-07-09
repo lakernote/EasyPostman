@@ -206,17 +206,18 @@ class ToastStyle {
     }
 
     static JScrollPane createBodyScrollPane(JTextArea body) {
-        JScrollPane scrollPane = new JScrollPane(
-                body,
-                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER
-        );
+        JScrollPane scrollPane = new ToastBodyScrollPane(body);
+        applyBodyScrollPaneChrome(scrollPane);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        return scrollPane;
+    }
+
+    static void applyBodyScrollPaneChrome(JScrollPane scrollPane) {
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
         scrollPane.setBorder(null);
         scrollPane.setViewportBorder(null);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        return scrollPane;
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
     }
 
     static JPanel createActionPanel(AbstractButton expandButton, AbstractButton copyButton) {
@@ -310,5 +311,17 @@ class ToastStyle {
             width = Math.max(width, metrics.stringWidth(line));
         }
         return width;
+    }
+
+    private static final class ToastBodyScrollPane extends JScrollPane {
+        private ToastBodyScrollPane(JTextArea body) {
+            super(body, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        }
+
+        @Override
+        public void updateUI() {
+            super.updateUI();
+            ToastStyle.applyBodyScrollPaneChrome(this);
+        }
     }
 }

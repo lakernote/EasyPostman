@@ -294,9 +294,14 @@ class ToastWindow extends JWindow {
         setSize(toastWidth, 1);
         bodyLabel.setSize(bodyWidth, Short.MAX_VALUE);
         Dimension preferredBodySize = bodyLabel.getPreferredSize();
+        boolean needsBodyScroll = expanded && preferredBodySize.height > ToastStyle.EXPANDED_MAX_BODY_HEIGHT;
         int bodyHeight = expanded
                 ? Math.min(preferredBodySize.height, ToastStyle.EXPANDED_MAX_BODY_HEIGHT)
                 : preferredBodySize.height;
+        bodyScrollPane.setVerticalScrollBarPolicy(needsBodyScroll
+                ? ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED
+                : ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER);
+        ToastStyle.applyBodyScrollPaneChrome(bodyScrollPane);
         bodyScrollPane.setPreferredSize(new Dimension(bodyWidth, Math.max(1, bodyHeight)));
         bodyScrollPane.revalidate();
         rootPanel.revalidate();

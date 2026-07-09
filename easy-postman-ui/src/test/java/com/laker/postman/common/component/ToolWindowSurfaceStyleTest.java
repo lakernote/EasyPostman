@@ -26,6 +26,7 @@ import javax.swing.border.LineBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.plaf.basic.BasicSplitPaneDivider;
 import javax.swing.plaf.basic.BasicSplitPaneUI;
+import javax.swing.plaf.ColorUIResource;
 import javax.swing.plaf.metal.MetalLookAndFeel;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -54,6 +55,7 @@ public class ToolWindowSurfaceStyleTest {
                 ThemeColors.TAB_SEPARATOR,
                 ThemeColors.SELECTION_BACKGROUND,
                 ThemeColors.BORDER_LIGHT,
+                "Panel.background",
                 "Table.background",
                 "Table.gridColor",
                 "Table.selectionBackground",
@@ -171,6 +173,22 @@ public class ToolWindowSurfaceStyleTest {
         }
 
         assertEquals(panel.getBackground(), nextSurface);
+    }
+
+    @Test
+    public void shouldKeepExplicitCardSurfaceThroughComponentUiUpdate() throws Exception {
+        Color surface = new ColorUIResource(250, 251, 252);
+        Color panelBackground = new ColorUIResource(233, 234, 238);
+        UIManager.put(ThemeColors.SURFACE, surface);
+        UIManager.put("Panel.background", panelBackground);
+        JPanel panel = new JPanel();
+
+        ToolWindowSurfaceStyle.applyCard(panel);
+        assertEquals(panel.getBackground(), surface);
+
+        SwingUtilities.invokeAndWait(panel::updateUI);
+
+        assertEquals(panel.getBackground(), surface);
     }
 
     @Test

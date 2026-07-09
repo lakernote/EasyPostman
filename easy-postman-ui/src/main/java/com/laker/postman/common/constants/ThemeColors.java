@@ -197,6 +197,10 @@ public class ThemeColors {
 
     public static Color color(String key, Color fallback) {
         Color color = UIManager.getColor(key);
-        return color != null ? color : fallback;
+        return explicit(color != null ? color : fallback);
+    }
+
+    public static Color explicit(Color color) {
+        return color == null ? null : new Color(color.getRGB(), true);
     }
 }

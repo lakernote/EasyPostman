@@ -48,14 +48,14 @@ public final class ModernColors {
     private static Color uiColor(String key, Color lightFallback, Color darkFallback) {
         Color color = UIManager.getColor(key);
         if (color != null) {
-            return color;
+            return ThemeColors.explicit(color);
         }
-        return isDarkTheme() ? darkFallback : lightFallback;
+        return ThemeColors.explicit(isDarkTheme() ? darkFallback : lightFallback);
     }
 
     private static Color uiColor(String key, Color fallback) {
         Color color = UIManager.getColor(key);
-        return color != null ? color : fallback;
+        return ThemeColors.explicit(color != null ? color : fallback);
     }
 
     // ==================== 主色系 ====================

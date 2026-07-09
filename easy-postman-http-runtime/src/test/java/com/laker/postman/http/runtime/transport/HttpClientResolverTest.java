@@ -10,7 +10,11 @@ import com.laker.postman.request.model.HttpRequestProxyPolicy;
 import okhttp3.OkHttpClient;
 import org.testng.annotations.Test;
 
+import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.URI;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
@@ -111,6 +115,83 @@ public class HttpClientResolverTest {
         }
     }
 
+    @Test
+    public void requestUseProxyPolicyShouldForceDirectClientWhenManualProxyIsIncomplete() {
+        ProxySelector originalSelector = ProxySelector.getDefault();
+
+        try {
+            ProxySelector.setDefault(fakeSystemProxySelector());
+            HttpRuntimeSettingsProvider.set(manualProxySettings(false, ""));
+            PreparedRequest request = requestWithProxyPolicy(HttpRequestProxyPolicy.USE_PROXY);
+
+            OkHttpClient client = new HttpClientResolver().resolveDefaultBaseClient(request);
+
+            assertEquals(client.proxy(), Proxy.NO_PROXY);
+        } finally {
+            ProxySelector.setDefault(originalSelector);
+            HttpRuntimeSettingsProvider.reset();
+            OkHttpClientManager.clearClientCache();
+        }
+    }
+
+    @Test
+    public void requestUseProxyPolicyShouldForceDirectClientWhenManualProxyPortIsInvalid() {
+        ProxySelector originalSelector = ProxySelector.getDefault();
+
+        try {
+            ProxySelector.setDefault(fakeSystemProxySelector());
+            HttpRuntimeSettingsProvider.set(manualProxySettings(false, "127.0.0.1", -1));
+            PreparedRequest request = requestWithProxyPolicy(HttpRequestProxyPolicy.USE_PROXY);
+
+            OkHttpClient client = new HttpClientResolver().resolveDefaultBaseClient(request);
+
+            assertEquals(client.proxy(), Proxy.NO_PROXY);
+        } finally {
+            ProxySelector.setDefault(originalSelector);
+            HttpRuntimeSettingsProvider.reset();
+            OkHttpClientManager.clearClientCache();
+        }
+    }
+
+    @Test
+    public void proxyConfigurationFailureShouldForceDirectClientThroughDefaultResolver() {
+        ProxySelector originalSelector = ProxySelector.getDefault();
+
+        try {
+            ProxySelector.setDefault(fakeSystemProxySelector());
+            HttpRuntimeSettingsProvider.set(new HttpRuntimeSettings() {
+                @Override
+                public boolean isProxyEnabled() {
+                    return false;
+                }
+
+                @Override
+                public String getProxyMode() {
+                    return PROXY_MODE_MANUAL;
+                }
+
+                @Override
+                public String getProxyHost() {
+                    return "127.0.0.1";
+                }
+
+                @Override
+                public int getProxyPort() {
+                    throw new IllegalStateException("broken proxy port");
+                }
+            });
+
+            PreparedRequest request = requestWithProxyPolicy(HttpRequestProxyPolicy.USE_PROXY);
+            OkHttpClient client = new HttpClientResolver().resolveDefaultBaseClient(request);
+
+            assertEquals(client.proxy(), Proxy.NO_PROXY);
+        } finally {
+            ProxySelector.setDefault(originalSelector);
+            HttpRuntimeSettingsProvider.reset();
+            OkHttpClientManager.clearClientCache();
+        }
+    }
+
     private static PreparedRequest requestWithProxyPolicy(HttpRequestProxyPolicy proxyPolicy) {
         PreparedRequest request = new PreparedRequest();
         request.url = "https://api.example.com/data";
@@ -120,6 +201,14 @@ public class HttpClientResolverTest {
     }
 
     private static HttpRuntimeSettings manualProxySettings(boolean proxyEnabled) {
+        return manualProxySettings(proxyEnabled, "127.0.0.1");
+    }
+
+    private static HttpRuntimeSettings manualProxySettings(boolean proxyEnabled, String proxyHost) {
+        return manualProxySettings(proxyEnabled, proxyHost, 8080);
+    }
+
+    private static HttpRuntimeSettings manualProxySettings(boolean proxyEnabled, String proxyHost, int proxyPort) {
         return new HttpRuntimeSettings() {
             @Override
             public boolean isProxyEnabled() {
@@ -138,12 +227,28 @@ public class HttpClientResolverTest {
 
             @Override
             public String getProxyHost() {
-                return "127.0.0.1";
+                return proxyHost;
             }
 
             @Override
             public int getProxyPort() {
-                return 8080;
+                return proxyPort;
+            }
+        };
+    }
+
+    private static ProxySelector fakeSystemProxySelector() {
+        return new ProxySelector() {
+            @Override
+            public List<Proxy> select(URI uri) {
+                return List.of(new Proxy(
+                        Proxy.Type.HTTP,
+                        InetSocketAddress.createUnresolved("127.0.0.1", 8888)
+                ));
+            }
+
+            @Override
+            public void connectFailed(URI uri, java.net.SocketAddress sa, java.io.IOException ioe) {
             }
         };
     }

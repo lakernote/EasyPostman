@@ -207,15 +207,16 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
     }
 
     private void saveSettings(boolean closeAfterSave) {
+        boolean proxyEnabled = isProxyEnabledSelected();
         boolean manualMode = SettingManager.isManualProxyModeValue(getSelectedProxyMode());
-        if (manualMode && !validateAllFields()) {
+        if (proxyEnabled && manualMode && (!hasRequiredManualProxyFields() || !validateAllFields())) {
             NotificationCenter.showError(I18nUtil.getMessage(MessageKeys.SETTINGS_VALIDATION_ERROR_MESSAGE));
             return;
         }
         try {
-            SettingManager.setProxyEnabled(isProxyEnabledSelected());
+            SettingManager.setProxyEnabled(proxyEnabled);
             SettingManager.setProxyMode(getSelectedProxyMode());
-            if (manualMode) {
+            if (proxyEnabled && manualMode) {
                 SettingManager.setProxyType((String) proxyTypeComboBox.getSelectedItem());
                 SettingManager.setProxyHost(getTrimmedText(proxyHostField));
                 SettingManager.setProxyPort(Integer.parseInt(getTrimmedText(proxyPortField)));
@@ -454,6 +455,18 @@ public class ProxySettingsPanelModern extends ModernSettingsPanel {
 
     private boolean isProxyEnabledSelected() {
         return proxyEnabledCheckBox.isSelected();
+    }
+
+    private boolean hasRequiredManualProxyFields() {
+        if (getTrimmedText(proxyHostField).isEmpty()) {
+            proxyHostField.requestFocus();
+            return false;
+        }
+        if (getTrimmedText(proxyPortField).isEmpty()) {
+            proxyPortField.requestFocus();
+            return false;
+        }
+        return true;
     }
 
     private String getTrimmedText(JTextField field) {

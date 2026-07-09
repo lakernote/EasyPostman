@@ -9,8 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okhttp3.Authenticator;
 
-import java.net.*;
 import java.io.File;
+import java.net.*;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -86,15 +86,6 @@ public class OkHttpClientManager {
         ));
     }
 
-    /**
-     * 创建一个不参与缓存的客户端，用于请求级 SSL 模式覆盖。
-     */
-    public static OkHttpClient createClientForSslMode(String baseUri,
-                                                      boolean followRedirects,
-                                                      SSLConfigurationUtil.SSLVerificationMode sslMode) {
-        return createClientForSslMode(baseUri, followRedirects, sslMode, HttpRequestProxyPolicy.DEFAULT);
-    }
-
     public static OkHttpClient createClientForSslMode(String baseUri,
                                                       boolean followRedirects,
                                                       SSLConfigurationUtil.SSLVerificationMode sslMode,
@@ -140,6 +131,7 @@ public class OkHttpClientManager {
         try {
             Proxy proxy = createManualProxy();
             if (proxy == null) {
+                builder.proxy(Proxy.NO_PROXY);
                 return;
             }
 
@@ -148,6 +140,7 @@ public class OkHttpClientManager {
             configureProxyAuthenticator(builder);
         } catch (Exception e) {
             log.error("Failed to configure proxy for {}: {}", baseUri, e.getMessage(), e);
+            builder.proxy(Proxy.NO_PROXY);
         }
     }
 
@@ -158,6 +151,9 @@ public class OkHttpClientManager {
         }
 
         int proxyPort = settings().getProxyPort();
+        if (proxyPort <= 0 || proxyPort > 65535) {
+            return null;
+        }
         String proxyType = settings().getProxyType();
         Proxy.Type type = HttpRuntimeSettings.PROXY_TYPE_SOCKS.equalsIgnoreCase(proxyType) ? Proxy.Type.SOCKS : Proxy.Type.HTTP;
         return new Proxy(type, new InetSocketAddress(proxyHost, proxyPort));
@@ -178,8 +174,8 @@ public class OkHttpClientManager {
     }
 
     private static void configureSystemSocksProxyAuthentication(ProxySelector selector,
-                                                               String baseUri,
-                                                               boolean allowWhenGlobalProxyDisabled) {
+                                                                String baseUri,
+                                                                boolean allowWhenGlobalProxyDisabled) {
         URI uri = tryParseUri(baseUri, "system SOCKS proxy authentication");
         if (uri == null) {
             return;
@@ -235,21 +231,6 @@ public class OkHttpClientManager {
                 GLOBAL_COOKIE_JAR,
                 proxyPolicy
         );
-    }
-
-    public static OkHttpClient createClientForRuntimeConfig(String baseUri,
-                                                            boolean followRedirects,
-                                                            SSLConfigurationUtil.SSLVerificationMode sslMode,
-                                                            HttpClientRuntimeConfig config) {
-        return createClientForRuntimeConfig(baseUri, followRedirects, sslMode, config, GLOBAL_COOKIE_JAR);
-    }
-
-    public static OkHttpClient createClientForRuntimeConfig(String baseUri,
-                                                            boolean followRedirects,
-                                                            SSLConfigurationUtil.SSLVerificationMode sslMode,
-                                                            HttpClientRuntimeConfig config,
-                                                            CookieJar cookieJar) {
-        return createClientForRuntimeConfig(baseUri, followRedirects, sslMode, config, cookieJar, HttpRequestProxyPolicy.DEFAULT);
     }
 
     public static OkHttpClient createClientForRuntimeConfig(String baseUri,
@@ -353,12 +334,7 @@ public class OkHttpClientManager {
 
     private static String getProxyConfigKey(String baseUri, HttpRequestProxyPolicy proxyPolicy) {
         HttpRequestProxyPolicy resolvedProxyPolicy = HttpRequestProxyPolicy.normalize(proxyPolicy);
-        String proxyPart = isProxyEnabledForPolicy(resolvedProxyPolicy)
-                ? buildProxyConfigPart(baseUri)
-                : "proxy:disabled";
-        if (resolvedProxyPolicy == HttpRequestProxyPolicy.NO_PROXY) {
-            proxyPart = "proxy:request-disabled";
-        }
+        String proxyPart = buildProxyConfigKeyPart(baseUri, resolvedProxyPolicy);
 
         StringBuilder trustPart = new StringBuilder();
         for (TrustedCertificateEntry entry : settings().getCustomTrustMaterialEntries()) {
@@ -386,6 +362,21 @@ public class OkHttpClientManager {
                 settings().isCustomTrustMaterialEnabled(),
                 trustPart,
                 buildClientCertificateCachePart(baseUri));
+    }
+
+    private static String buildProxyConfigKeyPart(String baseUri, HttpRequestProxyPolicy proxyPolicy) {
+        if (proxyPolicy == HttpRequestProxyPolicy.NO_PROXY) {
+            return "proxy:request-disabled";
+        }
+        if (!isProxyEnabledForPolicy(proxyPolicy)) {
+            return "proxy:disabled";
+        }
+        try {
+            return buildProxyConfigPart(baseUri);
+        } catch (Exception e) {
+            log.warn("Failed to build proxy cache key for {}, using direct proxy fallback", baseUri, e);
+            return "proxy:unavailable";
+        }
     }
 
     private static String buildProxyConfigPart(String baseUri) {
@@ -456,10 +447,6 @@ public class OkHttpClientManager {
         return new ProxyInspection(true, selectSystemProxy(baseUri));
     }
 
-    public static boolean isProxyActiveForUrl(String url) {
-        return isProxyActiveForUrl(url, HttpRequestProxyPolicy.DEFAULT);
-    }
-
     public static boolean isProxyActiveForUrl(String url, HttpRequestProxyPolicy proxyPolicy) {
         String baseUri = extractBaseUriSafely(url, "proxy check");
         if (baseUri == null) {
@@ -470,6 +457,15 @@ public class OkHttpClientManager {
     }
 
     private static boolean isProxyActiveForBaseUri(String baseUri, HttpRequestProxyPolicy proxyPolicy) {
+        try {
+            return resolveProxyActiveForBaseUri(baseUri, proxyPolicy);
+        } catch (Exception e) {
+            log.warn("Failed to resolve proxy activity for {}, treating proxy as inactive", baseUri, e);
+            return false;
+        }
+    }
+
+    private static boolean resolveProxyActiveForBaseUri(String baseUri, HttpRequestProxyPolicy proxyPolicy) {
         HttpRequestProxyPolicy resolvedProxyPolicy = HttpRequestProxyPolicy.normalize(proxyPolicy);
         if (resolvedProxyPolicy == HttpRequestProxyPolicy.NO_PROXY || !isProxyEnabledForPolicy(resolvedProxyPolicy)) {
             return false;

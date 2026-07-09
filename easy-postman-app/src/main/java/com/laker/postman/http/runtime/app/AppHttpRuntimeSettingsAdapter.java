@@ -54,7 +54,7 @@ public class AppHttpRuntimeSettingsAdapter implements HttpRuntimeSettings {
 
     @Override
     public int getProxyPort() {
-        return SettingManager.getProxyPort();
+        return parseRuntimeProxyPort(SettingManager.getProxyPortText());
     }
 
     @Override
@@ -80,5 +80,17 @@ public class AppHttpRuntimeSettingsAdapter implements HttpRuntimeSettings {
     @Override
     public List<TrustedCertificateEntry> getCustomTrustMaterialEntries() {
         return SettingManager.getCustomTrustMaterialEntries();
+    }
+
+    private int parseRuntimeProxyPort(String value) {
+        if (value == null || value.isBlank()) {
+            return 0;
+        }
+        try {
+            int port = Integer.parseInt(value.trim());
+            return port > 0 && port <= 65535 ? port : 0;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }

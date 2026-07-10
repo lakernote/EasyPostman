@@ -43,6 +43,21 @@ public class ApplicationContextBehaviorTest {
     }
 
     @Test
+    public void shouldScanWithFallbackClassLoaderWhenContextClassLoaderIsNull() {
+        Thread currentThread = Thread.currentThread();
+        ClassLoader previousClassLoader = currentThread.getContextClassLoader();
+        try {
+            currentThread.setContextClassLoader(null);
+
+            context.scan("com.laker.postman.ioc.behavior");
+
+            assertSame(context.getBean(MethodInjectedDependency.class), context.getBean("methodInjectedDependency"));
+        } finally {
+            currentThread.setContextClassLoader(previousClassLoader);
+        }
+    }
+
+    @Test
     public void shouldFailFastForConstructorCircularDependency() {
         context.scan("com.laker.postman.ioc.behavior");
 

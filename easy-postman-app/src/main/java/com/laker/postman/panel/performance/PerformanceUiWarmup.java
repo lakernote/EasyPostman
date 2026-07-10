@@ -2,10 +2,12 @@ package com.laker.postman.panel.performance;
 
 import com.laker.postman.common.component.EasyJSpinner;
 import lombok.experimental.UtilityClass;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@Slf4j
 @UtilityClass
 public class PerformanceUiWarmup {
     private static final int WARMUP_DELAY_MS = 250;
@@ -31,7 +33,11 @@ public class PerformanceUiWarmup {
             SwingUtilities.invokeLater(PerformanceUiWarmup::warmUp);
             return;
         }
-        EasyJSpinner spinner = EasyJSpinner.intSpinner(1, 1, 1, 1);
-        spinner.getPreferredSize();
+        try {
+            EasyJSpinner spinner = EasyJSpinner.intSpinner(1, 1, 1, 1);
+            spinner.getPreferredSize();
+        } catch (RuntimeException e) {
+            log.debug("Skipped performance UI warmup after optional spinner initialization failed", e);
+        }
     }
 }

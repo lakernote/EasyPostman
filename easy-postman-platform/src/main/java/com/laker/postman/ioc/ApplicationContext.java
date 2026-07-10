@@ -101,7 +101,7 @@ public class ApplicationContext {
      */
     private void scanPackage(String basePackage) throws Exception {
         String packagePath = basePackage.replace('.', '/');
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        ClassLoader classLoader = resolveClassLoader();
         Enumeration<URL> resources = classLoader.getResources(packagePath);
 
         while (resources.hasMoreElements()) {
@@ -134,8 +134,7 @@ public class ApplicationContext {
                 if (entryName.endsWith(".class") && entryName.startsWith(packagePath)) {
                     String className = entryName.replace('/', '.').replace(".class", "");
                     try {
-                        Class<?> clazz = Class.forName(className, false,
-                                Thread.currentThread().getContextClassLoader());
+                        Class<?> clazz = Class.forName(className, false, resolveClassLoader());
                         if (clazz.isAnnotationPresent(Component.class)) {
                             registerBean(clazz);
                         }
@@ -168,8 +167,7 @@ public class ApplicationContext {
                     } else if (f.getName().endsWith(".class")) {
                         String className = packageName + "." + f.getName().replace(".class", "");
                         try {
-                            Class<?> clazz = Class.forName(className, false,
-                                    Thread.currentThread().getContextClassLoader());
+                            Class<?> clazz = Class.forName(className, false, resolveClassLoader());
                             if (clazz.isAnnotationPresent(Component.class)) {
                                 registerBean(clazz);
                             }
@@ -221,6 +219,18 @@ public class ApplicationContext {
         indexInterfaces(clazz, beanName);
 
         log.debug("Registered bean: {} -> {} (singleton={})", beanName, clazz.getName(), singleton);
+    }
+
+    private ClassLoader resolveClassLoader() {
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        if (contextClassLoader != null) {
+            return contextClassLoader;
+        }
+        ClassLoader localClassLoader = ApplicationContext.class.getClassLoader();
+        if (localClassLoader != null) {
+            return localClassLoader;
+        }
+        return ClassLoader.getSystemClassLoader();
     }
 
     /**

@@ -40,7 +40,7 @@ public class Workspace {
         if (path == null || path.isBlank()) {
             return path;
         }
-        return path.endsWith(File.separator) ? path : path + File.separator;
+        return hasTrailingSeparator(path) ? path : path + File.separator;
     }
 
     /**
@@ -52,6 +52,10 @@ public class Workspace {
             return;
         }
         String trimmed = path.trim();
-        this.path = trimmed.endsWith(File.separator) ? trimmed : trimmed + File.separator;
+        this.path = hasTrailingSeparator(trimmed) ? trimmed : trimmed + File.separator;
+    }
+
+    private boolean hasTrailingSeparator(String value) {
+        return value.endsWith("/") || value.endsWith("\\");
     }
 }

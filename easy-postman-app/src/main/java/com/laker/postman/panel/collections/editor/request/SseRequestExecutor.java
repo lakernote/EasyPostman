@@ -128,7 +128,12 @@ final class SseRequestExecutor {
                     ));
                     responsePanel.setResponseTabButtonsEnable(true);
                 } catch (Exception ex) {
-                    log.error("Error executing SSE request: {} - {}", req.url, ex.getMessage(), ex);
+                    String logMessage = NetworkErrorMessageResolver.toLogMessage(ex);
+                    if (ex instanceof java.net.UnknownHostException) {
+                        log.error("Error executing SSE request: {} - {}", req.url, logMessage);
+                    } else {
+                        log.error("Error executing SSE request: {} - {}", req.url, logMessage, ex);
+                    }
                     String userFriendlyMessage = NetworkErrorMessageResolver.toUserFriendlyMessage(ex);
                     SwingUtilities.invokeLater(() -> {
                         if (executionState.isDisposed()) {

@@ -141,7 +141,12 @@ final class HttpRequestExecutor {
                         }
                     }
                 } catch (Exception ex) {
-                    log.error("Error executing HTTP request: {} {} - {}", req.method, req.url, ex.getMessage(), ex);
+                    String logMessage = NetworkErrorMessageResolver.toLogMessage(ex);
+                    if (ex instanceof java.net.UnknownHostException) {
+                        log.error("Error executing HTTP request: {} {} - {}", req.method, req.url, logMessage);
+                    } else {
+                        log.error("Error executing HTTP request: {} {} - {}", req.method, req.url, logMessage, ex);
+                    }
                     if (isCancelled()) {
                         userCanceled = true;
                         resp = HttpExchangeTerminalResponseFactory.fromCancellation(req, requestStartMs, System.currentTimeMillis());

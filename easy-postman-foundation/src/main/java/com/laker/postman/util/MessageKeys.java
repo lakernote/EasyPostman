@@ -2341,6 +2341,7 @@ public final class MessageKeys {
     public static final String SETTINGS_PROXY_STATUS_DIRECT = "settings.proxy.status.direct";
     public static final String SETTINGS_PROXY_STATUS_UNAVAILABLE = "settings.proxy.status.unavailable";
     public static final String NETWORK_ERROR_PROXY_SOCKS_MALFORMED = "network.error.proxy.socks.malformed";
+    public static final String NETWORK_ERROR_UNKNOWN_HOST = "network.error.unknown_host";
 
     // WebDAV 同步设置
     public static final String SETTINGS_WEBDAV_SYNC_TITLE = "settings.webdav_sync.title";

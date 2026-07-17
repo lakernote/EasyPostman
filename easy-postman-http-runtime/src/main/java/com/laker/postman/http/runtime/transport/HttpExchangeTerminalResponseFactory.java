@@ -110,8 +110,9 @@ public class HttpExchangeTerminalResponseFactory {
             sb.append("-");
         } else {
             sb.append(throwable.getClass().getName());
-            if (throwable.getMessage() != null && !throwable.getMessage().isBlank()) {
-                sb.append(": ").append(throwable.getMessage());
+            String diagnosticMessage = NetworkErrorMessageResolver.toLogMessage(throwable);
+            if (diagnosticMessage != null && !diagnosticMessage.isBlank()) {
+                sb.append(": ").append(diagnosticMessage);
             }
         }
         return sb.toString();

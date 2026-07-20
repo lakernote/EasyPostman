@@ -1,6 +1,6 @@
 # EasyPostman Collection CLI example
 
-This example sends two multipart uploads to Postman Echo, one for each row in `users.csv`. Java 17 or newer is required.
+This example sends two multipart uploads to Postman Echo, one for each row in `users.csv`. Java 17 or newer is required. The only required CLI argument is the collection file; this full example also supplies an environment, iteration data, a folder filter, bail behavior, and a report path.
 
 From the repository root, either:
 
@@ -25,4 +25,4 @@ java -jar easy-postman-app/target/easy-postman-*.jar \
 
 For a downloaded JAR, replace `easy-postman-app/target/easy-postman-*.jar` with its local path. Check support first with `java -jar easy-postman-{version}.jar collection run --help`.
 
-The upload path in the collection is `fixtures/sample-file.txt`. Relative file paths are resolved from the collection directory, so the command works regardless of the shell's current directory.
+The collection reads its upload path from `{{uploadFile}}`. The environment sets it to the relative path `fixtures/sample-file.txt`, which is resolved from the collection directory, so the command works regardless of the shell's current directory. Absolute paths are also supported: replace that environment value with a full path such as `/opt/api-fixtures/sample-file.txt` or `C:\\api-fixtures\\sample-file.txt`.

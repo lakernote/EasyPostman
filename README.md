@@ -255,7 +255,15 @@ java -DCONSOLE_LOG_LEVEL=ERROR \
 
 For a downloaded JAR, replace `easy-postman-app/target/easy-postman-*.jar` with its local path. Clone the repository for the sample assets, or download [`docs/examples/collection-cli`](docs/examples/collection-cli/) separately.
 
-The exit code is `0` for success, `1` for request/assertion failures, and `2` for invalid arguments or input files. Relative upload paths resolve from the collection directory.
+The collection file is the only required CLI argument. The minimum command is:
+
+```bash
+java -jar easy-postman.jar collection run ./demo.postman_collection.json
+```
+
+All other options are optional; add `-e`, `-g`, or `-d` when the collection depends on those variables. The exit code is `0` for success, `1` for request/assertion failures, and `2` for invalid arguments or input files.
+
+Uploads accept relative or absolute paths, either directly or through variables. Relative paths resolve from the collection directory unless `--working-dir` is set; absolute paths are unaffected. The repository sample uses `{{uploadFile}}`, so changing its environment value to `/opt/fixtures/file.txt` or `C:\\fixtures\\file.txt` demonstrates an absolute path.
 
 `--folder "Upload API"` runs only that folder and its descendants. Repeat the option to select more than one folder; see the complete guide for exact-match and no-match behavior.
 

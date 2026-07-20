@@ -8,6 +8,7 @@ import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.functional.execution.FunctionalRequestExecutionResult;
 import com.laker.postman.functional.execution.FunctionalRequestExecutor;
 import com.laker.postman.functional.model.AssertionResult;
+import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.model.Environment;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpRequestItem;
@@ -87,7 +88,6 @@ public class CollectionRunExecutor {
                             selected.request(),
                             selected.groupChain()
                     );
-                    effectiveItem = resolveFilePaths(effectiveItem, workingDirectory);
                     RequestExecutionScope requestScope = RequestExecutionScope.fromVariables(
                             CollectionInheritance.mergeGroupVariables(selected.groupChain())
                     );
@@ -101,7 +101,8 @@ public class CollectionRunExecutor {
                             () -> true,
                             () -> environment,
                             requestScope,
-                            scriptOutput(out)
+                            scriptOutput(out),
+                            request -> resolveFilePaths(request, workingDirectory)
                     );
                     CollectionRunReport.RequestResult requestReport = toRequestReport(
                             iteration + 1,
@@ -255,9 +256,14 @@ public class CollectionRunExecutor {
         }
         Path dataFile = requireFile(path, "Iteration data file");
         String lowerName = dataFile.getFileName().toString().toLowerCase();
-        List<Map<String, String>> rows = lowerName.endsWith(".json")
-                ? readJsonData(dataFile)
-                : CsvDataUtil.readCsvData(dataFile.toFile());
+        List<Map<String, String>> rows;
+        if (lowerName.endsWith(".json")) {
+            rows = readJsonData(dataFile);
+        } else if (lowerName.endsWith(".csv")) {
+            rows = CsvDataUtil.readCsvData(dataFile.toFile());
+        } else {
+            throw new IllegalArgumentException("Iteration data file must use .csv or .json: " + dataFile);
+        }
         if (rows.isEmpty()) {
             throw new IllegalArgumentException("Iteration data contains no rows: " + dataFile);
         }
@@ -321,23 +327,22 @@ public class CollectionRunExecutor {
         return workingDirectory;
     }
 
-    private static HttpRequestItem resolveFilePaths(HttpRequestItem item, Path workingDirectory) {
-        if (item == null) {
-            return null;
+    private static void resolveFilePaths(PreparedRequest request, Path workingDirectory) {
+        if (request == null) {
+            return;
         }
-        if (RequestBodyTypes.BODY_TYPE_BINARY.equals(item.getBodyType())) {
-            item.setBody(resolveFilePath(item.getBody(), workingDirectory));
-            validateKnownFile(item.getBody());
+        if (RequestBodyTypes.BODY_TYPE_BINARY.equals(request.bodyType)) {
+            request.body = resolveFilePath(request.body, workingDirectory);
+            validateUploadFile(request.body);
         }
-        if (item.getFormDataList() != null) {
-            for (HttpFormData part : item.getFormDataList()) {
+        if (request.formDataList != null) {
+            for (HttpFormData part : request.formDataList) {
                 if (part != null && part.isEnabled() && part.isFile()) {
                     part.setValue(resolveFilePath(part.getValue(), workingDirectory));
-                    validateKnownFile(part.getValue());
+                    validateUploadFile(part.getValue());
                 }
             }
         }
-        return item;
     }
 
     private static String resolveFilePath(String value, Path workingDirectory) {
@@ -350,9 +355,12 @@ public class CollectionRunExecutor {
                 .toString();
     }
 
-    private static void validateKnownFile(String value) {
-        if (value == null || value.isBlank() || value.contains("{{")) {
-            return;
+    private static void validateUploadFile(String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Upload file path is required");
+        }
+        if (value.contains("{{")) {
+            throw new IllegalArgumentException("Upload file path contains unresolved variables: " + value);
         }
         Path path = Path.of(value);
         if (!Files.isRegularFile(path) || !Files.isReadable(path)) {

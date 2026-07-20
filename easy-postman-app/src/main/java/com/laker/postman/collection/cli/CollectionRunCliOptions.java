@@ -94,10 +94,25 @@ public class CollectionRunCliOptions {
     }
 
     private static String requiredValue(String[] args, int index, String optionName) {
-        if (index >= args.length || args[index] == null || args[index].isBlank()) {
+        if (index >= args.length
+                || args[index] == null
+                || args[index].isBlank()
+                || isKnownOption(args[index])) {
             throw new IllegalArgumentException(optionName + " requires a value");
         }
         return args[index];
+    }
+
+    private static boolean isKnownOption(String value) {
+        return switch (value) {
+            case "--help", "-h",
+                 "--environment", "-e",
+                 "--globals", "-g",
+                 "--iteration-data", "-d",
+                 "--iteration-count", "-n",
+                 "--folder", "--working-dir", "--out", "--bail" -> true;
+            default -> false;
+        };
     }
 
     private static int parsePositiveInt(String value, String optionName) {

@@ -64,7 +64,7 @@ docs/examples/collection-cli/
     └── sample-file.txt
 ```
 
-它会读取 `users.csv` 的 `alice`、`bob` 两行数据，分别向 Postman Echo 上传一次 `sample-file.txt`，并执行状态码、上传结果和迭代变量断言。
+它会从环境变量 `{{uploadFile}}` 读取上传路径，从 `users.csv` 读取 `alice`、`bob` 两行数据，分别向 Postman Echo 上传一次 `sample-file.txt`，并执行状态码、上传结果和迭代变量断言。
 
 从仓库根目录运行：
 
@@ -109,11 +109,36 @@ Collection run completed: status=SUCCESS iterations=2 total=2 passed=2 failed=0 
 
 ## 4. 运行自己的集合
 
+命令行层面只有一个必传项：`<collection.json>`。`-e`、`-g`、`-d`、`-n`、`--folder`、`--working-dir`、`--out` 和 `--bail` 全部可选。
+
+```text
+java -jar <easy-postman.jar> collection run <collection.json> [可选参数]
+```
+
+> 如果集合本身引用了 `{{baseUrl}}`、`{{token}}`、`{{uploadFile}}` 等变量，那么提供这些变量的环境/全局/迭代数据文件是该集合的业务前提，但它们仍不是 CLI 语法上的必传参数。变量未提供时，普通文本占位符会保留；上传路径变量未解析则会在发送前报错。
+
 最小命令：
 
 ```bash
 java -jar easy-postman.jar \
   collection run ./demo.postman_collection.json
+```
+
+只带环境变量：
+
+```bash
+java -jar easy-postman.jar \
+  collection run ./demo.postman_collection.json \
+  -e ./local.postman_environment.json
+```
+
+按 CSV/JSON 数据执行多次：
+
+```bash
+java -jar easy-postman.jar \
+  collection run ./demo.postman_collection.json \
+  -e ./local.postman_environment.json \
+  -d ./users.csv
 ```
 
 常用完整命令：
@@ -133,17 +158,18 @@ java -jar easy-postman.jar \
 
 ## 5. 参数
 
-| 参数 | 说明 |
-|------|------|
-| `-e, --environment <file>` | Postman 环境变量文件 |
-| `-g, --globals <file>` | Postman 全局变量文件 |
-| `-d, --iteration-data <file>` | CSV 或 JSON 迭代数据 |
-| `-n, --iteration-count <count>` | 迭代次数；未指定时，有数据文件则按数据行数，否则执行 1 次 |
-| `--folder <name>` | 只运行指定文件夹；可重复传入 |
-| `--working-dir <dir>` | 文件上传的相对路径根目录；默认是集合文件所在目录 |
-| `--out <file>` | 写入结构化 JSON 结果报告 |
-| `--bail` | 第一个请求错误或测试断言失败后停止 |
-| `-h, --help` | 显示帮助 |
+| 参数 | 必传 | 说明 |
+|------|------|------|
+| `<collection.json>` | 是 | 本地 Postman Collection v2.1 JSON 文件 |
+| `-e, --environment <file>` | 否 | Postman 环境变量文件 |
+| `-g, --globals <file>` | 否 | Postman 全局变量文件 |
+| `-d, --iteration-data <file>` | 否 | `.csv` 或 `.json` 迭代数据文件 |
+| `-n, --iteration-count <count>` | 否 | 正整数；未指定时，有数据文件则按数据行数，否则执行 1 次 |
+| `--folder <name>` | 否 | 只运行指定文件夹；可重复传入 |
+| `--working-dir <dir>` | 否 | 文件上传的相对路径根目录；默认是集合文件所在目录；不影响绝对路径 |
+| `--out <file>` | 否 | 写入结构化 JSON 结果报告；父目录不存在时自动创建 |
+| `--bail` | 否 | 第一个请求错误或测试断言失败后停止 |
+| `-h, --help` | 否 | 显示帮助 |
 
 ## 6. 文件上传
 
@@ -164,7 +190,76 @@ java -jar easy-postman.jar \
 }
 ```
 
-二进制请求体读取 `body.file.src`。相对路径默认以集合文件所在目录为基准，因此把集合和 `fixtures/` 一起提交到仓库即可直接在本地或 CI 运行。需要从其他目录取文件时使用 `--working-dir`。静态文件不存在或不可读时，CLI 会在发送请求前失败。
+二进制请求体读取 `body.file.src`。
+
+### 6.1 相对路径
+
+相对路径默认以 Collection 文件所在目录为基准，与执行命令时 shell 所在目录无关：
+
+```text
+api/
+├── demo.postman_collection.json
+└── fixtures/
+    └── avatar.png
+```
+
+在 Collection 中写 `"src": "fixtures/avatar.png"` 即可。若文件统一放在其他目录，可以覆盖相对路径根目录：
+
+```bash
+java -jar easy-postman.jar \
+  collection run api/demo.postman_collection.json \
+  --working-dir /opt/api-fixtures
+```
+
+此时 `"src": "avatar.png"` 会读取 `/opt/api-fixtures/avatar.png`。
+
+### 6.2 绝对路径
+
+支持 macOS、Linux 和 Windows 当前系统格式的绝对路径。绝对路径不会再拼接 Collection 目录或 `--working-dir`：
+
+```json
+{"key": "file", "type": "file", "src": "/opt/api-fixtures/avatar.png"}
+```
+
+Windows Collection JSON 中的反斜杠需要转义：
+
+```json
+{"key": "file", "type": "file", "src": "C:\\api-fixtures\\avatar.png"}
+```
+
+`~` 不会自动展开为用户主目录，请写完整绝对路径。
+
+### 6.3 通过变量指定路径
+
+推荐在 Collection 中使用变量，使同一集合可在本地和 CI 切换文件：
+
+```json
+{"key": "file", "type": "file", "src": "{{uploadFile}}"}
+```
+
+环境文件既可以给相对路径：
+
+```json
+{
+  "name": "local",
+  "values": [
+    {"key": "uploadFile", "value": "fixtures/avatar.png", "enabled": true}
+  ]
+}
+```
+
+也可以给绝对路径：
+
+```json
+{
+  "name": "ci",
+  "values": [
+    {"key": "uploadFile", "value": "/opt/api-fixtures/avatar.png", "enabled": true}
+  ]
+}
+```
+
+CLI 会先执行前置脚本和变量替换，再判断路径是绝对还是相对。因此直接路径、环境/全局/迭代变量路径，以及前置脚本设置的路径遵循同一套规则。文件路径为空、变量未解析、文件不存在或不可读时，会在发送请求前以参数/输入错误退出（退出码 `2`），不会静默上传空文件。
 
 ## 7. 迭代数据
 

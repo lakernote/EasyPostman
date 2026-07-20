@@ -62,7 +62,9 @@ public class CollectionRunCliCommand {
 
     static void printUsage(PrintStream out) {
         out.println("Usage: collection run <collection.json> [options]");
-        out.println("Options:");
+        out.println("Required:");
+        out.println("  <collection.json>                Postman Collection v2.1 file");
+        out.println("Options (all optional):");
         out.println("  -e, --environment <environment.json>");
         out.println("  -g, --globals <globals.json>");
         out.println("  -d, --iteration-data <data.csv|data.json>");
@@ -72,6 +74,8 @@ public class CollectionRunCliCommand {
         out.println("      --out <result.json>");
         out.println("      --bail                       Stop after the first failed request/test");
         out.println("  -h, --help                       Show this help");
+        out.println("Upload paths may be absolute or relative; relative paths use --working-dir");
+        out.println("or, by default, the collection file's directory.");
     }
 
     private static void saveReport(Path path, CollectionRunReport report) throws Exception {

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "EasyPostman Collection CLI Example",
-    "description": "Uploads a repository-local fixture to Postman Echo for every CSV row.",
+    "description": "Uploads a fixture selected by the uploadFile environment variable to Postman Echo for every CSV row.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -19,7 +19,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "fixtures/sample-file.txt"
+                  "src": "{{uploadFile}}"
                 },
                 {
                   "key": "user",

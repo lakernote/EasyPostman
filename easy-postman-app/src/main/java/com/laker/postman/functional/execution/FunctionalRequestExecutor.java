@@ -49,12 +49,13 @@ public final class FunctionalRequestExecutor {
                 true,
                 null,
                 null,
+                null,
                 null
         );
     }
 
     /**
-     * Executes a request whose collection inheritance and file paths were prepared by a headless caller.
+     * Executes a request whose collection inheritance was prepared by a headless caller.
      */
     public FunctionalRequestExecutionResult executeEffective(HttpRequestItem item,
                                                              ExecutionVariableContext iterationContext,
@@ -62,6 +63,28 @@ public final class FunctionalRequestExecutor {
                                                              Supplier<Environment> environmentSupplier,
                                                              RequestExecutionScope requestExecutionScope,
                                                              JsScriptExecutor.OutputCallback outputCallback) {
+        return executeEffective(
+                item,
+                iterationContext,
+                executionActiveSupplier,
+                environmentSupplier,
+                requestExecutionScope,
+                outputCallback,
+                null
+        );
+    }
+
+    /**
+     * Executes an effective request and lets a headless caller adjust the prepared request after
+     * pre-scripts and variable substitution, but before the HTTP transport reads it.
+     */
+    public FunctionalRequestExecutionResult executeEffective(HttpRequestItem item,
+                                                             ExecutionVariableContext iterationContext,
+                                                             BooleanSupplier executionActiveSupplier,
+                                                             Supplier<Environment> environmentSupplier,
+                                                             RequestExecutionScope requestExecutionScope,
+                                                             JsScriptExecutor.OutputCallback outputCallback,
+                                                             Consumer<PreparedRequest> finalizedRequestConsumer) {
         return execute(
                 item,
                 iterationContext,
@@ -69,7 +92,8 @@ public final class FunctionalRequestExecutor {
                 false,
                 environmentSupplier,
                 requestExecutionScope,
-                outputCallback
+                outputCallback,
+                finalizedRequestConsumer
         );
     }
 
@@ -79,7 +103,8 @@ public final class FunctionalRequestExecutor {
                                                      boolean applyActiveCollectionInheritance,
                                                      Supplier<Environment> environmentSupplier,
                                                      RequestExecutionScope requestExecutionScope,
-                                                     JsScriptExecutor.OutputCallback outputCallback) {
+                                                     JsScriptExecutor.OutputCallback outputCallback,
+                                                     Consumer<PreparedRequest> finalizedRequestConsumer) {
         if (executionActiveSupplier != null && !executionActiveSupplier.getAsBoolean()) {
             return FunctionalRequestExecutionResult.skipped();
         }
@@ -104,6 +129,9 @@ public final class FunctionalRequestExecutor {
         ScriptExecutionResult preResult = pipeline.executePreScript();
         if (preResult.isSuccess()) {
             pipeline.finalizeRequest();
+            if (finalizedRequestConsumer != null) {
+                finalizedRequestConsumer.accept(request);
+            }
         }
 
         HttpResponse response = null;

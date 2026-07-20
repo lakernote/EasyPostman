@@ -93,6 +93,81 @@ public class CollectionRunCliCommandTest {
     }
 
     @Test
+    public void shouldUploadAbsoluteFilePathFromEnvironmentVariable() throws Exception {
+        server = new MockWebServer();
+        server.start();
+        server.enqueue(okResponse());
+
+        Path directory = Files.createTempDirectory("easy-postman-collection-absolute-form-");
+        Path workingDirectory = Files.createDirectory(directory.resolve("working"));
+        Path uploadFile = directory.resolve("outside-working-directory.txt").toAbsolutePath();
+        Path collectionFile = directory.resolve("upload.postman_collection.json");
+        Path environmentFile = directory.resolve("local.postman_environment.json");
+        Files.writeString(uploadFile, "absolute-form-data-payload", StandardCharsets.UTF_8);
+        Files.writeString(collectionFile, uploadCollection("{{uploadPath}}"), StandardCharsets.UTF_8);
+        Files.writeString(
+                environmentFile,
+                environmentJson(baseUrl(), uploadFile.toString()),
+                StandardCharsets.UTF_8
+        );
+
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        int exitCode = command().run(new String[]{
+                        "collection", "run", collectionFile.toString(),
+                        "-e", environmentFile.toString(),
+                        "--working-dir", workingDirectory.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 0, stderr.toString());
+        RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(request);
+        assertTrue(request.getBody().readUtf8().contains("absolute-form-data-payload"));
+    }
+
+    @Test
+    public void shouldResolveAFilePathForEachIterationDataRow() throws Exception {
+        server = new MockWebServer();
+        server.start();
+        server.enqueue(okResponse());
+        server.enqueue(okResponse());
+
+        Path directory = Files.createTempDirectory("easy-postman-collection-iteration-files-");
+        Path firstUpload = directory.resolve("first.txt").toAbsolutePath();
+        Path secondUpload = directory.resolve("second.txt").toAbsolutePath();
+        Path collectionFile = directory.resolve("upload.postman_collection.json");
+        Path environmentFile = directory.resolve("local.postman_environment.json");
+        Path dataFile = directory.resolve("files.csv");
+        Files.writeString(firstUpload, "first-iteration-payload", StandardCharsets.UTF_8);
+        Files.writeString(secondUpload, "second-iteration-payload", StandardCharsets.UTF_8);
+        Files.writeString(collectionFile, uploadCollection("{{uploadPath}}"), StandardCharsets.UTF_8);
+        Files.writeString(environmentFile, environmentJson(baseUrl()), StandardCharsets.UTF_8);
+        Files.writeString(
+                dataFile,
+                "uploadPath,user\n%s,alice\n%s,bob\n".formatted(firstUpload, secondUpload),
+                StandardCharsets.UTF_8
+        );
+
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        int exitCode = command().run(new String[]{
+                        "collection", "run", collectionFile.toString(),
+                        "-e", environmentFile.toString(),
+                        "-d", dataFile.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 0, stderr.toString());
+        RecordedRequest firstRequest = server.takeRequest(5, TimeUnit.SECONDS);
+        RecordedRequest secondRequest = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(firstRequest);
+        assertNotNull(secondRequest);
+        assertTrue(firstRequest.getBody().readUtf8().contains("first-iteration-payload"));
+        assertTrue(secondRequest.getBody().readUtf8().contains("second-iteration-payload"));
+    }
+
+    @Test
     public void shouldStopAfterFirstFailedTestWhenBailIsEnabled() throws Exception {
         server = new MockWebServer();
         server.start();
@@ -172,6 +247,41 @@ public class CollectionRunCliCommandTest {
     }
 
     @Test
+    public void shouldUploadAbsoluteBinaryPathFromEnvironmentVariable() throws Exception {
+        server = new MockWebServer();
+        server.start();
+        server.enqueue(okResponse());
+
+        Path directory = Files.createTempDirectory("easy-postman-collection-absolute-binary-");
+        Path workingDirectory = Files.createDirectory(directory.resolve("working"));
+        Path uploadFile = directory.resolve("outside-working-directory.bin").toAbsolutePath();
+        Path collectionFile = directory.resolve("binary.postman_collection.json");
+        Path environmentFile = directory.resolve("local.postman_environment.json");
+        byte[] payload = new byte[]{7, 6, 5, 4, 3, 2, 1};
+        Files.write(uploadFile, payload);
+        Files.writeString(collectionFile, binaryCollection(baseUrl(), "{{uploadPath}}"), StandardCharsets.UTF_8);
+        Files.writeString(
+                environmentFile,
+                environmentJson(baseUrl(), uploadFile.toString()),
+                StandardCharsets.UTF_8
+        );
+
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        int exitCode = command().run(new String[]{
+                        "collection", "run", collectionFile.toString(),
+                        "-e", environmentFile.toString(),
+                        "--working-dir", workingDirectory.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 0, stderr.toString());
+        RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(request);
+        assertEquals(request.getBody().readByteArray(), payload);
+    }
+
+    @Test
     public void shouldReturnUsageErrorWhenUploadFileIsMissing() throws Exception {
         Path directory = Files.createTempDirectory("easy-postman-collection-missing-file-");
         Path collectionFile = directory.resolve("upload.postman_collection.json");
@@ -186,6 +296,56 @@ public class CollectionRunCliCommandTest {
 
         assertEquals(exitCode, 2);
         assertTrue(stderr.toString().contains("Upload file does not exist or is not readable"));
+    }
+
+    @Test
+    public void shouldRejectUnresolvedUploadPathBeforeSendingRequest() throws Exception {
+        Path directory = Files.createTempDirectory("easy-postman-collection-unresolved-file-");
+        Path collectionFile = directory.resolve("upload.postman_collection.json");
+        Files.writeString(collectionFile, uploadCollection("{{uploadPath}}"), StandardCharsets.UTF_8);
+
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        int exitCode = command().run(new String[]{
+                        "collection", "run", collectionFile.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("Upload file path contains unresolved variables"));
+    }
+
+    @Test
+    public void shouldRejectKnownOptionWhenFolderValueIsMissing() {
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        int exitCode = command().run(new String[]{
+                        "collection", "run", "--folder", "--bail"
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("--folder requires a value"));
+    }
+
+    @Test
+    public void shouldRejectUnsupportedIterationDataExtension() throws Exception {
+        Path directory = Files.createTempDirectory("easy-postman-collection-data-extension-");
+        Path collectionFile = directory.resolve("collection.postman_collection.json");
+        Path dataFile = directory.resolve("users.txt");
+        Files.writeString(collectionFile, bailCollection("http://127.0.0.1:1"), StandardCharsets.UTF_8);
+        Files.writeString(dataFile, "user\nalice\n", StandardCharsets.UTF_8);
+
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        int exitCode = command().run(new String[]{
+                        "collection", "run", collectionFile.toString(),
+                        "-d", dataFile.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("Iteration data file must use .csv or .json"));
     }
 
     private CollectionRunCliCommand command() {
@@ -206,17 +366,29 @@ public class CollectionRunCliCommandTest {
     }
 
     private static String environmentJson(String baseUrl) {
+        return environmentJson(baseUrl, null);
+    }
+
+    private static String environmentJson(String baseUrl, String uploadPath) {
+        String uploadVariable = uploadPath == null
+                ? ""
+                : ",\n    {\"key\": \"uploadPath\", \"value\": %s, \"enabled\": true}"
+                        .formatted(JsonUtil.toJsonStr(uploadPath));
         return """
                 {
                   "name": "CLI local",
                   "values": [
-                    {"key": "baseUrl", "value": "%s", "enabled": true}
+                    {"key": "baseUrl", "value": %s, "enabled": true}%s
                   ]
                 }
-                """.formatted(baseUrl);
+                """.formatted(JsonUtil.toJsonStr(baseUrl), uploadVariable);
     }
 
     private static String uploadCollection() {
+        return uploadCollection("sample-file.txt");
+    }
+
+    private static String uploadCollection(String uploadPath) {
         return """
                 {
                   "info": {
@@ -232,7 +404,7 @@ public class CollectionRunCliCommandTest {
                         "body": {
                           "mode": "formdata",
                           "formdata": [
-                            {"key": "document", "type": "file", "src": "sample-file.txt"},
+                            {"key": "document", "type": "file", "src": %s},
                             {"key": "user", "type": "text", "value": "{{user}}"}
                           ]
                         }
@@ -252,7 +424,7 @@ public class CollectionRunCliCommandTest {
                     }
                   ]
                 }
-                """;
+                """.formatted(JsonUtil.toJsonStr(uploadPath));
     }
 
     private static String bailCollection(String baseUrl) {
@@ -294,6 +466,10 @@ public class CollectionRunCliCommandTest {
     }
 
     private static String binaryCollection(String baseUrl) {
+        return binaryCollection(baseUrl, "payload.bin");
+    }
+
+    private static String binaryCollection(String baseUrl, String uploadPath) {
         return """
                 {
                   "info": {"name": "Binary CLI"},
@@ -309,11 +485,11 @@ public class CollectionRunCliCommandTest {
                       "url": "%s/binary",
                       "body": {
                         "mode": "file",
-                        "file": {"src": "payload.bin"}
+                        "file": {"src": %s}
                       }
                     }
                   }]
                 }
-                """.formatted(baseUrl);
+                """.formatted(baseUrl, JsonUtil.toJsonStr(uploadPath));
     }
 }

@@ -255,7 +255,15 @@ java -DCONSOLE_LOG_LEVEL=ERROR \
 
 如果使用下载的 JAR，把 `easy-postman-app/target/easy-postman-*.jar` 替换为实际下载路径；示例文件可以随仓库一起 clone，或从 [`docs/examples/collection-cli`](docs/examples/collection-cli/) 单独下载。
 
-成功时退出码为 `0`，请求或断言失败为 `1`，参数或输入文件错误为 `2`。相对上传路径默认以集合文件所在目录为基准。
+CLI 只有 Collection 文件是必传项，最小命令是：
+
+```bash
+java -jar easy-postman.jar collection run ./demo.postman_collection.json
+```
+
+其余参数全部可选；集合引用了环境或数据变量时，再按需传 `-e`、`-g`、`-d`。成功时退出码为 `0`，请求或断言失败为 `1`，参数或输入文件错误为 `2`。
+
+文件上传支持直接或通过变量提供相对/绝对路径。相对路径默认以集合文件所在目录为基准，可由 `--working-dir` 覆盖；绝对路径不受它影响。仓库示例通过环境变量 `{{uploadFile}}` 使用相对路径，把环境值改成 `/opt/fixtures/file.txt` 或 `C:\\fixtures\\file.txt` 即可使用绝对路径。
 
 `--folder "Upload API"` 表示只运行该文件夹及其子文件夹；可以重复传入多个文件夹。精确匹配、同名文件夹和无匹配退出码等规则见完整指南。
 

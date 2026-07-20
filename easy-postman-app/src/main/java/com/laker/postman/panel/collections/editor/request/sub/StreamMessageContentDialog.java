@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ModernButtonFactory;
@@ -173,7 +174,7 @@ final class StreamMessageContentDialog {
     }
 
     private static RSyntaxTextArea createContentEditor() {
-        RSyntaxTextArea textArea = new RSyntaxTextArea();
+        RSyntaxTextArea textArea = new FallbackAwareRSyntaxTextArea();
         textArea.setEditable(false);
         textArea.setCodeFoldingEnabled(true);
         textArea.setLineWrap(false);

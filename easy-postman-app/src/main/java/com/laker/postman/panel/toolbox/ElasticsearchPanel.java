@@ -2,6 +2,7 @@ package com.laker.postman.panel.toolbox;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.HttpRequestDisplayMetadata;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.AppToolWindowChrome;
@@ -1837,7 +1838,7 @@ public class ElasticsearchPanel extends JPanel {
     // ===== 工具方法 =====
 
     private RSyntaxTextArea createJsonEditor(boolean editable) {
-        RSyntaxTextArea area = new RSyntaxTextArea(10, 60);
+        RSyntaxTextArea area = new FallbackAwareRSyntaxTextArea(10, 60);
         area.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         area.setCodeFoldingEnabled(true);
         area.setAntiAliasingEnabled(true);

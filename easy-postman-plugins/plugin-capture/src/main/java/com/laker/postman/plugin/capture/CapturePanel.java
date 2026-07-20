@@ -2,6 +2,7 @@ package com.laker.postman.plugin.capture;
 
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.ChipLabel;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -2085,7 +2086,7 @@ public class CapturePanel extends JPanel {
     }
 
     private RSyntaxTextArea createDetailArea() {
-        RSyntaxTextArea area = new RSyntaxTextArea();
+        RSyntaxTextArea area = new FallbackAwareRSyntaxTextArea();
         area.setEditable(false);
         area.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_NONE);
         area.setCodeFoldingEnabled(true);

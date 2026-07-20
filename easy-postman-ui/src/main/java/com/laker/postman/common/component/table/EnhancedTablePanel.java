@@ -3,6 +3,7 @@ package com.laker.postman.common.component.table;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.ModernButtonFactory;
 import com.laker.postman.common.component.notification.NotificationCenter;
@@ -1081,7 +1082,7 @@ public class EnhancedTablePanel extends JPanel {
         ToolWindowSurfaceStyle.applyDialogSurface((JPanel) dialog.getContentPane());
 
         // ── RSyntaxTextArea ─────────────────────────────────────────────
-        RSyntaxTextArea textArea = new RSyntaxTextArea();
+        RSyntaxTextArea textArea = new FallbackAwareRSyntaxTextArea();
         textArea.setEditable(false);
         textArea.setCodeFoldingEnabled(true);
         textArea.setLineWrap(true);

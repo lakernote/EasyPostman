@@ -21,6 +21,8 @@ import java.util.function.Consumer;
 /**
  * RSyntaxTextArea 的统一外观入口。
  * 应用亮暗主题、标准 token painter，并在主题之后调用宿主提供的编辑器字体配置器。
+ * 项目内编辑器使用 {@link com.laker.postman.common.component.FallbackAwareRSyntaxTextArea}，
+ * 由文本组件本身统一缺字字体与布局度量。
  */
 @Slf4j
 @UtilityClass
@@ -45,7 +47,8 @@ public class EditorThemeUtil {
     private static volatile Consumer<RSyntaxTextArea> configuredEditorFontApplier;
 
     /**
-     * 加载并应用统一编辑器外观，支持亮暗主题、长 token 裁剪和缺字字体回退。
+     * 加载并应用统一编辑器外观。长 token 编辑器可额外安装视口裁剪 painter；
+     * 缺字字体回退由 {@code FallbackAwareRSyntaxTextArea} 提供。
      *
      * @param area RSyntaxTextArea 编辑器实例
      */
@@ -73,8 +76,8 @@ public class EditorThemeUtil {
     }
 
     /**
-     * Installs the standard fallback-aware painter, or restores the viewport-clipped specialization
-     * previously selected for this editor.
+     * Installs the standard token-aware painter, or restores the viewport-clipped specialization
+     * previously selected for this editor. Font fallback belongs to the text area, not the painter.
      */
     private static void installConfiguredTokenPainter(RSyntaxTextArea area) {
         if (area != null) {

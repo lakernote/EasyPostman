@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.HelpButton;
@@ -56,12 +57,12 @@ public class ScriptPanel extends JPanel {
         setBorder(new EmptyBorder(5, 0, 5, 5));
 
         // 初始化并配置 PreScript 编辑器
-        prescriptArea = new RSyntaxTextArea(6, 40);
+        prescriptArea = new FallbackAwareRSyntaxTextArea(6, 40);
         prescriptAc = configureEditor(prescriptArea);
         SearchableTextArea prescriptSearchableArea = new SearchableTextArea(prescriptArea);
 
         // 初始化并配置 PostScript 编辑器
-        postscriptArea = new RSyntaxTextArea(6, 40);
+        postscriptArea = new FallbackAwareRSyntaxTextArea(6, 40);
         postscriptAc = configureEditor(postscriptArea);
         SearchableTextArea postscriptSearchableArea = new SearchableTextArea(postscriptArea);
 

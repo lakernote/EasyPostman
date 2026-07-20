@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.plugin.kafka.MessageKeys;
 import com.laker.postman.plugin.kafka.shared.ui.KafkaPropertiesEditorPanel;
 import com.laker.postman.common.component.PlaceholderTextArea;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowChrome;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -122,7 +123,7 @@ public class KafkaProducerPanel extends JPanel {
         payloadHeader.add(payloadLbl);
         payloadHeader.add(clearButton);
 
-        payloadArea = new RSyntaxTextArea();
+        payloadArea = new FallbackAwareRSyntaxTextArea();
         payloadArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         payloadArea.setCodeFoldingEnabled(true);
         payloadArea.setAntiAliasingEnabled(true);

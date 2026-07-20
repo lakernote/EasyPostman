@@ -1,6 +1,7 @@
 package com.laker.postman.common.component.dialog;
 
 import com.laker.postman.common.UiSingletonFactory;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SyntaxEditorScrollPane;
 import com.laker.postman.common.component.AppToolWindowChrome;
@@ -382,7 +383,7 @@ public class SnippetDialog extends JDialog {
     }
 
     private RSyntaxTextArea createPreviewEditor() {
-        RSyntaxTextArea editor = new RSyntaxTextArea(8, 40);
+        RSyntaxTextArea editor = new FallbackAwareRSyntaxTextArea(8, 40);
         editor.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVASCRIPT);
         editor.setEditable(false);
         editor.setLineWrap(false);

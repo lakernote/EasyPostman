@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.test.AbstractSwingUiTest;
@@ -30,6 +31,7 @@ public class RequestBodyPanelTest extends AbstractSwingUiTest {
         Field field = RSyntaxTextArea.class.getDeclaredField("tokenPainter");
         field.setAccessible(true);
 
+        assertTrue(holder[0].getBodyArea() instanceof FallbackAwareRSyntaxTextArea);
         assertEquals(field.get(holder[0].getBodyArea()).getClass(), ViewportClippedTokenPainter.class);
     }
 

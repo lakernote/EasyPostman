@@ -1,6 +1,7 @@
 package com.laker.postman.panel.collections.editor.request;
 
 import com.formdev.flatlaf.FlatClientProperties;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SyntaxEditorScrollPane;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
@@ -105,7 +106,7 @@ final class RequestCodeSnippetPanel extends JPanel {
     }
 
     private RSyntaxTextArea createCodeArea() {
-        RSyntaxTextArea editor = new RSyntaxTextArea(12, 36);
+        RSyntaxTextArea editor = new FallbackAwareRSyntaxTextArea(12, 36);
         editor.setEditable(false);
         editor.setCodeFoldingEnabled(true);
         editor.setAntiAliasingEnabled(true);

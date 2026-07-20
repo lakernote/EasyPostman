@@ -102,7 +102,7 @@ public class EditorThemeUtilTest {
     }
 
     @Test
-    public void loadThemeShouldInstallSharedFallbackAwareTokenPainter() throws Exception {
+    public void loadThemeShouldInstallSharedStandardTokenPainter() throws Exception {
         RSyntaxTextArea textArea = new RSyntaxTextArea();
 
         EditorThemeUtil.loadTheme(textArea);

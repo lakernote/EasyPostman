@@ -3,6 +3,7 @@ package com.laker.postman.plugin.kafka.consumer.ui;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.ChipLabel;
 import com.laker.postman.common.component.EasyComboBox;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowActionToolbar;
 import com.laker.postman.common.component.ToolWindowChrome;
@@ -265,7 +266,7 @@ public class KafkaConsumerPanel extends JPanel {
         detailHeader.add(closeDetailBtn, "wrap");
         detailHeader.add(timeInfoPanel, "span, growx");
 
-        detailArea = new RSyntaxTextArea();
+        detailArea = new FallbackAwareRSyntaxTextArea();
         detailArea.setEditable(false);
         detailArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         detailArea.setCodeFoldingEnabled(true);

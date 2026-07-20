@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.button.WrapToggleButton;
 import com.laker.postman.http.runtime.model.HttpResponse;
 import com.laker.postman.test.AbstractSwingUiTest;
@@ -51,6 +52,7 @@ public class ResponseBodyPanelTest extends AbstractSwingUiTest {
     public void shouldUseViewportClippedTokenPainterForResponseRendering() throws Exception {
         ResponseBodyPanel panel = createPanelWithResponse(responseWithBody(longLineJson()));
 
+        assertTrue(panel.getResponseBodyPane() instanceof FallbackAwareRSyntaxTextArea);
         Object tokenPainter = getTokenPainter(panel);
 
         assertEquals(tokenPainter.getClass().getName(),

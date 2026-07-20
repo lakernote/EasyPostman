@@ -1,5 +1,6 @@
 package com.laker.postman.panel.toolbox;
 
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
@@ -8,6 +9,7 @@ import javax.swing.*;
 import java.lang.reflect.Field;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class JsonToolPanelTest extends AbstractSwingUiTest {
 
@@ -21,6 +23,7 @@ public class JsonToolPanelTest extends AbstractSwingUiTest {
     }
 
     private void assertViewportClippedTokenPainter(RSyntaxTextArea textArea) throws Exception {
+        assertTrue(textArea instanceof FallbackAwareRSyntaxTextArea);
         Field field = RSyntaxTextArea.class.getDeclaredField("tokenPainter");
         field.setAccessible(true);
         Object tokenPainter = field.get(textArea);

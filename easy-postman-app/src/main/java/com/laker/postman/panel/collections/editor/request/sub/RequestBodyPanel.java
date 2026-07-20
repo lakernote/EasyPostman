@@ -8,6 +8,7 @@ import com.laker.postman.request.model.RequestItemProtocolEnum;
 
 import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.EasyComboBox;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.*;
@@ -479,7 +480,7 @@ public class RequestBodyPanel extends JPanel {
         binaryFilePathField.setPreferredSize(new Dimension(BINARY_FILE_FIELD_MAX_WIDTH, preferredSize.height));
     }
 
-    private class VariableAwareSyntaxTextArea extends RSyntaxTextArea {
+    private class VariableAwareSyntaxTextArea extends FallbackAwareRSyntaxTextArea {
         private VariableAwareSyntaxTextArea() {
             super(5, 20);
         }

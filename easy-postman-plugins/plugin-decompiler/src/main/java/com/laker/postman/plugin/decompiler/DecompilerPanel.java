@@ -1,5 +1,6 @@
 package com.laker.postman.plugin.decompiler;
 
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.notification.NotificationCenter;
 
 import com.formdev.flatlaf.FlatClientProperties;
@@ -292,7 +293,7 @@ public class DecompilerPanel extends JPanel {
         panel.add(headerPanel, BorderLayout.NORTH);
 
         // 创建代码编辑器
-        codeArea = new RSyntaxTextArea();
+        codeArea = new FallbackAwareRSyntaxTextArea();
         codeArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
         codeArea.setCodeFoldingEnabled(true);
         codeArea.setAntiAliasingEnabled(true);

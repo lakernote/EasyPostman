@@ -6,6 +6,7 @@ import cn.hutool.core.util.XmlUtil;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.UiSingletonFactory;
 import com.laker.postman.common.component.EasyComboBox;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.*;
@@ -78,7 +79,7 @@ public class ResponseBodyPanel extends JPanel {
         ToolWindowSurfaceStyle.applyCard(this);
         // 设置边距
         setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        responseBodyPane = new RSyntaxTextArea();
+        responseBodyPane = new FallbackAwareRSyntaxTextArea();
         responseBodyPane.setEditable(false);
         responseBodyPane.setCodeFoldingEnabled(true);
         responseBodyPane.setLineWrap(false); // 禁用自动换行以提升大文本性能

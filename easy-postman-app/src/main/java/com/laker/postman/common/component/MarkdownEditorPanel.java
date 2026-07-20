@@ -407,7 +407,7 @@ public class MarkdownEditorPanel extends JPanel {
         panel.setOpaque(false);
 
         // 创建 RSyntaxTextArea 用于 Markdown 编辑
-        editorArea = new RSyntaxTextArea();
+        editorArea = new FallbackAwareRSyntaxTextArea();
         editorArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_MARKDOWN); // 设置为 Markdown 语法高亮
         editorArea.setCodeFoldingEnabled(false); // Markdown 不需要代码折叠
         editorArea.setTabSize(4); // 设置 Tab 宽度为 4 个空格

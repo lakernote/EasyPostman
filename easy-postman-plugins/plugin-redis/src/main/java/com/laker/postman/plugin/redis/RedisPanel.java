@@ -5,6 +5,7 @@ import com.laker.postman.common.component.notification.NotificationCenter;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.EasyJSpinner;
+import com.laker.postman.common.component.FallbackAwareRSyntaxTextArea;
 import com.laker.postman.common.component.SearchTextField;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowChrome;
@@ -602,7 +603,7 @@ public class RedisPanel extends JPanel {
     }
 
     private RSyntaxTextArea createJsonEditor(boolean editable) {
-        RSyntaxTextArea area = new RSyntaxTextArea(10, 60);
+        RSyntaxTextArea area = new FallbackAwareRSyntaxTextArea(10, 60);
         area.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JSON);
         area.setCodeFoldingEnabled(true);
         area.setAntiAliasingEnabled(true);

@@ -1,15 +1,18 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.request.model.RequestItemProtocolEnum;
 import com.laker.postman.test.AbstractSwingUiTest;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -18,6 +21,17 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class RequestBodyPanelTest extends AbstractSwingUiTest {
+
+    @Test
+    public void shouldUseViewportClippedTokenPainterForLargeRequestBodies() throws Exception {
+        RequestBodyPanel[] holder = new RequestBodyPanel[1];
+        SwingUtilities.invokeAndWait(() -> holder[0] = new RequestBodyPanel(RequestItemProtocolEnum.HTTP));
+
+        Field field = RSyntaxTextArea.class.getDeclaredField("tokenPainter");
+        field.setAccessible(true);
+
+        assertEquals(field.get(holder[0].getBodyArea()).getClass(), ViewportClippedTokenPainter.class);
+    }
 
     @Test
     public void shouldDisableMatchedBracketPopupForRequestEditor() throws Exception {

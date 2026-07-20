@@ -10,7 +10,6 @@ import cn.hutool.core.text.CharSequenceUtil;
 import com.laker.postman.common.component.EasyComboBox;
 import com.laker.postman.common.component.SearchableTextArea;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
-import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.component.button.*;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.common.component.table.FormDataTablePanel;
@@ -268,13 +267,9 @@ public class RequestBodyPanel extends JPanel {
         bodyArea.setCodeFoldingEnabled(true); // 启用代码折叠
         bodyArea.setLineWrap(false); // 禁用自动换行以提升大文本性能
         bodyArea.setShowMatchedBracketPopup(false);
-        bodyArea.setTokenPainterFactory(ignored -> new ViewportClippedTokenPainter());
-
-        // 加载编辑器主题 - 支持亮色和暗色主题自适应
+        // 统一加载主题、编辑器字体和缺字回退绘制
         EditorThemeUtil.loadTheme(bodyArea);
-
-        // 设置字体 - 使用用户设置的字体大小（必须在主题应用之后，避免被主题覆盖）
-        updateEditorFont();
+        EditorThemeUtil.installViewportClippedTokenPainter(bodyArea);
 
         // ====== 添加撤回/重做功能 ======
         bodyArea.getDocument().addUndoableEditListener(bodyUndoManager);
@@ -874,16 +869,6 @@ public class RequestBodyPanel extends JPanel {
         if (wsSendButton != null) {
             wsSendButton.setVisible(editable);
             wsSendButton.setEnabled(editable);
-        }
-    }
-
-    /**
-     * 更新编辑器字体
-     * 使用独立编辑器字体设置
-     */
-    private void updateEditorFont() {
-        if (bodyArea != null) {
-            EditorFontManager.applyConfiguredEditorFont(bodyArea);
         }
     }
 

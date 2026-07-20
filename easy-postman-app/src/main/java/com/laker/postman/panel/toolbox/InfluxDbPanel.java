@@ -1347,7 +1347,6 @@ public class InfluxDbPanel extends JPanel {
         textArea.setAnimateBracketMatching(true);
         textArea.setEditable(true);
         EditorThemeUtil.loadTheme(textArea);
-        updateEditorFont(textArea);
         return textArea;
     }
 
@@ -1360,14 +1359,7 @@ public class InfluxDbPanel extends JPanel {
         textArea.setHighlightCurrentLine(false);
         textArea.setEditable(false);
         EditorThemeUtil.loadTheme(textArea);
-        updateEditorFont(textArea);
         return textArea;
-    }
-
-    private void updateEditorFont(RSyntaxTextArea editor) {
-        if (editor != null) {
-            EditorFontManager.applyConfiguredEditorFont(editor);
-        }
     }
 
     private static String defaultString(String value) {

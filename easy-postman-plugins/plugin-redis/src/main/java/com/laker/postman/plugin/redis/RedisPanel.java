@@ -608,7 +608,6 @@ public class RedisPanel extends JPanel {
         area.setAntiAliasingEnabled(true);
         area.setEditable(editable);
         EditorThemeUtil.loadTheme(area);
-        area.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         return area;
     }
 

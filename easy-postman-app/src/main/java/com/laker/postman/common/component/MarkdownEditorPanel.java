@@ -3,7 +3,6 @@ package com.laker.postman.common.component;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.service.render.HttpHtmlRenderer;
-import com.laker.postman.util.EditorFontManager;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FileChooserUtil;
 import com.laker.postman.util.FontsUtil;
@@ -412,10 +411,8 @@ public class MarkdownEditorPanel extends JPanel {
         editorArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_MARKDOWN); // 设置为 Markdown 语法高亮
         editorArea.setCodeFoldingEnabled(false); // Markdown 不需要代码折叠
         editorArea.setTabSize(4); // 设置 Tab 宽度为 4 个空格
-        // 加载编辑器主题 - 支持亮色和暗色主题自适应（必须在 setFont 之前，否则主题会覆盖字体）
+        // 统一加载主题、编辑器字体和缺字回退绘制
         EditorThemeUtil.loadTheme(editorArea);
-        // 设置编辑器字体（在 loadTheme 之后，确保不被主题覆盖）
-        EditorFontManager.applyConfiguredEditorFont(editorArea);
 
         // 使用 SearchableTextArea 包装器（启用搜索替换功能）
         searchableTextArea = new SearchableTextArea(editorArea, true);

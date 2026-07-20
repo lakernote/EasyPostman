@@ -9,7 +9,6 @@ import com.laker.postman.common.component.button.RefreshButton;
 import com.laker.postman.common.component.setting.SettingsInputStyle;
 import com.laker.postman.common.constants.ModernColors;
 import com.laker.postman.request.model.HttpRequestItem;
-import com.laker.postman.util.EditorFontManager;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.IconUtil;
@@ -115,7 +114,6 @@ final class RequestCodeSnippetPanel extends JPanel {
         editor.setLineWrap(false);
         editor.setTabSize(4);
         EditorThemeUtil.loadTheme(editor);
-        EditorFontManager.applyConfiguredEditorFont(editor);
         return editor;
     }
 

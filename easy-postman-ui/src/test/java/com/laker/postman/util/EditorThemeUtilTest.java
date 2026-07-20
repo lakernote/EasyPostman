@@ -2,6 +2,8 @@ package com.laker.postman.util;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLightLaf;
+import com.laker.postman.common.component.StandardEditorTokenPainter;
+import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
@@ -12,6 +14,7 @@ import org.testng.annotations.Test;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.lang.reflect.Field;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -96,6 +99,42 @@ public class EditorThemeUtilTest {
         EditorThemeUtil.loadTheme(textArea);
 
         assertEquals(textArea.getFont(), expectedFont);
+    }
+
+    @Test
+    public void loadThemeShouldInstallSharedFallbackAwareTokenPainter() throws Exception {
+        RSyntaxTextArea textArea = new RSyntaxTextArea();
+
+        EditorThemeUtil.loadTheme(textArea);
+
+        Field field = RSyntaxTextArea.class.getDeclaredField("tokenPainter");
+        field.setAccessible(true);
+        assertEquals(field.get(textArea).getClass(), StandardEditorTokenPainter.class);
+    }
+
+    @Test
+    public void shouldInstallViewportClippedSpecializationOnDemand() throws Exception {
+        RSyntaxTextArea textArea = new RSyntaxTextArea();
+        EditorThemeUtil.loadTheme(textArea);
+
+        EditorThemeUtil.installViewportClippedTokenPainter(textArea);
+
+        Field field = RSyntaxTextArea.class.getDeclaredField("tokenPainter");
+        field.setAccessible(true);
+        assertEquals(field.get(textArea).getClass(), ViewportClippedTokenPainter.class);
+    }
+
+    @Test
+    public void themeReloadShouldPreserveViewportClippedSpecialization() throws Exception {
+        RSyntaxTextArea textArea = new RSyntaxTextArea();
+        EditorThemeUtil.loadTheme(textArea);
+        EditorThemeUtil.installViewportClippedTokenPainter(textArea);
+
+        EditorThemeUtil.loadTheme(textArea);
+
+        Field field = RSyntaxTextArea.class.getDeclaredField("tokenPainter");
+        field.setAccessible(true);
+        assertEquals(field.get(textArea).getClass(), ViewportClippedTokenPainter.class);
     }
 
     @Test

@@ -1,5 +1,7 @@
 package com.laker.postman.util;
 
+import com.laker.postman.common.component.StandardEditorTokenPainter;
+import com.laker.postman.common.component.ViewportClippedTokenPainter;
 import com.laker.postman.common.constants.ModernColors;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -17,12 +19,15 @@ import java.io.InputStream;
 import java.util.function.Consumer;
 
 /**
- * 编辑器主题工具类
- * 为 RSyntaxTextArea 提供主题适配支持，根据 FlatLaf 主题自动选择亮色或暗色编辑器主题
+ * RSyntaxTextArea 的统一外观入口。
+ * 应用亮暗主题、标准 token painter，并在主题之后调用宿主提供的编辑器字体配置器。
  */
 @Slf4j
 @UtilityClass
 public class EditorThemeUtil {
+
+    private static final String VIEWPORT_CLIPPED_TOKEN_PAINTER_PROPERTY =
+            "easyPostman.viewportClippedTokenPainter";
 
     private static final Color DARK_EDITOR_BACKGROUND = new Color(0x1E, 0x1F, 0x22);
     private static final Color DARK_GUTTER_BACKGROUND = new Color(0x1C, 0x1D, 0x20);
@@ -40,7 +45,7 @@ public class EditorThemeUtil {
     private static volatile Consumer<RSyntaxTextArea> configuredEditorFontApplier;
 
     /**
-     * 加载并应用编辑器主题 - 支持亮色和暗色主题自适应
+     * 加载并应用统一编辑器外观，支持亮暗主题、长 token 裁剪和缺字字体回退。
      *
      * @param area RSyntaxTextArea 编辑器实例
      */
@@ -63,7 +68,34 @@ public class EditorThemeUtil {
         } catch (IOException e) {
             log.error("Failed to load editor theme: {}", themeFile, e);
         }
+        installConfiguredTokenPainter(area);
         applyConfiguredEditorFont(area);
+    }
+
+    /**
+     * Installs the standard fallback-aware painter, or restores the viewport-clipped specialization
+     * previously selected for this editor.
+     */
+    private static void installConfiguredTokenPainter(RSyntaxTextArea area) {
+        if (area != null) {
+            if (Boolean.TRUE.equals(area.getClientProperty(VIEWPORT_CLIPPED_TOKEN_PAINTER_PROPERTY))) {
+                area.setTokenPainterFactory(ignored -> new ViewportClippedTokenPainter());
+            } else {
+                area.setTokenPainterFactory(ignored -> new StandardEditorTokenPainter());
+            }
+        }
+    }
+
+    /**
+     * Replaces the standard painter with the long-token viewport-clipped specialization.
+     * Call this after {@link #loadTheme(RSyntaxTextArea)} for editors that routinely display
+     * large JSON strings, base64, compressed payloads, or stream content.
+     */
+    public static void installViewportClippedTokenPainter(RSyntaxTextArea area) {
+        if (area != null) {
+            area.putClientProperty(VIEWPORT_CLIPPED_TOKEN_PAINTER_PROPERTY, Boolean.TRUE);
+            area.setTokenPainterFactory(ignored -> new ViewportClippedTokenPainter());
+        }
     }
 
     public static void configureThemeResources(String themeResourcePath, String fallbackThemeResourcePath) {

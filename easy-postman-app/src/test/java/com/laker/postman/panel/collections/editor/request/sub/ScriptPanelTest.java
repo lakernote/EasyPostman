@@ -1,5 +1,6 @@
 package com.laker.postman.panel.collections.editor.request.sub;
 
+import com.laker.postman.common.component.StandardEditorTokenPainter;
 import com.laker.postman.test.AbstractSwingUiTest;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.testng.annotations.Test;
@@ -37,6 +38,21 @@ public class ScriptPanelTest extends AbstractSwingUiTest {
         });
 
         assertEquals(holder[0].getPrescript(), "pm.test('loaded', () => {});");
+    }
+
+    @Test
+    public void scriptEditorsShouldUseSharedFallbackAwareTokenPainter() throws Exception {
+        ScriptPanel[] holder = new ScriptPanel[1];
+        SwingUtilities.invokeAndWait(() -> holder[0] = new ScriptPanel());
+
+        assertFallbackAwareTokenPainter(readEditor(holder[0], "prescriptArea"));
+        assertFallbackAwareTokenPainter(readEditor(holder[0], "postscriptArea"));
+    }
+
+    private static void assertFallbackAwareTokenPainter(RSyntaxTextArea editor) throws Exception {
+        Field field = RSyntaxTextArea.class.getDeclaredField("tokenPainter");
+        field.setAccessible(true);
+        assertEquals(field.get(editor).getClass(), StandardEditorTokenPainter.class);
     }
 
     private static RSyntaxTextArea readEditor(ScriptPanel panel, String fieldName) {

@@ -2093,7 +2093,6 @@ public class CapturePanel extends JPanel {
         area.setHighlightCurrentLine(true);
         area.setLineWrap(true);
         area.setWrapStyleWord(false);
-        area.setFont(FontsUtil.getDefaultFont(Font.PLAIN));
         EditorThemeUtil.loadTheme(area);
         return area;
     }

@@ -12,7 +12,6 @@ import com.laker.postman.frame.MainFrame;
 import com.laker.postman.plugin.host.PluginAccess;
 import com.laker.postman.snippet.Snippet;
 import com.laker.postman.snippet.SnippetType;
-import com.laker.postman.util.EditorFontManager;
 import com.laker.postman.util.EditorThemeUtil;
 import com.laker.postman.util.FontsUtil;
 import com.laker.postman.util.I18nUtil;
@@ -393,7 +392,6 @@ public class SnippetDialog extends JDialog {
         editor.setHighlightCurrentLine(false);
         editor.setTabSize(4);
         EditorThemeUtil.loadTheme(editor);
-        EditorFontManager.applyConfiguredEditorFont(editor);
         return editor;
     }
 

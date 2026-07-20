@@ -263,6 +263,8 @@ java -jar easy-postman.jar collection run ./demo.postman_collection.json
 
 All other options are optional; add `-e`, `-g`, or `-d` when the collection depends on those variables. The exit code is `0` for success, `1` for request/assertion failures, and `2` for invalid arguments or input files.
 
+`-e`, `-g`, and `-d` accept both relative and absolute paths. Relative paths use the command's current working directory, not the collection directory. `--working-dir` affects upload files only and does not change these three input paths. Quote paths that contain spaces.
+
 Uploads accept relative or absolute paths, either directly or through variables. Relative paths resolve from the collection directory unless `--working-dir` is set; absolute paths are unaffected. The repository sample uses `{{uploadFile}}`, so changing its environment value to `/opt/fixtures/file.txt` or `C:\\fixtures\\file.txt` demonstrates an absolute path.
 
 `--folder "Upload API"` runs only that folder and its descendants. Repeat the option to select more than one folder; see the complete guide for exact-match and no-match behavior.

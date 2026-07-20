@@ -25,4 +25,6 @@ java -jar easy-postman-app/target/easy-postman-*.jar \
 
 For a downloaded JAR, replace `easy-postman-app/target/easy-postman-*.jar` with its local path. Check support first with `java -jar easy-postman-{version}.jar collection run --help`.
 
+The collection, `-e` environment, and `-d` data paths above are relative to the directory where the command is run (the repository root in this example). They may all be replaced with absolute paths. `--working-dir` does not change how `-e`, `-g`, or `-d` paths are resolved; it only changes the base directory for relative upload paths.
+
 The collection reads its upload path from `{{uploadFile}}`. The environment sets it to the relative path `fixtures/sample-file.txt`, which is resolved from the collection directory, so the command works regardless of the shell's current directory. Absolute paths are also supported: replace that environment value with a full path such as `/opt/api-fixtures/sample-file.txt` or `C:\\api-fixtures\\sample-file.txt`.

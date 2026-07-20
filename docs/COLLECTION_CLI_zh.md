@@ -171,6 +171,51 @@ java -jar easy-postman.jar \
 | `--bail` | 否 | 第一个请求错误或测试断言失败后停止 |
 | `-h, --help` | 否 | 显示帮助 |
 
+### 5.1 `-e`、`-g`、`-d` 的路径规则
+
+这三个输入文件参数都支持相对路径和绝对路径：
+
+- `-e, --environment`：Postman 环境文件。
+- `-g, --globals`：Postman 全局变量文件。
+- `-d, --iteration-data`：`.csv` 或 `.json` 迭代数据文件。
+- 相对路径以执行 `java` 命令时的当前目录（`pwd`）为基准，不以 Collection 文件所在目录为基准。
+- 绝对路径直接使用；规范化过程中会处理路径里的 `.` 和 `..`。
+- `--working-dir` 只控制上传文件的相对路径根目录，不影响 `-e`、`-g`、`-d`。
+- 路径包含空格时需要用引号包住。
+- CLI 本身不展开 `~`；不同 shell 的展开规则也不同，本地脚本和 CI 中建议使用完整绝对路径。
+
+macOS / Linux 相对路径示例（假设当前位于项目根目录）：
+
+```bash
+java -jar ./tools/easy-postman.jar \
+  collection run ./api/demo.postman_collection.json \
+  -e ./api/local.postman_environment.json \
+  -g ./api/globals.postman_globals.json \
+  -d ./api/users.csv
+```
+
+macOS / Linux 绝对路径示例：
+
+```bash
+java -jar /opt/easy-postman/easy-postman.jar \
+  collection run /opt/api/demo.postman_collection.json \
+  -e /opt/api/local.postman_environment.json \
+  -g /opt/api/globals.postman_globals.json \
+  -d /opt/api/users.csv
+```
+
+Windows PowerShell 绝对路径示例：
+
+```powershell
+java -jar C:\tools\easy-postman.jar `
+  collection run C:\api\demo.postman_collection.json `
+  -e C:\api\local.postman_environment.json `
+  -g C:\api\globals.postman_globals.json `
+  -d C:\api\users.csv
+```
+
+例如在 `/workspace/project` 执行 `-e ./api/local.postman_environment.json`，实际读取的是 `/workspace/project/api/local.postman_environment.json`，即使 Collection 位于其他目录也是如此。
+
 ## 6. 文件上传
 
 `form-data` 文件字段读取 Postman Collection 中的 `src`：

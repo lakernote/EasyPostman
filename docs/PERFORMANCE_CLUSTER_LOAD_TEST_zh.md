@@ -98,6 +98,8 @@ java -jar easy-postman-5.5.28.jar \
 
 ## 实时刷新如何工作
 
+单机 `performance run` 和 `performance master run` 都会在控制台打印进度。指定 `--out` 后，输出文件会先变为 `PENDING`，运行中通过同目录临时文件加原子替换持续更新为 `RUNNING` 快照，结束后替换为完整最终报告；失败时也会写入本次 `FAILED` 报告，避免残留上一次结果。两种命令的最终 JSON 均为顶层 `PerformanceJsonReport`，可统一使用 `.summary.totalRequests` 等路径读取。
+
 GUI 远程模式运行时，每 1 秒向每个 worker 查询一次状态：
 
 - 关闭“实时刷新”且关闭“启用趋势”时：请求 `/api/performance/v1/runs/{runId}?report=false`，只拉轻量状态，包含活跃用户数、总用户数、请求数、失败数、QPS 和运行状态。

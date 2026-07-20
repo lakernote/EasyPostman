@@ -2,6 +2,7 @@ package com.laker.postman.performance.master;
 
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
+import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
 import com.laker.postman.performance.core.report.PerformanceJsonReportSummaryMapper;
 import com.laker.postman.performance.core.run.PerformanceRunPlan;
 import com.laker.postman.performance.core.run.PerformanceRunPlanJsonStorage;
@@ -14,12 +15,14 @@ import com.laker.postman.performance.core.worker.PerformanceWorkerProtocol;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunRequest;
 import com.laker.postman.performance.core.worker.PerformanceWorkerRunStatusResponse;
 import com.laker.postman.performance.master.PerformanceWorkerReportCollector.PerformanceWorkerReportResult;
+import lombok.extern.slf4j.Slf4j;
 
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class PerformanceMasterRunExecutor {
     private final PerformanceWorkerAssignmentPlanner assignmentPlanner;
     private final PerformanceWorkerHttpClient workerClient;
@@ -37,6 +40,11 @@ public class PerformanceMasterRunExecutor {
     }
 
     public PerformanceJsonReport execute(PerformanceMasterOptions options) throws Exception {
+        return execute(options, PerformanceMasterRunListener.NOOP);
+    }
+
+    public PerformanceJsonReport execute(PerformanceMasterOptions options,
+                                         PerformanceMasterRunListener listener) throws Exception {
         if (options == null || options.getPlanPath() == null) {
             throw new IllegalArgumentException("--plan is required");
         }
@@ -48,8 +56,9 @@ public class PerformanceMasterRunExecutor {
         }
 
         PerformanceRunPlan runPlan = new PerformanceRunPlanJsonStorage().load(options.getPlanPath());
-        String runId = "run-" + System.currentTimeMillis();
-        long deadline = System.currentTimeMillis() + options.getTimeoutMs();
+        long masterStartTimeMs = System.currentTimeMillis();
+        String runId = "run-" + masterStartTimeMs;
+        long deadline = masterStartTimeMs + options.getTimeoutMs();
         validateWorkerProtocols(options.getWorkers(), deadline);
         List<PerformanceWorkerAssignment> assignments = assignmentPlanner.plan(runPlan, options.getWorkers(), runId);
         List<PerformanceWorkerEndpoint> submittedWorkers = new ArrayList<>();
@@ -65,7 +74,7 @@ public class PerformanceMasterRunExecutor {
                 submittedWorkers.add(endpoint);
             }
 
-            waitForWorkers(options, runId, deadline);
+            waitForWorkers(options, runId, deadline, masterStartTimeMs, listener);
         } catch (Exception ex) {
             stopSubmittedWorkers(submittedWorkers, runId, ex);
             throw ex;
@@ -93,16 +102,30 @@ public class PerformanceMasterRunExecutor {
         );
     }
 
-    private void waitForWorkers(PerformanceMasterOptions options, String runId, long deadline) throws Exception {
+    private void waitForWorkers(PerformanceMasterOptions options,
+                                String runId,
+                                long deadline,
+                                long masterStartTimeMs,
+                                PerformanceMasterRunListener listener) throws Exception {
         boolean allDone;
         do {
             allDone = true;
+            List<PerformanceWorkerRunStatusResponse> statuses = new ArrayList<>();
             for (PerformanceWorkerEndpoint endpoint : options.getWorkers()) {
                 PerformanceWorkerRunStatusResponse status = workerClient.status(endpoint, runId, false, timeoutUntil(deadline));
+                statuses.add(status);
                 if (!isTerminal(status.getStatus())) {
                     allDone = false;
                 }
             }
+            publishProgress(
+                    listener,
+                    runId,
+                    options.getPlanPath().toString(),
+                    masterStartTimeMs,
+                    statuses,
+                    options.getWorkers().size()
+            );
             if (allDone) {
                 return;
             }
@@ -111,6 +134,68 @@ public class PerformanceMasterRunExecutor {
             }
             Thread.sleep(options.getPollIntervalMs());
         } while (true);
+    }
+
+    private void publishProgress(PerformanceMasterRunListener listener,
+                                 String runId,
+                                 String planPath,
+                                 long startTimeMs,
+                                 List<PerformanceWorkerRunStatusResponse> statuses,
+                                 int totalWorkers) {
+        if (listener == null || listener == PerformanceMasterRunListener.NOOP) {
+            return;
+        }
+        long totalRequests = 0L;
+        long successRequests = 0L;
+        long failedRequests = 0L;
+        int activeUsers = 0;
+        int totalUsers = 0;
+        int completedWorkers = 0;
+        double qps = 0D;
+        for (PerformanceWorkerRunStatusResponse status : statuses) {
+            if (status == null) {
+                continue;
+            }
+            totalRequests += status.getTotalRequests();
+            successRequests += status.getSuccessRequests();
+            failedRequests += status.getFailedRequests();
+            activeUsers += status.getActiveUsers();
+            totalUsers += status.getTotalUsers();
+            qps += status.getQps();
+            if (isTerminal(status.getStatus())) {
+                completedWorkers++;
+            }
+        }
+        long now = System.currentTimeMillis();
+        PerformanceJsonReport report = PerformanceJsonReport.builder()
+                .metadata(PerformanceJsonReportMetadata.builder()
+                        .runId(runId)
+                        .source("master")
+                        .status(PerformanceRunStatus.RUNNING)
+                        .planPath(planPath)
+                        .startTimeMs(startTimeMs)
+                        .endTimeMs(now)
+                        .elapsedTimeMs(Math.max(0L, now - startTimeMs))
+                        .build())
+                .summary(PerformanceJsonReportSummary.builder()
+                        .totalRequests(totalRequests)
+                        .successRequests(successRequests)
+                        .failedRequests(failedRequests)
+                        .build())
+                .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
+                .build();
+        try {
+            listener.onProgress(new PerformanceMasterRunProgress(
+                    report,
+                    activeUsers,
+                    totalUsers,
+                    completedWorkers,
+                    totalWorkers,
+                    qps
+            ));
+        } catch (RuntimeException ex) {
+            log.warn("Failed to publish live master performance report", ex);
+        }
     }
 
     private boolean isTerminal(String status) {

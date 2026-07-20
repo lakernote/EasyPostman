@@ -1,17 +1,20 @@
 package com.laker.postman.performance.master;
 
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
-import com.laker.postman.performance.core.report.PerformanceJsonReportJsonStorage;
 import com.laker.postman.performance.core.run.PerformanceRunStatus;
+import com.laker.postman.performance.output.PerformanceCommandLinePathOption;
+import com.laker.postman.performance.output.PerformanceCommandReportFactory;
+import com.laker.postman.performance.output.PerformanceCommandReportOutput;
 
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class PerformanceMasterRunCommand {
+    private static final long CONSOLE_PROGRESS_INTERVAL_MS = 1_000L;
+
     private final PerformanceMasterRunExecutor executor;
-    private final PerformanceJsonReportJsonStorage reportJsonStorage = new PerformanceJsonReportJsonStorage();
 
     public PerformanceMasterRunCommand() {
         this(new PerformanceMasterRunExecutor());
@@ -22,6 +25,12 @@ public class PerformanceMasterRunCommand {
     }
 
     public int run(String[] args, PrintStream out, PrintStream err) {
+        long commandStartTimeMs = System.currentTimeMillis();
+        Path fallbackPlanPath = PerformanceCommandLinePathOption.find(args, 3, "--plan");
+        PerformanceCommandReportOutput reportOutput = new PerformanceCommandReportOutput(
+                PerformanceCommandLinePathOption.find(args, 3, "--out"),
+                err
+        );
         try {
             PerformanceMasterOptions options = PerformanceMasterOptions.parse(args);
             if (options.isHelp()) {
@@ -29,19 +38,31 @@ public class PerformanceMasterRunCommand {
                 return 0;
             }
             if (options.getPlanPath() == null) {
-                err.println("--plan is required");
-                printUsage(err);
-                return 2;
+                throw new IllegalArgumentException("--plan is required");
             }
             if (options.getWorkers().isEmpty()) {
-                err.println("--workers is required");
-                printUsage(err);
-                return 2;
+                throw new IllegalArgumentException("--workers is required");
             }
-            PerformanceJsonReport report = executor.execute(options);
-            if (options.getOutPath() != null) {
-                save(options.getOutPath(), report);
+            fallbackPlanPath = options.getPlanPath();
+            reportOutput = new PerformanceCommandReportOutput(options.getOutPath(), err);
+            if (!Files.isRegularFile(options.getPlanPath())) {
+                throw new IllegalArgumentException("Plan file does not exist: " + options.getPlanPath());
             }
+            reportOutput.write(lifecycleReport(
+                    PerformanceRunStatus.PENDING,
+                    options.getPlanPath(),
+                    commandStartTimeMs,
+                    System.currentTimeMillis(),
+                    ""
+            ));
+
+            PerformanceCommandReportOutput activeOutput = reportOutput;
+            AtomicLong lastConsoleProgressTimeMs = new AtomicLong(0L);
+            PerformanceJsonReport report = executor.execute(options, progress -> {
+                activeOutput.writeProgress(progress.report());
+                printProgress(out, progress, lastConsoleProgressTimeMs);
+            });
+            activeOutput.write(report);
             out.printf(
                     "Performance master run completed: status=%s workers=%d total=%d success=%d failed=%d elapsedMs=%d%n",
                     report.getMetadata().getStatus(),
@@ -53,21 +74,72 @@ public class PerformanceMasterRunCommand {
             );
             return PerformanceRunStatus.SUCCESS.equals(report.getMetadata().getStatus()) ? 0 : 1;
         } catch (IllegalArgumentException ex) {
+            reportOutput.writeFailure(lifecycleReport(
+                    PerformanceRunStatus.FAILED,
+                    fallbackPlanPath,
+                    commandStartTimeMs,
+                    System.currentTimeMillis(),
+                    describe(ex)
+            ), ex);
             err.println(ex.getMessage());
             printUsage(err);
             return 2;
         } catch (Exception ex) {
+            reportOutput.writeFailure(lifecycleReport(
+                    PerformanceRunStatus.FAILED,
+                    fallbackPlanPath,
+                    commandStartTimeMs,
+                    System.currentTimeMillis(),
+                    describe(ex)
+            ), ex);
             err.println("Performance master run failed: " + describe(ex));
             return 1;
         }
     }
 
-    private void save(Path path, PerformanceJsonReport report) throws Exception {
-        Path parent = path.getParent();
-        if (parent != null) {
-            Files.createDirectories(parent);
+    private static PerformanceJsonReport lifecycleReport(String status,
+                                                          Path planPath,
+                                                          long startTimeMs,
+                                                          long endTimeMs,
+                                                          String error) {
+        return PerformanceCommandReportFactory.snapshot(
+                "",
+                "master",
+                status,
+                planPath == null ? "" : planPath.toString(),
+                startTimeMs,
+                endTimeMs,
+                error,
+                0L,
+                0L,
+                0L
+        );
+    }
+
+    private static void printProgress(PrintStream out,
+                                      PerformanceMasterRunProgress progress,
+                                      AtomicLong lastPrintTimeMs) {
+        if (out == null || progress == null || progress.report() == null) {
+            return;
         }
-        Files.writeString(path, reportJsonStorage.toJson(report), StandardCharsets.UTF_8);
+        long now = System.currentTimeMillis();
+        long previous = lastPrintTimeMs.get();
+        if (previous > 0L && now - previous < CONSOLE_PROGRESS_INTERVAL_MS) {
+            return;
+        }
+        lastPrintTimeMs.set(now);
+        out.printf(
+                "Performance master progress: workers=%d/%d users=%d/%d total=%d success=%d failed=%d qps=%.2f%n",
+                progress.completedWorkers(),
+                progress.totalWorkers(),
+                progress.activeUsers(),
+                progress.totalUsers(),
+                progress.report().getSummary().getTotalRequests(),
+                progress.report().getSummary().getSuccessRequests(),
+                progress.report().getSummary().getFailedRequests(),
+                progress.qps()
+        );
+        out.flush();
     }
 
     private static void printUsage(PrintStream out) {

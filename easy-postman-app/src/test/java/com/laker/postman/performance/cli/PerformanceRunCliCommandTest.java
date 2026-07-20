@@ -3,11 +3,20 @@ package com.laker.postman.performance.cli;
 import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocument;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanNode;
+import com.laker.postman.performance.core.report.PerformanceJsonReport;
+import com.laker.postman.performance.core.report.PerformanceJsonReportJsonStorage;
+import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
+import com.laker.postman.performance.core.report.PerformanceJsonReportSummary;
+import com.laker.postman.performance.core.report.PerformanceJsonReportSummaryMapper;
 import com.laker.postman.performance.core.run.PerformanceRunEnvironment;
 import com.laker.postman.performance.core.run.PerformanceRunPlan;
 import com.laker.postman.performance.core.run.PerformanceRunPlanJsonStorage;
+import com.laker.postman.performance.core.run.PerformanceRunStatus;
 import com.laker.postman.performance.core.run.PerformanceRunVariable;
 import com.laker.postman.performance.core.run.PerformanceRunVariableSet;
+import com.laker.postman.performance.runtime.PerformanceRunExecutionResult;
+import com.laker.postman.performance.runtime.PerformanceRunPlanExecutor;
+import com.laker.postman.performance.runtime.PerformanceRunReportListener;
 import org.testng.annotations.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -16,6 +25,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -51,9 +65,90 @@ public class PerformanceRunCliCommandTest {
 
         assertEquals(exitCode, 0, stderr.toString(StandardCharsets.UTF_8));
         assertTrue(stdout.toString(StandardCharsets.UTF_8).contains("total=0"));
+        assertTrue(stdout.toString(StandardCharsets.UTF_8).contains("Performance run progress"));
         String resultJson = Files.readString(outPath);
+        assertTrue(resultJson.contains("\"schemaVersion\": \"1.1\""));
         assertTrue(resultJson.contains("\"status\": \"SUCCESS\""));
         assertTrue(resultJson.contains("\"totalRequests\": 0"));
+        assertFalse(resultJson.contains("\"report\":"));
+    }
+
+    @Test
+    public void shouldReplaceStaleOutputWithFailedReportWhenPlanDoesNotExist() throws Exception {
+        Path tempDir = Files.createTempDirectory("ep-headless-run-missing");
+        Path outPath = tempDir.resolve("result.json");
+        Files.writeString(outPath, "stale-success", StandardCharsets.UTF_8);
+        Path missingPlan = tempDir.resolve("missing-plan.json");
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+        int exitCode = new PerformanceRunCliCommand(() -> {
+            throw new AssertionError("runtime bootstrap must not run for a missing plan");
+        }).run(new String[]{
+                        "performance", "run",
+                        "--plan", missingPlan.toString(),
+                        "--out", outPath.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        PerformanceJsonReport report = new PerformanceJsonReportJsonStorage().load(outPath);
+        assertEquals(report.getMetadata().getStatus(), PerformanceRunStatus.FAILED);
+        assertTrue(report.getMetadata().getError().contains("does not exist"));
+        assertFalse(Files.readString(outPath).contains("stale-success"));
+    }
+
+    @Test
+    public void shouldUpdateOutputWhileRunIsStillInProgress() throws Exception {
+        Path tempDir = Files.createTempDirectory("ep-headless-run-live");
+        Path planPath = tempDir.resolve("plan.json");
+        Path outPath = tempDir.resolve("result.json");
+        new PerformanceRunPlanJsonStorage().save(planPath, emptyRunPlan());
+        CountDownLatch liveReportWritten = new CountDownLatch(1);
+        CountDownLatch allowCompletion = new CountDownLatch(1);
+        PerformanceRunPlanExecutor executor = new PerformanceRunPlanExecutor() {
+            @Override
+            public PerformanceRunExecutionResult execute(Path ignoredPlanPath,
+                                                         PrintStream scriptOutput,
+                                                         PerformanceRunReportListener listener) throws Exception {
+                listener.onReport(report(PerformanceRunStatus.RUNNING, 2L, 1L));
+                liveReportWritten.countDown();
+                assertTrue(allowCompletion.await(5, TimeUnit.SECONDS));
+                PerformanceJsonReport finalReport = report(PerformanceRunStatus.SUCCESS, 2L, 2L);
+                return PerformanceRunExecutionResult.builder()
+                        .status(PerformanceRunStatus.SUCCESS)
+                        .totalRequests(2L)
+                        .successRequests(2L)
+                        .report(finalReport)
+                        .build();
+            }
+        };
+        PerformanceRunCliCommand command = new PerformanceRunCliCommand(() -> {
+        }, executor);
+        ExecutorService commandExecutor = Executors.newSingleThreadExecutor();
+        try {
+            Future<Integer> exitCode = commandExecutor.submit(() -> command.run(new String[]{
+                            "performance", "run",
+                            "--plan", planPath.toString(),
+                            "--out", outPath.toString()
+                    },
+                    new PrintStream(new ByteArrayOutputStream()),
+                    new PrintStream(new ByteArrayOutputStream())));
+
+            assertTrue(liveReportWritten.await(5, TimeUnit.SECONDS));
+            PerformanceJsonReport running = new PerformanceJsonReportJsonStorage().load(outPath);
+            assertEquals(running.getMetadata().getStatus(), PerformanceRunStatus.RUNNING);
+            assertEquals(running.getSummary().getTotalRequests(), 2L);
+
+            allowCompletion.countDown();
+            assertEquals(exitCode.get(5, TimeUnit.SECONDS).intValue(), 0);
+            PerformanceJsonReport completed = new PerformanceJsonReportJsonStorage().load(outPath);
+            assertEquals(completed.getMetadata().getStatus(), PerformanceRunStatus.SUCCESS);
+            assertEquals(completed.getSummary().getSuccessRequests(), 2L);
+        } finally {
+            allowCompletion.countDown();
+            commandExecutor.shutdownNow();
+        }
     }
 
     @Test
@@ -85,6 +180,23 @@ public class PerformanceRunCliCommandTest {
                         .name("run plan")
                         .type(NodeType.ROOT)
                         .build()))
+                .build();
+    }
+
+    private static PerformanceJsonReport report(String status, long total, long success) {
+        return PerformanceJsonReport.builder()
+                .metadata(PerformanceJsonReportMetadata.builder()
+                        .source("local")
+                        .status(status)
+                        .planPath("plan.json")
+                        .startTimeMs(10L)
+                        .endTimeMs(20L)
+                        .build())
+                .summary(PerformanceJsonReportSummary.builder()
+                        .totalRequests(total)
+                        .successRequests(success)
+                        .build())
+                .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
                 .build();
     }
 }

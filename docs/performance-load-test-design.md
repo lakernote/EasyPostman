@@ -61,7 +61,7 @@
 - `performance run` 和 `performance worker` 初始化 IOC、宿主插件桥接服务和插件运行时，不创建 `MainFrame`、主题、字体或 Splash；`performance master run` 当前只读取 plan、生成 assignment 并通过 HTTP 调度 worker。
 - headless 命令默认保留控制台 INFO 日志，方便在服务器上直接排查插件扫描、脚本池、workspace 加载等问题；如需临时收敛输出，可手动加 `-DCONSOLE_LOG_LEVEL=ERROR`。
 - CLI 运行期间通过 `RunScopedVariableContext` 注入 `plan.json` 内的 environment/globals；请求最终发送前的 `{{var}}` 替换、脚本 `pm.environment` / `pm.globals` 和子线程变量解析都走同一份运行态变量，不写回用户持久化全局变量文件。
-- CLI 输出的 `result.json` 包含顶层摘要和 `report` 节点。`report` 保存机器可读的原始数值：总请求数、成功/失败数、协议级 total、API 级 total、samplesPerSecond、HTTP 字节吞吐、耗时分位数，以及 WebSocket/SSE 的消息数、消息速率和首消息/首事件延迟。
+- 单机 CLI 和 CLI master 的 `--out` 使用同一份 `PerformanceJsonReport` JSON 结构。命令启动后先原子写入 `PENDING`，运行中持续用 `RUNNING` 快照原子替换，结束后写入 `SUCCESS`、`FAILED` 或 `STOPPED` 最终报告；即使参数校验或执行异常，也会尽力用本次 `FAILED` 报告替换旧文件。报告保存机器可读的原始数值：总请求数、成功/失败数、协议级 total、API 级 total、samplesPerSecond、HTTP 字节吞吐、耗时分位数，以及 WebSocket/SSE 的消息数、消息速率和首消息/首事件延迟。
 - worker 使用主 app jar 内的 JDK `HttpServer`，不引入 Jetty/Netty/Spring Boot。server 只在 `performance worker` 模式启动，GUI 默认不监听端口。
 - worker 控制台输出用户可读的生命周期和进度状态：listening、accepted、started、progress、completed。进度默认每秒打印一次，可通过 `--progress-interval <seconds>` 调整，或用 `--no-progress` 关闭；请求级和内部组件日志仍按日志配置输出。
 - worker 控制面协议为 HTTP/JSON：`GET /api/performance/v1/health`、`POST /api/performance/v1/runs`、`GET /api/performance/v1/runs/{runId}`、`GET /api/performance/v1/runs/{runId}/result`、`GET /api/performance/v1/runs/{runId}/details`、`POST /api/performance/v1/runs/{runId}/stop`。
@@ -98,45 +98,39 @@ perl -e 'alarm shift; exec @ARGV' 90 \
 
 ```json
 {
+  "schemaVersion": "1.1",
+  "source": "local",
   "status": "SUCCESS",
-  "totalRequests": 858211,
-  "successRequests": 858211,
-  "failedRequests": 0,
   "stopped": false,
   "elapsedTimeMs": 60084,
-  "report": {
-    "schemaVersion": "1.1",
-    "source": "local",
-    "status": "SUCCESS",
-    "summary": {
-      "totalRequests": 858211,
-      "successRequests": 858211,
-      "failedRequests": 0
-    },
-    "protocols": {
-      "HTTP": {
-        "total": {
-          "samplesPerSecond": 14283.1,
-          "firstSampleStartTimeMs": 1764356811000,
-          "lastSampleEndTimeMs": 1764356871084,
-          "bytes": {
-            "sentBytes": 0,
-            "receivedBytes": 0,
-            "sentBytesPerSecond": 0.0,
-            "receivedBytesPerSecond": 0.0,
-            "avgReceivedBytes": 0
-          },
-          "durationMs": {
-            "avg": 0,
-            "min": 0,
-            "max": 0,
-            "p90": 0,
-            "p95": 0,
-            "p99": 0
-          }
+  "summary": {
+    "totalRequests": 858211,
+    "successRequests": 858211,
+    "failedRequests": 0
+  },
+  "protocols": {
+    "HTTP": {
+      "total": {
+        "samplesPerSecond": 14283.1,
+        "firstSampleStartTimeMs": 1764356811000,
+        "lastSampleEndTimeMs": 1764356871084,
+        "bytes": {
+          "sentBytes": 0,
+          "receivedBytes": 0,
+          "sentBytesPerSecond": 0.0,
+          "receivedBytesPerSecond": 0.0,
+          "avgReceivedBytes": 0
         },
-        "apis": []
-      }
+        "durationMs": {
+          "avg": 0,
+          "min": 0,
+          "max": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "apis": []
     }
   }
 }
@@ -264,7 +258,7 @@ sequenceDiagram
 2. worker 控制台的 `completed run ... elapsedMs` 从 worker 异步开始执行算起，包含 worker 侧 plan 编译、分片应用、脚本池启动和实际请求执行，不包含 HTTP body 上传时间。
 3. 最终 JSON report 的 `metadata.startTimeMs/endTimeMs` 来自 worker 内部 `PerformanceRunSession`，从执行引擎 `beginRun` 开始，到运行结束为止；不包含 master 读 plan、生成 assignment、POST plan 和最终拉取 result 的时间。
 4. GUI 远程模式固定每 1 秒轮询 worker 状态；趋势图总览按 worker status 的增量请求数采样，HTTP/WS/SSE 协议指标按运行中聚合 report 的协议累计值做窗口差分。采样窗口在所有 worker 接收 plan 后重置，避免第一秒趋势点把 plan 分发耗时算进 QPS。
-5. CLI master 默认每 500ms 使用 `report=false` 轻量轮询，可通过 `--poll-interval-ms <ms>` 调整；GUI remote 在“实时报表”或“启用趋势”开启时请求运行中聚合 report。关闭实时报表但开启趋势时不会刷新报表页，但会用聚合 report 计算 HTTP/WS/SSE 趋势。
+5. CLI master 默认每 500ms 使用 `report=false` 轻量轮询，可通过 `--poll-interval-ms <ms>` 调整；每轮把 users、requests、QPS 和 worker 完成数聚合为轻量 `RUNNING` 快照并原子更新 `--out`，最终再替换为完整协议报告。GUI remote 在“实时报表”或“启用趋势”开启时请求运行中聚合 report。关闭实时报表但开启趋势时不会刷新报表页，但会用聚合 report 计算 HTTP/WS/SSE 趋势。
 6. GUI remote 在 worker 到达终态后拉取 `/details`，把失败/慢请求明细写入“结果表”；worker 不实时推送请求级明细，避免拖慢压测主路径。
 
 ### GUI 远程控制方式

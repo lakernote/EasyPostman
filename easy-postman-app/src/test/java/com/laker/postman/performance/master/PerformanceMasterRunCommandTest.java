@@ -30,6 +30,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.testng.Assert.assertEquals;
@@ -67,6 +72,88 @@ public class PerformanceMasterRunCommandTest {
             assertTrue(resultJson.contains("\"source\": \"master\""));
             assertTrue(resultJson.contains("\"totalRequests\": 4"));
             assertTrue(stdout.toString(StandardCharsets.UTF_8).contains("workers=2"));
+            assertTrue(stdout.toString(StandardCharsets.UTF_8).contains("Performance master progress"));
+        }
+    }
+
+    @Test
+    public void shouldReplaceStaleOutputWithFailedReportWhenPlanDoesNotExist() throws Exception {
+        Path tempDir = Files.createTempDirectory("ep-master-run-missing");
+        Path outPath = tempDir.resolve("result.json");
+        Path missingPlanPath = tempDir.resolve("missing-plan.json");
+        Files.writeString(outPath, "stale-success", StandardCharsets.UTF_8);
+
+        int exitCode = new PerformanceMasterRunCommand().run(new String[]{
+                        "performance", "master", "run",
+                        "--plan", missingPlanPath.toString(),
+                        "--workers", "127.0.0.1:19090",
+                        "--out", outPath.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(new ByteArrayOutputStream()));
+
+        assertEquals(exitCode, 2);
+        PerformanceJsonReport report = new com.laker.postman.performance.core.report.PerformanceJsonReportJsonStorage()
+                .load(outPath);
+        assertEquals(report.getMetadata().getStatus(), "FAILED");
+        assertTrue(report.getMetadata().getError().contains("does not exist"));
+        assertTrue(!Files.readString(outPath).contains("stale-success"));
+    }
+
+    @Test
+    public void shouldUpdateMasterOutputWhileWorkersAreRunning() throws Exception {
+        Path tempDir = Files.createTempDirectory("ep-master-run-live");
+        Path planPath = tempDir.resolve("plan.json");
+        Path outPath = tempDir.resolve("result.json");
+        new PerformanceRunPlanJsonStorage().save(planPath, emptyPlan());
+        CountDownLatch liveReportWritten = new CountDownLatch(1);
+        CountDownLatch allowCompletion = new CountDownLatch(1);
+        PerformanceJsonReport runningReport = report("RUNNING", 3L, 2L);
+        PerformanceJsonReport finalReport = report("SUCCESS", 3L, 3L);
+        PerformanceMasterRunExecutor executor = new PerformanceMasterRunExecutor() {
+            @Override
+            public PerformanceJsonReport execute(PerformanceMasterOptions options,
+                                                 PerformanceMasterRunListener listener) throws Exception {
+                listener.onProgress(new PerformanceMasterRunProgress(
+                        runningReport,
+                        2,
+                        4,
+                        0,
+                        1,
+                        12.5
+                ));
+                liveReportWritten.countDown();
+                assertTrue(allowCompletion.await(5, TimeUnit.SECONDS));
+                return finalReport;
+            }
+        };
+        PerformanceMasterRunCommand command = new PerformanceMasterRunCommand(executor);
+        ExecutorService commandExecutor = Executors.newSingleThreadExecutor();
+        try {
+            Future<Integer> exitCode = commandExecutor.submit(() -> command.run(new String[]{
+                            "performance", "master", "run",
+                            "--plan", planPath.toString(),
+                            "--workers", "127.0.0.1:19090",
+                            "--out", outPath.toString()
+                    },
+                    new PrintStream(new ByteArrayOutputStream()),
+                    new PrintStream(new ByteArrayOutputStream())));
+
+            assertTrue(liveReportWritten.await(5, TimeUnit.SECONDS));
+            PerformanceJsonReport running = new com.laker.postman.performance.core.report.PerformanceJsonReportJsonStorage()
+                    .load(outPath);
+            assertEquals(running.getMetadata().getStatus(), "RUNNING");
+            assertEquals(running.getSummary().getTotalRequests(), 3L);
+
+            allowCompletion.countDown();
+            assertEquals(exitCode.get(5, TimeUnit.SECONDS).intValue(), 0);
+            PerformanceJsonReport completed = new com.laker.postman.performance.core.report.PerformanceJsonReportJsonStorage()
+                    .load(outPath);
+            assertEquals(completed.getMetadata().getStatus(), "SUCCESS");
+            assertEquals(completed.getSummary().getSuccessRequests(), 3L);
+        } finally {
+            allowCompletion.countDown();
+            commandExecutor.shutdownNow();
         }
     }
 
@@ -359,6 +446,23 @@ public class PerformanceMasterRunCommandTest {
                         .name("run plan")
                         .type(NodeType.ROOT)
                         .build()))
+                .build();
+    }
+
+    private static PerformanceJsonReport report(String status, long total, long success) {
+        return PerformanceJsonReport.builder()
+                .metadata(PerformanceJsonReportMetadata.builder()
+                        .source("master")
+                        .status(status)
+                        .planPath("plan.json")
+                        .startTimeMs(10L)
+                        .endTimeMs(20L)
+                        .build())
+                .summary(PerformanceJsonReportSummary.builder()
+                        .totalRequests(total)
+                        .successRequests(success)
+                        .build())
+                .protocols(PerformanceJsonReportSummaryMapper.emptyProtocols())
                 .build();
     }
 }

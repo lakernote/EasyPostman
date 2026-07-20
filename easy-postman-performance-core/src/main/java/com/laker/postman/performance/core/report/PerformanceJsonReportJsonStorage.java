@@ -3,6 +3,12 @@ package com.laker.postman.performance.core.report;
 import com.laker.postman.performance.core.run.PerformanceRunStatus;
 import com.laker.postman.util.JsonUtil;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -10,6 +16,32 @@ import java.util.Map;
 
 public class PerformanceJsonReportJsonStorage {
     public static final String FORMAT_VERSION = "1.1";
+
+    public void save(Path path, PerformanceJsonReport report) throws IOException {
+        if (path == null) {
+            return;
+        }
+        Path target = path.toAbsolutePath().normalize();
+        Path parent = target.getParent();
+        if (parent == null) {
+            throw new IOException("Report path has no parent directory: " + path);
+        }
+        Files.createDirectories(parent);
+        Path temporary = Files.createTempFile(parent, ".easy-postman-report-", ".tmp");
+        try {
+            Files.writeString(temporary, toJson(report), StandardCharsets.UTF_8);
+            moveReplacing(temporary, target);
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
+    }
+
+    public PerformanceJsonReport load(Path path) throws IOException {
+        if (path == null || !Files.isRegularFile(path) || Files.size(path) == 0) {
+            return null;
+        }
+        return fromJson(Files.readString(path, StandardCharsets.UTF_8));
+    }
 
     public String toJson(PerformanceJsonReport report) {
         return JsonUtil.toJsonPrettyStr(toMap(report));
@@ -20,6 +52,14 @@ public class PerformanceJsonReportJsonStorage {
             return null;
         }
         return fromMap(objectMap(JsonUtil.convertValue(JsonUtil.readTree(json), Map.class)));
+    }
+
+    private void moveReplacing(Path source, Path target) throws IOException {
+        try {
+            Files.move(source, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+        }
     }
 
     public Map<String, Object> toMap(PerformanceJsonReport report) {

@@ -5,6 +5,7 @@ import com.laker.postman.model.Environment;
 import com.laker.postman.model.Variable;
 import com.laker.postman.performance.core.model.PerformanceStatsCollector;
 import com.laker.postman.performance.core.model.PerformanceStatsSnapshot;
+import com.laker.postman.performance.core.model.PerformanceReportSnapshot;
 import com.laker.postman.performance.core.model.PerformanceTrendWindowCollector;
 import com.laker.postman.performance.core.plan.PerformanceCorePlanDocumentCompiler;
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
@@ -21,17 +22,28 @@ import com.laker.postman.performance.result.PerformanceMetricsSnapshotService;
 import com.laker.postman.performance.result.PerformanceResultCollector;
 import com.laker.postman.service.setting.SettingManager;
 import com.laker.postman.service.variable.RunScopedVariableContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+@Slf4j
 public class PerformanceRunPlanExecutor {
+    private static final long LIVE_REPORT_INTERVAL_MS = 1_000L;
 
     public PerformanceRunExecutionResult execute(Path planPath, PrintStream scriptOutput) throws Exception {
+        return execute(planPath, scriptOutput, PerformanceRunReportListener.NOOP);
+    }
+
+    public PerformanceRunExecutionResult execute(Path planPath,
+                                                 PrintStream scriptOutput,
+                                                 PerformanceRunReportListener reportListener) throws Exception {
         if (planPath == null) {
             throw new IllegalArgumentException("--plan is required");
         }
@@ -52,7 +64,8 @@ public class PerformanceRunPlanExecutor {
                     null,
                     environment,
                     scriptOutput,
-                    new PerformanceRunExecutionControl()
+                    new PerformanceRunExecutionControl(),
+                    reportListener
             );
         }
     }
@@ -74,7 +87,8 @@ public class PerformanceRunPlanExecutor {
                     assignment,
                     environment,
                     scriptOutput,
-                    control == null ? new PerformanceRunExecutionControl() : control
+                    control == null ? new PerformanceRunExecutionControl() : control,
+                    PerformanceRunReportListener.NOOP
             );
         }
     }
@@ -84,7 +98,8 @@ public class PerformanceRunPlanExecutor {
                                                             PerformanceWorkerAssignment assignment,
                                                             Environment environment,
                                                             PrintStream scriptOutput,
-                                                            PerformanceRunExecutionControl control) throws InterruptedException {
+                                                            PerformanceRunExecutionControl control,
+                                                            PerformanceRunReportListener reportListener) throws InterruptedException {
         PerformanceTestPlan corePlan = PerformanceCorePlanDocumentCompiler.compile(runPlan.getTestPlan());
         if (assignment != null) {
             corePlan = new PerformanceWorkerExecutionPlanPartitioner().apply(corePlan, assignment);
@@ -171,11 +186,86 @@ public class PerformanceRunPlanExecutor {
         if (runThread == null) {
             throw new IllegalStateException("Performance run did not start");
         }
-        runThread.join();
+        long liveReportStartTimeMs = System.currentTimeMillis();
+        ScheduledExecutorService reportExecutor = startLiveReportPublisher(
+                reportListener,
+                planPath,
+                liveReportStartTimeMs,
+                statsCollector,
+                executionEngine
+        );
+        try {
+            runThread.join();
+        } finally {
+            stopLiveReportPublisher(reportExecutor);
+        }
         PerformanceStatsSnapshot stats = statsCollector.snapshot();
         PerformanceRunSummary summary = summaryRef.get();
         PerformanceRunError runError = errorRef.get();
         return toResult(planPath, stats, summary, runError);
+    }
+
+    private ScheduledExecutorService startLiveReportPublisher(PerformanceRunReportListener reportListener,
+                                                               String planPath,
+                                                               long startTimeMs,
+                                                               PerformanceStatsCollector statsCollector,
+                                                               PerformanceExecutionEngine executionEngine) {
+        if (reportListener == null || reportListener == PerformanceRunReportListener.NOOP) {
+            return null;
+        }
+        publishLiveReport(reportListener, planPath, startTimeMs, statsCollector, executionEngine);
+        ScheduledExecutorService executor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor(
+                PerformanceThreadFactory.daemonFactory("PerformanceCliReport")
+        );
+        executor.scheduleAtFixedRate(
+                () -> publishLiveReport(reportListener, planPath, startTimeMs, statsCollector, executionEngine),
+                LIVE_REPORT_INTERVAL_MS,
+                LIVE_REPORT_INTERVAL_MS,
+                TimeUnit.MILLISECONDS
+        );
+        return executor;
+    }
+
+    private void publishLiveReport(PerformanceRunReportListener reportListener,
+                                   String planPath,
+                                   long startTimeMs,
+                                   PerformanceStatsCollector statsCollector,
+                                   PerformanceExecutionEngine executionEngine) {
+        long now = System.currentTimeMillis();
+        PerformanceJsonReport report = PerformanceJsonReportMapper.fromReportSnapshot(
+                PerformanceJsonReportMetadata.builder()
+                        .source("local")
+                        .status(PerformanceRunStatus.RUNNING)
+                        .planPath(planPath)
+                        .startTimeMs(startTimeMs)
+                        .endTimeMs(now)
+                        .elapsedTimeMs(Math.max(0L, now - startTimeMs))
+                        .build(),
+                PerformanceReportSnapshot.of(
+                        statsCollector.snapshot(),
+                        executionEngine.liveRealtimeMetrics(now)
+                )
+        );
+        try {
+            reportListener.onReport(report);
+        } catch (RuntimeException ex) {
+            log.warn("Failed to publish live CLI performance report", ex);
+        }
+    }
+
+    private void stopLiveReportPublisher(ScheduledExecutorService executor) {
+        if (executor == null) {
+            return;
+        }
+        executor.shutdown();
+        try {
+            if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException ex) {
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     private PerformanceExecutionConfig executionConfig(PerformanceRunSettings settings,

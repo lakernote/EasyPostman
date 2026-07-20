@@ -101,6 +101,35 @@ public class PerformanceMasterRunCommandTest {
     }
 
     @Test
+    public void shouldRejectOutputThatPointsToPlanWithoutModifyingPlan() throws Exception {
+        Path tempDir = Files.createTempDirectory("ep-master-run-conflicting-output");
+        Path planPath = tempDir.resolve("plan.json");
+        new PerformanceRunPlanJsonStorage().save(planPath, emptyPlan());
+        String originalPlan = Files.readString(planPath);
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        PerformanceMasterRunExecutor executor = new PerformanceMasterRunExecutor() {
+            @Override
+            public PerformanceJsonReport execute(PerformanceMasterOptions options,
+                                                 PerformanceMasterRunListener listener) {
+                throw new AssertionError("master executor must not run for conflicting paths");
+            }
+        };
+
+        int exitCode = new PerformanceMasterRunCommand(executor).run(new String[]{
+                        "performance", "master", "run",
+                        "--plan", planPath.toString(),
+                        "--workers", "127.0.0.1:19090",
+                        "--out", planPath.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("--out must not point to the plan file"));
+        assertEquals(Files.readString(planPath), originalPlan);
+    }
+
+    @Test
     public void shouldUpdateMasterOutputWhileWorkersAreRunning() throws Exception {
         Path tempDir = Files.createTempDirectory("ep-master-run-live");
         Path planPath = tempDir.resolve("plan.json");

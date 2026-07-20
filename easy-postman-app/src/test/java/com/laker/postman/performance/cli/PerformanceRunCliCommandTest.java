@@ -99,6 +99,29 @@ public class PerformanceRunCliCommandTest {
     }
 
     @Test
+    public void shouldRejectOutputThatPointsToPlanWithoutModifyingPlan() throws Exception {
+        Path tempDir = Files.createTempDirectory("ep-headless-run-conflicting-output");
+        Path planPath = tempDir.resolve("plan.json");
+        new PerformanceRunPlanJsonStorage().save(planPath, emptyRunPlan());
+        String originalPlan = Files.readString(planPath);
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+        int exitCode = new PerformanceRunCliCommand(() -> {
+            throw new AssertionError("runtime bootstrap must not run for conflicting paths");
+        }).run(new String[]{
+                        "performance", "run",
+                        "--plan", planPath.toString(),
+                        "--out", planPath.toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("--out must not point to the plan file"));
+        assertEquals(Files.readString(planPath), originalPlan);
+    }
+
+    @Test
     public void shouldUpdateOutputWhileRunIsStillInProgress() throws Exception {
         Path tempDir = Files.createTempDirectory("ep-headless-run-live");
         Path planPath = tempDir.resolve("plan.json");

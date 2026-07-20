@@ -3,6 +3,7 @@ package com.laker.postman.performance.master;
 import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.run.PerformanceRunStatus;
 import com.laker.postman.performance.output.PerformanceCommandLinePathOption;
+import com.laker.postman.performance.output.PerformanceCommandPathValidator;
 import com.laker.postman.performance.output.PerformanceCommandReportFactory;
 import com.laker.postman.performance.output.PerformanceCommandReportOutput;
 
@@ -27,8 +28,11 @@ public class PerformanceMasterRunCommand {
     public int run(String[] args, PrintStream out, PrintStream err) {
         long commandStartTimeMs = System.currentTimeMillis();
         Path fallbackPlanPath = PerformanceCommandLinePathOption.find(args, 3, "--plan");
+        Path fallbackOutPath = PerformanceCommandLinePathOption.find(args, 3, "--out");
         PerformanceCommandReportOutput reportOutput = new PerformanceCommandReportOutput(
-                PerformanceCommandLinePathOption.find(args, 3, "--out"),
+                PerformanceCommandPathValidator.refersToSameFile(fallbackPlanPath, fallbackOutPath)
+                        ? null
+                        : fallbackOutPath,
                 err
         );
         try {
@@ -44,6 +48,10 @@ public class PerformanceMasterRunCommand {
                 throw new IllegalArgumentException("--workers is required");
             }
             fallbackPlanPath = options.getPlanPath();
+            PerformanceCommandPathValidator.requireDistinctPlanAndOutput(
+                    options.getPlanPath(),
+                    options.getOutPath()
+            );
             reportOutput = new PerformanceCommandReportOutput(options.getOutPath(), err);
             if (!Files.isRegularFile(options.getPlanPath())) {
                 throw new IllegalArgumentException("Plan file does not exist: " + options.getPlanPath());

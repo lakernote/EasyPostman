@@ -4,6 +4,7 @@ import com.laker.postman.performance.core.report.PerformanceJsonReport;
 import com.laker.postman.performance.core.report.PerformanceJsonReportMetadata;
 import com.laker.postman.performance.core.run.PerformanceRunStatus;
 import com.laker.postman.performance.output.PerformanceCommandLinePathOption;
+import com.laker.postman.performance.output.PerformanceCommandPathValidator;
 import com.laker.postman.performance.output.PerformanceCommandReportFactory;
 import com.laker.postman.performance.output.PerformanceCommandReportOutput;
 import com.laker.postman.startup.HeadlessStartupBootstrap;
@@ -35,8 +36,11 @@ public class PerformanceRunCliCommand {
     public int run(String[] args, PrintStream out, PrintStream err) {
         long commandStartTimeMs = System.currentTimeMillis();
         Path fallbackPlanPath = PerformanceCommandLinePathOption.find(args, 2, "--plan");
+        Path fallbackOutPath = PerformanceCommandLinePathOption.find(args, 2, "--out");
         PerformanceCommandReportOutput reportOutput = new PerformanceCommandReportOutput(
-                PerformanceCommandLinePathOption.find(args, 2, "--out"),
+                PerformanceCommandPathValidator.refersToSameFile(fallbackPlanPath, fallbackOutPath)
+                        ? null
+                        : fallbackOutPath,
                 err
         );
         try {
@@ -49,6 +53,10 @@ public class PerformanceRunCliCommand {
                 throw new IllegalArgumentException("--plan is required");
             }
             fallbackPlanPath = options.getPlanPath();
+            PerformanceCommandPathValidator.requireDistinctPlanAndOutput(
+                    options.getPlanPath(),
+                    options.getOutPath()
+            );
             reportOutput = new PerformanceCommandReportOutput(options.getOutPath(), err);
             if (!Files.isRegularFile(options.getPlanPath())) {
                 throw new IllegalArgumentException("Plan file does not exist: " + options.getPlanPath());

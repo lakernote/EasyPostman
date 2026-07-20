@@ -31,6 +31,7 @@
 - [✨ 功能特性](#-功能特性)
 - [📦 下载](#-下载)
 - [🚀 快速开始](#-快速开始)
+- [🧪 集合 CLI](#-集合-cli)
 - [🛠️ 开发指南](#️-开发指南)
 - [🤝 贡献指南](#-贡献指南)
 - [📚 文档](#-文档)
@@ -83,6 +84,7 @@ EasyPostman 是 GUI 优先的桌面工具，项目价值要同时展示两条主
 | **像 Postman 一样调试 REST API** | 创建或导入集合，选择环境，发送请求，查看格式化响应体、headers、cookies、耗时和网络事件日志。 |
 | **用脚本串联请求** | 使用请求前脚本和测试脚本读取变量、生成签名、提取响应数据、执行断言，并把值传给后续请求。 |
 | **通过 Git 协作接口资产** | 工作区数据保存在本地，通过 Git 工作区提交、拉取、推送和审查集合/环境变更。 |
+| **在 CI 中运行 Postman Collection** | 下载跨平台 JAR 或从源码构建，使用集合 CLI 执行环境变量、CSV/JSON 数据、脚本、断言和文件上传。 |
 | **像 JMeter 一样编排压测** | 在界面中编排压测计划，导出 `plan.json`，再用无头 CLI 或 master/worker 模式执行，同时保持全局用户和 CSV 分片规则。 |
 
 ---
@@ -101,6 +103,7 @@ EasyPostman 是 GUI 优先的桌面工具，项目价值要同时展示两条主
 - **多种请求体** - Form Data、x-www-form-urlencoded、JSON、XML、文本和二进制
 - **变量体系** - 支持环境、全局、请求和迭代数据，让请求和压测可重复执行
 - **导入导出** - 支持 Postman v2.1、cURL，HAR 和 OpenAPI/Swagger 路径持续完善中
+- **集合无头运行** - 使用跨平台 JAR 执行 Postman Collection，支持环境、数据文件、脚本、断言、文件上传和 CI 退出码
 
 ### ⚡ JMeter 风格性能测试
 - **GUI 场景编排** - 线程组、定时器、提取器、断言和结果视图
@@ -208,6 +211,58 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 
 ---
 
+## 🧪 集合 CLI
+
+无需安装 Node.js 或 Newman，直接使用 EasyPostman JAR 无头运行 Postman Collection v2.1。
+
+### 第一步：获取 JAR
+
+任选一种方式：
+
+**A. 下载 JAR**：从 [GitHub Releases](https://github.com/lakernote/easy-postman/releases) 的 Assets 下载 `easy-postman-{版本号}.jar`，然后验证命令：
+
+```bash
+java -version  # 需要 Java 17+
+java -jar easy-postman-6.x.x.jar collection run --help
+```
+
+如果帮助中没有 `collection run`，请下载包含该功能的更新版本，或使用源码构建。
+
+**B. 自己构建 JAR**：
+
+```bash
+git clone https://github.com/lakernote/easy-postman.git
+cd easy-postman
+mvn -pl easy-postman-app -am -DskipTests clean package
+java -jar easy-postman-app/target/easy-postman-*.jar \
+  collection run --help
+```
+
+### 第二步：运行完整示例
+
+仓库内示例包含集合、Postman 环境、CSV 迭代数据和真实上传文件，会向 Postman Echo 发起两次 multipart 请求：
+
+```bash
+java -DCONSOLE_LOG_LEVEL=ERROR \
+  -jar easy-postman-app/target/easy-postman-*.jar \
+  collection run docs/examples/collection-cli/upload.postman_collection.json \
+  -e docs/examples/collection-cli/postman-echo.postman_environment.json \
+  -d docs/examples/collection-cli/users.csv \
+  --folder "Upload API" \
+  --bail \
+  --out target/collection-cli-result.json
+```
+
+如果使用下载的 JAR，把 `easy-postman-app/target/easy-postman-*.jar` 替换为实际下载路径；示例文件可以随仓库一起 clone，或从 [`docs/examples/collection-cli`](docs/examples/collection-cli/) 单独下载。
+
+成功时退出码为 `0`，请求或断言失败为 `1`，参数或输入文件错误为 `2`。相对上传路径默认以集合文件所在目录为基准。
+
+`--folder "Upload API"` 表示只运行该文件夹及其子文件夹；可以重复传入多个文件夹。精确匹配、同名文件夹和无匹配退出码等规则见完整指南。
+
+📖 **[下载/构建、示例文件、全部参数、文件上传与 GitHub Actions 完整指南 →](docs/COLLECTION_CLI_zh.md)**
+
+---
+
 ## 🛠️ 开发指南
 
 ### 常用命令
@@ -247,6 +302,7 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 |------|------|
 | 📖 [功能详细说明](docs/FEATURES_zh.md) | 全面的功能文档 |
 | 🚀 [构建指南](docs/BUILD_zh.md) | 从源码构建和生成安装包 |
+| 🧪 [集合无头运行 CLI](docs/COLLECTION_CLI_zh.md) | 轻量运行 Postman Collection，支持变量、脚本、迭代数据、文件上传和 CI 退出码 |
 | ⚡ [集群压测使用指南](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI 远程模式、CLI master/worker、CSV 分片、实时刷新和结果明细 |
 | 🔌 [插件架构与安装](docs/PLUGINS_zh.md) | 插件模块、开发流程、在线/离线安装 |
 | 🖼️ [截图展示](docs/SCREENSHOTS_zh.md) | 所有应用截图 |

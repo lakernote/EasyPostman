@@ -31,6 +31,7 @@
 - [✨ Features](#-features)
 - [📦 Download](#-download)
 - [🚀 Quick Start](#-quick-start)
+- [🧪 Collection CLI](#-collection-cli)
 - [🛠️ Development](#️-development)
 - [🤝 Contributing](#-contributing)
 - [📚 Documentation](#-documentation)
@@ -83,6 +84,7 @@ EasyPostman is a GUI-first tool, and the project value is easier to judge when b
 | **Debug a REST API like Postman** | Create or import a collection, choose an environment, send a request, inspect formatted response bodies, headers, cookies, timing, and the network event log. |
 | **Chain requests with scripts** | Use pre-request scripts and test scripts to read variables, create signatures, extract response data, assert results, and pass values into the next request. |
 | **Share API work through Git** | Keep workspace data local, then use Git workspace operations to commit, pull, push, and review collection/environment changes with your team. |
+| **Run Postman Collections in CI** | Download the cross-platform JAR or build it from source, then run collections with environments, data files, scripts, assertions, and file uploads. |
 | **Run load tests like JMeter** | Build a performance plan visually, export `plan.json`, run it headlessly, or distribute it with master/worker mode while preserving global user and CSV sharding. |
 
 ---
@@ -101,6 +103,7 @@ EasyPostman is a GUI-first tool, and the project value is easier to judge when b
 - **Multiple body types** - Form Data, x-www-form-urlencoded, JSON, XML, text, and binary payloads
 - **Variables** - Environment, global, request, and iteration data support for repeatable runs
 - **Import/Export** - Postman v2.1 and cURL support, with HAR and OpenAPI/Swagger paths under active development
+- **Headless collection runs** - Run Postman Collections from the cross-platform JAR with environments, data files, scripts, assertions, uploads, and CI exit codes
 
 ### ⚡ JMeter-style Performance Testing
 - **Scenario design in the GUI** - Thread groups, timers, extractors, assertions, and result views
@@ -208,6 +211,58 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 
 ---
 
+## 🧪 Collection CLI
+
+Run Postman Collection v2.1 files headlessly without installing Node.js or Newman.
+
+### Step 1: Get the JAR
+
+Choose either option:
+
+**A. Download:** Get `easy-postman-{version}.jar` from [GitHub Releases](https://github.com/lakernote/easy-postman/releases), then verify that the selected release contains the command:
+
+```bash
+java -version  # Java 17+ is required
+java -jar easy-postman-6.x.x.jar collection run --help
+```
+
+If `collection run` isn't shown, download a newer release or build the current source.
+
+**B. Build from source:**
+
+```bash
+git clone https://github.com/lakernote/easy-postman.git
+cd easy-postman
+mvn -pl easy-postman-app -am -DskipTests clean package
+java -jar easy-postman-app/target/easy-postman-*.jar \
+  collection run --help
+```
+
+### Step 2: Run the complete example
+
+The repository example includes a collection, Postman environment, CSV iteration data, and a real upload fixture. It sends two multipart requests to Postman Echo:
+
+```bash
+java -DCONSOLE_LOG_LEVEL=ERROR \
+  -jar easy-postman-app/target/easy-postman-*.jar \
+  collection run docs/examples/collection-cli/upload.postman_collection.json \
+  -e docs/examples/collection-cli/postman-echo.postman_environment.json \
+  -d docs/examples/collection-cli/users.csv \
+  --folder "Upload API" \
+  --bail \
+  --out target/collection-cli-result.json
+```
+
+For a downloaded JAR, replace `easy-postman-app/target/easy-postman-*.jar` with its local path. Clone the repository for the sample assets, or download [`docs/examples/collection-cli`](docs/examples/collection-cli/) separately.
+
+The exit code is `0` for success, `1` for request/assertion failures, and `2` for invalid arguments or input files. Relative upload paths resolve from the collection directory.
+
+`--folder "Upload API"` runs only that folder and its descendants. Repeat the option to select more than one folder; see the complete guide for exact-match and no-match behavior.
+
+📖 **[Complete download/build, sample files, options, uploads, and GitHub Actions guide →](docs/COLLECTION_CLI_zh.md)**
+
+---
+
 ## 🛠️ Development
 
 ### Common Commands
@@ -247,6 +302,7 @@ Every PR triggers automated checks: build, tests, code quality, and format valid
 |-----|-------------|
 | 📖 [Features](docs/FEATURES.md) | Comprehensive feature documentation |
 | 🚀 [Build Guide](docs/BUILD.md) | Build from source & generate installers |
+| 🧪 [Headless Collection CLI](docs/COLLECTION_CLI_zh.md) | Lightweight Postman Collection runs with variables, scripts, data files, uploads, and CI exit codes (Chinese) |
 | ⚡ [Distributed Performance Testing](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI remote mode, CLI master/worker, CSV sharding, realtime refresh, and result details |
 | 🔌 [Plugin Architecture](docs/PLUGINS_zh.md) | Plugin modules, development flow, and installation (Chinese) |
 | 🖼️ [Screenshots](docs/SCREENSHOTS.md) | All application screenshots |

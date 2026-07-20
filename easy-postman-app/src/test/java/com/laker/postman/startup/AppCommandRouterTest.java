@@ -27,16 +27,17 @@ public class AppCommandRouterTest {
     }
 
     @DataProvider
-    public Object[][] performanceHelpCommands() {
+    public Object[][] headlessHelpCommands() {
         return new Object[][]{
                 {new String[]{"performance", "run", "--help"}},
                 {new String[]{"performance", "worker", "--help"}},
-                {new String[]{"performance", "master", "run", "--help"}}
+                {new String[]{"performance", "master", "run", "--help"}},
+                {new String[]{"collection", "run", "--help"}}
         };
     }
 
-    @Test(dataProvider = "performanceHelpCommands")
-    public void shouldForceHeadlessModeForPerformanceCommands(String[] args) {
+    @Test(dataProvider = "headlessHelpCommands")
+    public void shouldForceHeadlessModeForCliCommands(String[] args) {
         String previous = System.getProperty("java.awt.headless");
         System.clearProperty("java.awt.headless");
         try {
@@ -53,6 +54,21 @@ public class AppCommandRouterTest {
                 System.setProperty("java.awt.headless", previous);
             }
         }
+    }
+
+    @Test
+    public void shouldRouteCollectionCommandsBeforeSwingStartup() {
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+
+        OptionalInt exitCode = new AppCommandRouter().route(
+                new String[]{"collection", "run", "--help"},
+                new PrintStream(stdout),
+                new PrintStream(new ByteArrayOutputStream())
+        );
+
+        assertTrue(exitCode.isPresent());
+        assertEquals(exitCode.getAsInt(), 0);
+        assertTrue(stdout.toString().contains("collection run <collection.json>"));
     }
 
     @Test

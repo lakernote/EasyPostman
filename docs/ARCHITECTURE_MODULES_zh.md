@@ -45,6 +45,8 @@ easy-postman-parent
 
 压测的具体执行适配当前留在 `easy-postman-app`：GUI 运行、headless CLI、worker server 先复用 app 内完整执行链，包含变量解析、环境/全局变量、脚本、断言、提取器、CSV inline/file asset、multipart 文件、证书和 HTTP/SSE/WebSocket 传输。后续只有在这些非 UI 语义能从 app 干净抽离后，才考虑新增独立 headless/runner 模块。
 
+集合无头运行遵循相同边界：Postman Collection 的中立模型与解析继续放在 `easy-postman-collection-core`；`collection run` 的参数解析、环境/迭代数据装载、文件路径解析、具体 HTTP/脚本执行编排和报告输出放在 `easy-postman-app`。不要让 collection-core 反向依赖 app 的执行服务、IOC、插件运行时或 Swing。
+
 HTTP 发送执行链按“准备在 app，传输在 runtime，UI 在 adapter”拆分：请求准备、校验和默认请求工厂仍在 `easy-postman-app` 的 `http.request`，因为它们还依赖集合继承、变量解析、脚本和 app 服务；URL/query 通用工具在 `easy-postman-request-core` 的 `request.util`；请求级运行设置解析、`HttpTransport` 端口、`DefaultHttpTransport`、`HttpExchangeExecutor`、`RealtimeConnectionFactory`、作用域 client provider、OkHttp 适配、TLS/证书配置、SSE runtime、Cookie store、redirect、错误映射、交互端口和观测端口已经归属 `easy-postman-http-runtime`。Swing 实现只放在 `panel/http/runtime` 或 `http.runtime.app` 这类 app adapter 中。上述 runtime 代码不能直接依赖 Swing/panel，也不能直接读取 app 的 `SettingManager`；未来 JavaFX host 应只提供 JavaFX adapter，而不改 HTTP runtime。
 
 `easy-postman-app` 是宿主组装层。它可以放主入口、MainFrame、菜单、具体 app 面板、具体启动 wiring、设置页、更新页、欢迎页、帮助页、app-only 服务，以及宿主侧插件访问适配 `com.laker.postman.plugin.host`。后续迁移平台能力时，从这里逐步迁到 `easy-postman-platform`。

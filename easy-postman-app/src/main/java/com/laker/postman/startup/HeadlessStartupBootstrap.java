@@ -16,7 +16,7 @@ public class HeadlessStartupBootstrap {
             if (PluginRuntime.isInitialized()) {
                 return;
             }
-            // headless 压测只需要插件脚本扩展，不启动 app IOC，避免把工作区/GUI bean 扫描带入 worker。
+            // Headless 命令只需要插件脚本扩展，不启动 app IOC，避免把工作区/GUI bean 扫描带入 CLI/worker。
             PluginRuntime.getRegistry().registerService(
                     RequestCollectionImportService.class,
                     new HeadlessRequestCollectionImportService()

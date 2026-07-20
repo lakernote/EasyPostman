@@ -1,17 +1,15 @@
 package com.laker.postman.service.js;
 
-import com.laker.postman.model.Environment;
-import com.laker.postman.http.runtime.model.HttpResponse;
-import com.laker.postman.http.runtime.mapper.PreparedRequestMapper;
-import com.laker.postman.http.runtime.model.PreparedRequest;
-import com.laker.postman.request.model.HttpRequestItem;
-
-
 import cn.hutool.core.text.CharSequenceUtil;
-import com.laker.postman.service.js.api.PostmanApiContext;
-import com.laker.postman.service.EnvironmentService;
 import com.laker.postman.http.request.PreparedRequestFactory;
 import com.laker.postman.http.request.PreparedRequestFinalizer;
+import com.laker.postman.http.runtime.mapper.PreparedRequestMapper;
+import com.laker.postman.http.runtime.model.HttpResponse;
+import com.laker.postman.http.runtime.model.PreparedRequest;
+import com.laker.postman.model.Environment;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.service.EnvironmentService;
+import com.laker.postman.service.js.api.PostmanApiContext;
 import com.laker.postman.service.variable.ExecutionContextScope;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.RequestExecutionContext;
@@ -77,6 +75,42 @@ public class ScriptExecutionPipeline {
                                                               JsScriptExecutor.OutputCallback outputCallback,
                                                               Supplier<Environment> environmentSupplier,
                                                               RequestExecutionScope requestExecutionScope) {
+        return forRequestExecution(
+                request,
+                sharedExecutionContext,
+                outputCallback,
+                environmentSupplier,
+                requestExecutionScope,
+                PreparedRequestFactory.resolveDeferredAuthorization(item)
+        );
+    }
+
+    /**
+     * Creates a pipeline for a request whose collection inheritance has already been applied.
+     * Headless collection execution uses this path so it does not depend on the active Swing collection tree.
+     */
+    public static ScriptExecutionPipeline forEffectiveRequestExecution(HttpRequestItem effectiveItem,
+                                                                       PreparedRequest request,
+                                                                       ExecutionVariableContext sharedExecutionContext,
+                                                                       JsScriptExecutor.OutputCallback outputCallback,
+                                                                       Supplier<Environment> environmentSupplier,
+                                                                       RequestExecutionScope requestExecutionScope) {
+        return forRequestExecution(
+                request,
+                sharedExecutionContext,
+                outputCallback,
+                environmentSupplier,
+                requestExecutionScope,
+                PreparedRequestFactory.resolveDeferredAuthorizationWithoutInheritance(effectiveItem)
+        );
+    }
+
+    private static ScriptExecutionPipeline forRequestExecution(PreparedRequest request,
+                                                               ExecutionVariableContext sharedExecutionContext,
+                                                               JsScriptExecutor.OutputCallback outputCallback,
+                                                               Supplier<Environment> environmentSupplier,
+                                                               RequestExecutionScope requestExecutionScope,
+                                                               PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
         return ScriptExecutionPipeline.builder()
                 .request(request)
                 .preScript(request.prescript)
@@ -85,7 +119,7 @@ public class ScriptExecutionPipeline {
                 .requestExecutionScope(requestExecutionScope != null
                         ? requestExecutionScope
                         : RequestExecutionContext.captureCurrentScope())
-                .deferredAuthorization(PreparedRequestFactory.resolveDeferredAuthorization(item))
+                .deferredAuthorization(deferredAuthorization)
                 .outputCallback(outputCallback)
                 .environmentSupplier(environmentSupplier)
                 .build();

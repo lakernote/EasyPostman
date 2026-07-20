@@ -1,5 +1,6 @@
 package com.laker.postman.functional.execution;
 
+import com.laker.postman.functional.model.AssertionResult;
 import com.laker.postman.functional.model.RunnerRowData;
 import com.laker.postman.http.runtime.model.HttpCaptureProfile;
 import com.laker.postman.http.runtime.model.HttpResponse;
@@ -14,6 +15,8 @@ import com.laker.postman.service.variable.ExecutionVariableContext;
 import okhttp3.WebSocketListener;
 import okhttp3.sse.EventSourceListener;
 import org.testng.annotations.Test;
+
+import java.util.LinkedHashMap;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -45,6 +48,27 @@ public class FunctionalRequestExecutorTest {
         assertFalse(result.getRequest().enableNetworkLog);
     }
 
+    @Test
+    public void shouldFailRequestWhenPostScriptExecutionFails() {
+        HttpRequestItem item = new HttpRequestItem();
+        item.setName("Broken post script");
+        item.setMethod("GET");
+        item.setUrl("https://example.test/failure");
+        item.setPostscript("throw new Error('post script boom');");
+
+        FunctionalRequestExecutionResult result = new FunctionalRequestExecutor(
+                null,
+                new CapturingTransport()
+        ).execute(
+                new RunnerRowData(item),
+                new ExecutionVariableContext(),
+                () -> true
+        );
+
+        assertSame(result.getAssertion(), AssertionResult.FAIL);
+        assertTrue(result.getErrorMessage().contains("post script boom"), result.getErrorMessage());
+    }
+
     private static final class CapturingTransport implements HttpTransport {
         private PreparedRequest request;
 
@@ -54,6 +78,7 @@ public class FunctionalRequestExecutorTest {
             HttpResponse response = new HttpResponse();
             response.code = 204;
             response.costMs = 12L;
+            response.headers = new LinkedHashMap<>();
             return response;
         }
 

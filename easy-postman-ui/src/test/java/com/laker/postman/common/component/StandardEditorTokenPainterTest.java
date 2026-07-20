@@ -183,6 +183,104 @@ public class StandardEditorTokenPainterTest {
     }
 
     @Test
+    public void standardPainterShouldPreserveNativeTabLines() {
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        host.setPaintTabLines(true);
+        Token token = token("        ");
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 200, 40);
+
+        new StandardEditorTokenPainter().paint(
+                token, graphics, host.getMargin().left, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertTrue(graphics.drawLineCalls > 0,
+                "Tokens supported by the primary font must retain RSyntaxTextArea indentation guides");
+    }
+
+    @Test
+    public void standardPainterShouldPreserveNativeVisibleWhitespace() {
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        host.setWhitespaceVisible(true);
+        Token token = token("a b");
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 200, 40);
+
+        new StandardEditorTokenPainter()
+                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertTrue(graphics.drawLineCalls > 0,
+                "Primary-font tokens must retain native visible-space markers");
+    }
+
+    @Test
+    public void fallbackPaintingShouldPreserveVisibleWhitespace() {
+        Font primaryFont = new AsciiOnlyFont(Font.MONOSPACED, Font.PLAIN, 13);
+        Font fallbackFont = new Font(Font.SERIF, Font.PLAIN, 13);
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        host.setFont(primaryFont);
+        host.putClientProperty(EditorFontProperties.FALLBACK_FONT_CLIENT_PROPERTY, fallbackFont);
+        host.setWhitespaceVisible(true);
+        Token token = token("汉 字");
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 200, 40);
+
+        new StandardEditorTokenPainter()
+                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertTrue(graphics.fontsAtDraw.contains(fallbackFont));
+        assertTrue(graphics.drawLineCalls > 0,
+                "Fallback-font tokens must still render visible-space markers");
+    }
+
+    @Test
+    public void fallbackPaintingShouldPreserveTabLines() {
+        Font primaryFont = new AsciiOnlyFont(Font.MONOSPACED, Font.PLAIN, 13);
+        Font fallbackFont = new Font(Font.SERIF, Font.PLAIN, 13);
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        host.setFont(primaryFont);
+        host.putClientProperty(EditorFontProperties.FALLBACK_FONT_CLIENT_PROPERTY, fallbackFont);
+        host.setPaintTabLines(true);
+        Token token = token("        汉");
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 200, 40);
+
+        new StandardEditorTokenPainter().paint(
+                token, graphics, host.getMargin().left, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertTrue(graphics.fontsAtDraw.contains(fallbackFont));
+        assertTrue(graphics.drawLineCalls > 0,
+                "Fallback-font tokens must retain indentation guides for leading whitespace");
+    }
+
+    @Test
+    public void shouldKeepEmojiZwjSequenceInOneFallbackFontRun() {
+        Font primaryFont = new FormattingAwareAsciiFont(Font.MONOSPACED, Font.PLAIN, 13);
+        Font fallbackFont = new AllGlyphFont(Font.SERIF, Font.PLAIN, 13);
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        host.setFont(primaryFont);
+        host.putClientProperty(EditorFontProperties.FALLBACK_FONT_CLIENT_PROPERTY, fallbackFont);
+        String emojiSequence = "\uD83D\uDC68\uFE0F\u200D\uD83D\uDC69";
+        Token token = token("A" + emojiSequence + "B");
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 300, 40);
+
+        new StandardEditorTokenPainter()
+                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertEquals(graphics.textsAtDraw, List.of("A", emojiSequence, "B"),
+                "A ZWJ emoji sequence must be selected and drawn as one fallback-font cluster");
+    }
+
+    @Test
+    public void viewportChunksShouldNotSplitEmojiZwjSequences() {
+        RSyntaxTextArea host = new RSyntaxTextArea();
+        String emojiSequence = "\uD83D\uDC68\uFE0F\u200D\uD83D\uDC69";
+        Token token = token("a".repeat(253) + emojiSequence + "b".repeat(300));
+        RecordingGraphics2D graphics = graphicsWithClip(0, 0, 5_000, 40);
+
+        new ViewportClippedTokenPainter()
+                .paint(token, graphics, 0f, 20f, host, fixedTabExpander(), 0f, true);
+
+        assertTrue(graphics.textsAtDraw.stream().anyMatch(text -> text.contains(emojiSequence)),
+                "Viewport chunk boundaries must keep an entire ZWJ emoji sequence together");
+    }
+
+    @Test
     public void viewportPainterShouldSpecializeStandardPainter() {
         assertTrue(new ViewportClippedTokenPainter() instanceof StandardEditorTokenPainter);
     }
@@ -229,13 +327,71 @@ public class StandardEditorTokenPainterTest {
         }
     }
 
+    private static final class FormattingAwareAsciiFont extends Font {
+        private FormattingAwareAsciiFont(String name, int style, int size) {
+            super(name, style, size);
+        }
+
+        @Override
+        public boolean canDisplay(int codePoint) {
+            return codePoint >= 0 && codePoint < 128
+                    || codePoint == 0x200D
+                    || codePoint >= 0xFE00 && codePoint <= 0xFE0F;
+        }
+
+        @Override
+        public boolean canDisplay(char c) {
+            return canDisplay((int) c);
+        }
+
+        @Override
+        public int canDisplayUpTo(char[] text, int start, int limit) {
+            for (int i = start; i < limit; ) {
+                int codePoint = Character.codePointAt(text, i, limit);
+                if (!canDisplay(codePoint)) {
+                    return i;
+                }
+                i += Character.charCount(codePoint);
+            }
+            return -1;
+        }
+    }
+
+    private static final class AllGlyphFont extends Font {
+        private AllGlyphFont(String name, int style, int size) {
+            super(name, style, size);
+        }
+
+        @Override
+        public boolean canDisplay(int codePoint) {
+            return Character.isValidCodePoint(codePoint);
+        }
+
+        @Override
+        public boolean canDisplay(char c) {
+            return true;
+        }
+
+        @Override
+        public int canDisplayUpTo(char[] text, int start, int limit) {
+            return -1;
+        }
+
+        @Override
+        public Font deriveFont(int style, float size) {
+            return new AllGlyphFont(getName(), style, Math.round(size));
+        }
+    }
+
     private static class RecordingGraphics2D extends Graphics2D {
         private final Graphics2D delegate;
         private int drawCharsCalls;
         private int leftMostClipAtDraw = Integer.MAX_VALUE;
         private int longestDrawCharsLength;
+        private int drawLineCalls;
         private boolean splitSurrogatePairAtDraw;
         private final List<Font> fontsAtDraw = new ArrayList<>();
+        private final List<String> textsAtDraw = new ArrayList<>();
 
         private RecordingGraphics2D(Graphics2D delegate) {
             this.delegate = delegate;
@@ -250,6 +406,7 @@ public class StandardEditorTokenPainterTest {
                         || Character.isHighSurrogate(data[offset + length - 1]);
             }
             fontsAtDraw.add(delegate.getFont());
+            textsAtDraw.add(new String(data, offset, length));
             Rectangle clip = delegate.getClipBounds();
             if (clip != null) {
                 leftMostClipAtDraw = Math.min(leftMostClipAtDraw, clip.x);
@@ -514,6 +671,7 @@ public class StandardEditorTokenPainterTest {
 
         @Override
         public void drawLine(int x1, int y1, int x2, int y2) {
+            drawLineCalls++;
             delegate.drawLine(x1, y1, x2, y2);
         }
 

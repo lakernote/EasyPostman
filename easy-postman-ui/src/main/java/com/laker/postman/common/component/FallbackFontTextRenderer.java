@@ -23,25 +23,32 @@ final class FallbackFontTextRenderer {
         return new FontContext(primaryFont, primaryMetrics, fallbackFont, fallbackMetrics);
     }
 
+    boolean requiresFallback(char[] text, int start, int end, FontContext context) {
+        return start < end && context.hasFallback()
+                && !canDisplayRange(context.primaryFont(), text, start, end);
+    }
+
     float measure(char[] text, int start, int end, FontContext context) {
         if (start >= end) {
             return 0f;
         }
-        if (!context.hasFallback() || canDisplayRange(context.primaryFont(), text, start, end)) {
+        if (!requiresFallback(text, start, end, context)) {
             return context.primaryMetrics().charsWidth(text, start, end - start);
         }
 
         float width = 0f;
         int runStart = start;
-        FontMetrics runMetrics = selectMetrics(text, start, end, context);
+        int firstClusterEnd = nextClusterEnd(text, start, end);
+        FontMetrics runMetrics = selectMetrics(text, start, firstClusterEnd, context);
         for (int i = start; i < end; ) {
-            FontMetrics metrics = selectMetrics(text, i, end, context);
+            int clusterEnd = nextClusterEnd(text, i, end);
+            FontMetrics metrics = selectMetrics(text, i, clusterEnd, context);
             if (metrics != runMetrics) {
                 width += runMetrics.charsWidth(text, runStart, i - runStart);
                 runStart = i;
                 runMetrics = metrics;
             }
-            i += codePointCharCount(text, i, end);
+            i = clusterEnd;
         }
         return width + runMetrics.charsWidth(text, runStart, end - runStart);
     }
@@ -50,7 +57,7 @@ final class FallbackFontTextRenderer {
         if (start >= end) {
             return;
         }
-        if (!context.hasFallback() || canDisplayRange(context.primaryFont(), text, start, end)) {
+        if (!requiresFallback(text, start, end, context)) {
             graphics.setFont(context.primaryFont());
             graphics.drawChars(text, start, end - start, (int) x, (int) y);
             return;
@@ -58,10 +65,12 @@ final class FallbackFontTextRenderer {
 
         float currentX = x;
         int runStart = start;
-        Font runFont = selectFont(text, start, end, context);
+        int firstClusterEnd = nextClusterEnd(text, start, end);
+        Font runFont = selectFont(text, start, firstClusterEnd, context);
         FontMetrics runMetrics = metricsFor(runFont, context);
         for (int i = start; i < end; ) {
-            Font font = selectFont(text, i, end, context);
+            int clusterEnd = nextClusterEnd(text, i, end);
+            Font font = selectFont(text, i, clusterEnd, context);
             if (font != runFont) {
                 graphics.setFont(runFont);
                 graphics.drawChars(text, runStart, i - runStart, (int) currentX, (int) y);
@@ -70,26 +79,26 @@ final class FallbackFontTextRenderer {
                 runFont = font;
                 runMetrics = metricsFor(runFont, context);
             }
-            i += codePointCharCount(text, i, end);
+            i = clusterEnd;
         }
         graphics.setFont(runFont);
         graphics.drawChars(text, runStart, end - runStart, (int) currentX, (int) y);
         graphics.setFont(context.primaryFont());
     }
 
-    private FontMetrics selectMetrics(char[] text, int index, int end, FontContext context) {
-        return metricsFor(selectFont(text, index, end, context), context);
+    private FontMetrics selectMetrics(char[] text, int start, int end, FontContext context) {
+        return metricsFor(selectFont(text, start, end, context), context);
     }
 
     private FontMetrics metricsFor(Font font, FontContext context) {
         return font == context.fallbackFont() ? context.fallbackMetrics() : context.primaryMetrics();
     }
 
-    private Font selectFont(char[] text, int index, int end, FontContext context) {
-        if (!context.hasFallback() || canDisplay(context.primaryFont(), text, index, end)) {
+    private Font selectFont(char[] text, int start, int end, FontContext context) {
+        if (!context.hasFallback() || canDisplayCluster(context.primaryFont(), text, start, end)) {
             return context.primaryFont();
         }
-        if (canDisplay(context.fallbackFont(), text, index, end)) {
+        if (canDisplayCluster(context.fallbackFont(), text, start, end)) {
             return context.fallbackFont();
         }
         return context.primaryFont();
@@ -113,16 +122,23 @@ final class FallbackFontTextRenderer {
                 && first.getSize() == second.getSize();
     }
 
-    private boolean canDisplay(Font font, char[] text, int index, int end) {
-        if (font == null || index >= end) {
+    private boolean canDisplayCluster(Font font, char[] text, int start, int end) {
+        if (font == null || start >= end) {
             return false;
         }
-        try {
-            char ch = text[index];
-            if (Character.isHighSurrogate(ch) && index + 1 < end && Character.isLowSurrogate(text[index + 1])) {
-                return font.canDisplay(Character.toCodePoint(ch, text[index + 1]));
+        for (int i = start; i < end; ) {
+            int codePoint = codePointAt(text, i, end);
+            if (!isFontNeutral(codePoint) && !canDisplay(font, codePoint)) {
+                return false;
             }
-            return font.canDisplay(ch);
+            i += Character.charCount(codePoint);
+        }
+        return true;
+    }
+
+    private boolean canDisplay(Font font, int codePoint) {
+        try {
+            return font.canDisplay(codePoint);
         } catch (IllegalArgumentException ignored) {
             return false;
         }
@@ -139,11 +155,72 @@ final class FallbackFontTextRenderer {
         }
     }
 
-    private int codePointCharCount(char[] text, int index, int end) {
+    private static int codePointAt(char[] text, int index, int end) {
         if (index + 1 < end && Character.isHighSurrogate(text[index]) && Character.isLowSurrogate(text[index + 1])) {
-            return 2;
+            return Character.toCodePoint(text[index], text[index + 1]);
         }
-        return 1;
+        return text[index];
+    }
+
+    static int nextClusterEnd(char[] text, int start, int end) {
+        int firstCodePoint = codePointAt(text, start, end);
+        int index = start + Character.charCount(firstCodePoint);
+
+        if (isRegionalIndicator(firstCodePoint) && index < end) {
+            int nextCodePoint = codePointAt(text, index, end);
+            if (isRegionalIndicator(nextCodePoint)) {
+                index += Character.charCount(nextCodePoint);
+            }
+        }
+
+        while (index < end) {
+            int codePoint = codePointAt(text, index, end);
+            if (isClusterExtender(codePoint)) {
+                index += Character.charCount(codePoint);
+                continue;
+            }
+            if (codePoint == 0x200D) {
+                index += Character.charCount(codePoint);
+                if (index < end) {
+                    int joinedCodePoint = codePointAt(text, index, end);
+                    index += Character.charCount(joinedCodePoint);
+                }
+                continue;
+            }
+            break;
+        }
+        return index;
+    }
+
+    private static boolean isClusterExtender(int codePoint) {
+        int type = Character.getType(codePoint);
+        return type == Character.NON_SPACING_MARK
+                || type == Character.COMBINING_SPACING_MARK
+                || type == Character.ENCLOSING_MARK
+                || codePoint == 0x200C
+                || isEmojiModifier(codePoint)
+                || isTagCharacter(codePoint);
+    }
+
+    private static boolean isFontNeutral(int codePoint) {
+        return Character.getType(codePoint) == Character.FORMAT || isVariationSelector(codePoint);
+    }
+
+    private static boolean isVariationSelector(int codePoint) {
+        return (codePoint >= 0xFE00 && codePoint <= 0xFE0F)
+                || (codePoint >= 0xE0100 && codePoint <= 0xE01EF);
+    }
+
+    private static boolean isEmojiModifier(int codePoint) {
+        return codePoint >= 0x1F3FB && codePoint <= 0x1F3FF;
+    }
+
+    private static boolean isRegionalIndicator(int codePoint) {
+        return codePoint >= 0x1F1E6 && codePoint <= 0x1F1FF;
+    }
+
+    private static boolean isTagCharacter(int codePoint) {
+        return codePoint >= 0xE0020 && codePoint <= 0xE007F;
     }
 
     record FontContext(Font primaryFont, FontMetrics primaryMetrics,

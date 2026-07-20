@@ -36,6 +36,19 @@ public class CollectionInheritance {
     }
 
     public static List<Variable> mergeGroupVariables(List<RequestGroup> groupChain) {
+        return mergeGroupVariables(groupChain, false);
+    }
+
+    /**
+     * Merges only enabled collection/folder variables for executable request scopes.
+     * The existing merge method intentionally remains unchanged for callers that need
+     * the complete editable variable list, including disabled rows.
+     */
+    public static List<Variable> mergeEnabledGroupVariables(List<RequestGroup> groupChain) {
+        return mergeGroupVariables(groupChain, true);
+    }
+
+    private static List<Variable> mergeGroupVariables(List<RequestGroup> groupChain, boolean enabledOnly) {
         if (groupChain == null || groupChain.isEmpty()) {
             return new ArrayList<>();
         }
@@ -46,7 +59,10 @@ public class CollectionInheritance {
                 continue;
             }
             for (Variable variable : group.getVariables()) {
-                if (variable != null && variable.getKey() != null && !variable.getKey().trim().isEmpty()) {
+                if (variable != null
+                        && (!enabledOnly || variable.isEnabled())
+                        && variable.getKey() != null
+                        && !variable.getKey().trim().isEmpty()) {
                     mergedMap.put(variable.getKey(), variable);
                 }
             }

@@ -82,7 +82,7 @@ public class PostmanApiContext {
     /**
      * 执行变量管理器 - 对应 pm.variables，用于存储当前运行上下文内的变量
      */
-    public ScriptVariablesApi variables = new ScriptVariablesApi();
+    public ScriptVariablesApi variables;
 
     /**
      * 迭代数据管理器 - 对应 pm.iterationData，用于存储当前 CSV/JSON 行数据
@@ -140,20 +140,47 @@ public class PostmanApiContext {
      * 这里直接使用 plan 内携带的环境和全局变量，避免 worker 执行时回落到 GUI 工作区服务。
      */
     public static PostmanApiContext scoped(Environment environment, Environment globals) {
-        return new PostmanApiContext(environment, globals, null);
+        return new PostmanApiContext(environment, globals, null, false);
     }
 
-    private PostmanApiContext(Environment environment, Environment globals, Runnable environmentPersistAction) {
-        this(environment, globals, environmentPersistAction, new ScriptSendRequestExecutor());
+    /**
+     * Creates a run-scoped context whose pm.variables lookup follows Postman runner
+     * precedence and therefore includes the current iteration-data row.
+     */
+    public static PostmanApiContext scopedWithIterationData(Environment environment, Environment globals) {
+        return new PostmanApiContext(environment, globals, null, true);
+    }
+
+    private PostmanApiContext(Environment environment,
+                              Environment globals,
+                              Runnable environmentPersistAction) {
+        this(environment, globals, environmentPersistAction, false);
     }
 
     private PostmanApiContext(Environment environment,
                               Environment globals,
                               Runnable environmentPersistAction,
-                              ScriptSendRequestExecutor sendRequestExecutor) {
+                              boolean includeIterationDataInVariables) {
+        this(
+                environment,
+                globals,
+                environmentPersistAction,
+                new ScriptSendRequestExecutor(),
+                includeIterationDataInVariables
+        );
+    }
+
+    private PostmanApiContext(Environment environment,
+                              Environment globals,
+                              Runnable environmentPersistAction,
+                              ScriptSendRequestExecutor sendRequestExecutor,
+                              boolean includeIterationDataInVariables) {
         this.sendRequestExecutor = sendRequestExecutor == null
                 ? new ScriptSendRequestExecutor()
                 : sendRequestExecutor;
+        this.variables = includeIterationDataInVariables
+                ? ScriptVariablesApi.withIterationData()
+                : new ScriptVariablesApi();
         this.environment = new ScriptScopedVariablesApi(
                 environment,
                 environmentPersistAction

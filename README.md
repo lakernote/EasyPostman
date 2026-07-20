@@ -267,6 +267,8 @@ All other options are optional; add `-e`, `-g`, or `-d` when the collection depe
 
 Uploads accept relative or absolute paths, either directly or through variables. Relative paths resolve from the collection directory unless `--working-dir` is set; absolute paths are unaffected. The repository sample uses `{{uploadFile}}`, so changing its environment value to `/opt/fixtures/file.txt` or `C:\\fixtures\\file.txt` demonstrates an absolute path.
 
+At runtime, disabled collection/folder variables are ignored, iteration data is visible through both `{{name}}` and `pm.variables`, and values set with `pm.variables.set(...)` remain available across requests and iterations in the same run. Pre-request `pm.test(...)` assertions are included in reports and exit status. Postman file fields whose `src` is an array upload every listed file under the same multipart field name.
+
 `--folder "Upload API"` runs only that folder and its descendants. Repeat the option to select more than one folder; see the complete guide for exact-match and no-match behavior.
 
 📖 **[Complete download/build, sample files, options, uploads, and GitHub Actions guide →](docs/COLLECTION_CLI_zh.md)**

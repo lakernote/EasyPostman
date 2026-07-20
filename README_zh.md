@@ -267,6 +267,8 @@ java -jar easy-postman.jar collection run ./demo.postman_collection.json
 
 文件上传支持直接或通过变量提供相对/绝对路径。相对路径默认以集合文件所在目录为基准，可由 `--working-dir` 覆盖；绝对路径不受它影响。仓库示例通过环境变量 `{{uploadFile}}` 使用相对路径，把环境值改成 `/opt/fixtures/file.txt` 或 `C:\\fixtures\\file.txt` 即可使用绝对路径。
 
+运行时会忽略 Collection/文件夹中已禁用的变量；迭代数据既可通过 `{{name}}` 读取，也可通过 `pm.variables` 读取；`pm.variables.set(...)` 设置的本地变量在同一次运行的后续请求和迭代中继续有效。前置脚本里的 `pm.test(...)` 会计入报告和退出码。Postman 文件字段的 `src` 是数组时，会用同一 multipart 字段名上传数组中的全部文件。
+
 `--folder "Upload API"` 表示只运行该文件夹及其子文件夹；可以重复传入多个文件夹。精确匹配、同名文件夹和无匹配退出码等规则见完整指南。
 
 📖 **[下载/构建、示例文件、全部参数、文件上传与 GitHub Actions 完整指南 →](docs/COLLECTION_CLI_zh.md)**

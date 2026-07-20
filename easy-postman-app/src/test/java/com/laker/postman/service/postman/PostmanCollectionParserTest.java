@@ -602,7 +602,7 @@ public class PostmanCollectionParserTest {
                         "body": {
                           "mode": "formdata",
                           "formdata": [
-                            {"key": "avatar", "type": "file", "src": ["./avatar.png"]}
+                            {"key": "avatar", "type": "file", "src": ["./front.png", "./back.png"]}
                           ]
                         }
                       }
@@ -631,7 +631,11 @@ public class PostmanCollectionParserTest {
 
         var upload = result.getChildren().get(0).asRequest();
         assertEquals(upload.getBodyType(), BODY_TYPE_FORM_DATA);
-        assertEquals(upload.getFormDataList().get(0).getValue(), "./avatar.png");
+        assertEquals(upload.getFormDataList().size(), 2);
+        assertEquals(upload.getFormDataList().get(0).getKey(), "avatar");
+        assertEquals(upload.getFormDataList().get(0).getValue(), "./front.png");
+        assertEquals(upload.getFormDataList().get(1).getKey(), "avatar");
+        assertEquals(upload.getFormDataList().get(1).getValue(), "./back.png");
 
         var graphql = result.getChildren().get(1).asRequest();
         assertEquals(graphql.getBodyType(), BODY_TYPE_RAW);

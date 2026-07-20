@@ -363,13 +363,20 @@ public class PostmanCollectionParser {
             String description = oObj.getStr("description", "");
             if ("file".equals(formType)) {
                 Object srcObj = oObj.get("src");
-                String src = "";
                 if (srcObj instanceof JSONArray srcArray && !srcArray.isEmpty()) {
-                    src = String.valueOf(srcArray.get(0));
-                } else if (srcObj != null) {
-                    src = String.valueOf(srcObj);
+                    for (Object src : srcArray) {
+                        formDataList.add(new HttpFormData(
+                                enabled,
+                                key,
+                                HttpFormData.TYPE_FILE,
+                                src == null ? "" : String.valueOf(src),
+                                description
+                        ));
+                    }
+                } else {
+                    String src = srcObj == null ? "" : String.valueOf(srcObj);
+                    formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, src, description));
                 }
-                formDataList.add(new HttpFormData(enabled, key, HttpFormData.TYPE_FILE, src, description));
             } else {
                 formDataList.add(new HttpFormData(
                         enabled,

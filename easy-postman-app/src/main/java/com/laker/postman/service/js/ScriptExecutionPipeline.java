@@ -81,7 +81,8 @@ public class ScriptExecutionPipeline {
                 outputCallback,
                 environmentSupplier,
                 requestExecutionScope,
-                PreparedRequestFactory.resolveDeferredAuthorization(item)
+                PreparedRequestFactory.resolveDeferredAuthorization(item),
+                false
         );
     }
 
@@ -101,7 +102,8 @@ public class ScriptExecutionPipeline {
                 outputCallback,
                 environmentSupplier,
                 requestExecutionScope,
-                PreparedRequestFactory.resolveDeferredAuthorizationWithoutInheritance(effectiveItem)
+                PreparedRequestFactory.resolveDeferredAuthorizationWithoutInheritance(effectiveItem),
+                true
         );
     }
 
@@ -110,7 +112,8 @@ public class ScriptExecutionPipeline {
                                                                JsScriptExecutor.OutputCallback outputCallback,
                                                                Supplier<Environment> environmentSupplier,
                                                                RequestExecutionScope requestExecutionScope,
-                                                               PreparedRequestMapper.DeferredAuthorization deferredAuthorization) {
+                                                               PreparedRequestMapper.DeferredAuthorization deferredAuthorization,
+                                                               boolean includeIterationDataInPmVariables) {
         return ScriptExecutionPipeline.builder()
                 .request(request)
                 .preScript(request.prescript)
@@ -120,6 +123,7 @@ public class ScriptExecutionPipeline {
                         ? requestExecutionScope
                         : RequestExecutionContext.captureCurrentScope())
                 .deferredAuthorization(deferredAuthorization)
+                .includeIterationDataInPmVariables(includeIterationDataInPmVariables)
                 .outputCallback(outputCallback)
                 .environmentSupplier(environmentSupplier)
                 .build();
@@ -173,6 +177,12 @@ public class ScriptExecutionPipeline {
     private final RequestExecutionScope requestExecutionScope;
 
     /**
+     * Opt-in Postman runner lookup semantics for headless collection execution.
+     * Existing Functional and Performance pipeline builders keep the default false value.
+     */
+    private final boolean includeIterationDataInPmVariables;
+
+    /**
      * 可选的共享上下文。Functional / Performance 这类“同一轮多请求”
      * 场景会显式传入它，避免再依赖线程残留来共享 pm.variables。
      */
@@ -192,6 +202,18 @@ public class ScriptExecutionPipeline {
      * @return 执行结果
      */
     public ScriptExecutionResult executePreScript() {
+        return executePreScript(false);
+    }
+
+    /**
+     * Executes a pre-request script and preserves pm.test results for collection runners.
+     * The existing executePreScript method keeps its historical result behavior.
+     */
+    public ScriptExecutionResult executePreScriptWithTests() {
+        return executePreScript(true);
+    }
+
+    private ScriptExecutionResult executePreScript(boolean captureTestResults) {
         return withExecutionContext(() -> {
             if (CharSequenceUtil.isBlank(preScript)) {
                 return ScriptExecutionResult.success();
@@ -215,12 +237,16 @@ public class ScriptExecutionPipeline {
                         .build();
 
                 executeScript(context);
-                return ScriptExecutionResult.success();
+                return captureTestResults && pm != null && pm.testResults != null
+                        ? ScriptExecutionResult.success(pm.testResults)
+                        : ScriptExecutionResult.success();
 
             } catch (ScriptExecutionException ex) {
                 log.error("Pre-script execution failed: {}", ex.getMessage(), ex);
                 appendScriptOutput("[PreScript Error]\n" + ex.getMessage(), JsScriptExecutor.ConsoleType.ERROR);
-                return ScriptExecutionResult.failure(ex.getMessage(), ex);
+                return captureTestResults && pm != null && pm.testResults != null
+                        ? ScriptExecutionResult.failure(ex.getMessage(), ex, pm.testResults)
+                        : ScriptExecutionResult.failure(ex.getMessage(), ex);
             }
         });
     }
@@ -464,7 +490,10 @@ public class ScriptExecutionPipeline {
 
     private PostmanApiContext createPostmanApiContext(Environment activeEnv) {
         if (environmentSupplier != null) {
-            return PostmanApiContext.scoped(activeEnv, RunScopedVariableContext.currentGlobals());
+            Environment scopedGlobals = RunScopedVariableContext.currentGlobals();
+            return includeIterationDataInPmVariables
+                    ? PostmanApiContext.scopedWithIterationData(activeEnv, scopedGlobals)
+                    : PostmanApiContext.scoped(activeEnv, scopedGlobals);
         }
         return new PostmanApiContext(activeEnv);
     }

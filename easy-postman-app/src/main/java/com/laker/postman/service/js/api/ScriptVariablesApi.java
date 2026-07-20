@@ -5,6 +5,7 @@ import com.laker.postman.service.variable.VariablesService;
 import com.laker.postman.service.GlobalVariablesService;
 import com.laker.postman.service.variable.EnvironmentVariableService;
 import com.laker.postman.service.variable.GroupVariableService;
+import com.laker.postman.service.variable.IterationDataVariableService;
 import org.graalvm.polyglot.proxy.ProxyObject;
 
 import java.util.LinkedHashMap;
@@ -17,6 +18,19 @@ import java.util.Map;
  * get/has/toObject/replaceIn 按应用内变量优先级读取，行为与 {{variable}} 解析保持一致。
  */
 public class ScriptVariablesApi {
+    private final boolean includeIterationData;
+
+    public ScriptVariablesApi() {
+        this(false);
+    }
+
+    private ScriptVariablesApi(boolean includeIterationData) {
+        this.includeIterationData = includeIterationData;
+    }
+
+    static ScriptVariablesApi withIterationData() {
+        return new ScriptVariablesApi(true);
+    }
 
     public void set(String key, String value) {
         VariablesService.getInstance().set(key, value);
@@ -49,6 +63,9 @@ public class ScriptVariablesApi {
         merged.putAll(GlobalVariablesService.getInstance().getAll());
         merged.putAll(EnvironmentVariableService.getInstance().getAll());
         merged.putAll(GroupVariableService.getInstance().getAll());
+        if (includeIterationData) {
+            merged.putAll(IterationDataVariableService.getInstance().getAll());
+        }
         merged.putAll(VariablesService.getInstance().getAll());
         Map<String, Object> jsObject = new LinkedHashMap<>();
         jsObject.putAll(merged);
@@ -67,6 +84,13 @@ public class ScriptVariablesApi {
         String value = VariablesService.getInstance().get(key);
         if (value != null) {
             return value;
+        }
+
+        if (includeIterationData) {
+            value = IterationDataVariableService.getInstance().get(key);
+            if (value != null) {
+                return value;
+            }
         }
 
         value = GroupVariableService.getInstance().get(key);

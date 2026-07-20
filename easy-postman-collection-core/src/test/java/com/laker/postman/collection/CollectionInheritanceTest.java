@@ -83,6 +83,26 @@ public class CollectionInheritanceTest {
     }
 
     @Test
+    public void shouldMergeOnlyEnabledVariablesForExecutionWithoutChangingEditableMerge() {
+        RequestGroup outer = new RequestGroup("Outer");
+        outer.setVariables(List.of(variable("tenant", "outer"), variable("region", "us")));
+        RequestGroup inner = new RequestGroup("Inner");
+        Variable disabledTenant = variable("tenant", "disabled-inner");
+        disabledTenant.setEnabled(false);
+        inner.setVariables(List.of(disabledTenant, variable("role", "admin")));
+
+        List<Variable> editableVariables = CollectionInheritance.mergeGroupVariables(List.of(outer, inner));
+        List<Variable> executableVariables = CollectionInheritance.mergeEnabledGroupVariables(List.of(outer, inner));
+
+        assertEquals(editableVariables.size(), 3);
+        assertEquals(editableVariables.get(0).getValue(), "disabled-inner");
+        assertEquals(executableVariables.size(), 3);
+        assertEquals(executableVariables.get(0).getValue(), "outer");
+        assertEquals(executableVariables.get(1).getValue(), "us");
+        assertEquals(executableVariables.get(2).getValue(), "admin");
+    }
+
+    @Test
     public void shouldReturnOriginalRequestWhenNoGroupsExist() {
         HttpRequestItem request = new HttpRequestItem();
 

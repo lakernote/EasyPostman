@@ -70,13 +70,13 @@ public class CollectionRunExecutor {
         int failedTests = 0;
         int startedIterations = 0;
         boolean stoppedByBail = false;
+        ExecutionVariableContext runContext = new ExecutionVariableContext();
 
         try (RunScopedVariableContext ignored = RunScopedVariableContext.open(environment, globals)) {
             for (int iteration = 0; iteration < iterationCount && !stoppedByBail; iteration++) {
                 startedIterations++;
-                ExecutionVariableContext iterationContext = new ExecutionVariableContext();
-                iterationContext.setIterationInfo(iteration, iterationCount);
-                iterationContext.replaceIterationData(IterationDataRuntimeSupport.prepare(
+                runContext.setIterationInfo(iteration, iterationCount);
+                runContext.replaceIterationData(IterationDataRuntimeSupport.prepare(
                         dataRows.isEmpty() ? Map.of() : dataRows.get(iteration % dataRows.size())
                 ));
                 if (out != null && iterationCount > 1) {
@@ -89,7 +89,7 @@ public class CollectionRunExecutor {
                             selected.groupChain()
                     );
                     RequestExecutionScope requestScope = RequestExecutionScope.fromVariables(
-                            CollectionInheritance.mergeGroupVariables(selected.groupChain())
+                            CollectionInheritance.mergeEnabledGroupVariables(selected.groupChain())
                     );
 
                     if (out != null) {
@@ -97,7 +97,7 @@ public class CollectionRunExecutor {
                     }
                     FunctionalRequestExecutionResult result = requestExecutor.executeEffective(
                             effectiveItem,
-                            iterationContext,
+                            runContext,
                             () -> true,
                             () -> environment,
                             requestScope,

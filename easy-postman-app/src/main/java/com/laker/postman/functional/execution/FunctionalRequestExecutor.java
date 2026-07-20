@@ -12,6 +12,7 @@ import com.laker.postman.http.runtime.transport.HttpExchangeOptions;
 import com.laker.postman.http.runtime.transport.HttpTransport;
 import com.laker.postman.model.Environment;
 import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.script.model.TestResult;
 import com.laker.postman.service.js.JsScriptExecutor;
 import com.laker.postman.service.js.ScriptExecutionPipeline;
 import com.laker.postman.service.js.ScriptExecutionResult;
@@ -19,6 +20,8 @@ import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -47,6 +50,7 @@ public final class FunctionalRequestExecutor {
                 iterationContext,
                 executionActiveSupplier,
                 true,
+                false,
                 null,
                 null,
                 null,
@@ -90,6 +94,7 @@ public final class FunctionalRequestExecutor {
                 iterationContext,
                 executionActiveSupplier,
                 false,
+                true,
                 environmentSupplier,
                 requestExecutionScope,
                 outputCallback,
@@ -101,6 +106,7 @@ public final class FunctionalRequestExecutor {
                                                      ExecutionVariableContext iterationContext,
                                                      BooleanSupplier executionActiveSupplier,
                                                      boolean applyActiveCollectionInheritance,
+                                                     boolean collectionRunnerSemantics,
                                                      Supplier<Environment> environmentSupplier,
                                                      RequestExecutionScope requestExecutionScope,
                                                      JsScriptExecutor.OutputCallback outputCallback,
@@ -126,7 +132,10 @@ public final class FunctionalRequestExecutor {
                         requestExecutionScope
                 );
 
-        ScriptExecutionResult preResult = pipeline.executePreScript();
+        boolean includePreRequestTests = collectionRunnerSemantics;
+        ScriptExecutionResult preResult = includePreRequestTests
+                ? pipeline.executePreScriptWithTests()
+                : pipeline.executePreScript();
         if (preResult.isSuccess()) {
             pipeline.finalizeRequest();
             if (finalizedRequestConsumer != null) {
@@ -148,9 +157,14 @@ public final class FunctionalRequestExecutor {
                 response = httpTransport.execute(request, HttpExchangeOptions.defaults());
                 status = String.valueOf(response.code);
                 postResult = pipeline.executePostScript(response);
-                if (!postResult.isSuccess()) {
+                if (collectionRunnerSemantics && !postResult.isSuccess()) {
                     assertion = AssertionResult.FAIL;
                     errorMessage = postResult.getErrorMessage();
+                } else if (includePreRequestTests
+                        && (preResult.hasTestResults() || postResult.hasTestResults())) {
+                    assertion = preResult.allTestsPassed() && postResult.allTestsPassed()
+                            ? AssertionResult.PASS
+                            : AssertionResult.FAIL;
                 } else if (postResult.hasTestResults()) {
                     assertion = postResult.allTestsPassed() ? AssertionResult.PASS : AssertionResult.FAIL;
                 }
@@ -173,7 +187,23 @@ public final class FunctionalRequestExecutor {
                 status,
                 errorMessage,
                 assertion,
-                postResult == null ? null : postResult.getTestResults()
+                reportedTests(preResult, postResult, includePreRequestTests)
         );
+    }
+
+    private static List<TestResult> reportedTests(ScriptExecutionResult preResult,
+                                                  ScriptExecutionResult postResult,
+                                                  boolean includePreRequestTests) {
+        if (!includePreRequestTests) {
+            return postResult == null ? null : postResult.getTestResults();
+        }
+        List<TestResult> tests = new ArrayList<>();
+        if (preResult != null && preResult.getTestResults() != null) {
+            tests.addAll(preResult.getTestResults());
+        }
+        if (postResult != null && postResult.getTestResults() != null) {
+            tests.addAll(postResult.getTestResults());
+        }
+        return tests;
     }
 }

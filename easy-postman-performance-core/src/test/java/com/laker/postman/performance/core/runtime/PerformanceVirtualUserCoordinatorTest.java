@@ -6,6 +6,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 public class PerformanceVirtualUserCoordinatorTest {
@@ -31,6 +32,18 @@ public class PerformanceVirtualUserCoordinatorTest {
 
         assertEquals(coordinator.sampleWindowPeakActiveThreads(), 1);
         assertEquals(coordinator.sampleWindowPeakActiveThreads(), 0);
+    }
+
+    @Test
+    public void shouldBlockNewSamplesOnlyInsideExpiredLoadWindow() {
+        PerformanceVirtualUserCoordinator coordinator = new PerformanceVirtualUserCoordinator();
+
+        coordinator.runWithinLoadWindow(
+                System.currentTimeMillis() - 1L,
+                () -> assertFalse(coordinator.canStartNextSample())
+        );
+
+        assertTrue(coordinator.canStartNextSample());
     }
 
     private static void await(CountDownLatch latch) {

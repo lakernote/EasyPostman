@@ -229,6 +229,7 @@ public class PerformanceCorePlanJsonStorage {
         json.put("duration", data.duration);
         json.put("loops", data.loops);
         json.put("useTime", data.useTime);
+        json.put("maxInFlightWaitSeconds", data.maxInFlightWaitSeconds);
         json.put("rampUpStartThreads", data.rampUpStartThreads);
         json.put("rampUpEndThreads", data.rampUpEndThreads);
         json.put("rampUpTime", data.rampUpTime);
@@ -544,6 +545,11 @@ public class PerformanceCorePlanJsonStorage {
         data.duration = intValue(json, "duration", data.duration);
         data.loops = intValue(json, "loops", data.loops);
         data.useTime = booleanValue(json, "useTime", data.useTime);
+        data.maxInFlightWaitSeconds = intValue(
+                json,
+                "maxInFlightWaitSeconds",
+                data.maxInFlightWaitSeconds
+        );
         data.rampUpStartThreads = intValue(json, "rampUpStartThreads", data.rampUpStartThreads);
         data.rampUpEndThreads = intValue(json, "rampUpEndThreads", data.rampUpEndThreads);
         data.rampUpTime = intValue(json, "rampUpTime", data.rampUpTime);

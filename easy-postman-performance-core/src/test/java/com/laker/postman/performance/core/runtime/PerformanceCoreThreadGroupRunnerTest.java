@@ -1,7 +1,10 @@
 package com.laker.postman.performance.core.runtime;
 
 import com.laker.postman.performance.core.plan.PerformanceTestPlan;
+import com.laker.postman.performance.core.plan.PerformancePlanElement;
+import com.laker.postman.performance.core.plan.PerformanceSampler;
 import com.laker.postman.performance.core.plan.PerformanceThreadGroupPlan;
+import com.laker.postman.performance.core.model.NodeType;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
 import org.testng.annotations.Test;
 
@@ -9,8 +12,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -18,6 +24,7 @@ import java.util.function.Supplier;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.expectThrows;
 
 public class PerformanceCoreThreadGroupRunnerTest {
 
@@ -76,6 +83,125 @@ public class PerformanceCoreThreadGroupRunnerTest {
         assertEquals(scopes.size(), 2);
         assertEquals(new HashSet<>(scopes).size(), 2);
         assertTrue(scopes.stream().allMatch(scope -> scope != null && scope.contains(":vu:0")));
+    }
+
+    @Test(timeOut = 4000)
+    public void shouldLetInFlightIterationFinishAfterDuration() {
+        List<String> executions = new CopyOnWriteArrayList<>();
+        AtomicInteger cancellations = new AtomicInteger();
+        PerformanceVirtualUserCoordinator virtualUsers = new PerformanceVirtualUserCoordinator();
+        PerformanceCorePlanExecutor<String> planExecutor = new PerformanceCorePlanExecutor<>(
+                virtualUsers::canStartNextSample,
+                (sampler, context) -> {
+                    executions.add(sampler.getName());
+                    if ("first".equals(sampler.getName())) {
+                        try {
+                            Thread.sleep(1_200L);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+                }
+        );
+        PerformanceCoreThreadGroupRunner<String> runner = new PerformanceCoreThreadGroupRunner<>(
+                () -> true,
+                System::currentTimeMillis,
+                cancellations::incrementAndGet,
+                virtualUsers,
+                (groupPlan, iterationCount) -> "ctx",
+                planExecutor::executeIteration,
+                noopSink()
+        );
+
+        runner.run(new PerformanceTestPlan(List.of(timedFixedGroup(
+                "group",
+                2,
+                List.of(new RecordingSampler("first"), new RecordingSampler("second"))
+        ))), 1);
+
+        assertEquals(executions, List.of("first"));
+        assertEquals(cancellations.get(), 0);
+        assertEquals(virtualUsers.getActiveThreads(), 0);
+    }
+
+    @Test(timeOut = 5000)
+    public void shouldCancelInFlightIterationAfterConfiguredWait() {
+        AtomicInteger cancellations = new AtomicInteger();
+        AtomicInteger executions = new AtomicInteger();
+        CountDownLatch iterationStarted = new CountDownLatch(1);
+        CountDownLatch neverReleased = new CountDownLatch(1);
+        PerformanceCoreThreadGroupRunner<String> runner = new PerformanceCoreThreadGroupRunner<>(
+                () -> true,
+                System::currentTimeMillis,
+                cancellations::incrementAndGet,
+                new PerformanceVirtualUserCoordinator(),
+                (groupPlan, iterationCount) -> "ctx",
+                (groupPlan, iterationContext) -> {
+                    executions.incrementAndGet();
+                    iterationStarted.countDown();
+                    try {
+                        neverReleased.await();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                },
+                noopSink()
+        );
+        long startNanos = System.nanoTime();
+
+        IllegalStateException timeout = expectThrows(
+                IllegalStateException.class,
+                () -> runner.run(new PerformanceTestPlan(List.of(timedFixedGroup("group", 1))), 1)
+        );
+
+        long elapsedMs = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+        assertTrue(timeout.getMessage().contains("configured completion wait"));
+        assertEquals(iterationStarted.getCount(), 0L);
+        assertEquals(cancellations.get(), 1);
+        assertTrue(elapsedMs >= 1_800L, "must honor duration plus configured completion wait");
+        assertTrue(elapsedMs < 4_500L, "must not retain the previous hard-coded five-second wait");
+
+        neverReleased.countDown();
+        runner.run(new PerformanceTestPlan(List.of(fixedGroup("next run", 1))), 1);
+        assertEquals(executions.get(), 2, "a drain timeout must not prevent the next run");
+    }
+
+    @Test(timeOut = 5000)
+    public void shouldStopAllThreadGroupsWhenOneDrainTimesOut() {
+        AtomicBoolean longGroupFinished = new AtomicBoolean(false);
+        AtomicBoolean cancellationObservedLongGroupFinished = new AtomicBoolean(false);
+        CountDownLatch neverReleased = new CountDownLatch(1);
+        PerformanceCoreThreadGroupRunner<String> runner = new PerformanceCoreThreadGroupRunner<>(
+                () -> true,
+                System::currentTimeMillis,
+                () -> cancellationObservedLongGroupFinished.set(longGroupFinished.get()),
+                new PerformanceVirtualUserCoordinator(),
+                (groupPlan, iterationCount) -> "ctx",
+                (groupPlan, iterationContext) -> {
+                    try {
+                        if ("short".equals(groupPlan.getName())) {
+                            neverReleased.await();
+                        } else {
+                            Thread.sleep(2_200L);
+                            longGroupFinished.set(true);
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                },
+                noopSink()
+        );
+
+        expectThrows(
+                IllegalStateException.class,
+                () -> runner.run(new PerformanceTestPlan(List.of(
+                        timedFixedGroup("short", 1),
+                        timedFixedGroup("long", 2)
+                )), 2)
+        );
+
+        assertTrue(longGroupFinished.get());
+        assertFalse(cancellationObservedLongGroupFinished.get());
     }
 
     @Test(timeOut = 3000)
@@ -172,5 +298,43 @@ public class PerformanceCoreThreadGroupRunnerTest {
         threadGroupData.useTime = false;
         threadGroupData.loops = loops;
         return new PerformanceThreadGroupPlan(name, threadGroupData, List.of());
+    }
+
+    private static PerformanceThreadGroupPlan timedFixedGroup(String name, int maxInFlightWaitSeconds) {
+        return timedFixedGroup(name, maxInFlightWaitSeconds, List.of());
+    }
+
+    private static PerformanceThreadGroupPlan timedFixedGroup(String name,
+                                                              int maxInFlightWaitSeconds,
+                                                              List<PerformancePlanElement> elements) {
+        ThreadGroupData threadGroupData = new ThreadGroupData();
+        threadGroupData.threadMode = ThreadGroupData.ThreadMode.FIXED;
+        threadGroupData.numThreads = 1;
+        threadGroupData.useTime = true;
+        threadGroupData.duration = 1;
+        threadGroupData.maxInFlightWaitSeconds = maxInFlightWaitSeconds;
+        return new PerformanceThreadGroupPlan(name, threadGroupData, elements);
+    }
+
+    private record RecordingSampler(String name) implements PerformanceSampler {
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public NodeType getType() {
+            return NodeType.REQUEST;
+        }
+
+        @Override
+        public List<PerformancePlanElement> getChildren() {
+            return List.of();
+        }
+
+        @Override
+        public boolean executesChildrenInSamplerOrder() {
+            return false;
+        }
     }
 }

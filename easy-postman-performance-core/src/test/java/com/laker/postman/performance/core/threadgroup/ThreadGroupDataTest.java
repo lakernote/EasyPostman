@@ -11,6 +11,7 @@ public class ThreadGroupDataTest {
         ThreadGroupData data = new ThreadGroupData();
         data.numThreads = 123_456;
         data.duration = 987_654;
+        data.maxInFlightWaitSeconds = 123_456;
         data.loops = 1_234_567;
         data.rampUpStartThreads = 11_111;
         data.rampUpEndThreads = 22_222;
@@ -32,6 +33,7 @@ public class ThreadGroupDataTest {
 
         assertEquals(data.numThreads, 123_456);
         assertEquals(data.duration, 987_654);
+        assertEquals(data.maxInFlightWaitSeconds, 123_456);
         assertEquals(data.loops, 1_234_567);
         assertEquals(data.rampUpStartThreads, 11_111);
         assertEquals(data.rampUpEndThreads, 22_222);
@@ -70,6 +72,18 @@ public class ThreadGroupDataTest {
         assertEquals(data.spikeMaxThreads, ThreadGroupData.MIN_THREADS);
         assertEquals(data.stairsStartThreads, ThreadGroupData.MIN_THREADS);
         assertEquals(data.stairsEndThreads, ThreadGroupData.MIN_THREADS);
+    }
+
+    @Test
+    public void shouldDefaultAndNormalizeMaximumInFlightWait() {
+        ThreadGroupData data = new ThreadGroupData();
+
+        assertEquals(data.maxInFlightWaitSeconds, ThreadGroupData.DEFAULT_MAX_IN_FLIGHT_WAIT_SECONDS);
+
+        data.maxInFlightWaitSeconds = 0;
+        data.normalize();
+
+        assertEquals(data.maxInFlightWaitSeconds, 1);
     }
 
     @Test

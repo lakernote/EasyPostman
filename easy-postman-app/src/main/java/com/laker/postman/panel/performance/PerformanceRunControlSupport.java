@@ -128,10 +128,10 @@ final class PerformanceRunControlSupport {
 
                     @Override
                     public void onComplete(PerformanceRunSummary summary) {
-                        if (summary == null || !summary.isStopped()) {
-                            SwingUtilities.invokeLater(PerformanceRunControlSupport.this::finishRunUi);
-                        } else {
+                        if (summary != null && (summary.isStopped() || summary.getError() != null)) {
                             SwingUtilities.invokeLater(PerformanceRunControlSupport.this::finishStoppedRunUi);
+                        } else {
+                            SwingUtilities.invokeLater(PerformanceRunControlSupport.this::finishRunUi);
                         }
                     }
                 })

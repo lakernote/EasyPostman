@@ -1,6 +1,7 @@
 package com.laker.postman.performance.core.runtime;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.IntFunction;
@@ -11,9 +12,11 @@ public final class PerformanceVirtualUserCoordinator {
     private final AtomicInteger activeThreads = new AtomicInteger(0);
     private final AtomicInteger peakActiveThreads = new AtomicInteger(0);
     private final AtomicInteger virtualUserCounter = new AtomicInteger(0);
+    private final AtomicBoolean acceptingSamples = new AtomicBoolean(true);
     private final ThreadLocal<Integer> threadVirtualUserIndex = new ThreadLocal<>();
     private final ThreadLocal<String> threadVirtualUserScope = new ThreadLocal<>();
     private final ThreadLocal<Integer> threadIterationIndex = ThreadLocal.withInitial(() -> 0);
+    private final ThreadLocal<Long> threadLoadEndTimeMs = ThreadLocal.withInitial(() -> Long.MAX_VALUE);
     private final Object progressLock = new Object();
 
     public int getActiveThreads() {
@@ -46,6 +49,30 @@ public final class PerformanceVirtualUserCoordinator {
         int iterationIndex = threadIterationIndex.get();
         threadIterationIndex.set(iterationIndex + 1);
         return iterationIndex;
+    }
+
+    /**
+     * 持续时间只限制下一个 sample 的启动，已经发出的 sample 继续等待响应。
+     */
+    public boolean canStartNextSample() {
+        return acceptingSamples.get() && System.currentTimeMillis() < threadLoadEndTimeMs.get();
+    }
+
+    void startAcceptingSamples() {
+        acceptingSamples.set(true);
+    }
+
+    void stopAcceptingSamples() {
+        acceptingSamples.set(false);
+    }
+
+    public void runWithinLoadWindow(long endTimeMs, Runnable task) {
+        threadLoadEndTimeMs.set(endTimeMs);
+        try {
+            task.run();
+        } finally {
+            threadLoadEndTimeMs.remove();
+        }
     }
 
     void submit(ExecutorService executor,
@@ -121,6 +148,7 @@ public final class PerformanceVirtualUserCoordinator {
             threadVirtualUserIndex.remove();
             threadVirtualUserScope.remove();
             threadIterationIndex.remove();
+            threadLoadEndTimeMs.remove();
         }
     }
 

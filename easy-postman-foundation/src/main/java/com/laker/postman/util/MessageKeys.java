@@ -1376,6 +1376,8 @@ public final class MessageKeys {
     public static final String THREADGROUP_FIXED_USE_TIME = "threadgroup.fixed.use_time";
     public static final String THREADGROUP_FIXED_LOOPS = "threadgroup.fixed.loops";
     public static final String THREADGROUP_FIXED_DURATION = "threadgroup.fixed.duration";
+    public static final String THREADGROUP_MAX_IN_FLIGHT_WAIT = "threadgroup.max_in_flight_wait";
+    public static final String THREADGROUP_MAX_IN_FLIGHT_WAIT_TOOLTIP = "threadgroup.max_in_flight_wait.tooltip";
 
     // 递增模式标签
     public static final String THREADGROUP_RAMPUP_START_USERS = "threadgroup.rampup.start_users";

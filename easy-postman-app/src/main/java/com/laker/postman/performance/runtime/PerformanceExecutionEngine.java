@@ -128,7 +128,10 @@ public final class PerformanceExecutionEngine {
                 this::currentResultSink
         );
         this.iterationContextFactory = new PerformanceIterationContextFactory(virtualUsers);
-        PerformancePlanExecutor planExecutor = new PerformancePlanExecutor(runningSupplier, samplerExecutor);
+        PerformancePlanExecutor planExecutor = new PerformancePlanExecutor(
+                () -> runningSupplier.getAsBoolean() && virtualUsers.canStartNextSample(),
+                samplerExecutor
+        );
         this.delegate = new PerformanceCoreExecutionEngine<>(
                 runningSupplier,
                 new PerformanceNetworkControl() {

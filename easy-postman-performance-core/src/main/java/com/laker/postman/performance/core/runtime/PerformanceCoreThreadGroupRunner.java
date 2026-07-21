@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
@@ -22,6 +23,9 @@ import java.util.function.Supplier;
 
 @Slf4j
 public final class PerformanceCoreThreadGroupRunner<C> {
+
+    private static final String DRAIN_TIMEOUT_MESSAGE =
+            "In-flight requests did not finish within the configured completion wait";
 
     @FunctionalInterface
     public interface IterationContextFactory<C> {
@@ -41,6 +45,7 @@ public final class PerformanceCoreThreadGroupRunner<C> {
     private final IterationExecutor<C> iterationExecutor;
     private final Supplier<PerformanceCoreResultSink> resultSinkSupplier;
     private final AtomicLong progressSequence = new AtomicLong(0L);
+    private final AtomicBoolean drainTimedOut = new AtomicBoolean(false);
 
     public PerformanceCoreThreadGroupRunner(BooleanSupplier runningSupplier,
                                             LongSupplier startTimeSupplier,
@@ -49,7 +54,8 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                                             IterationContextFactory<C> iterationContextFactory,
                                             IterationExecutor<C> iterationExecutor,
                                             Supplier<PerformanceCoreResultSink> resultSinkSupplier) {
-        this.runningSupplier = runningSupplier == null ? () -> false : runningSupplier;
+        BooleanSupplier resolvedRunningSupplier = runningSupplier == null ? () -> false : runningSupplier;
+        this.runningSupplier = () -> resolvedRunningSupplier.getAsBoolean() && !drainTimedOut.get();
         this.startTimeSupplier = startTimeSupplier == null ? System::currentTimeMillis : startTimeSupplier;
         this.cancellationAction = cancellationAction == null ? () -> {
         } : cancellationAction;
@@ -61,6 +67,8 @@ public final class PerformanceCoreThreadGroupRunner<C> {
     }
 
     public void run(PerformanceTestPlan plan, int totalThreads) {
+        drainTimedOut.set(false);
+        virtualUsers.startAcceptingSamples();
         if (!runningSupplier.getAsBoolean() || plan == null) {
             return;
         }
@@ -76,6 +84,9 @@ public final class PerformanceCoreThreadGroupRunner<C> {
             thread.start();
         }
         joinThreadGroupThreads(threadGroupThreads, cancellationAction);
+        if (drainTimedOut.get()) {
+            throw new IllegalStateException(DRAIN_TIMEOUT_MESSAGE);
+        }
     }
 
     private void runThreadGroup(PerformanceThreadGroupPlan groupPlan, int totalThreads) {
@@ -120,28 +131,31 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                 return;
             }
             virtualUsers.submit(executor, progressUpdater, totalThreads, groupVirtualUserCounter::getAndIncrement,
-                    virtualUserScopeFactory(groupPlan), () -> {
-                if (useTime) {
-                    while (System.currentTimeMillis() < endTime && runningSupplier.getAsBoolean()) {
-                        runTaskIteration(groupPlan, 0);
-                    }
-                } else {
-                    runTask(groupPlan, loops);
-                }
-            });
+                    virtualUserScopeFactory(groupPlan), () -> virtualUsers.runWithinLoadWindow(endTime, () -> {
+                        if (useTime) {
+                            while (System.currentTimeMillis() < endTime && runningSupplier.getAsBoolean()) {
+                                runTaskIteration(groupPlan, 0);
+                            }
+                        } else {
+                            runTask(groupPlan, loops);
+                        }
+                    }));
         }
         executor.shutdown();
         try {
             boolean terminated;
             if (useTime) {
-                terminated = executor.awaitTermination(durationSeconds + 5L, TimeUnit.SECONDS);
+                terminated = executor.awaitTermination(
+                        (long) durationSeconds + tg.maxInFlightWaitSeconds,
+                        TimeUnit.SECONDS
+                );
             } else {
                 terminated = awaitFixedLoopWorkers(executor);
             }
 
             if (!terminated || !runningSupplier.getAsBoolean()) {
                 log.warn("线程池未能在预期时间内完成，强制关闭剩余线程");
-                cancellationAction.run();
+                markDrainTimedOut(terminated);
                 List<Runnable> pendingTasks = executor.shutdownNow();
                 log.debug("已取消 {} 个待执行任务", pendingTasks.size());
                 if (!executor.awaitTermination(3, TimeUnit.SECONDS)) {
@@ -220,16 +234,19 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                         continue;
                     }
                     virtualUsers.submit(executor, progressUpdater, totalThreads, groupVirtualUserCounter::getAndIncrement,
-                            virtualUserScopeFactory(groupPlan), () -> {
-                        try {
-                            while (runningSupplier.getAsBoolean()
-                                    && System.currentTimeMillis() - startTimeSupplier.getAsLong() < totalDuration * 1000L) {
-                                runTaskIteration(groupPlan, 0);
-                            }
-                        } finally {
-                            activeWorkerThreads.decrementAndGet();
-                        }
-                    });
+                            virtualUserScopeFactory(groupPlan), () -> virtualUsers.runWithinLoadWindow(
+                                    startTimeSupplier.getAsLong() + totalDuration * 1000L,
+                                    () -> {
+                                        try {
+                                            while (runningSupplier.getAsBoolean()
+                                                    && System.currentTimeMillis() - startTimeSupplier.getAsLong()
+                                                    < totalDuration * 1000L) {
+                                                runTaskIteration(groupPlan, 0);
+                                            }
+                                        } finally {
+                                            activeWorkerThreads.decrementAndGet();
+                                        }
+                                    }));
                 }
             }
         }, 0, 1, TimeUnit.SECONDS);
@@ -242,11 +259,12 @@ public final class PerformanceCoreThreadGroupRunner<C> {
             }
 
             executor.shutdown();
-            boolean executorTerminated = executor.awaitTermination(10, TimeUnit.SECONDS);
+            boolean executorTerminated = executor.awaitTermination(tg.maxInFlightWaitSeconds, TimeUnit.SECONDS);
             if (!executorTerminated || !runningSupplier.getAsBoolean()) {
                 log.warn("递增模式执行器未能正常终止，强制关闭");
+                markDrainTimedOut(executorTerminated);
                 executor.shutdownNow();
-                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                if (!executor.awaitTermination(3, TimeUnit.SECONDS)) {
                     log.warn("递增模式部分线程在强制关闭后仍未终止");
                 }
             }
@@ -351,19 +369,7 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                 scheduler.shutdownNow();
             }
 
-            for (Thread thread : threadEndTimes.keySet()) {
-                try {
-                    if (thread.isAlive()) {
-                        thread.join(5000);
-                        if (thread.isAlive() && !runningSupplier.getAsBoolean()) {
-                            thread.interrupt();
-                        }
-                    }
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    log.error("等待线程完成时中断", ie);
-                }
-            }
+            awaitWindowedWorkers("尖刺模式", threadEndTimes.keySet(), tg.maxInFlightWaitSeconds);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             scheduler.shutdownNow();
@@ -453,19 +459,7 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                 scheduler.shutdownNow();
             }
 
-            for (Thread thread : threadEndTimes.keySet()) {
-                try {
-                    if (thread.isAlive()) {
-                        thread.join(5000);
-                        if (thread.isAlive() && !runningSupplier.getAsBoolean()) {
-                            thread.interrupt();
-                        }
-                    }
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    log.error("等待线程完成时中断", ie);
-                }
-            }
+            awaitWindowedWorkers("阶梯模式", threadEndTimes.keySet(), tg.maxInFlightWaitSeconds);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             scheduler.shutdownNow();
@@ -592,19 +586,24 @@ public final class PerformanceCoreThreadGroupRunner<C> {
                                           AtomicInteger groupVirtualUserCounter,
                                           ConcurrentHashMap<Thread, Long> threadEndTimes) {
         Thread thread = virtualUsers.newThread(threadNamePrefix, progressUpdater, totalThreads,
-                groupVirtualUserCounter::getAndIncrement, virtualUserScopeFactory(groupPlan), () -> {
-                    try {
-                        Thread currentThread = Thread.currentThread();
-                        while (runningSupplier.getAsBoolean()
-                                && System.currentTimeMillis() - startTimeSupplier.getAsLong() < totalTime * 1000L
-                                && System.currentTimeMillis() < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE)) {
-                            runTaskIteration(groupPlan, 0);
-                        }
-                    } finally {
-                        activeWorkerThreads.decrementAndGet();
-                        threadEndTimes.remove(Thread.currentThread());
-                    }
-                });
+                groupVirtualUserCounter::getAndIncrement, virtualUserScopeFactory(groupPlan), () ->
+                        virtualUsers.runWithinLoadWindow(
+                                startTimeSupplier.getAsLong() + totalTime * 1000L,
+                                () -> {
+                                    try {
+                                        Thread currentThread = Thread.currentThread();
+                                        while (runningSupplier.getAsBoolean()
+                                                && System.currentTimeMillis() - startTimeSupplier.getAsLong()
+                                                < totalTime * 1000L
+                                                && System.currentTimeMillis()
+                                                < threadEndTimes.getOrDefault(currentThread, Long.MAX_VALUE)) {
+                                            runTaskIteration(groupPlan, 0);
+                                        }
+                                    } finally {
+                                        activeWorkerThreads.decrementAndGet();
+                                        threadEndTimes.remove(Thread.currentThread());
+                                    }
+                                }));
         threadEndTimes.put(thread, Long.MAX_VALUE);
         thread.start();
     }
@@ -718,6 +717,48 @@ public final class PerformanceCoreThreadGroupRunner<C> {
 
     private static boolean isOpenEndedWorker(ConcurrentHashMap<Thread, Long> threadEndTimes, Thread thread) {
         return Long.valueOf(Long.MAX_VALUE).equals(threadEndTimes.get(thread));
+    }
+
+    private void awaitWindowedWorkers(String modeName,
+                                      Iterable<Thread> workers,
+                                      int maxWaitSeconds) throws InterruptedException {
+        List<Thread> snapshot = new ArrayList<>();
+        workers.forEach(snapshot::add);
+        long deadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(maxWaitSeconds);
+
+        for (Thread worker : snapshot) {
+            while (worker.isAlive() && runningSupplier.getAsBoolean()) {
+                long remainingNanos = deadlineNanos - System.nanoTime();
+                if (remainingNanos <= 0L) {
+                    break;
+                }
+                worker.join(Math.max(1L, TimeUnit.NANOSECONDS.toMillis(remainingNanos)));
+            }
+        }
+
+        List<Thread> unfinished = snapshot.stream().filter(Thread::isAlive).toList();
+        if (unfinished.isEmpty()) {
+            return;
+        }
+
+        log.warn("{}仍有 {} 个请求未在 {} 秒内完成，将强制取消", modeName, unfinished.size(), maxWaitSeconds);
+        markDrainTimedOut(false);
+        unfinished.forEach(Thread::interrupt);
+        long cleanupDeadlineNanos = System.nanoTime() + TimeUnit.SECONDS.toNanos(3L);
+        for (Thread worker : unfinished) {
+            long remainingNanos = cleanupDeadlineNanos - System.nanoTime();
+            if (worker.isAlive() && remainingNanos > 0L) {
+                worker.join(Math.max(1L, TimeUnit.NANOSECONDS.toMillis(remainingNanos)));
+            }
+        }
+    }
+
+    private void markDrainTimedOut(boolean terminated) {
+        boolean timedOut = !terminated && runningSupplier.getAsBoolean();
+        if (timedOut && drainTimedOut.compareAndSet(false, true)) {
+            virtualUsers.stopAcceptingSamples();
+            cancellationAction.run();
+        }
     }
 
     private void runTaskIteration(PerformanceThreadGroupPlan groupPlan, int iterationCount) {

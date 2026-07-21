@@ -45,6 +45,8 @@ public class ThreadGroupPropertyPanel extends JPanel {
     private final JToggleButton useLoopCountButton;
     private final JToggleButton useTimeCheckBox;
     private final EasyJSpinner durationSpinner;
+    private final JLabel maxInFlightWaitLabel;
+    private final EasyJSpinner maxInFlightWaitSpinner;
 
     // 递增模式面板组件
     private final JPanel rampUpPanel;
@@ -116,6 +118,16 @@ public class ThreadGroupPropertyPanel extends JPanel {
                 false
         );
         durationSpinner = standardIntSpinner(60, 1, null, 10);
+        maxInFlightWaitLabel = formLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_MAX_IN_FLIGHT_WAIT));
+        maxInFlightWaitSpinner = standardIntSpinner(
+                ThreadGroupData.DEFAULT_MAX_IN_FLIGHT_WAIT_SECONDS,
+                1,
+                null,
+                10
+        );
+        String maxInFlightWaitTooltip = I18nUtil.getMessage(MessageKeys.THREADGROUP_MAX_IN_FLIGHT_WAIT_TOOLTIP);
+        maxInFlightWaitLabel.setToolTipText(maxInFlightWaitTooltip);
+        maxInFlightWaitSpinner.setToolTipText(maxInFlightWaitTooltip);
 
         // 2. 递增模式面板
         rampUpPanel = new JPanel(createValuePairLayout());
@@ -164,12 +176,17 @@ public class ThreadGroupPropertyPanel extends JPanel {
             ThreadGroupData.ThreadMode selectedMode = (ThreadGroupData.ThreadMode) modeComboBox.getSelectedItem();
             if (selectedMode != null) {
                 cardLayout.show(cardPanel, selectedMode.name());
+                updateMaxInFlightWaitState();
                 updatePreview();
             }
         });
 
-        executionModeBar.setSelectionListener(useTime -> updateFixedExecutionModeState());
+        executionModeBar.setSelectionListener(useTime -> {
+            updateFixedExecutionModeState();
+            updateMaxInFlightWaitState();
+        });
         updateFixedExecutionModeState();
+        updateMaxInFlightWaitState();
 
         // 预览图表区域
         previewPanel = new ThreadLoadPreviewPanel();
@@ -182,7 +199,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         JPanel configPanel = new JPanel(new MigLayout(
                 "insets 0, fillx, novisualpadding, gap 0",
                 "[left]",
-                "[]10[]"
+                "[]10[]8[]"
         ));
         configPanel.setOpaque(false);
         configPanel.setBorder(BorderFactory.createEmptyBorder(2, 0, 0, 0));
@@ -195,9 +212,18 @@ public class ThreadGroupPropertyPanel extends JPanel {
         modeRow.add(formLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_MODE_LABEL)), "aligny center");
         modeRow.add(modeComboBox, "w pref!, h " + FORM_CONTROL_HEIGHT + "!");
         configPanel.add(modeRow, "left, wrap");
-        configPanel.add(cardPanel, "w " + CONFIG_PANEL_WIDTH + "!, growx");
+        configPanel.add(cardPanel, "w " + CONFIG_PANEL_WIDTH + "!, growx, wrap");
+        JPanel maxInFlightWaitRow = new JPanel(new MigLayout(
+                "insets 0, novisualpadding, gap 0",
+                "[right,pref!]" + LABEL_FIELD_GAP + "[" + SPINNER_WIDTH + "!,left]",
+                "[]"
+        ));
+        maxInFlightWaitRow.setOpaque(false);
+        maxInFlightWaitRow.add(maxInFlightWaitLabel, "aligny center");
+        maxInFlightWaitRow.add(maxInFlightWaitSpinner, spinnerConstraints());
+        configPanel.add(maxInFlightWaitRow, "left");
         // 动态调整配置面板宽度以匹配卡片面板
-        configPanel.setPreferredSize(new Dimension(CONFIG_PANEL_WIDTH, 150));
+        configPanel.setPreferredSize(new Dimension(CONFIG_PANEL_WIDTH, 190));
 
         JPanel previewSection = new JPanel(new MigLayout(
                 "insets 0, fill, novisualpadding, gap 0",
@@ -483,9 +509,11 @@ public class ThreadGroupPropertyPanel extends JPanel {
         useTimeCheckBox.setSelected(data.useTime);
         useLoopCountButton.setSelected(!data.useTime);
         durationSpinner.setValue(data.duration);
+        maxInFlightWaitSpinner.setValue(data.maxInFlightWaitSeconds);
 
         // 更新UI状态
         updateFixedExecutionModeState();
+        updateMaxInFlightWaitState();
 
         // 设置递增模式参数
         rampUpStartThreadsSpinner.setValue(data.rampUpStartThreads);
@@ -518,7 +546,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
      */
     public void forceCommitAllSpinners() {
         List<EasyJSpinner> allSpinners = Arrays.asList(
-                fixedNumThreadsSpinner, fixedLoopsSpinner, durationSpinner,
+                fixedNumThreadsSpinner, fixedLoopsSpinner, durationSpinner, maxInFlightWaitSpinner,
                 rampUpStartThreadsSpinner, rampUpEndThreadsSpinner,
                 rampUpTimeSpinner, rampUpDurationSpinner,
                 spikeMinThreadsSpinner, spikeMaxThreadsSpinner,
@@ -547,6 +575,7 @@ public class ThreadGroupPropertyPanel extends JPanel {
         data.loops = fixedLoopsSpinner.getCommittedIntValue();
         data.useTime = useTimeCheckBox.isSelected();
         data.duration = durationSpinner.getCommittedIntValue();
+        data.maxInFlightWaitSeconds = maxInFlightWaitSpinner.getCommittedIntValue();
 
         // 保存递增模式参数
         data.rampUpStartThreads = rampUpStartThreadsSpinner.getCommittedIntValue();
@@ -594,6 +623,14 @@ public class ThreadGroupPropertyPanel extends JPanel {
         boolean useTime = useTimeCheckBox.isSelected();
         fixedLoopsSpinner.setEnabled(!useTime);
         durationSpinner.setEnabled(useTime);
+    }
+
+    private void updateMaxInFlightWaitState() {
+        ThreadGroupData.ThreadMode mode = (ThreadGroupData.ThreadMode) modeComboBox.getSelectedItem();
+        boolean enabled = mode != null
+                && (mode != ThreadGroupData.ThreadMode.FIXED || useTimeCheckBox.isSelected());
+        maxInFlightWaitLabel.setEnabled(enabled);
+        maxInFlightWaitSpinner.setEnabled(enabled);
     }
 
     private static String trimFieldLabel(String text) {

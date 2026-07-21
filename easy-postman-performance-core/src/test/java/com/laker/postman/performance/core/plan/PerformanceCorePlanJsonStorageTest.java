@@ -48,6 +48,7 @@ public class PerformanceCorePlanJsonStorageTest {
         PerformanceCorePlanNode loadedGroup = loadedRoot.getChildren().get(0);
         assertEquals(loadedGroup.getThreadGroupData().threadMode, ThreadGroupData.ThreadMode.RAMP_UP);
         assertEquals(loadedGroup.getThreadGroupData().rampUpEndThreads, 6);
+        assertEquals(loadedGroup.getThreadGroupData().maxInFlightWaitSeconds, 45);
 
         PerformanceCorePlanNode loadedLoop = loadedGroup.getChildren().get(0);
         assertEquals(loadedLoop.getLoopData().iterations, 3);
@@ -202,6 +203,7 @@ public class PerformanceCorePlanJsonStorageTest {
         threadGroupData.rampUpTime = 12;
         threadGroupData.useTime = false;
         threadGroupData.loops = 5;
+        threadGroupData.maxInFlightWaitSeconds = 45;
         PerformanceCorePlanNode group = PerformanceCorePlanNode.builder()
                 .name("users")
                 .type(NodeType.THREAD_GROUP)

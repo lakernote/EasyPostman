@@ -7,6 +7,7 @@ import com.laker.postman.util.MessageKeys;
  */
 public class ThreadGroupData {
     public static final int MIN_THREADS = 1;
+    public static final int DEFAULT_MAX_IN_FLIGHT_WAIT_SECONDS = 60;
     private static final int MIN_SECONDS = 1;
     private static final int MIN_LOOPS = 1;
     private static final int MIN_STEP = 1;
@@ -40,6 +41,7 @@ public class ThreadGroupData {
     public int duration = 60;                         // 所有模式-默认持续时间(秒)
     public int loops = 1;                             // 固定模式-默认循环次数
     public boolean useTime = true;                   // 是否使用时间而不是循环次数
+    public int maxInFlightWaitSeconds = DEFAULT_MAX_IN_FLIGHT_WAIT_SECONDS; // 到时后等待在途请求完成的最长时间
 
     // 递增模式属性
     public int rampUpStartThreads = 1;                // 递增起始线程数
@@ -71,6 +73,7 @@ public class ThreadGroupData {
         numThreads = atLeast(numThreads, MIN_THREADS);
         duration = atLeast(duration, MIN_SECONDS);
         loops = atLeast(loops, MIN_LOOPS);
+        maxInFlightWaitSeconds = atLeast(maxInFlightWaitSeconds, MIN_SECONDS);
 
         rampUpStartThreads = atLeast(rampUpStartThreads, MIN_THREADS);
         rampUpEndThreads = atLeast(rampUpEndThreads, MIN_THREADS);

@@ -1,6 +1,6 @@
 {
   "name": "EasyPostman Official Plugin Catalog (Gitee)",
-  "generatedAt": "2026-07-21T00:27:58Z",
+  "generatedAt": "2026-07-21T00:39:17Z",
   "plugins": [
     {
       "id": "plugin-capture",
@@ -83,7 +83,7 @@
         {
           "version": "6.0.8",
           "downloadUrl": "https://gitee.com/lakernote/easy-postman/releases/download/plugin-client-cert-v6.0.8/easy-postman-6.0.8-plugin-client-cert.jar",
-          "sha256": "b103e57d855c54f0dd7ea62d633c05734baf1bd9e3e7b4ef5bde31b94c40e03e",
+          "sha256": "ebd2efd34002e6efb53e1a0f8c911a7fea0eaaae708495d7530aceeecc207fe4",
           "minAppVersion": "6.0.7",
           "minPlatformVersion": "4.0.0",
           "maxPlatformVersion": "4.0.0"

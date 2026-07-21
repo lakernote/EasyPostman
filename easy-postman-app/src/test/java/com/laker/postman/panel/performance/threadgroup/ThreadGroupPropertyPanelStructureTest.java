@@ -232,6 +232,29 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
     }
 
     @Test
+    public void completionWaitShouldAlignBelowFixedDuration() throws Exception {
+        ThreadGroupPropertyPanel panel = panel();
+        panel.setSize(new Dimension(1400, 320));
+        layoutRecursively(panel);
+
+        EasyJSpinner durationSpinner = fieldValue(panel, "durationSpinner", EasyJSpinner.class);
+        EasyJSpinner completionWaitSpinner = fieldValue(panel, "maxInFlightWaitSpinner", EasyJSpinner.class);
+        JLabel durationLabel = findLabel(panel, I18nUtil.getMessage(MessageKeys.THREADGROUP_FIXED_DURATION));
+        JLabel completionWaitLabel = fieldValue(panel, "maxInFlightWaitLabel", JLabel.class);
+
+        int verticalGap = verticalStart(panel, completionWaitSpinner) - verticalEnd(panel, durationSpinner);
+        assertTrue(verticalGap >= 0 && verticalGap <= 16,
+                "completion wait should stay close below fixed duration, actual gap: " + verticalGap);
+        int durationStart = horizontalStart(panel, durationSpinner);
+        int completionWaitStart = horizontalStart(panel, completionWaitSpinner);
+        assertTrue(Math.abs(completionWaitStart - durationStart) <= 2,
+                "completion wait and fixed duration inputs should be left-aligned: durationStart="
+                        + durationStart + ", completionWaitStart=" + completionWaitStart);
+        assertTrue(Math.abs(horizontalEnd(panel, completionWaitLabel) - horizontalEnd(panel, durationLabel)) <= 2,
+                "completion wait and fixed duration labels should be right-aligned");
+    }
+
+    @Test
     public void fixedExecutionModeShouldUseACompactGroupedControl() {
         ThreadGroupPropertyPanel panel = panel();
         panel.setSize(new Dimension(1400, 320));
@@ -305,6 +328,19 @@ public class ThreadGroupPropertyPanelStructureTest extends AbstractSwingUiTest {
         Point leftEnd = SwingUtilities.convertPoint(left.getParent(), left.getX() + left.getWidth(), left.getY(), root);
         Point rightStart = SwingUtilities.convertPoint(right.getParent(), right.getX(), right.getY(), root);
         return rightStart.x - leftEnd.x;
+    }
+
+    private static int horizontalEnd(Component root, Component component) {
+        return SwingUtilities.convertPoint(
+                component.getParent(),
+                component.getX() + component.getWidth(),
+                component.getY(),
+                root
+        ).x;
+    }
+
+    private static int horizontalStart(Component root, Component component) {
+        return SwingUtilities.convertPoint(component.getParent(), component.getX(), component.getY(), root).x;
     }
 
     private static int verticalStart(Component root, Component component) {

@@ -5,8 +5,8 @@ import com.laker.postman.common.component.EasyJSpinner;
 import com.laker.postman.common.component.ToolWindowSurfaceStyle;
 import com.laker.postman.common.component.button.SegmentedButtonBar;
 import com.laker.postman.common.constants.ModernColors;
-import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.performance.core.threadgroup.ThreadGroupData;
+import com.laker.postman.performance.model.PerformanceTreeNode;
 import com.laker.postman.util.I18nUtil;
 import com.laker.postman.util.MessageKeys;
 import net.miginfocom.swing.MigLayout;
@@ -15,19 +15,17 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
-import java.awt.geom.RoundRectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class ThreadGroupPropertyPanel extends JPanel {
     private static final int CONFIG_PANEL_WIDTH = 460;
-    private static final int MODE_CARD_HEIGHT = 112;
     private static final int PREVIEW_PANEL_HEIGHT = 200;
     private static final int FORM_CONTROL_HEIGHT = 28;
     private static final int SPINNER_WIDTH = 80;
     private static final int LABEL_FIELD_GAP = 8;
-    private static final int FIELD_PAIR_GAP = 14;
+    private static final int FIELD_PAIR_GAP = 30;
     private static final int FORM_ROW_GAP = 8;
     private static final int CONFIG_PREVIEW_GAP = 36;
 
@@ -98,7 +96,6 @@ public class ThreadGroupPropertyPanel extends JPanel {
         cardLayout = new CardLayout();
         cardPanel = new JPanel(cardLayout);
         cardPanel.setOpaque(false);
-        cardPanel.setPreferredSize(new Dimension(CONFIG_PANEL_WIDTH, MODE_CARD_HEIGHT));
 
         // 初始化所有控件和面板
         // 1. 固定模式面板
@@ -169,13 +166,13 @@ public class ThreadGroupPropertyPanel extends JPanel {
         cardPanel.add(stairsPanel, ThreadGroupData.ThreadMode.STAIRS.name());
 
         // 默认显示固定模式面板
-        cardLayout.show(cardPanel, ThreadGroupData.ThreadMode.FIXED.name());
+        showThreadMode(ThreadGroupData.ThreadMode.FIXED);
 
         // 模式切换监听器
         modeComboBox.addActionListener(e -> {
             ThreadGroupData.ThreadMode selectedMode = (ThreadGroupData.ThreadMode) modeComboBox.getSelectedItem();
             if (selectedMode != null) {
-                cardLayout.show(cardPanel, selectedMode.name());
+                showThreadMode(selectedMode);
                 updateMaxInFlightWaitState();
                 updatePreview();
             }
@@ -212,19 +209,21 @@ public class ThreadGroupPropertyPanel extends JPanel {
         modeRow.add(formLabel(I18nUtil.getMessage(MessageKeys.THREADGROUP_MODE_LABEL)), "aligny center");
         modeRow.add(modeComboBox, "w pref!, h " + FORM_CONTROL_HEIGHT + "!");
         configPanel.add(modeRow, "left, wrap");
-        configPanel.add(cardPanel, "w " + CONFIG_PANEL_WIDTH + "!, growx, wrap");
+        configPanel.add(cardPanel, "w " + CONFIG_PANEL_WIDTH + "!, h pref!, growx, wrap");
+        int fixedRightFieldWidth = Math.max(SPINNER_WIDTH, executionModeBar.getPreferredSize().width);
         JPanel maxInFlightWaitRow = new JPanel(new MigLayout(
-                "insets 0, novisualpadding, gap 0",
-                "[right,pref!]" + LABEL_FIELD_GAP + "[" + SPINNER_WIDTH + "!,left]",
+                "insets 0, fillx, novisualpadding, gap 0",
+                "[grow,fill][right,pref!]" + LABEL_FIELD_GAP + "[" + fixedRightFieldWidth + "!,left]",
                 "[]"
         ));
         maxInFlightWaitRow.setOpaque(false);
-        maxInFlightWaitRow.add(maxInFlightWaitLabel, "aligny center");
+        maxInFlightWaitRow.add(maxInFlightWaitLabel, "skip 1, aligny center");
         maxInFlightWaitRow.add(maxInFlightWaitSpinner, spinnerConstraints());
+        maxInFlightWaitRow.setPreferredSize(new Dimension(
+                fixedPanel.getPreferredSize().width,
+                FORM_CONTROL_HEIGHT
+        ));
         configPanel.add(maxInFlightWaitRow, "left");
-        // 动态调整配置面板宽度以匹配卡片面板
-        configPanel.setPreferredSize(new Dimension(CONFIG_PANEL_WIDTH, 190));
-
         JPanel previewSection = new JPanel(new MigLayout(
                 "insets 0, fill, novisualpadding, gap 0",
                 "[grow,fill]",
@@ -623,6 +622,21 @@ public class ThreadGroupPropertyPanel extends JPanel {
         boolean useTime = useTimeCheckBox.isSelected();
         fixedLoopsSpinner.setEnabled(!useTime);
         durationSpinner.setEnabled(useTime);
+    }
+
+    private void showThreadMode(ThreadGroupData.ThreadMode mode) {
+        JPanel visiblePanel = switch (mode) {
+            case FIXED -> fixedPanel;
+            case RAMP_UP -> rampUpPanel;
+            case SPIKE -> spikePanel;
+            case STAIRS -> stairsPanel;
+        };
+        cardLayout.show(cardPanel, mode.name());
+        cardPanel.setPreferredSize(new Dimension(
+                CONFIG_PANEL_WIDTH,
+                visiblePanel.getPreferredSize().height
+        ));
+        cardPanel.revalidate();
     }
 
     private void updateMaxInFlightWaitState() {

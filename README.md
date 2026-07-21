@@ -361,16 +361,6 @@ If EasyPostman helps you, consider:
 
 ---
 
-## ⭐ Star History
-
-<div align="center">
-
-[![Star History Chart](https://api.star-history.com/svg?repos=lakernote/easy-postman&type=date&legend=top-left)](https://www.star-history.com/#lakernote/easy-postman&type=date&legend=top-left)
-
-</div>
-
----
-
 ## 🙏 Acknowledgements
 
 Thanks to these awesome open-source projects:

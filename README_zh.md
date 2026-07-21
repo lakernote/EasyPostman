@@ -361,16 +361,6 @@ java -jar easy-postman.jar collection run ./demo.postman_collection.json
 
 ---
 
-## ⭐ Star History
-
-<div align="center">
-
-[![Star History Chart](https://api.star-history.com/svg?repos=lakernote/easy-postman&type=date&legend=top-left)](https://www.star-history.com/#lakernote/easy-postman&type=date&legend=top-left)
-
-</div>
-
----
-
 ## 🙏 致谢
 
 感谢以下优秀的开源项目：

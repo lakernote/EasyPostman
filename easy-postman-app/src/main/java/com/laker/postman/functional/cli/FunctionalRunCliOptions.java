@@ -1,58 +1,48 @@
-package com.laker.postman.collection.cli;
+package com.laker.postman.functional.cli;
 
 import com.laker.postman.workspace.cli.WorkspaceRunOptions;
 import lombok.Builder;
 import lombok.Value;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 @Value
-public class CollectionRunCliOptions {
+public class FunctionalRunCliOptions {
     boolean help;
     String workspace;
-    List<String> collections;
     String environment;
     Path iterationDataPath;
     Integer iterationCount;
-    List<String> folders;
     Path workingDirectory;
     Path outPath;
     boolean bail;
 
     @Builder
-    public CollectionRunCliOptions(Boolean help,
+    public FunctionalRunCliOptions(Boolean help,
                                    String workspace,
-                                   List<String> collections,
                                    String environment,
                                    Path iterationDataPath,
                                    Integer iterationCount,
-                                   List<String> folders,
                                    Path workingDirectory,
                                    Path outPath,
                                    Boolean bail) {
         this.help = help != null && help;
         this.workspace = workspace;
-        this.collections = collections == null ? List.of() : List.copyOf(collections);
         this.environment = environment;
         this.iterationDataPath = iterationDataPath;
         this.iterationCount = iterationCount;
-        this.folders = folders == null ? List.of() : List.copyOf(folders);
         this.workingDirectory = workingDirectory;
         this.outPath = outPath;
         this.bail = bail != null && bail;
     }
 
-    public static CollectionRunCliOptions parse(String[] args) {
+    public static FunctionalRunCliOptions parse(String[] args) {
         String[] safeArgs = args == null ? new String[0] : args;
         boolean help = false;
         String workspace = null;
-        List<String> collections = new ArrayList<>();
         String environment = null;
         Path iterationDataPath = null;
         Integer iterationCount = null;
-        List<String> folders = new ArrayList<>();
         Path workingDirectory = null;
         Path outPath = null;
         boolean bail = false;
@@ -71,14 +61,12 @@ public class CollectionRunCliOptions {
                     }
                     workspace = requiredValue(safeArgs, index++, arg);
                 }
-                case "--collection", "-c" -> collections.add(requiredValue(safeArgs, index++, arg));
                 case "--environment", "-e" -> environment = requiredValue(safeArgs, index++, arg);
                 case "--iteration-data", "-d" -> iterationDataPath = Path.of(requiredValue(safeArgs, index++, arg));
                 case "--iteration-count", "-n" -> iterationCount = parsePositiveInt(
                         requiredValue(safeArgs, index++, arg),
                         arg
                 );
-                case "--folder" -> folders.add(requiredValue(safeArgs, index++, arg));
                 case "--working-dir" -> workingDirectory = Path.of(requiredValue(safeArgs, index++, arg));
                 case "--out" -> outPath = Path.of(requiredValue(safeArgs, index++, arg));
                 case "--bail" -> bail = true;
@@ -86,16 +74,25 @@ public class CollectionRunCliOptions {
             }
         }
 
-        return CollectionRunCliOptions.builder()
+        return FunctionalRunCliOptions.builder()
                 .help(help)
                 .workspace(workspace)
-                .collections(collections)
                 .environment(environment)
                 .iterationDataPath(iterationDataPath)
                 .iterationCount(iterationCount)
-                .folders(folders)
                 .workingDirectory(workingDirectory)
                 .outPath(outPath)
+                .bail(bail)
+                .build();
+    }
+
+    WorkspaceRunOptions toRunOptions() {
+        return WorkspaceRunOptions.builder()
+                .workspace(workspace)
+                .environment(environment)
+                .iterationDataPath(iterationDataPath)
+                .iterationCount(iterationCount)
+                .workingDirectory(workingDirectory)
                 .bail(bail)
                 .build();
     }
@@ -114,11 +111,10 @@ public class CollectionRunCliOptions {
         return switch (value) {
             case "--help", "-h",
                  "--workspace", "-w",
-                 "--collection", "-c",
                  "--environment", "-e",
                  "--iteration-data", "-d",
                  "--iteration-count", "-n",
-                 "--folder", "--working-dir", "--out", "--bail" -> true;
+                 "--working-dir", "--out", "--bail" -> true;
             default -> false;
         };
     }
@@ -133,16 +129,5 @@ public class CollectionRunCliOptions {
         } catch (NumberFormatException ex) {
             throw new IllegalArgumentException(optionName + " must be a number");
         }
-    }
-
-    WorkspaceRunOptions toRunOptions() {
-        return WorkspaceRunOptions.builder()
-                .workspace(workspace)
-                .environment(environment)
-                .iterationDataPath(iterationDataPath)
-                .iterationCount(iterationCount)
-                .workingDirectory(workingDirectory)
-                .bail(bail)
-                .build();
     }
 }

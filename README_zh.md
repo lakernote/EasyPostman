@@ -31,7 +31,7 @@
 - [✨ 功能特性](#-功能特性)
 - [📦 下载](#-下载)
 - [🚀 快速开始](#-快速开始)
-- [🧪 集合 CLI](#-集合-cli)
+- [🧪 集合 / 功能测试 CLI](#-集合--功能测试-cli)
 - [🛠️ 开发指南](#️-开发指南)
 - [🤝 贡献指南](#-贡献指南)
 - [📚 文档](#-文档)
@@ -84,7 +84,7 @@ EasyPostman 是 GUI 优先的桌面工具，项目价值要同时展示两条主
 | **像 Postman 一样调试 REST API** | 创建或导入集合，选择环境，发送请求，查看格式化响应体、headers、cookies、耗时和网络事件日志。 |
 | **用脚本串联请求** | 使用请求前脚本和测试脚本读取变量、生成签名、提取响应数据、执行断言，并把值传给后续请求。 |
 | **通过 Git 协作接口资产** | 工作区数据保存在本地，通过 Git 工作区提交、拉取、推送和审查集合/环境变更。 |
-| **在 CI 中运行 Postman Collection** | 下载跨平台 JAR 或从源码构建，使用集合 CLI 执行环境变量、CSV/JSON 数据、脚本、断言和文件上传。 |
+| **在 CI 中运行 EasyPostman 工作区** | 下载跨平台 JAR 或从源码构建，直接运行原生工作区中的集合、环境、脚本、断言和文件上传。 |
 | **像 JMeter 一样编排压测** | 在界面中编排压测计划，导出 `plan.json`，再用无头 CLI 或 master/worker 模式执行，同时保持全局用户和 CSV 分片规则。 |
 
 ---
@@ -103,7 +103,7 @@ EasyPostman 是 GUI 优先的桌面工具，项目价值要同时展示两条主
 - **多种请求体** - Form Data、x-www-form-urlencoded、JSON、XML、文本和二进制
 - **变量体系** - 支持环境、全局、请求和迭代数据，让请求和压测可重复执行
 - **导入导出** - 支持 Postman v2.1、cURL，HAR 和 OpenAPI/Swagger 路径持续完善中
-- **集合无头运行** - 使用跨平台 JAR 执行 Postman Collection，支持环境、数据文件、脚本、断言、文件上传和 CI 退出码
+- **工作区无头运行** - 使用独立的集合与功能测试命令执行 EasyPostman 原生工作区，支持 CI 退出码
 
 ### ⚡ JMeter 风格性能测试
 - **GUI 场景编排** - 线程组、定时器、提取器、断言和结果视图
@@ -211,9 +211,9 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 
 ---
 
-## 🧪 集合 CLI
+## 🧪 集合 / 功能测试 CLI
 
-无需安装 Node.js 或 Newman，直接使用 EasyPostman JAR 无头运行 Postman Collection v2.1。
+EasyPostman JAR 可以直接无头运行桌面端的原生工作区，不需要导出集合或环境文件。
 
 ### 第一步：获取 JAR
 
@@ -224,9 +224,10 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 ```bash
 java -version  # 需要 Java 17+
 java -jar easy-postman-6.x.x.jar collection run --help
+java -jar easy-postman-6.x.x.jar functional run --help
 ```
 
-如果帮助中没有 `collection run`，请下载包含该功能的更新版本，或使用源码构建。
+如果任一命令未显示，请下载包含该功能的更新版本，或使用源码构建。
 
 **B. 自己构建 JAR**：
 
@@ -236,42 +237,59 @@ cd easy-postman
 mvn -pl easy-postman-app -am -DskipTests clean package
 java -jar easy-postman-app/target/easy-postman-*.jar \
   collection run --help
+java -jar easy-postman-app/target/easy-postman-*.jar \
+  functional run --help
 ```
 
-### 第二步：运行完整示例
+### 第二步：运行工作区
 
-仓库内示例包含集合、Postman 环境、CSV 迭代数据和真实上传文件，会向 Postman Echo 发起两次 multipart 请求：
+`collection run` 按集合/文件夹选择请求，`functional run` 按 `functional_config.json` 选择请求。两者都可以直接接收工作区目录，CI 不依赖桌面端登记信息或 GUI 状态。
+
+Git 工作区 checkout 后，在仓库根目录直接运行：
+
+```bash
+java -jar easy-postman.jar collection run .
+java -jar easy-postman.jar functional run .
+```
+
+也可以按工作区名称运行，并选择集合和环境：
+
+```bash
+java -jar easy-postman.jar collection run tewst \
+  -c "Basic HTTP Examples" \
+  -e "Dev Env"
+```
+
+仓库内的示例目录本身就是一个 EasyPostman 工作区：
 
 ```bash
 java -DCONSOLE_LOG_LEVEL=ERROR \
   -jar easy-postman-app/target/easy-postman-*.jar \
-  collection run docs/examples/collection-cli/upload.postman_collection.json \
-  -e docs/examples/collection-cli/postman-echo.postman_environment.json \
-  -d docs/examples/collection-cli/users.csv \
+  collection run docs/examples/collection-cli \
+  -d users.csv \
   --folder "Upload API" \
   --bail \
   --out target/collection-cli-result.json
 ```
 
-如果使用下载的 JAR，把 `easy-postman-app/target/easy-postman-*.jar` 替换为实际下载路径；示例文件可以随仓库一起 clone，或从 [`docs/examples/collection-cli`](docs/examples/collection-cli/) 单独下载。
-
-CLI 只有 Collection 文件是必传项，最小命令是：
+功能测试命令使用另一套独立示例 workspace，其中包含自己的 `functional_config.json`：
 
 ```bash
-java -jar easy-postman.jar collection run ./demo.postman_collection.json
+java -DCONSOLE_LOG_LEVEL=ERROR \
+  -jar easy-postman-app/target/easy-postman-*.jar \
+  functional run docs/examples/functional-cli \
+  --bail \
+  --out target/functional-run-result.json
 ```
 
-其余参数全部可选；集合引用了环境或数据变量时，再按需传 `-e`、`-g`、`-d`。成功时退出码为 `0`，请求或断言失败为 `1`，参数或输入文件错误为 `2`。
+CLI 自动读取工作区的 `collections.json`、`environments.json` 和应用级 `global_variables.json`。`-c`、`-e` 按名称选择集合和环境；`-d` 提供 CSV/JSON 迭代数据。相对迭代数据和上传路径默认以工作区目录为基准，也可用 `--working-dir` 覆盖上传文件目录。
 
-`-e`、`-g`、`-d` 均支持相对路径和绝对路径。相对路径以执行命令时的当前目录（`pwd`）为基准，不是 Collection 所在目录；`--working-dir` 只影响上传文件，不影响这三个输入文件。路径包含空格时请加引号。
+CI 需要复现桌面端功能测试面板时，使用独立的 `functional run` 命令；它读取 `functional_config.json` 中已勾选的请求和内嵌 CSV 多轮数据，同时传 `-d` 可以用 CI 专用 CSV/JSON 覆盖内嵌数据。普通 workspace 通过制品复制到服务器后运行目录，Git workspace 则在 checkout 后直接运行仓库目录。
 
-文件上传支持直接或通过变量提供相对/绝对路径。相对路径默认以集合文件所在目录为基准，可由 `--working-dir` 覆盖；绝对路径不受它影响。仓库示例通过环境变量 `{{uploadFile}}` 使用相对路径，把环境值改成 `/opt/fixtures/file.txt` 或 `C:\\fixtures\\file.txt` 即可使用绝对路径。
+成功时退出码为 `0`，请求、脚本或断言失败为 `1`，参数或工作区数据错误为 `2`。`--out` 可生成包含工作区、集合、环境和请求明细的 JSON 报告。
 
-运行时会忽略 Collection/文件夹中已禁用的变量；迭代数据既可通过 `{{name}}` 读取，也可通过 `pm.variables` 读取；`pm.variables.set(...)` 设置的本地变量在同一次运行的后续请求和迭代中继续有效。前置脚本里的 `pm.test(...)` 会计入报告和退出码。Postman 文件字段的 `src` 是数组时，会用同一 multipart 字段名上传数组中的全部文件。
-
-`--folder "Upload API"` 表示只运行该文件夹及其子文件夹；可以重复传入多个文件夹。精确匹配、同名文件夹和无匹配退出码等规则见完整指南。
-
-📖 **[下载/构建、示例文件、全部参数、文件上传与 GitHub Actions 完整指南 →](docs/COLLECTION_CLI_zh.md)**
+📖 **[Collection CLI 完整指南 →](docs/COLLECTION_CLI_zh.md)**
+📖 **[Functional CLI 完整指南 →](docs/FUNCTIONAL_CLI_zh.md)**
 
 ---
 
@@ -314,7 +332,8 @@ java -jar easy-postman.jar collection run ./demo.postman_collection.json
 |------|------|
 | 📖 [功能详细说明](docs/FEATURES_zh.md) | 全面的功能文档 |
 | 🚀 [构建指南](docs/BUILD_zh.md) | 从源码构建和生成安装包 |
-| 🧪 [集合无头运行 CLI](docs/COLLECTION_CLI_zh.md) | 轻量运行 Postman Collection，支持变量、脚本、迭代数据、文件上传和 CI 退出码 |
+| 🧪 [集合无头运行 CLI](docs/COLLECTION_CLI_zh.md) | 直接运行 EasyPostman 原生工作区，支持变量、脚本、迭代数据、文件上传和 CI 退出码 |
+| 🧪 [功能测试无头运行 CLI](docs/FUNCTIONAL_CLI_zh.md) | 在 CI 中按 `functional_config.json` 执行已选请求和内嵌 CSV 多轮数据 |
 | ⚡ [集群压测使用指南](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI 远程模式、CLI master/worker、CSV 分片、实时刷新和结果明细 |
 | 🔌 [插件架构与安装](docs/PLUGINS_zh.md) | 插件模块、开发流程、在线/离线安装 |
 | 🖼️ [截图展示](docs/SCREENSHOTS_zh.md) | 所有应用截图 |

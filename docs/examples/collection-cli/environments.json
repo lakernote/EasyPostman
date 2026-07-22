@@ -1,0 +1,19 @@
+[
+    {
+        "id": "collection-cli-example-environment",
+        "name": "CLI Example",
+        "variableList": [
+            {
+                "enabled": true,
+                "key": "baseUrl",
+                "value": "https://httpbin.org"
+            },
+            {
+                "enabled": true,
+                "key": "uploadFile",
+                "value": "fixtures/sample-file.txt"
+            }
+        ],
+        "active": true
+    }
+]

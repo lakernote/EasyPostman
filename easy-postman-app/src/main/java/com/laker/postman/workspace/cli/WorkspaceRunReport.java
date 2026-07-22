@@ -1,12 +1,16 @@
-package com.laker.postman.collection.cli;
+package com.laker.postman.workspace.cli;
 
 import java.util.List;
 
-public record CollectionRunReport(
+public record WorkspaceRunReport(
         String schemaVersion,
         String status,
-        String collectionName,
-        String collectionPath,
+        String workspaceName,
+        String workspacePath,
+        List<String> collections,
+        String environment,
+        String selectionMode,
+        String iterationDataSource,
         long startTimeMs,
         long endTimeMs,
         long elapsedTimeMs,
@@ -22,7 +26,8 @@ public record CollectionRunReport(
     public static final String STATUS_SUCCESS = "SUCCESS";
     public static final String STATUS_FAILED = "FAILED";
 
-    public CollectionRunReport {
+    public WorkspaceRunReport {
+        collections = collections == null ? List.of() : List.copyOf(collections);
         requests = requests == null ? List.of() : List.copyOf(requests);
     }
 

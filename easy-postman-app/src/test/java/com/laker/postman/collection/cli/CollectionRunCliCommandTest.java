@@ -1,10 +1,20 @@
 package com.laker.postman.collection.cli;
 
+import com.laker.postman.collection.model.CollectionDocument;
+import com.laker.postman.collection.model.CollectionNode;
+import com.laker.postman.collection.model.RequestGroup;
 import com.laker.postman.http.runtime.app.AppHttpRuntimeBootstrap;
 import com.laker.postman.http.runtime.config.HttpRuntimeSettingsProvider;
 import com.laker.postman.http.runtime.cookie.HttpCookieStore;
 import com.laker.postman.http.runtime.okhttp.OkHttpClientManager;
+import com.laker.postman.model.Environment;
+import com.laker.postman.model.Variable;
+import com.laker.postman.request.model.HttpFormData;
+import com.laker.postman.request.model.HttpRequestItem;
+import com.laker.postman.request.model.RequestBodyTypes;
+import com.laker.postman.service.collections.CollectionDocumentJsonCodec;
 import com.laker.postman.util.JsonUtil;
+import com.laker.postman.workspace.cli.WorkspaceRunExecutor;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -18,6 +28,8 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.testng.Assert.assertEquals;
@@ -46,28 +58,24 @@ public class CollectionRunCliCommandTest {
     }
 
     @Test
-    public void shouldUploadRelativeFileForEachCsvIterationAndWriteReport() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
-        server.enqueue(okResponse());
-
-        Path directory = Files.createTempDirectory("easy-postman-collection-cli-");
-        Path uploadFile = directory.resolve("sample-file.txt");
-        Path collectionFile = directory.resolve("upload.postman_collection.json");
-        Path environmentFile = directory.resolve("local.postman_environment.json");
-        Path dataFile = directory.resolve("users.csv");
-        Path reportFile = directory.resolve("result.json");
-        Files.writeString(uploadFile, "file-from-collection-directory", StandardCharsets.UTF_8);
-        Files.writeString(collectionFile, uploadCollection(), StandardCharsets.UTF_8);
-        Files.writeString(environmentFile, environmentJson(baseUrl()), StandardCharsets.UTF_8);
+    public void shouldRunNativeWorkspaceWithActiveEnvironmentAndWriteReport() throws Exception {
+        server = startServer(2);
+        Path workspace = Files.createTempDirectory("easy-postman-native-cli-");
+        Files.writeString(workspace.resolve("sample-file.txt"), "native-workspace-payload", StandardCharsets.UTF_8);
+        Path dataFile = workspace.resolve("users.csv");
+        Path reportFile = workspace.resolve("result.json");
         Files.writeString(dataFile, "user\nalice\nbob\n", StandardCharsets.UTF_8);
+
+        writeWorkspace(workspace, collection("Upload CLI",
+                requestNode(uploadRequest("Upload file", "{{baseUrl}}/upload?user={{user}}", "sample-file.txt"))));
+        writeEnvironments(workspace,
+                environment("Unused Env", "http://127.0.0.1:1", false),
+                environment("Active Env", baseUrl(), true));
 
         ByteArrayOutputStream stdout = new ByteArrayOutputStream();
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
         int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "-e", environmentFile.toString(),
+                        "collection", "run", workspace.toString(),
                         "-d", dataFile.toString(),
                         "--out", reportFile.toString()
                 },
@@ -81,41 +89,41 @@ public class CollectionRunCliCommandTest {
         assertNotNull(second);
         assertEquals(first.getPath(), "/upload?user=alice");
         assertEquals(second.getPath(), "/upload?user=bob");
-        assertTrue(first.getBody().readUtf8().contains("file-from-collection-directory"));
-        assertTrue(second.getBody().readUtf8().contains("file-from-collection-directory"));
+        assertTrue(first.getBody().readUtf8().contains("native-workspace-payload"));
+        assertTrue(second.getBody().readUtf8().contains("native-workspace-payload"));
 
         JsonNode report = JsonUtil.readTree(Files.readString(reportFile, StandardCharsets.UTF_8));
+        assertEquals(report.get("schemaVersion").asText(), "2.1");
         assertEquals(report.get("status").asText(), "SUCCESS");
+        assertEquals(report.get("workspacePath").asText(), workspace.toString());
+        assertEquals(report.get("environment").asText(), "Active Env");
+        assertEquals(report.get("collections").get(0).asText(), "Upload CLI");
+        assertEquals(report.get("selectionMode").asText(), "COLLECTIONS");
+        assertEquals(report.get("iterationDataSource").asText(), dataFile.toString());
         assertEquals(report.get("iterations").asInt(), 2);
-        assertEquals(report.get("totalRequests").asInt(), 2);
         assertEquals(report.get("passedTests").asInt(), 2);
-        assertTrue(stdout.toString().contains("Collection run completed: status=SUCCESS"));
+        assertTrue(stdout.toString().contains("Workspace:"));
+        assertTrue(stdout.toString().contains("Environment: Active Env"));
     }
 
     @Test
-    public void shouldUploadAbsoluteFilePathFromEnvironmentVariable() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
-
-        Path directory = Files.createTempDirectory("easy-postman-collection-absolute-form-");
-        Path workingDirectory = Files.createDirectory(directory.resolve("working"));
-        Path uploadFile = directory.resolve("outside-working-directory.txt").toAbsolutePath();
-        Path collectionFile = directory.resolve("upload.postman_collection.json");
-        Path environmentFile = directory.resolve("local.postman_environment.json");
-        Files.writeString(uploadFile, "absolute-form-data-payload", StandardCharsets.UTF_8);
-        Files.writeString(collectionFile, uploadCollection("{{uploadPath}}"), StandardCharsets.UTF_8);
-        Files.writeString(
-                environmentFile,
-                environmentJson(baseUrl(), uploadFile.toString()),
-                StandardCharsets.UTF_8
-        );
+    public void shouldSelectCollectionAndEnvironmentByName() throws Exception {
+        server = startServer(1);
+        Path workspace = Files.createTempDirectory("easy-postman-native-selection-");
+        writeWorkspace(workspace,
+                collection("Ignored", requestNode(request("Ignored request", baseUrl() + "/ignored"))),
+                collection("Selected", requestNode(request("Selected request", "{{baseUrl}}/{{route}}"))));
+        Environment dev = environment("Dev Env", "http://127.0.0.1:1", true);
+        dev.addVariable("route", "dev");
+        Environment test = environment("Test Env", baseUrl(), false);
+        test.addVariable("route", "chosen");
+        writeEnvironments(workspace, dev, test);
 
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
         int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "-e", environmentFile.toString(),
-                        "--working-dir", workingDirectory.toString()
+                        "collection", "run", workspace.toString(),
+                        "-c", "Selected",
+                        "-e", "Test Env"
                 },
                 new PrintStream(new ByteArrayOutputStream()),
                 new PrintStream(stderr));
@@ -123,74 +131,81 @@ public class CollectionRunCliCommandTest {
         assertEquals(exitCode, 0, stderr.toString());
         RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
         assertNotNull(request);
-        assertTrue(request.getBody().readUtf8().contains("absolute-form-data-payload"));
+        assertEquals(request.getPath(), "/chosen");
+        assertEquals(server.getRequestCount(), 1);
     }
 
     @Test
-    public void shouldResolveAFilePathForEachIterationDataRow() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
-        server.enqueue(okResponse());
-
-        Path directory = Files.createTempDirectory("easy-postman-collection-iteration-files-");
-        Path firstUpload = directory.resolve("first.txt").toAbsolutePath();
-        Path secondUpload = directory.resolve("second.txt").toAbsolutePath();
-        Path collectionFile = directory.resolve("upload.postman_collection.json");
-        Path environmentFile = directory.resolve("local.postman_environment.json");
-        Path dataFile = directory.resolve("files.csv");
-        Files.writeString(firstUpload, "first-iteration-payload", StandardCharsets.UTF_8);
-        Files.writeString(secondUpload, "second-iteration-payload", StandardCharsets.UTF_8);
-        Files.writeString(collectionFile, uploadCollection("{{uploadPath}}"), StandardCharsets.UTF_8);
-        Files.writeString(environmentFile, environmentJson(baseUrl()), StandardCharsets.UTF_8);
-        Files.writeString(
-                dataFile,
-                "uploadPath,user\n%s,alice\n%s,bob\n".formatted(firstUpload, secondUpload),
-                StandardCharsets.UTF_8
-        );
+    public void shouldRejectFunctionalModeFlag() throws Exception {
+        Path workspace = Files.createTempDirectory("easy-postman-collection-no-functional-");
+        writeWorkspace(workspace, collection("Demo", requestNode(request("Demo", "http://127.0.0.1:1"))));
 
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
         int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "-e", environmentFile.toString(),
-                        "-d", dataFile.toString()
+                        "collection", "run", workspace.toString(), "--functional"
                 },
                 new PrintStream(new ByteArrayOutputStream()),
                 new PrintStream(stderr));
 
-        assertEquals(exitCode, 0, stderr.toString());
-        RecordedRequest firstRequest = server.takeRequest(5, TimeUnit.SECONDS);
-        RecordedRequest secondRequest = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(firstRequest);
-        assertNotNull(secondRequest);
-        assertTrue(firstRequest.getBody().readUtf8().contains("first-iteration-payload"));
-        assertTrue(secondRequest.getBody().readUtf8().contains("second-iteration-payload"));
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("Unknown option: --functional"));
+    }
+
+    @Test
+    public void shouldRejectCollectionFileInsteadOfWorkspaceDirectory() throws Exception {
+        Path workspace = Files.createTempDirectory("easy-postman-native-file-reject-");
+        writeWorkspace(workspace, collection("Demo", requestNode(request("Demo request", "http://127.0.0.1:1"))));
+
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        int exitCode = command().run(new String[]{
+                        "collection", "run", workspace.resolve("collections.json").toString()
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("expects a workspace directory"));
+    }
+
+    @Test
+    public void shouldListAvailableCollectionsWhenSelectionIsUnknown() throws Exception {
+        Path workspace = Files.createTempDirectory("easy-postman-native-missing-collection-");
+        writeWorkspace(workspace, collection("Existing", requestNode(request("Demo", "http://127.0.0.1:1"))));
+
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        int exitCode = command().run(new String[]{
+                        "collection", "run", workspace.toString(), "-c", "Missing"
+                },
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("Collection not found: Missing"));
+        assertTrue(stderr.toString().contains("Available collections: Existing"));
     }
 
     @Test
     public void shouldStopAfterFirstFailedTestWhenBailIsEnabled() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
-        server.enqueue(okResponse());
+        server = startServer(2);
+        Path workspace = Files.createTempDirectory("easy-postman-native-bail-");
+        HttpRequestItem failing = request("Fails", baseUrl() + "/first");
+        failing.setPostscript("pm.test('expected failure', function () { pm.response.to.have.status(201); });");
+        writeWorkspace(workspace, collection("Bail CLI",
+                folder("Selected", requestNode(failing), requestNode(request("Must not run", baseUrl() + "/second"))),
+                folder("Not selected", requestNode(request("Ignored", baseUrl() + "/ignored")))));
 
-        Path directory = Files.createTempDirectory("easy-postman-collection-bail-");
-        Path collectionFile = directory.resolve("bail.postman_collection.json");
-        Path reportFile = directory.resolve("bail-result.json");
-        Files.writeString(collectionFile, bailCollection(baseUrl()), StandardCharsets.UTF_8);
-
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        Path reportFile = workspace.resolve("bail-result.json");
         int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
+                        "collection", "run", workspace.toString(),
                         "--folder", "Selected",
-                        "--iteration-count", "3",
+                        "-n", "3",
                         "--out", reportFile.toString(),
                         "--bail"
                 },
                 new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(stderr));
+                new PrintStream(new ByteArrayOutputStream()));
 
-        assertEquals(exitCode, 1, stderr.toString());
+        assertEquals(exitCode, 1);
         assertNotNull(server.takeRequest(5, TimeUnit.SECONDS));
         assertEquals(server.getRequestCount(), 1);
         JsonNode report = JsonUtil.readTree(Files.readString(reportFile, StandardCharsets.UTF_8));
@@ -200,367 +215,80 @@ public class CollectionRunCliCommandTest {
 
     @Test
     public void shouldNotTreatCollectionRootNameAsFolder() throws Exception {
-        Path directory = Files.createTempDirectory("easy-postman-collection-root-filter-");
-        Path collectionFile = directory.resolve("root-filter.postman_collection.json");
-        Files.writeString(
-                collectionFile,
-                bailCollection("http://127.0.0.1:1"),
-                StandardCharsets.UTF_8
-        );
+        Path workspace = Files.createTempDirectory("easy-postman-native-root-filter-");
+        writeWorkspace(workspace, collection("Root collection",
+                folder("Nested", requestNode(request("Request", "http://127.0.0.1:1")))));
 
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
         int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "--folder", "Bail CLI"
+                        "collection", "run", workspace.toString(), "--folder", "Root collection"
                 },
                 new PrintStream(new ByteArrayOutputStream()),
                 new PrintStream(stderr));
 
         assertEquals(exitCode, 2);
-        assertTrue(stderr.toString().contains("No requests matched folder(s): Bail CLI"));
+        assertTrue(stderr.toString().contains("No requests matched folder(s): Root collection"));
     }
 
     @Test
-    public void shouldUploadRelativeBinaryBody() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
-
-        Path directory = Files.createTempDirectory("easy-postman-collection-binary-");
-        Path uploadFile = directory.resolve("payload.bin");
-        Path collectionFile = directory.resolve("binary.postman_collection.json");
+    public void shouldUploadRelativeBinaryBodyFromWorkspaceDirectory() throws Exception {
+        server = startServer(1);
+        Path workspace = Files.createTempDirectory("easy-postman-native-binary-");
         byte[] payload = new byte[]{0, 1, 2, 3, (byte) 0xFE, (byte) 0xFF};
-        Files.write(uploadFile, payload);
-        Files.writeString(collectionFile, binaryCollection(baseUrl()), StandardCharsets.UTF_8);
+        Files.write(workspace.resolve("payload.bin"), payload);
+        HttpRequestItem request = request("Binary upload", baseUrl() + "/binary");
+        request.setMethod("POST");
+        request.setBodyType(RequestBodyTypes.BODY_TYPE_BINARY);
+        request.setBody("payload.bin");
+        writeWorkspace(workspace, collection("Binary CLI", requestNode(request)));
 
         ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString()
-                },
+        int exitCode = command().run(new String[]{"collection", "run", workspace.toString()},
                 new PrintStream(new ByteArrayOutputStream()),
                 new PrintStream(stderr));
 
         assertEquals(exitCode, 0, stderr.toString());
-        RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(request);
-        assertEquals(request.getBody().readByteArray(), payload);
+        RecordedRequest recorded = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(recorded);
+        assertEquals(recorded.getBody().readByteArray(), payload);
     }
 
     @Test
-    public void shouldUploadAbsoluteBinaryPathFromEnvironmentVariable() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
+    public void shouldUseEnvironmentFallbackForDisabledCollectionVariable() throws Exception {
+        server = startServer(1);
+        Path workspace = Files.createTempDirectory("easy-postman-native-variable-");
+        CollectionNode root = collection("Variable CLI",
+                requestNode(request("Uses environment", baseUrl() + "/get?switch={{switch}}")));
+        root.asGroup().setVariables(List.of(new Variable(false, "switch", "disabled-collection-value")));
+        Environment environment = environment("Active Env", baseUrl(), true);
+        environment.addVariable("switch", "environment-value");
+        writeWorkspace(workspace, root);
+        writeEnvironments(workspace, environment);
 
-        Path directory = Files.createTempDirectory("easy-postman-collection-absolute-binary-");
-        Path workingDirectory = Files.createDirectory(directory.resolve("working"));
-        Path uploadFile = directory.resolve("outside-working-directory.bin").toAbsolutePath();
-        Path collectionFile = directory.resolve("binary.postman_collection.json");
-        Path environmentFile = directory.resolve("local.postman_environment.json");
-        byte[] payload = new byte[]{7, 6, 5, 4, 3, 2, 1};
-        Files.write(uploadFile, payload);
-        Files.writeString(collectionFile, binaryCollection(baseUrl(), "{{uploadPath}}"), StandardCharsets.UTF_8);
-        Files.writeString(
-                environmentFile,
-                environmentJson(baseUrl(), uploadFile.toString()),
-                StandardCharsets.UTF_8
-        );
-
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "-e", environmentFile.toString(),
-                        "--working-dir", workingDirectory.toString()
-                },
-                new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(stderr));
-
-        assertEquals(exitCode, 0, stderr.toString());
-        RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(request);
-        assertEquals(request.getBody().readByteArray(), payload);
-    }
-
-    @Test
-    public void shouldReturnUsageErrorWhenUploadFileIsMissing() throws Exception {
-        Path directory = Files.createTempDirectory("easy-postman-collection-missing-file-");
-        Path collectionFile = directory.resolve("upload.postman_collection.json");
-        Files.writeString(collectionFile, uploadCollection(), StandardCharsets.UTF_8);
-
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString()
-                },
-                new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(stderr));
-
-        assertEquals(exitCode, 2);
-        assertTrue(stderr.toString().contains("Upload file does not exist or is not readable"));
-    }
-
-    @Test
-    public void shouldRejectUnresolvedUploadPathBeforeSendingRequest() throws Exception {
-        Path directory = Files.createTempDirectory("easy-postman-collection-unresolved-file-");
-        Path collectionFile = directory.resolve("upload.postman_collection.json");
-        Files.writeString(collectionFile, uploadCollection("{{uploadPath}}"), StandardCharsets.UTF_8);
-
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString()
-                },
-                new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(stderr));
-
-        assertEquals(exitCode, 2);
-        assertTrue(stderr.toString().contains("Upload file path contains unresolved variables"));
-    }
-
-    @Test
-    public void shouldRejectKnownOptionWhenFolderValueIsMissing() {
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-        int exitCode = command().run(new String[]{
-                        "collection", "run", "--folder", "--bail"
-                },
-                new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(stderr));
-
-        assertEquals(exitCode, 2);
-        assertTrue(stderr.toString().contains("--folder requires a value"));
-    }
-
-    @Test
-    public void shouldRejectUnsupportedIterationDataExtension() throws Exception {
-        Path directory = Files.createTempDirectory("easy-postman-collection-data-extension-");
-        Path collectionFile = directory.resolve("collection.postman_collection.json");
-        Path dataFile = directory.resolve("users.txt");
-        Files.writeString(collectionFile, bailCollection("http://127.0.0.1:1"), StandardCharsets.UTF_8);
-        Files.writeString(dataFile, "user\nalice\n", StandardCharsets.UTF_8);
-
-        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "-d", dataFile.toString()
-                },
-                new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(stderr));
-
-        assertEquals(exitCode, 2);
-        assertTrue(stderr.toString().contains("Iteration data file must use .csv or .json"));
-    }
-
-    @Test
-    public void shouldFailWhenPreRequestAssertionFails() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
-
-        Path directory = Files.createTempDirectory("easy-postman-collection-pre-tests-");
-        Path collectionFile = directory.resolve("pre-tests.postman_collection.json");
-        Path reportFile = directory.resolve("result.json");
-        Files.writeString(collectionFile, """
-                {
-                  "info": {"name": "Pre-request assertions"},
-                  "item": [{
-                    "name": "Fails before request",
-                    "event": [{
-                      "listen": "prerequest",
-                      "script": {"exec": [
-                        "pm.test('pre assertion', function () { pm.expect(1).to.equal(2); });"
-                      ]}
-                    }],
-                    "request": {"method": "GET", "url": "%s/pre-test"}
-                  }]
-                }
-                """.formatted(baseUrl()), StandardCharsets.UTF_8);
-
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "--out", reportFile.toString()
-                },
-                new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(new ByteArrayOutputStream()));
-
-        assertEquals(exitCode, 1);
-        assertNotNull(server.takeRequest(5, TimeUnit.SECONDS));
-        JsonNode report = JsonUtil.readTree(Files.readString(reportFile, StandardCharsets.UTF_8));
-        assertEquals(report.get("status").asText(), "FAILED");
-        assertEquals(report.get("failedRequests").asInt(), 1);
-        assertEquals(report.get("totalTests").asInt(), 1);
-        assertEquals(report.get("failedTests").asInt(), 1);
-    }
-
-    @Test
-    public void shouldFailWhenPostRequestScriptThrows() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
-
-        Path directory = Files.createTempDirectory("easy-postman-collection-post-error-");
-        Path collectionFile = directory.resolve("post-error.postman_collection.json");
-        Path reportFile = directory.resolve("result.json");
-        Files.writeString(collectionFile, """
-                {
-                  "info": {"name": "Post-request error"},
-                  "item": [{
-                    "name": "Fails after request",
-                    "request": {"method": "GET", "url": "%s/post-error"},
-                    "event": [{
-                      "listen": "test",
-                      "script": {"exec": ["throw new Error('post script boom');"]}
-                    }]
-                  }]
-                }
-                """.formatted(baseUrl()), StandardCharsets.UTF_8);
-
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "--out", reportFile.toString()
-                },
-                new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(new ByteArrayOutputStream()));
-
-        assertEquals(exitCode, 1);
-        assertNotNull(server.takeRequest(5, TimeUnit.SECONDS));
-        JsonNode report = JsonUtil.readTree(Files.readString(reportFile, StandardCharsets.UTF_8));
-        assertEquals(report.get("status").asText(), "FAILED");
-        assertEquals(report.get("failedRequests").asInt(), 1);
-        assertTrue(report.get("requests").get(0).get("error").asText().contains("post script boom"));
-    }
-
-    @Test
-    public void shouldIgnoreDisabledCollectionVariableDuringExecution() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
-
-        Path directory = Files.createTempDirectory("easy-postman-collection-disabled-variable-");
-        Path collectionFile = directory.resolve("disabled.postman_collection.json");
-        Path environmentFile = directory.resolve("local.postman_environment.json");
-        Files.writeString(collectionFile, """
-                {
-                  "info": {"name": "Disabled variable"},
-                  "variable": [{
-                    "key": "switch",
-                    "value": "disabled-collection-value",
-                    "disabled": true
-                  }],
-                  "item": [{
-                    "name": "Uses environment fallback",
-                    "request": {"method": "GET", "url": "%s/get?switch={{switch}}"}
-                  }]
-                }
-                """.formatted(baseUrl()), StandardCharsets.UTF_8);
-        Files.writeString(environmentFile, """
-                {
-                  "name": "CLI local",
-                  "values": [{
-                    "key": "switch",
-                    "value": "environment-value",
-                    "enabled": true
-                  }]
-                }
-                """, StandardCharsets.UTF_8);
-
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "-e", environmentFile.toString()
-                },
+        int exitCode = command().run(new String[]{"collection", "run", workspace.toString()},
                 new PrintStream(new ByteArrayOutputStream()),
                 new PrintStream(new ByteArrayOutputStream()));
 
         assertEquals(exitCode, 0);
-        RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(request);
-        assertEquals(request.getPath(), "/get?switch=environment-value");
+        RecordedRequest recorded = server.takeRequest(5, TimeUnit.SECONDS);
+        assertNotNull(recorded);
+        assertEquals(recorded.getPath(), "/get?switch=environment-value");
     }
 
     @Test
-    public void shouldExposeIterationDataThroughPmVariables() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
+    public void shouldKeepRunVariablesAcrossRequestsAndIterations() throws Exception {
+        server = startServer(4);
+        Path workspace = Files.createTempDirectory("easy-postman-native-run-variable-");
+        HttpRequestItem setter = request("Set once", baseUrl() + "/set");
+        setter.setPrescript("if (pm.info.iteration === 0) { pm.variables.set('carry', 'run-value'); }");
+        HttpRequestItem reader = request("Read", baseUrl() + "/read?carry={{carry}}");
+        reader.setPostscript("pm.test('run value remains', function () {"
+                + " pm.expect(pm.variables.get('carry')).to.equal('run-value'); });");
+        writeWorkspace(workspace, collection("Run variables", requestNode(setter), requestNode(reader)));
 
-        Path directory = Files.createTempDirectory("easy-postman-collection-pm-variables-");
-        Path collectionFile = directory.resolve("variables.postman_collection.json");
-        Path dataFile = directory.resolve("data.json");
-        Files.writeString(collectionFile, """
-                {
-                  "info": {"name": "pm.variables precedence"},
-                  "variable": [{"key": "shared", "value": "collection-value"}],
-                  "item": [{
-                    "name": "Uses iteration value",
-                    "request": {"method": "GET", "url": "%s/get?shared={{shared}}"},
-                    "event": [{
-                      "listen": "test",
-                      "script": {"exec": [
-                        "pm.test('iteration wins', function () {",
-                        "  pm.expect(pm.variables.get('shared')).to.equal('iteration-value');",
-                        "});"
-                      ]}
-                    }]
-                  }]
-                }
-                """.formatted(baseUrl()), StandardCharsets.UTF_8);
-        Files.writeString(dataFile, "[{\"shared\":\"iteration-value\"}]", StandardCharsets.UTF_8);
-
+        Path reportFile = workspace.resolve("result.json");
         int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "-d", dataFile.toString()
-                },
-                new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(new ByteArrayOutputStream()));
-
-        assertEquals(exitCode, 0);
-        RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(request);
-        assertEquals(request.getPath(), "/get?shared=iteration-value");
-    }
-
-    @Test
-    public void shouldKeepPmVariablesForTheWholeCollectionRun() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        for (int i = 0; i < 4; i++) {
-            server.enqueue(okResponse());
-        }
-
-        Path directory = Files.createTempDirectory("easy-postman-collection-run-variables-");
-        Path collectionFile = directory.resolve("run-variables.postman_collection.json");
-        Path reportFile = directory.resolve("result.json");
-        Files.writeString(collectionFile, """
-                {
-                  "info": {"name": "Run variable lifetime"},
-                  "item": [
-                    {
-                      "name": "Set once",
-                      "event": [{
-                        "listen": "prerequest",
-                        "script": {"exec": [
-                          "if (pm.info.iteration === 0) { pm.variables.set('carry', 'run-value'); }"
-                        ]}
-                      }],
-                      "request": {"method": "GET", "url": "%s/set"}
-                    },
-                    {
-                      "name": "Read every iteration",
-                      "request": {"method": "GET", "url": "%s/read?carry={{carry}}"},
-                      "event": [{
-                        "listen": "test",
-                        "script": {"exec": [
-                          "pm.test('run value remains', function () {",
-                          "  pm.expect(pm.variables.get('carry')).to.equal('run-value');",
-                          "});"
-                        ]}
-                      }]
-                    }
-                  ]
-                }
-                """.formatted(baseUrl(), baseUrl()), StandardCharsets.UTF_8);
-
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString(),
-                        "-n", "2",
-                        "--out", reportFile.toString()
+                        "collection", "run", workspace.toString(), "-n", "2", "--out", reportFile.toString()
                 },
                 new PrintStream(new ByteArrayOutputStream()),
                 new PrintStream(new ByteArrayOutputStream()));
@@ -568,68 +296,48 @@ public class CollectionRunCliCommandTest {
         assertEquals(exitCode, 0);
         assertEquals(server.getRequestCount(), 4);
         JsonNode report = JsonUtil.readTree(Files.readString(reportFile, StandardCharsets.UTF_8));
-        assertEquals(report.get("totalRequests").asInt(), 4);
         assertEquals(report.get("passedTests").asInt(), 2);
         assertEquals(report.get("failedTests").asInt(), 0);
     }
 
     @Test
-    public void shouldUploadEveryFileFromPostmanSourceArray() throws Exception {
-        server = new MockWebServer();
-        server.start();
-        server.enqueue(okResponse());
+    public void shouldRejectMissingOptionValueAndUnsupportedDataFile() throws Exception {
+        ByteArrayOutputStream missingValue = new ByteArrayOutputStream();
+        int missingValueExit = command().run(new String[]{"collection", "run", "--collection", "--bail"},
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(missingValue));
+        assertEquals(missingValueExit, 2);
+        assertTrue(missingValue.toString().contains("--collection requires a value"));
 
-        Path directory = Files.createTempDirectory("easy-postman-collection-multi-file-");
-        Path firstUpload = directory.resolve("first.txt");
-        Path secondUpload = directory.resolve("second.txt");
-        Path collectionFile = directory.resolve("multi-file.postman_collection.json");
-        Files.writeString(firstUpload, "first-file-payload", StandardCharsets.UTF_8);
-        Files.writeString(secondUpload, "second-file-payload", StandardCharsets.UTF_8);
-        Files.writeString(collectionFile, """
-                {
-                  "info": {"name": "Multi-file upload"},
-                  "item": [{
-                    "name": "Uploads both files",
-                    "request": {
-                      "method": "POST",
-                      "url": "%s/upload",
-                      "body": {
-                        "mode": "formdata",
-                        "formdata": [{
-                          "key": "documents",
-                          "type": "file",
-                          "src": ["first.txt", "second.txt"]
-                        }]
-                      }
-                    }
-                  }]
-                }
-                """.formatted(baseUrl()), StandardCharsets.UTF_8);
-
-        int exitCode = command().run(new String[]{
-                        "collection", "run", collectionFile.toString()
+        Path workspace = Files.createTempDirectory("easy-postman-native-data-extension-");
+        writeWorkspace(workspace, collection("Demo", requestNode(request("Demo", "http://127.0.0.1:1"))));
+        Path dataFile = workspace.resolve("users.txt");
+        Files.writeString(dataFile, "user\nalice\n", StandardCharsets.UTF_8);
+        ByteArrayOutputStream badExtension = new ByteArrayOutputStream();
+        int badExtensionExit = command().run(new String[]{
+                        "collection", "run", workspace.toString(), "-d", dataFile.toString()
                 },
                 new PrintStream(new ByteArrayOutputStream()),
-                new PrintStream(new ByteArrayOutputStream()));
+                new PrintStream(badExtension));
+        assertEquals(badExtensionExit, 2);
+        assertTrue(badExtension.toString().contains("Iteration data file must use .csv or .json"));
+    }
 
-        assertEquals(exitCode, 0);
-        RecordedRequest request = server.takeRequest(5, TimeUnit.SECONDS);
-        assertNotNull(request);
-        String requestBody = request.getBody().readUtf8();
-        assertTrue(requestBody.contains("first-file-payload"));
-        assertTrue(requestBody.contains("second-file-payload"));
+    private MockWebServer startServer(int responses) throws Exception {
+        MockWebServer mockServer = new MockWebServer();
+        mockServer.start();
+        for (int i = 0; i < responses; i++) {
+            mockServer.enqueue(new MockResponse()
+                    .setResponseCode(200)
+                    .addHeader("Content-Type", "application/json")
+                    .setBody("{\"ok\":true}"));
+        }
+        return mockServer;
     }
 
     private CollectionRunCliCommand command() {
         return new CollectionRunCliCommand(() -> {
-        }, new CollectionRunExecutor());
-    }
-
-    private MockResponse okResponse() {
-        return new MockResponse()
-                .setResponseCode(200)
-                .addHeader("Content-Type", "application/json")
-                .setBody("{\"ok\":true}");
+        }, new WorkspaceRunExecutor());
     }
 
     private String baseUrl() {
@@ -637,131 +345,67 @@ public class CollectionRunCliCommandTest {
         return value.endsWith("/") ? value.substring(0, value.length() - 1) : value;
     }
 
-    private static String environmentJson(String baseUrl) {
-        return environmentJson(baseUrl, null);
+    private static void writeWorkspace(Path workspace, CollectionNode... roots) throws Exception {
+        CollectionDocumentJsonCodec.write(
+                workspace.resolve("collections.json").toFile(),
+                new CollectionDocument(Arrays.asList(roots))
+        );
     }
 
-    private static String environmentJson(String baseUrl, String uploadPath) {
-        String uploadVariable = uploadPath == null
-                ? ""
-                : ",\n    {\"key\": \"uploadPath\", \"value\": %s, \"enabled\": true}"
-                        .formatted(JsonUtil.toJsonStr(uploadPath));
-        return """
-                {
-                  "name": "CLI local",
-                  "values": [
-                    {"key": "baseUrl", "value": %s, "enabled": true}%s
-                  ]
-                }
-                """.formatted(JsonUtil.toJsonStr(baseUrl), uploadVariable);
+    private static void writeEnvironments(Path workspace, Environment... environments) throws Exception {
+        Files.writeString(
+                workspace.resolve("environments.json"),
+                JsonUtil.toJsonPrettyStr(Arrays.asList(environments)),
+                StandardCharsets.UTF_8
+        );
     }
 
-    private static String uploadCollection() {
-        return uploadCollection("sample-file.txt");
+    private static Environment environment(String name, String baseUrl, boolean active) {
+        Environment environment = new Environment(name);
+        environment.setId(name.toLowerCase().replace(' ', '-'));
+        environment.setActive(active);
+        environment.addVariable("baseUrl", baseUrl);
+        return environment;
     }
 
-    private static String uploadCollection(String uploadPath) {
-        return """
-                {
-                  "info": {
-                    "name": "Upload CLI",
-                    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-                  },
-                  "item": [
-                    {
-                      "name": "Upload file",
-                      "request": {
-                        "method": "POST",
-                        "url": "{{baseUrl}}/upload?user={{user}}",
-                        "body": {
-                          "mode": "formdata",
-                          "formdata": [
-                            {"key": "document", "type": "file", "src": %s},
-                            {"key": "user", "type": "text", "value": "{{user}}"}
-                          ]
-                        }
-                      },
-                      "event": [
-                        {
-                          "listen": "test",
-                          "script": {
-                            "exec": [
-                              "pm.test('status is 200', function () {",
-                              "  pm.response.to.have.status(200);",
-                              "});"
-                            ]
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                }
-                """.formatted(JsonUtil.toJsonStr(uploadPath));
+    private static CollectionNode collection(String name, CollectionNode... children) {
+        return group(name, children);
     }
 
-    private static String bailCollection(String baseUrl) {
-        return """
-                {
-                  "info": {"name": "Bail CLI"},
-                  "item": [
-                    {
-                      "name": "Selected",
-                      "item": [
-                        {
-                          "name": "Fails",
-                          "request": {"method": "GET", "url": "%s/first"},
-                          "event": [{
-                            "listen": "test",
-                            "script": {"exec": [
-                              "pm.test('expected failure', function () {",
-                              "  pm.response.to.have.status(201);",
-                              "});"
-                            ]}
-                          }]
-                        },
-                        {
-                          "name": "Must not run",
-                          "request": {"method": "GET", "url": "%s/second"}
-                        }
-                      ]
-                    },
-                    {
-                      "name": "Not selected",
-                      "item": [{
-                        "name": "Ignored",
-                        "request": {"method": "GET", "url": "%s/ignored"}
-                      }]
-                    }
-                  ]
-                }
-                """.formatted(baseUrl, baseUrl, baseUrl);
+    private static CollectionNode folder(String name, CollectionNode... children) {
+        return group(name, children);
     }
 
-    private static String binaryCollection(String baseUrl) {
-        return binaryCollection(baseUrl, "payload.bin");
+    private static CollectionNode group(String name, CollectionNode... children) {
+        RequestGroup group = new RequestGroup(name);
+        CollectionNode node = CollectionNode.group(group);
+        Arrays.stream(children).forEach(node::addChild);
+        return node;
     }
 
-    private static String binaryCollection(String baseUrl, String uploadPath) {
-        return """
-                {
-                  "info": {"name": "Binary CLI"},
-                  "item": [{
-                    "name": "Upload binary",
-                    "request": {
-                      "method": "POST",
-                      "header": [{
-                        "key": "Content-Type",
-                        "value": "application/octet-stream",
-                        "type": "text"
-                      }],
-                      "url": "%s/binary",
-                      "body": {
-                        "mode": "file",
-                        "file": {"src": %s}
-                      }
-                    }
-                  }]
-                }
-                """.formatted(baseUrl, JsonUtil.toJsonStr(uploadPath));
+    private static CollectionNode requestNode(HttpRequestItem request) {
+        return CollectionNode.request(request);
+    }
+
+    private static HttpRequestItem request(String name, String url) {
+        HttpRequestItem request = new HttpRequestItem();
+        request.setId("request-" + name.toLowerCase().replace(' ', '-'));
+        request.setName(name);
+        request.setUrl(url);
+        request.setMethod("GET");
+        request.setBodyType(RequestBodyTypes.BODY_TYPE_NONE);
+        return request;
+    }
+
+    private static HttpRequestItem uploadRequest(String name, String url, String uploadPath) {
+        HttpRequestItem request = request(name, url);
+        request.setMethod("POST");
+        request.setBodyType(RequestBodyTypes.BODY_TYPE_FORM_DATA);
+        request.setFormDataList(List.of(
+                new HttpFormData(true, "document", HttpFormData.TYPE_FILE, uploadPath),
+                new HttpFormData(true, "user", HttpFormData.TYPE_TEXT, "{{user}}")
+        ));
+        request.setPostscript("pm.test('status is 200', function () { pm.response.to.have.status(200); });");
+        return request;
     }
 }

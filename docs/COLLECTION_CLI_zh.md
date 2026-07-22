@@ -1,439 +1,193 @@
-# 集合无头运行 CLI
+# EasyPostman Collection CLI
 
-EasyPostman 提供一个轻量的 Postman Collection v2.1 运行器，适合本地批量执行和 CI。它直接复用桌面端的请求准备、变量替换、前置/测试脚本和 HTTP 传输实现，不需要安装 Node.js 或 Newman。
+`collection run` 用于在开发机、CI Runner 或独立服务器上，按集合和文件夹无界面运行 EasyPostman 原生 workspace。
 
-## 1. 准备 Java 17
-
-CLI 和桌面端使用同一个跨平台 JAR，需要 Java 17 或更高版本：
+它只负责集合运行，不读取 `functional_config.json`，也不接受 Postman Collection / Environment 作为运行输入。
 
 ```bash
-java -version
+java -jar easy-postman.jar collection run <workspace-directory> [options]
 ```
 
-## 2. 获取可运行 JAR
+## 1. Workspace 文件
 
-### 方式一：下载 Release JAR
-
-1. 打开 [GitHub Releases](https://github.com/lakernote/easy-postman/releases)。
-2. 在目标版本的 Assets 中下载 `easy-postman-{版本号}.jar`。
-3. 可选：将文件重命名为固定名称，后续升级时命令不需要跟着改版本号。
-
-macOS / Linux：
-
-```bash
-mv easy-postman-6.x.x.jar easy-postman.jar
-java -jar easy-postman.jar collection run --help
-```
-
-Windows PowerShell：
-
-```powershell
-Rename-Item easy-postman-6.x.x.jar easy-postman.jar
-java -jar easy-postman.jar collection run --help
-```
-
-如果帮助中没有 `collection run`，说明该 Release 尚未包含此功能，请下载更新版本或使用下面的源码构建方式。
-
-### 方式二：从源码构建
-
-需要 JDK 17+ 和 Maven 3.6+：
-
-```bash
-git clone https://github.com/lakernote/easy-postman.git
-cd easy-postman
-mvn -pl easy-postman-app -am -DskipTests clean package
-```
-
-构建产物位于 `easy-postman-app/target/easy-postman-{版本号}.jar`。先确认命令可用：
-
-```bash
-java -jar easy-postman-app/target/easy-postman-*.jar \
-  collection run --help
-```
-
-## 3. 运行仓库内完整示例
-
-仓库提供了一个可以直接执行的 multipart 上传示例：
+最小目录：
 
 ```text
-docs/examples/collection-cli/
-├── upload.postman_collection.json
-├── postman-echo.postman_environment.json
-├── users.csv
-└── fixtures/
-    └── sample-file.txt
-```
-
-它会从环境变量 `{{uploadFile}}` 读取上传路径，从 `users.csv` 读取 `alice`、`bob` 两行数据，分别向 Postman Echo 上传一次 `sample-file.txt`，并执行状态码、上传结果和迭代变量断言。
-
-从仓库根目录运行：
-
-```bash
-java -DCONSOLE_LOG_LEVEL=ERROR \
-  -jar easy-postman-app/target/easy-postman-*.jar \
-  collection run docs/examples/collection-cli/upload.postman_collection.json \
-  -e docs/examples/collection-cli/postman-echo.postman_environment.json \
-  -d docs/examples/collection-cli/users.csv \
-  --folder "Upload API" \
-  --bail \
-  --out target/collection-cli-result.json
-```
-
-使用下载并重命名后的 JAR 时，只需要替换 `-jar` 后的路径：
-
-```bash
-java -DCONSOLE_LOG_LEVEL=ERROR \
-  -jar /path/to/easy-postman.jar \
-  collection run docs/examples/collection-cli/upload.postman_collection.json \
-  -e docs/examples/collection-cli/postman-echo.postman_environment.json \
-  -d docs/examples/collection-cli/users.csv \
-  --bail \
-  --out target/collection-cli-result.json
-```
-
-成功输出示例：
-
-```text
-Iteration 1/2
-→ POST EasyPostman Collection CLI Example / Upload API / Upload fixture
-  200 674ms PASS
-    ✓ status is 200
-    ✓ uploaded file is present
-    ✓ iteration data reached the server
-Iteration 2/2
-...
-Collection run completed: status=SUCCESS iterations=2 total=2 passed=2 failed=0 tests=6/6
-```
-
-`-DCONSOLE_LOG_LEVEL=ERROR` 只收敛框架日志，不会隐藏集合执行进度和测试结果；排查问题时可以去掉它。
-
-## 4. 运行自己的集合
-
-命令行层面只有一个必传项：`<collection.json>`。`-e`、`-g`、`-d`、`-n`、`--folder`、`--working-dir`、`--out` 和 `--bail` 全部可选。
-
-```text
-java -jar <easy-postman.jar> collection run <collection.json> [可选参数]
-```
-
-> 如果集合本身引用了 `{{baseUrl}}`、`{{token}}`、`{{uploadFile}}` 等变量，那么提供这些变量的环境/全局/迭代数据文件是该集合的业务前提，但它们仍不是 CLI 语法上的必传参数。变量未提供时，普通文本占位符会保留；上传路径变量未解析则会在发送前报错。
-
-最小命令：
-
-```bash
-java -jar easy-postman.jar \
-  collection run ./demo.postman_collection.json
-```
-
-只带环境变量：
-
-```bash
-java -jar easy-postman.jar \
-  collection run ./demo.postman_collection.json \
-  -e ./local.postman_environment.json
-```
-
-按 CSV/JSON 数据执行多次：
-
-```bash
-java -jar easy-postman.jar \
-  collection run ./demo.postman_collection.json \
-  -e ./local.postman_environment.json \
-  -d ./users.csv
-```
-
-常用完整命令：
-
-```bash
-java -jar easy-postman.jar \
-  collection run ./demo.postman_collection.json \
-  -e ./local.postman_environment.json \
-  -g ./globals.postman_globals.json \
-  -d ./users.csv \
-  -n 2 \
-  --folder UserApi \
-  --working-dir ./test-assets \
-  --bail \
-  --out ./result.json
-```
-
-## 5. 参数
-
-| 参数 | 必传 | 说明 |
-|------|------|------|
-| `<collection.json>` | 是 | 本地 Postman Collection v2.1 JSON 文件 |
-| `-e, --environment <file>` | 否 | Postman 环境变量文件 |
-| `-g, --globals <file>` | 否 | Postman 全局变量文件 |
-| `-d, --iteration-data <file>` | 否 | `.csv` 或 `.json` 迭代数据文件 |
-| `-n, --iteration-count <count>` | 否 | 正整数；未指定时，有数据文件则按数据行数，否则执行 1 次 |
-| `--folder <name>` | 否 | 只运行指定文件夹；可重复传入 |
-| `--working-dir <dir>` | 否 | 文件上传的相对路径根目录；默认是集合文件所在目录；不影响绝对路径 |
-| `--out <file>` | 否 | 写入结构化 JSON 结果报告；父目录不存在时自动创建 |
-| `--bail` | 否 | 第一个请求错误或测试断言失败后停止 |
-| `-h, --help` | 否 | 显示帮助 |
-
-### 5.1 `-e`、`-g`、`-d` 的路径规则
-
-这三个输入文件参数都支持相对路径和绝对路径：
-
-- `-e, --environment`：Postman 环境文件。
-- `-g, --globals`：Postman 全局变量文件。
-- `-d, --iteration-data`：`.csv` 或 `.json` 迭代数据文件。
-- 相对路径以执行 `java` 命令时的当前目录（`pwd`）为基准，不以 Collection 文件所在目录为基准。
-- 绝对路径直接使用；规范化过程中会处理路径里的 `.` 和 `..`。
-- `--working-dir` 只控制上传文件的相对路径根目录，不影响 `-e`、`-g`、`-d`。
-- 路径包含空格时需要用引号包住。
-- CLI 本身不展开 `~`；不同 shell 的展开规则也不同，本地脚本和 CI 中建议使用完整绝对路径。
-
-macOS / Linux 相对路径示例（假设当前位于项目根目录）：
-
-```bash
-java -jar ./tools/easy-postman.jar \
-  collection run ./api/demo.postman_collection.json \
-  -e ./api/local.postman_environment.json \
-  -g ./api/globals.postman_globals.json \
-  -d ./api/users.csv
-```
-
-macOS / Linux 绝对路径示例：
-
-```bash
-java -jar /opt/easy-postman/easy-postman.jar \
-  collection run /opt/api/demo.postman_collection.json \
-  -e /opt/api/local.postman_environment.json \
-  -g /opt/api/globals.postman_globals.json \
-  -d /opt/api/users.csv
-```
-
-Windows PowerShell 绝对路径示例：
-
-```powershell
-java -jar C:\tools\easy-postman.jar `
-  collection run C:\api\demo.postman_collection.json `
-  -e C:\api\local.postman_environment.json `
-  -g C:\api\globals.postman_globals.json `
-  -d C:\api\users.csv
-```
-
-例如在 `/workspace/project` 执行 `-e ./api/local.postman_environment.json`，实际读取的是 `/workspace/project/api/local.postman_environment.json`，即使 Collection 位于其他目录也是如此。
-
-## 6. 文件上传
-
-`form-data` 文件字段读取 Postman Collection 中的 `src`：
-
-```json
-{
-  "body": {
-    "mode": "formdata",
-    "formdata": [
-      {
-        "key": "document",
-        "type": "file",
-        "src": "fixtures/sample-file.txt"
-      }
-    ]
-  }
-}
-```
-
-二进制请求体读取 `body.file.src`。
-
-### 6.1 相对路径
-
-相对路径默认以 Collection 文件所在目录为基准，与执行命令时 shell 所在目录无关：
-
-```text
-api/
-├── demo.postman_collection.json
-└── fixtures/
+api-workspace/
+├── collections.json          # 必需：集合、文件夹、请求、脚本和断言
+├── environments.json         # 可选：环境列表和活动环境
+├── data/                     # 可选：CSV / JSON 迭代数据
+│   └── users.csv
+└── fixtures/                 # 可选：上传附件
     └── avatar.png
 ```
 
-在 Collection 中写 `"src": "fixtures/avatar.png"` 即可。若文件统一放在其他目录，可以覆盖相对路径根目录：
+CLI 行为：
+
+- 请求配置只来自 workspace 根目录的 `collections.json`。
+- 自动读取同目录的 `environments.json`。
+- 应用级 `global_variables.json` 从 EasyPostman 数据目录读取。
+- `-d` 指定 CSV / JSON 多轮数据，相对路径从 workspace 根目录解析。
+- 相对上传路径默认从 workspace 根目录解析。
+- CLI 只读 workspace 配置，不会写回集合和环境。
+
+## 2. 最短用法
+
+运行 workspace 中全部集合：
 
 ```bash
-java -jar easy-postman.jar \
-  collection run api/demo.postman_collection.json \
-  --working-dir /opt/api-fixtures
+java -jar easy-postman.jar collection run /srv/api-workspace
 ```
 
-此时 `"src": "avatar.png"` 会读取 `/opt/api-fixtures/avatar.png`。
+选择集合、文件夹和环境：
 
-### 6.2 绝对路径
-
-支持 macOS、Linux 和 Windows 当前系统格式的绝对路径。绝对路径不会再拼接 Collection 目录或 `--working-dir`：
-
-```json
-{"key": "file", "type": "file", "src": "/opt/api-fixtures/avatar.png"}
+```bash
+java -jar easy-postman.jar collection run /srv/api-workspace \
+  -c "Order API" \
+  --folder "Smoke" \
+  -e "CI"
 ```
 
-Windows Collection JSON 中的反斜杠需要转义：
+在 Git workspace 根目录：
 
-```json
-{"key": "file", "type": "file", "src": "C:\\api-fixtures\\avatar.png"}
+```bash
+java -jar /opt/easy-postman/easy-postman.jar collection run .
 ```
 
-`~` 不会自动展开为用户主目录，请写完整绝对路径。
+当前目录包含 `collections.json` 时可以省略 `.`，但 CI 脚本建议显式写出目录。
 
-### 6.3 通过变量指定路径
+安装过桌面端的本机还可以传已登记 workspace 的名称或 ID；全新 CI Runner 应直接传目录，不依赖 `workspaces.json`。
 
-推荐在 Collection 中使用变量，使同一集合可在本地和 CI 切换文件：
+## 3. 集合与文件夹选择
 
-```json
-{"key": "file", "type": "file", "src": "{{uploadFile}}"}
+不传 `-c` 时运行全部根集合：
+
+```bash
+java -jar easy-postman.jar collection run "$WORKSPACE_DIR"
 ```
 
-环境文件既可以给相对路径：
+`-c` 可按集合名称或 ID 选择，并可重复：
 
-```json
-{
-  "name": "local",
-  "values": [
-    {"key": "uploadFile", "value": "fixtures/avatar.png", "enabled": true}
-  ]
-}
+```bash
+java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
+  -c "User API" \
+  -c "Order API"
 ```
 
-也可以给绝对路径：
+`--folder` 按文件夹名称选择该文件夹及其子文件夹，可重复：
 
-```json
-{
-  "name": "ci",
-  "values": [
-    {"key": "uploadFile", "value": "/opt/api-fixtures/avatar.png", "enabled": true}
-  ]
-}
+```bash
+java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
+  -c "Order API" \
+  --folder "Smoke" \
+  --folder "Regression"
 ```
 
-CLI 会先执行前置脚本和变量替换，再判断路径是绝对还是相对。因此直接路径、环境/全局/迭代变量路径，以及前置脚本设置的路径遵循同一套规则。文件路径为空、变量未解析、文件不存在或不可读时，会在发送请求前以参数/输入错误退出（退出码 `2`），不会静默上传空文件。
+集合或文件夹不存在时退出码为 `2`，并列出可用集合或未匹配的文件夹。
 
-### 6.4 同一个字段上传多个文件
+## 4. CSV / JSON 多轮驱动
 
-Postman 可以把文件字段的 `src` 保存为数组。CLI 会保留数组里的每一个文件，并使用相同的字段名逐个加入 multipart 请求，不会只上传第一个文件：
+### 4.1 CSV
 
-```json
-{
-  "key": "documents",
-  "type": "file",
-  "src": [
-    "fixtures/front.png",
-    "fixtures/back.png"
-  ]
-}
-```
-
-数组中的每个路径都支持前述相对路径、绝对路径和变量规则。
-
-## 7. 迭代数据
-
-CSV 第一行是变量名，后续每行执行一次：
+`data/users.csv`：
 
 ```csv
-userId,name
-1001,Alice
-1002,Bob
+user,role
+alice,admin
+bob,user
 ```
 
-JSON 数据必须是对象数组：
+运行：
+
+```bash
+java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
+  -d data/users.csv
+```
+
+默认执行两轮。请求中使用 `{{user}}`，脚本中使用：
+
+```javascript
+pm.iterationData.get('user');
+pm.variables.get('user');
+pm.info.iteration;
+pm.info.iterationCount;
+```
+
+### 4.2 JSON
+
+JSON 必须是对象数组：
 
 ```json
 [
-  {"userId": 1001, "name": "Alice"},
-  {"userId": 1002, "name": "Bob"}
+  {"user": "alice", "role": "admin"},
+  {"user": "bob", "role": "user"}
 ]
 ```
 
-集合中的 `{{userId}}`、`{{name}}`，以及脚本中的 `pm.iterationData` 和 `pm.variables.get(...)` 都可以读取当前行。显式指定 `-n` 且次数大于数据行数时，会循环使用数据行。
-
-### 7.1 运行期变量作用域
-
-Collection CLI 的变量查找优先级为：
-
-```text
-pm.variables.set(...) 设置的本地变量
-  > 当前迭代数据
-  > 当前请求所属的文件夹/Collection 变量
-  > 环境变量
-  > 全局变量
+```bash
+java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
+  -d data/users.json
 ```
 
-- `{{variable}}` 和 `pm.variables.get("variable")` 使用相同的运行期优先级。
-- Collection 或文件夹中 `enabled: false` 的变量不会参与执行；如果低一级作用域有同名变量，会继续向下查找。
-- `pm.variables.set(...)` 创建的本地变量在本次 Collection 运行期间持续有效，可被后续请求和后续迭代读取；CLI 进程结束后不会持久化。
-- `pm.iterationData` 只代表当前数据行，每次迭代都会更新。
+### 4.3 `-n` 规则
 
-### 7.2 前置脚本断言
+| 数据 | 参数 | 实际行为 |
+|---|---|---|
+| 无数据 | 不传 `-n` | 1 轮 |
+| 2 行 | 不传 `-n` | 2 轮 |
+| 2 行 | `-n 1` | 只使用第 1 行 |
+| 2 行 | `-n 5` | 依次使用第 1、2、1、2、1 行 |
+| 无数据 | `-n 3` | 3 轮空迭代数据 |
 
-前置脚本中的 `pm.test(...)` 会和测试脚本断言一起计入终端输出及 JSON 报告。断言失败时退出码为 `1`；使用 `--bail` 时，会在当前请求处理完成后停止后续请求。
+## 5. 普通 workspace 复制到 CI
 
-## 8. 文件夹筛选
+普通 workspace 不要求是 Git 仓库。GUI 机器保存后，应传递完整目录，而不是只复制 `collections.json`。
 
-`--folder <name>` 用于只运行 Collection 中指定文件夹及其所有子文件夹里的请求。不传该参数时运行整个 Collection。
-
-例如集合结构：
-
-```text
-用户接口
-├── 登录
-├── 查询用户
-└── 管理员
-    └── 删除用户
-
-订单接口
-├── 创建订单
-└── 查询订单
-```
-
-只运行“用户接口”及其子文件夹：
+开发机打包：
 
 ```bash
-java -jar easy-postman.jar \
-  collection run demo.postman_collection.json \
-  --folder "用户接口"
+tar -C /Users/me/EasyPostman/workspaces \
+  -czf order-api-workspace.tar.gz \
+  order-api
 ```
 
-同时运行多个文件夹时重复传入参数，匹配结果按“或”合并：
+CI 解压并运行：
 
 ```bash
-java -jar easy-postman.jar \
-  collection run demo.postman_collection.json \
-  --folder "用户接口" \
-  --folder "订单接口"
+mkdir -p "$CI_PROJECT_DIR/api-workspace"
+tar -xzf order-api-workspace.tar.gz \
+  -C "$CI_PROJECT_DIR/api-workspace" \
+  --strip-components=1
+
+java -jar "$CI_PROJECT_DIR/tools/easy-postman.jar" \
+  collection run "$CI_PROJECT_DIR/api-workspace" \
+  -e "CI" \
+  -c "Order API" \
+  --folder "Smoke" \
+  -d data/ci-orders.csv \
+  --bail \
+  --out "$CI_PROJECT_DIR/target/collection-result.json"
 ```
 
-匹配规则：
+也可以通过 CI Artifact、SCP、rsync、Docker volume 或 Kubernetes volume 交付 workspace。
 
-- 按文件夹名称精确、区分大小写匹配，不做模糊或部分匹配。
-- 选中父文件夹后，会递归运行其所有子文件夹中的请求。
-- Collection 中存在多个同名文件夹时，这些文件夹都会运行。
-- 重复传入多个 `--folder` 时，只要请求属于其中任意一个文件夹就会运行。
-- 文件夹名称含空格或中文时，建议使用引号。
-- 没有任何请求匹配时不会静默成功，而是输出错误并返回退出码 `2`。
+## 6. Git workspace 在 CI 中运行
 
-这适合在 CI 中按模块拆分集合，例如只运行本次改动涉及的“用户接口”。
+推荐让 GUI workspace 目录本身就是 Git 仓库：
 
-## 9. 退出码
+1. 开发机 clone API workspace 仓库。
+2. EasyPostman 中把 Git workspace 路径指向该目录。
+3. 使用 GUI 维护集合、环境和非敏感附件。
+4. 审查并提交 `collections.json`、`environments.json`、`data/`、`fixtures/`。
+5. push 后由 CI 使用干净 checkout。
+6. CI 在仓库根目录执行 `collection run .`。
 
-| 退出码 | 含义 |
-|--------|------|
-| `0` | 所有已执行请求和测试通过 |
-| `1` | HTTP 执行、脚本或测试断言失败 |
-| `2` | 命令参数或输入文件错误 |
+不要提交真实 Token、Cookie、私钥、生产数据或运行报告。
 
-在 shell 中可以直接读取退出码：
-
-```bash
-java -jar easy-postman.jar collection run ./demo.postman_collection.json
-echo $?
-```
-
-Windows PowerShell 使用 `$LASTEXITCODE`。
-
-## 10. GitHub Actions 示例
-
-建议在 CI 中固定 EasyPostman 版本，避免构建结果随最新版变化。把 `EASY_POSTMAN_VERSION` 替换为已经包含 `collection run` 的 Release 版本：
+### GitHub Actions
 
 ```yaml
-name: API collection tests
+name: EasyPostman Collection Test
 
 on:
   push:
@@ -450,32 +204,118 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Download EasyPostman CLI
-        env:
-          EASY_POSTMAN_VERSION: "6.x.x"
-        run: |
-          curl -fL \
-            "https://github.com/lakernote/EasyPostman/releases/download/v${EASY_POSTMAN_VERSION}/easy-postman-${EASY_POSTMAN_VERSION}.jar" \
-            -o easy-postman.jar
-
       - name: Run collection
         run: |
-          java -DCONSOLE_LOG_LEVEL=ERROR -jar easy-postman.jar \
-            collection run api/upload.postman_collection.json \
-            -e api/ci.postman_environment.json \
-            -d api/users.csv \
+          mkdir -p target
+          java -jar tools/easy-postman.jar \
+            collection run . \
+            -e "CI" \
+            -c "Order API" \
+            --folder "Smoke" \
+            -d data/ci-orders.csv \
             --bail \
-            --out build/collection-result.json
+            --out target/collection-result.json
 
-      - name: Upload collection report
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: collection-result
-          path: build/collection-result.json
-          if-no-files-found: ignore
+          path: target/collection-result.json
 ```
 
-## 11. 当前范围
+业务代码和 workspace 分仓时，checkout 到一个目录后直接传该目录：
 
-这是面向 EasyPostman 的轻量运行器，不是 Newman 的完整兼容实现。目前聚焦 Postman Collection v2.1 的 HTTP 请求、集合/文件夹继承、环境与全局变量、CSV/JSON 迭代数据、前置/测试脚本、`form-data`/binary 文件上传、文件夹筛选、`--bail` 和 JSON 报告。暂不支持 Newman 的外部 reporter 生态、云端 collection URL 和全部 Newman 命令参数。
+```bash
+git clone "$API_WORKSPACE_REPOSITORY" "$CI_PROJECT_DIR/api-workspace"
+
+java -jar "$CI_PROJECT_DIR/tools/easy-postman.jar" \
+  collection run "$CI_PROJECT_DIR/api-workspace"
+```
+
+CI 不需要登记 workspace，也不需要 GUI 机器保持在线。
+
+## 7. 环境、全局变量和 Secret
+
+未传 `-e` 时优先使用 `active: true` 的环境；否则使用第一个环境。CI 建议固定 `-e "CI"`。
+
+`global_variables.json` 是应用级文件。CI 可指定隔离数据目录：
+
+```bash
+java -DeasyPostman.data.dir="$RUNNER_TEMP/easy-postman-data" \
+  -jar tools/easy-postman.jar \
+  collection run . \
+  -e "CI"
+```
+
+Secret 不应提交到 workspace。可以在 CI 临时 checkout 中用 `jq` 注入环境副本：
+
+```bash
+jq --arg token "$API_TOKEN" '
+  map(
+    if .name == "CI" then
+      .variableList |= map(
+        if .key == "apiToken" then .value = $token else . end
+      )
+    else . end
+  )
+' environments.json > environments.json.tmp
+
+mv environments.json.tmp environments.json
+```
+
+CLI 不会自动把任意 shell 环境变量映射为 EasyPostman 变量。
+
+## 8. 文件上传
+
+环境变量可保存 workspace 相对路径：
+
+```text
+fixtures/avatar.png
+```
+
+默认以 workspace 根目录解析。附件位于其他挂载目录时：
+
+```bash
+java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
+  --working-dir "$CI_PROJECT_DIR/test-assets"
+```
+
+路径为空、仍含 `{{...}}`、文件不存在或不可读时会在发送前失败。
+
+## 9. 参数与退出码
+
+| 参数 | 说明 |
+|---|---|
+| `[workspace]` | workspace 名称、ID 或目录；CI 推荐目录或 `.` |
+| `-w, --workspace` | workspace 的显式写法，不能与位置参数同时使用 |
+| `-c, --collection` | 选择集合，可重复 |
+| `--folder` | 选择文件夹，可重复 |
+| `-e, --environment` | 环境名称或 ID |
+| `-d, --iteration-data` | workspace 相对或绝对 CSV / JSON 路径 |
+| `-n, --iteration-count` | 正整数总轮数 |
+| `--working-dir` | 上传文件根目录 |
+| `--out` | JSON 报告路径 |
+| `--bail` | 首次请求、脚本或断言失败后停止 |
+| `-h, --help` | 帮助 |
+
+退出码：`0` 全部成功；`1` 请求、脚本或断言失败；`2` 参数或 workspace 数据无效。
+
+报告 schema 为 `2.1`，`selectionMode` 固定为 `COLLECTIONS`。
+
+## 10. 仓库示例
+
+示例 workspace：[`docs/examples/collection-cli`](examples/collection-cli/)
+
+```bash
+java -jar easy-postman-app/target/easy-postman-*.jar \
+  collection run docs/examples/collection-cli \
+  -c "EasyPostman CLI Example" \
+  --folder "Upload API" \
+  -d users.csv \
+  --bail \
+  --out target/collection-run-result.json
+```
+
+该命令执行两轮、发送两个请求并完成六个断言。
+
+功能测试 CLI 请参阅 [`FUNCTIONAL_CLI_zh.md`](FUNCTIONAL_CLI_zh.md)。

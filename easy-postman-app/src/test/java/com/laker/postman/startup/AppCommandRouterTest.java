@@ -32,7 +32,8 @@ public class AppCommandRouterTest {
                 {new String[]{"performance", "run", "--help"}},
                 {new String[]{"performance", "worker", "--help"}},
                 {new String[]{"performance", "master", "run", "--help"}},
-                {new String[]{"collection", "run", "--help"}}
+                {new String[]{"collection", "run", "--help"}},
+                {new String[]{"functional", "run", "--help"}}
         };
     }
 
@@ -68,7 +69,22 @@ public class AppCommandRouterTest {
 
         assertTrue(exitCode.isPresent());
         assertEquals(exitCode.getAsInt(), 0);
-        assertTrue(stdout.toString().contains("collection run <collection.json>"));
+        assertTrue(stdout.toString().contains("collection run [workspace-name|workspace-directory]"));
+    }
+
+    @Test
+    public void shouldRouteFunctionalCommandsBeforeSwingStartup() {
+        ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+
+        OptionalInt exitCode = new AppCommandRouter().route(
+                new String[]{"functional", "run", "--help"},
+                new PrintStream(stdout),
+                new PrintStream(new ByteArrayOutputStream())
+        );
+
+        assertTrue(exitCode.isPresent());
+        assertEquals(exitCode.getAsInt(), 0);
+        assertTrue(stdout.toString().contains("functional run [workspace-name|workspace-directory]"));
     }
 
     @Test

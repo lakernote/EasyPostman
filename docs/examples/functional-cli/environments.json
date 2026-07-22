@@ -1,0 +1,19 @@
+[
+    {
+        "id": "functional-cli-example-environment",
+        "name": "Functional CLI Example",
+        "variableList": [
+            {
+                "enabled": true,
+                "key": "baseUrl",
+                "value": "https://httpbin.org"
+            },
+            {
+                "enabled": true,
+                "key": "uploadFile",
+                "value": "fixtures/sample-file.txt"
+            }
+        ],
+        "active": true
+    }
+]

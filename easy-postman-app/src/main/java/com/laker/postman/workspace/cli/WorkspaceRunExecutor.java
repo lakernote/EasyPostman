@@ -1,28 +1,26 @@
-package com.laker.postman.collection.cli;
+package com.laker.postman.workspace.cli;
 
 import com.laker.postman.collection.CollectionInheritance;
-import com.laker.postman.collection.importer.postman.PostmanCollectionParser;
-import com.laker.postman.collection.model.CollectionNode;
-import com.laker.postman.collection.model.CollectionParseResult;
-import com.laker.postman.collection.model.RequestGroup;
+import com.laker.postman.collection.model.CollectionDocument;
+import com.laker.postman.common.constants.ConfigPathConstants;
 import com.laker.postman.functional.execution.FunctionalRequestExecutionResult;
 import com.laker.postman.functional.execution.FunctionalRequestExecutor;
 import com.laker.postman.functional.model.AssertionResult;
 import com.laker.postman.http.runtime.model.PreparedRequest;
 import com.laker.postman.model.Environment;
+import com.laker.postman.model.Variable;
 import com.laker.postman.request.model.HttpFormData;
 import com.laker.postman.request.model.HttpRequestItem;
 import com.laker.postman.request.model.RequestBodyTypes;
 import com.laker.postman.script.model.TestResult;
+import com.laker.postman.service.collections.CollectionDocumentJsonCodec;
 import com.laker.postman.service.js.JsScriptExecutor;
-import com.laker.postman.service.postman.PostmanEnvironmentParser;
 import com.laker.postman.service.variable.ExecutionVariableContext;
 import com.laker.postman.service.variable.IterationDataRuntimeSupport;
 import com.laker.postman.service.variable.RequestExecutionScope;
 import com.laker.postman.service.variable.RunScopedVariableContext;
 import com.laker.postman.util.CsvDataUtil;
 import com.laker.postman.util.JsonUtil;
-import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.JsonNode;
 
 import java.io.PrintStream;
@@ -34,36 +32,50 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-@RequiredArgsConstructor
-public class CollectionRunExecutor {
-    private final FunctionalRequestExecutor requestExecutor;
+public class WorkspaceRunExecutor {
+    private final FunctionalRequestExecutor requestExecutor = new FunctionalRequestExecutor(null);
 
-    public CollectionRunExecutor() {
-        this(new FunctionalRequestExecutor(null));
-    }
-
-    public CollectionRunReport execute(CollectionRunCliOptions options, PrintStream out) throws Exception {
-        Path collectionPath = requireFile(options.getCollectionPath(), "Collection file");
-        Path workingDirectory = resolveWorkingDirectory(options, collectionPath);
-        CollectionParseResult collection = parseCollection(collectionPath);
-        List<SelectedRequest> allRequests = flattenRequests(collection);
-        List<SelectedRequest> selectedRequests = selectFolders(
-                allRequests,
-                options.getFolders(),
-                collection.getGroup()
-        );
-        if (!options.getFolders().isEmpty() && selectedRequests.isEmpty()) {
-            throw new IllegalArgumentException("No requests matched folder(s): "
-                    + String.join(", ", options.getFolders()));
+    public WorkspaceRunReport execute(WorkspaceRunOptions options,
+                                      WorkspaceRunPlanner planner,
+                                      PrintStream out) throws Exception {
+        if (planner == null) {
+            throw new IllegalArgumentException("Workspace run planner is required");
+        }
+        WorkspaceRunWorkspace workspace = WorkspaceRunWorkspaceResolver.resolve(options.getWorkspace());
+        Path collectionPath = requireFile(workspace.collectionsFile(), "EasyPostman collections file");
+        Path workingDirectory = resolveWorkingDirectory(options, workspace.directory());
+        CollectionDocument document = parseCollections(collectionPath);
+        WorkspaceRunPlan plan = planner.plan(workspace, document);
+        if (plan == null || plan.requests().isEmpty()) {
+            throw new IllegalArgumentException("No runnable requests selected");
         }
 
-        Environment environment = loadVariables(options.getEnvironmentPath(), "CLI Environment");
-        Environment globals = loadVariables(options.getGlobalsPath(), "CLI Globals");
-        List<Map<String, String>> dataRows = loadIterationData(options.getIterationDataPath());
+        Path iterationDataPath = resolveIterationDataPath(
+                options.getIterationDataPath(),
+                workspace.directory()
+        );
+        List<Map<String, String>> dataRows = iterationDataPath == null
+                ? plan.embeddedIterationData()
+                : loadIterationData(iterationDataPath);
+        String iterationDataSource = iterationDataPath == null
+                ? plan.embeddedIterationDataSource()
+                : iterationDataPath.toString();
         int iterationCount = resolveIterationCount(options.getIterationCount(), dataRows);
+        Environment environment = loadEnvironment(workspace.environmentsFile(), options.getEnvironment());
+        Environment globals = loadGlobals(Path.of(ConfigPathConstants.GLOBAL_VARIABLES));
+
+        if (out != null) {
+            out.printf("Workspace: %s (%s)%n", workspace.name(), workspace.directory());
+            out.printf("Environment: %s | Collections: %s%n",
+                    environment.getName(),
+                    String.join(", ", plan.collectionNames()));
+            out.printf("Selection: %s | Iteration data: %s%n",
+                    plan.selectionMode(),
+                    iterationDataSource);
+        }
 
         long startTimeMs = System.currentTimeMillis();
-        List<CollectionRunReport.RequestResult> requestReports = new ArrayList<>();
+        List<WorkspaceRunReport.RequestResult> requestReports = new ArrayList<>();
         int passedRequests = 0;
         int failedRequests = 0;
         int passedTests = 0;
@@ -83,7 +95,7 @@ public class CollectionRunExecutor {
                     out.printf("Iteration %d/%d%n", iteration + 1, iterationCount);
                 }
 
-                for (SelectedRequest selected : selectedRequests) {
+                for (WorkspaceRunSelectedRequest selected : plan.requests()) {
                     HttpRequestItem effectiveItem = CollectionInheritance.apply(
                             selected.request(),
                             selected.groupChain()
@@ -104,7 +116,7 @@ public class CollectionRunExecutor {
                             scriptOutput(out),
                             request -> resolveFilePaths(request, workingDirectory)
                     );
-                    CollectionRunReport.RequestResult requestReport = toRequestReport(
+                    WorkspaceRunReport.RequestResult requestReport = toRequestReport(
                             iteration + 1,
                             selected,
                             result
@@ -115,7 +127,7 @@ public class CollectionRunExecutor {
                     } else {
                         failedRequests++;
                     }
-                    for (CollectionRunReport.TestCase test : requestReport.tests()) {
+                    for (WorkspaceRunReport.TestCase test : requestReport.tests()) {
                         if (test.passed()) {
                             passedTests++;
                         } else {
@@ -132,11 +144,15 @@ public class CollectionRunExecutor {
         }
 
         long endTimeMs = System.currentTimeMillis();
-        return new CollectionRunReport(
-                "1.0",
-                failedRequests == 0 ? CollectionRunReport.STATUS_SUCCESS : CollectionRunReport.STATUS_FAILED,
-                collection.getGroup() == null ? "" : collection.getGroup().getName(),
-                collectionPath.toString(),
+        return new WorkspaceRunReport(
+                "2.1",
+                failedRequests == 0 ? WorkspaceRunReport.STATUS_SUCCESS : WorkspaceRunReport.STATUS_FAILED,
+                workspace.name(),
+                workspace.directory().toString(),
+                plan.collectionNames(),
+                environment.getName(),
+                plan.selectionMode(),
+                iterationDataSource,
                 startTimeMs,
                 endTimeMs,
                 Math.max(0L, endTimeMs - startTimeMs),
@@ -151,109 +167,94 @@ public class CollectionRunExecutor {
         );
     }
 
-    private static CollectionParseResult parseCollection(Path collectionPath) throws Exception {
+    private static CollectionDocument parseCollections(Path collectionPath) {
         try {
-            String json = Files.readString(collectionPath, StandardCharsets.UTF_8);
-            CollectionParseResult result = PostmanCollectionParser.parsePostmanCollection(json);
-            if (result == null) {
-                throw new IllegalArgumentException("Unsupported or invalid Postman Collection: " + collectionPath);
+            CollectionDocument document = CollectionDocumentJsonCodec.read(collectionPath.toFile());
+            if (document.getRoots().isEmpty()) {
+                throw new IllegalArgumentException("No EasyPostman collections found: " + collectionPath);
             }
-            return result;
+            return document;
         } catch (IllegalArgumentException ex) {
             throw ex;
         } catch (Exception ex) {
             throw new IllegalArgumentException(
-                    "Unable to read Postman Collection: " + collectionPath + ": " + describe(ex),
+                    "Unable to read EasyPostman collections: " + collectionPath + ": " + describe(ex),
                     ex
             );
         }
     }
 
-    private static List<SelectedRequest> flattenRequests(CollectionParseResult result) {
-        List<SelectedRequest> requests = new ArrayList<>();
-        List<RequestGroup> rootChain = result.getGroup() == null
-                ? List.of()
-                : List.of(result.getGroup());
-        for (CollectionNode child : result.getChildren()) {
-            collectRequests(child, rootChain, requests);
-        }
-        return requests;
-    }
-
-    private static void collectRequests(CollectionNode node,
-                                        List<RequestGroup> groupChain,
-                                        List<SelectedRequest> requests) {
-        if (node == null) {
-            return;
-        }
-        if (node.isRequest() && node.getRequest() != null) {
-            String requestPath = buildRequestPath(groupChain, node.getRequest().getName());
-            requests.add(new SelectedRequest(node.getRequest(), groupChain, requestPath));
-            return;
-        }
-
-        List<RequestGroup> childChain = groupChain;
-        if (node.isGroup() && node.getGroup() != null) {
-            childChain = new ArrayList<>(groupChain);
-            childChain.add(node.getGroup());
-        }
-        for (CollectionNode child : node.getChildren()) {
-            collectRequests(child, childChain, requests);
-        }
-    }
-
-    private static String buildRequestPath(List<RequestGroup> groupChain, String requestName) {
-        List<String> segments = new ArrayList<>();
-        for (RequestGroup group : groupChain) {
-            if (group != null && group.getName() != null && !group.getName().isBlank()) {
-                segments.add(group.getName());
+    private static Environment loadEnvironment(Path path, String selector) {
+        if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
+            if (selector != null && !selector.isBlank()) {
+                throw new IllegalArgumentException("EasyPostman environments file does not exist: " + path);
             }
+            return new Environment("<none>");
         }
-        segments.add(requestName == null || requestName.isBlank() ? "Unnamed request" : requestName);
-        return String.join(" / ", segments);
-    }
 
-    private static List<SelectedRequest> selectFolders(List<SelectedRequest> requests,
-                                                       List<String> folders,
-                                                       RequestGroup collectionRoot) {
-        if (folders == null || folders.isEmpty()) {
-            return requests;
-        }
-        return requests.stream()
-                .filter(request -> request.groupChain().stream()
-                        .filter(group -> group != collectionRoot)
-                        .map(RequestGroup::getName)
-                        .anyMatch(folders::contains))
-                .toList();
-    }
-
-    private static Environment loadVariables(Path path, String defaultName) throws Exception {
-        Environment empty = new Environment(defaultName);
-        if (path == null) {
-            return empty;
-        }
-        Path variableFile = requireFile(path, defaultName + " file");
-        List<Environment> parsed;
+        List<Environment> environments;
         try {
-            parsed = PostmanEnvironmentParser.parsePostmanEnvironments(
-                    Files.readString(variableFile, StandardCharsets.UTF_8)
+            cn.hutool.json.JSONArray array = cn.hutool.json.JSONUtil.readJSONArray(
+                    path.toFile(),
+                    StandardCharsets.UTF_8
             );
+            environments = cn.hutool.json.JSONUtil.toList(array, Environment.class);
         } catch (Exception ex) {
             throw new IllegalArgumentException(
-                    "Unable to read variable file: " + variableFile + ": " + describe(ex),
+                    "Unable to read EasyPostman environments: " + path + ": " + describe(ex),
                     ex
             );
         }
-        if (parsed.isEmpty()) {
-            throw new IllegalArgumentException("Variable file contains no environment: " + variableFile);
+
+        if (selector != null && !selector.isBlank()) {
+            return environments.stream()
+                    .filter(environment -> selector.equals(environment.getName())
+                            || selector.equals(environment.getId()))
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Environment not found: " + selector + ". Available environments: "
+                                    + availableEnvironmentNames(environments)
+                    ));
         }
-        return parsed.get(0);
+        return environments.stream()
+                .filter(Environment::isActive)
+                .findFirst()
+                .orElseGet(() -> environments.stream().findFirst().orElseGet(() -> new Environment("<none>")));
+    }
+
+    private static String availableEnvironmentNames(List<Environment> environments) {
+        return environments.stream()
+                .map(Environment::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("<none>");
+    }
+
+    private static Environment loadGlobals(Path path) {
+        Environment empty = new Environment("Globals");
+        if (!Files.isRegularFile(path) || !Files.isReadable(path)) {
+            return empty;
+        }
+        try {
+            Object parsed = cn.hutool.json.JSONUtil.parse(
+                    Files.readString(path, StandardCharsets.UTF_8)
+            );
+            if (parsed instanceof cn.hutool.json.JSONObject object) {
+                return cn.hutool.json.JSONUtil.toBean(object, Environment.class);
+            }
+            if (parsed instanceof cn.hutool.json.JSONArray array) {
+                empty.setVariableList(cn.hutool.json.JSONUtil.toList(array, Variable.class));
+            }
+            return empty;
+        } catch (Exception ex) {
+            throw new IllegalArgumentException(
+                    "Unable to read EasyPostman globals: " + path + ": " + describe(ex),
+                    ex
+            );
+        }
     }
 
     private static List<Map<String, String>> loadIterationData(Path path) throws Exception {
-        if (path == null) {
-            return List.of();
-        }
         Path dataFile = requireFile(path, "Iteration data file");
         String lowerName = dataFile.getFileName().toString().toLowerCase();
         List<Map<String, String>> rows;
@@ -312,13 +313,20 @@ public class CollectionRunExecutor {
         return dataRows.isEmpty() ? 1 : dataRows.size();
     }
 
-    private static Path resolveWorkingDirectory(CollectionRunCliOptions options, Path collectionPath) {
+    private static Path resolveIterationDataPath(Path path, Path workspaceDirectory) {
+        if (path == null) {
+            return null;
+        }
+        Path resolved = path.isAbsolute() ? path : workspaceDirectory.resolve(path);
+        return resolved.toAbsolutePath().normalize();
+    }
+
+    private static Path resolveWorkingDirectory(WorkspaceRunOptions options, Path workspaceDirectory) {
         Path workingDirectory = options.getWorkingDirectory();
         if (workingDirectory == null) {
-            workingDirectory = collectionPath.getParent();
-        }
-        if (workingDirectory == null) {
-            workingDirectory = Path.of(".");
+            workingDirectory = workspaceDirectory;
+        } else if (!workingDirectory.isAbsolute()) {
+            workingDirectory = workspaceDirectory.resolve(workingDirectory);
         }
         workingDirectory = workingDirectory.toAbsolutePath().normalize();
         if (!Files.isDirectory(workingDirectory)) {
@@ -396,14 +404,15 @@ public class CollectionRunExecutor {
         };
     }
 
-    private static CollectionRunReport.RequestResult toRequestReport(int iteration,
-                                                                     SelectedRequest selected,
-                                                                     FunctionalRequestExecutionResult result) {
-        List<CollectionRunReport.TestCase> tests = new ArrayList<>();
+    private static WorkspaceRunReport.RequestResult toRequestReport(
+            int iteration,
+            WorkspaceRunSelectedRequest selected,
+            FunctionalRequestExecutionResult result) {
+        List<WorkspaceRunReport.TestCase> tests = new ArrayList<>();
         if (result.getTestResults() != null) {
             for (TestResult test : result.getTestResults()) {
                 if (test != null) {
-                    tests.add(new CollectionRunReport.TestCase(test.name, test.passed, safe(test.message)));
+                    tests.add(new WorkspaceRunReport.TestCase(test.name, test.passed, safe(test.message)));
                 }
             }
         }
@@ -412,7 +421,7 @@ public class CollectionRunExecutor {
         String url = result.getRequest() == null
                 ? selected.request().getUrl()
                 : firstNonBlank(result.getRequest().sentUrl, result.getRequest().url);
-        return new CollectionRunReport.RequestResult(
+        return new WorkspaceRunReport.RequestResult(
                 iteration,
                 selected.request().getName(),
                 selected.path(),
@@ -426,12 +435,12 @@ public class CollectionRunExecutor {
         );
     }
 
-    private static void printRequestResult(PrintStream out, CollectionRunReport.RequestResult result) {
+    private static void printRequestResult(PrintStream out, WorkspaceRunReport.RequestResult result) {
         if (out == null) {
             return;
         }
         out.printf("  %s %dms %s%n", result.status(), result.durationMs(), result.passed() ? "PASS" : "FAIL");
-        for (CollectionRunReport.TestCase test : result.tests()) {
+        for (WorkspaceRunReport.TestCase test : result.tests()) {
             out.printf("    %s %s", test.passed() ? "✓" : "✗", test.name());
             if (!test.passed() && !test.message().isBlank()) {
                 out.printf(": %s", test.message());
@@ -450,11 +459,5 @@ public class CollectionRunExecutor {
 
     private static String safe(String value) {
         return value == null ? "" : value;
-    }
-
-    private record SelectedRequest(HttpRequestItem request, List<RequestGroup> groupChain, String path) {
-        private SelectedRequest {
-            groupChain = groupChain == null ? List.of() : List.copyOf(groupChain);
-        }
     }
 }

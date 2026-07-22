@@ -1,0 +1,23 @@
+{
+    "version": "1.0",
+    "rows": [
+        {
+            "selected": true,
+            "requestItemId": "upload-fixture"
+        }
+    ],
+    "csvState": {
+        "sourceName": "users.csv",
+        "headers": [
+            "user"
+        ],
+        "rows": [
+            {
+                "user": "alice"
+            },
+            {
+                "user": "bob"
+            }
+        ]
+    }
+}

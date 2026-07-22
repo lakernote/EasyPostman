@@ -18,6 +18,34 @@ import static org.testng.Assert.assertTrue;
 public class ModuleArchitectureBoundaryTest {
 
     @Test
+    public void collectionAndFunctionalCliStayPhysicallySeparated() throws IOException {
+        Path root = repositoryRoot();
+        Path collectionCli = root.resolve("easy-postman-app/src/main/java/com/laker/postman/collection/cli");
+        Path functionalCli = root.resolve("easy-postman-app/src/main/java/com/laker/postman/functional/cli");
+        Path workspaceCli = root.resolve("easy-postman-app/src/main/java/com/laker/postman/workspace/cli");
+
+        assertTrue(Files.isDirectory(collectionCli), "collection run must own a dedicated CLI package");
+        assertTrue(Files.isDirectory(functionalCli), "functional run must own a dedicated CLI package");
+        assertTrue(Files.isRegularFile(workspaceCli.resolve("WorkspaceRunExecutor.java")),
+                "shared headless execution belongs in the neutral workspace CLI package");
+        assertTrue(Files.isRegularFile(workspaceCli.resolve("WorkspaceRunPlanner.java")),
+                "collection and functional selection must be plugged into the shared executor");
+
+        List<String> collectionViolations = sourcePackageViolations(collectionCli, List.of(
+                "com.laker.postman.functional.cli",
+                "functional_config.json"
+        ));
+        List<String> functionalViolations = sourcePackageViolations(functionalCli, List.of(
+                "com.laker.postman.collection.cli"
+        ));
+
+        assertTrue(collectionViolations.isEmpty(),
+                "collection run must not depend on functional CLI configuration: " + collectionViolations);
+        assertTrue(functionalViolations.isEmpty(),
+                "functional run must not depend on collection CLI commands: " + functionalViolations);
+    }
+
+    @Test
     public void mavenModulesUseFoundationAndUiNames() throws IOException {
         Path root = repositoryRoot();
         assertTrue(Files.isDirectory(root.resolve("easy-postman-foundation")));

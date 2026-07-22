@@ -59,26 +59,6 @@ public final class FunctionalRequestExecutor {
     }
 
     /**
-     * Executes a request whose collection inheritance was prepared by a headless caller.
-     */
-    public FunctionalRequestExecutionResult executeEffective(HttpRequestItem item,
-                                                             ExecutionVariableContext iterationContext,
-                                                             BooleanSupplier executionActiveSupplier,
-                                                             Supplier<Environment> environmentSupplier,
-                                                             RequestExecutionScope requestExecutionScope,
-                                                             JsScriptExecutor.OutputCallback outputCallback) {
-        return executeEffective(
-                item,
-                iterationContext,
-                executionActiveSupplier,
-                environmentSupplier,
-                requestExecutionScope,
-                outputCallback,
-                null
-        );
-    }
-
-    /**
      * Executes an effective request and lets a headless caller adjust the prepared request after
      * pre-scripts and variable substitution, but before the HTTP transport reads it.
      */

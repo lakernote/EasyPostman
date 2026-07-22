@@ -31,7 +31,7 @@
 - [✨ Features](#-features)
 - [📦 Download](#-download)
 - [🚀 Quick Start](#-quick-start)
-- [🧪 Collection CLI](#-collection-cli)
+- [🧪 Collection / Functional CLI](#-collection--functional-cli)
 - [🛠️ Development](#️-development)
 - [🤝 Contributing](#-contributing)
 - [📚 Documentation](#-documentation)
@@ -84,7 +84,7 @@ EasyPostman is a GUI-first tool, and the project value is easier to judge when b
 | **Debug a REST API like Postman** | Create or import a collection, choose an environment, send a request, inspect formatted response bodies, headers, cookies, timing, and the network event log. |
 | **Chain requests with scripts** | Use pre-request scripts and test scripts to read variables, create signatures, extract response data, assert results, and pass values into the next request. |
 | **Share API work through Git** | Keep workspace data local, then use Git workspace operations to commit, pull, push, and review collection/environment changes with your team. |
-| **Run Postman Collections in CI** | Download the cross-platform JAR or build it from source, then run collections with environments, data files, scripts, assertions, and file uploads. |
+| **Run EasyPostman workspaces in CI** | Download the cross-platform JAR or build it from source, then run native workspaces with their collections, environments, scripts, assertions, and uploads. |
 | **Run load tests like JMeter** | Build a performance plan visually, export `plan.json`, run it headlessly, or distribute it with master/worker mode while preserving global user and CSV sharding. |
 
 ---
@@ -103,7 +103,7 @@ EasyPostman is a GUI-first tool, and the project value is easier to judge when b
 - **Multiple body types** - Form Data, x-www-form-urlencoded, JSON, XML, text, and binary payloads
 - **Variables** - Environment, global, request, and iteration data support for repeatable runs
 - **Import/Export** - Postman v2.1 and cURL support, with HAR and OpenAPI/Swagger paths under active development
-- **Headless collection runs** - Run Postman Collections from the cross-platform JAR with environments, data files, scripts, assertions, uploads, and CI exit codes
+- **Headless workspace runs** - Use separate collection and functional commands to run native EasyPostman workspaces from the cross-platform JAR with CI exit codes
 
 ### ⚡ JMeter-style Performance Testing
 - **Scenario design in the GUI** - Thread groups, timers, extractors, assertions, and result views
@@ -211,9 +211,9 @@ java -jar easy-postman-app/target/easy-postman-*.jar
 
 ---
 
-## 🧪 Collection CLI
+## 🧪 Collection / Functional CLI
 
-Run Postman Collection v2.1 files headlessly without installing Node.js or Newman.
+Run EasyPostman's native desktop workspaces headlessly without exporting collections or environments.
 
 ### Step 1: Get the JAR
 
@@ -224,9 +224,10 @@ Choose either option:
 ```bash
 java -version  # Java 17+ is required
 java -jar easy-postman-6.x.x.jar collection run --help
+java -jar easy-postman-6.x.x.jar functional run --help
 ```
 
-If `collection run` isn't shown, download a newer release or build the current source.
+If either command isn't shown, download a newer release or build the current source.
 
 **B. Build from source:**
 
@@ -236,42 +237,59 @@ cd easy-postman
 mvn -pl easy-postman-app -am -DskipTests clean package
 java -jar easy-postman-app/target/easy-postman-*.jar \
   collection run --help
+java -jar easy-postman-app/target/easy-postman-*.jar \
+  functional run --help
 ```
 
-### Step 2: Run the complete example
+### Step 2: Run a workspace
 
-The repository example includes a collection, Postman environment, CSV iteration data, and a real upload fixture. It sends two multipart requests to Postman Echo:
+`collection run` selects requests by collection/folder. `functional run` selects requests from `functional_config.json`. Both accept a workspace directory directly, so CI does not need desktop registration or GUI state.
+
+From a checked-out Git workspace root:
+
+```bash
+java -jar easy-postman.jar collection run .
+java -jar easy-postman.jar functional run .
+```
+
+You can select a registered workspace, collection, and environment by name:
+
+```bash
+java -jar easy-postman.jar collection run tewst \
+  -c "Basic HTTP Examples" \
+  -e "Dev Env"
+```
+
+The repository example directory is itself a native EasyPostman workspace:
 
 ```bash
 java -DCONSOLE_LOG_LEVEL=ERROR \
   -jar easy-postman-app/target/easy-postman-*.jar \
-  collection run docs/examples/collection-cli/upload.postman_collection.json \
-  -e docs/examples/collection-cli/postman-echo.postman_environment.json \
-  -d docs/examples/collection-cli/users.csv \
+  collection run docs/examples/collection-cli \
+  -d users.csv \
   --folder "Upload API" \
   --bail \
   --out target/collection-cli-result.json
 ```
 
-For a downloaded JAR, replace `easy-postman-app/target/easy-postman-*.jar` with its local path. Clone the repository for the sample assets, or download [`docs/examples/collection-cli`](docs/examples/collection-cli/) separately.
-
-The collection file is the only required CLI argument. The minimum command is:
+The functional example is a separate workspace with its own `functional_config.json`:
 
 ```bash
-java -jar easy-postman.jar collection run ./demo.postman_collection.json
+java -DCONSOLE_LOG_LEVEL=ERROR \
+  -jar easy-postman-app/target/easy-postman-*.jar \
+  functional run docs/examples/functional-cli \
+  --bail \
+  --out target/functional-run-result.json
 ```
 
-All other options are optional; add `-e`, `-g`, or `-d` when the collection depends on those variables. The exit code is `0` for success, `1` for request/assertion failures, and `2` for invalid arguments or input files.
+The CLI automatically reads `collections.json` and `environments.json` from the workspace and the app-level `global_variables.json`. Use `-c` and `-e` to select collection and environment names, and `-d` for CSV/JSON iteration data. Relative iteration-data and upload paths resolve from the workspace directory unless `--working-dir` is supplied.
 
-`-e`, `-g`, and `-d` accept both relative and absolute paths. Relative paths use the command's current working directory, not the collection directory. `--working-dir` affects upload files only and does not change these three input paths. Quote paths that contain spaces.
+Use `functional run` to reproduce the desktop Functional panel's selected requests and embedded CSV iterations; add `-d` to override those rows with CI-specific CSV/JSON data. A normal workspace can be copied to the runner as an artifact, while a Git workspace can run directly from its checked-out repository directory.
 
-Uploads accept relative or absolute paths, either directly or through variables. Relative paths resolve from the collection directory unless `--working-dir` is set; absolute paths are unaffected. The repository sample uses `{{uploadFile}}`, so changing its environment value to `/opt/fixtures/file.txt` or `C:\\fixtures\\file.txt` demonstrates an absolute path.
+Exit code `0` means success, `1` means a request, script, or assertion failed, and `2` means invalid arguments or workspace data. `--out` writes a JSON report containing the resolved workspace, collections, environment, and request details.
 
-At runtime, disabled collection/folder variables are ignored, iteration data is visible through both `{{name}}` and `pm.variables`, and values set with `pm.variables.set(...)` remain available across requests and iterations in the same run. Pre-request `pm.test(...)` assertions are included in reports and exit status. Postman file fields whose `src` is an array upload every listed file under the same multipart field name.
-
-`--folder "Upload API"` runs only that folder and its descendants. Repeat the option to select more than one folder; see the complete guide for exact-match and no-match behavior.
-
-📖 **[Complete download/build, sample files, options, uploads, and GitHub Actions guide →](docs/COLLECTION_CLI_zh.md)**
+📖 **[Collection CLI guide →](docs/COLLECTION_CLI_zh.md)**
+📖 **[Functional CLI guide →](docs/FUNCTIONAL_CLI_zh.md)**
 
 ---
 
@@ -314,7 +332,8 @@ Every PR triggers automated checks: build, tests, code quality, and format valid
 |-----|-------------|
 | 📖 [Features](docs/FEATURES.md) | Comprehensive feature documentation |
 | 🚀 [Build Guide](docs/BUILD.md) | Build from source & generate installers |
-| 🧪 [Headless Collection CLI](docs/COLLECTION_CLI_zh.md) | Lightweight Postman Collection runs with variables, scripts, data files, uploads, and CI exit codes (Chinese) |
+| 🧪 [Headless Collection CLI](docs/COLLECTION_CLI_zh.md) | Native EasyPostman workspace runs with variables, scripts, data files, uploads, and CI exit codes (Chinese) |
+| 🧪 [Headless Functional CLI](docs/FUNCTIONAL_CLI_zh.md) | Run selected requests and embedded CSV iterations from `functional_config.json` in CI (Chinese) |
 | ⚡ [Distributed Performance Testing](docs/PERFORMANCE_CLUSTER_LOAD_TEST_zh.md) | GUI remote mode, CLI master/worker, CSV sharding, realtime refresh, and result details |
 | 🔌 [Plugin Architecture](docs/PLUGINS_zh.md) | Plugin modules, development flow, and installation (Chinese) |
 | 🖼️ [Screenshots](docs/SCREENSHOTS.md) | All application screenshots |

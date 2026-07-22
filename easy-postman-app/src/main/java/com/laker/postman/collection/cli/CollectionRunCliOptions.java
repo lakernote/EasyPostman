@@ -85,6 +85,9 @@ public class CollectionRunCliOptions {
                 default -> throw new IllegalArgumentException("Unknown option: " + arg);
             }
         }
+        if (!help && (workspace == null || workspace.isBlank())) {
+            throw new IllegalArgumentException("Workspace directory is required");
+        }
 
         return CollectionRunCliOptions.builder()
                 .help(help)

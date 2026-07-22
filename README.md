@@ -219,7 +219,14 @@ Run EasyPostman's native desktop workspaces headlessly without exporting collect
 
 Choose either option:
 
-**A. Download:** Get `easy-postman-{version}.jar` from [GitHub Releases](https://github.com/lakernote/easy-postman/releases), then verify that the selected release contains the command:
+**A. Download the latest JAR:** Open either release page and download `easy-postman-{version}.jar` from the latest `v*` release assets:
+
+- [Latest GitHub Release](https://github.com/lakernote/easy-postman/releases/latest)
+- [Gitee Releases (China mirror)](https://gitee.com/lakernote/easy-postman/releases)
+
+Gitee assets may appear later than GitHub assets. If the latest Gitee release does not yet contain the standalone JAR, use GitHub.
+
+Then verify the commands:
 
 ```bash
 java -version  # Java 17+ is required
@@ -252,10 +259,10 @@ java -jar easy-postman.jar collection run .
 java -jar easy-postman.jar functional run .
 ```
 
-You can select a registered workspace, collection, and environment by name:
+You can also pass an absolute workspace path and select a collection and environment:
 
 ```bash
-java -jar easy-postman.jar collection run tewst \
+java -jar easy-postman.jar collection run /srv/api-workspace \
   -c "Basic HTTP Examples" \
   -e "Dev Env"
 ```
@@ -266,8 +273,7 @@ The repository example directory is itself a native EasyPostman workspace:
 java -DCONSOLE_LOG_LEVEL=ERROR \
   -jar easy-postman-app/target/easy-postman-*.jar \
   collection run docs/examples/collection-cli \
-  -d users.csv \
-  --folder "Upload API" \
+  --folder "Smoke" \
   --bail \
   --out target/collection-cli-result.json
 ```

@@ -157,6 +157,18 @@ public class FunctionalRunCliCommandTest {
         assertTrue(staleError.toString().contains("references missing request ID(s): missing-request-id"));
     }
 
+    @Test
+    public void shouldRequireWorkspaceDirectory() {
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+        int exitCode = command().run(new String[]{"functional", "run"},
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("Workspace directory is required"));
+    }
+
     private FunctionalRunCliCommand command() {
         return new FunctionalRunCliCommand(() -> {
         }, new WorkspaceRunExecutor());

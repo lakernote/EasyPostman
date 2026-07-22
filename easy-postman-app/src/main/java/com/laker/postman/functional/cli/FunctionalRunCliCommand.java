@@ -51,12 +51,11 @@ public class FunctionalRunCliCommand {
     }
 
     static void printUsage(PrintStream out) {
-        out.println("Usage: functional run [workspace-name|workspace-directory] [options]");
+        out.println("Usage: functional run <workspace-directory> [options]");
         out.println("Runs selected requests and embedded CSV rows from functional_config.json.");
-        out.println("Uses the current directory when it contains collections.json;");
-        out.println("otherwise uses the desktop current workspace.");
+        out.println("Pass the EasyPostman workspace directory; use . at a checked-out Git workspace root.");
         out.println("Options:");
-        out.println("  -w, --workspace <name|directory> Select a registered workspace or directory");
+        out.println("  -w, --workspace <directory>      Alternative to the positional workspace directory");
         out.println("  -e, --environment <name>         Defaults to the workspace's active environment");
         out.println("  -d, --iteration-data <data.csv|data.json>  Override embedded CSV rows");
         out.println("  -n, --iteration-count <count>");

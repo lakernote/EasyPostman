@@ -3,36 +3,22 @@
         "type": "group",
         "id": "functional-cli-example",
         "name": "EasyPostman Functional CLI Example",
-        "description": "EasyPostman native workspace example for headless functional runs.",
+        "description": "Standard EasyPostman workspace example for functional run.",
         "children": [
             {
                 "type": "group",
-                "id": "upload-api",
-                "name": "Upload API",
+                "id": "functional-smoke",
+                "name": "Smoke",
                 "children": [
                     {
                         "type": "request",
                         "data": {
-                            "id": "upload-fixture",
-                            "name": "Upload fixture",
-                            "url": "{{baseUrl}}/post?user={{user}}",
-                            "method": "POST",
-                            "bodyType": "form-data",
-                            "formDataList": [
-                                {
-                                    "enabled": true,
-                                    "key": "file",
-                                    "type": "File",
-                                    "value": "{{uploadFile}}"
-                                },
-                                {
-                                    "enabled": true,
-                                    "key": "user",
-                                    "type": "Text",
-                                    "value": "{{user}}"
-                                }
-                            ],
-                            "postscript": "var response = pm.response.json();\npm.test('status is 200', function () { pm.response.to.have.status(200); });\npm.test('uploaded file is present', function () { pm.expect(response.files).to.have.property('file'); });\npm.test('iteration data reached the server', function () { pm.expect(response.form.user).to.equal(pm.iterationData.get('user')); });"
+                            "id": "functional-get-example",
+                            "name": "GET functional example",
+                            "url": "{{baseUrl}}/get?user={{user}}",
+                            "method": "GET",
+                            "bodyType": "none",
+                            "postscript": "var response = pm.response.json();\npm.test('status is 200', function () { pm.response.to.have.status(200); });\npm.test('iteration data reached the server', function () { pm.expect(response.args.user[0]).to.equal(pm.iterationData.get('user')); });"
                         }
                     }
                 ]

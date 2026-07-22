@@ -6,12 +6,7 @@
             {
                 "enabled": true,
                 "key": "baseUrl",
-                "value": "https://httpbin.org"
-            },
-            {
-                "enabled": true,
-                "key": "uploadFile",
-                "value": "fixtures/sample-file.txt"
+                "value": "https://httpbingo.org"
             }
         ],
         "active": true

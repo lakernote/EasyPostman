@@ -1124,7 +1124,7 @@ jobs:
       (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) &&
       github.event_name == 'release' &&
       always()
-    needs: [ build-windows-portable, build-windows-exe, build-macos-arm ]
+    needs: [ build-jar, build-windows-portable, build-windows-exe, build-macos-arm ]
     runs-on: ubuntu-latest
     outputs:
       should_create_release: ${{ steps.check.outputs.should_create }}
@@ -1134,12 +1134,14 @@ jobs:
         id: check
         run: |
           echo "📊 检查构建状态..."
+          echo "  Standalone JAR: ${{ needs.build-jar.result }}"
           echo "  Windows Portable: ${{ needs.build-windows-portable.result }}"
           echo "  Windows EXE: ${{ needs.build-windows-exe.result }}"
           echo "  macOS ARM: ${{ needs.build-macos-arm.result }}"
           
           # 只要有一个成功就创建 Release
-          if [ "${{ needs.build-windows-portable.result }}" == "success" ] || \
+          if [ "${{ needs.build-jar.result }}" == "success" ] || \
+             [ "${{ needs.build-windows-portable.result }}" == "success" ] || \
              [ "${{ needs.build-windows-exe.result }}" == "success" ] || \
              [ "${{ needs.build-macos-arm.result }}" == "success" ]; then
             echo "✅ 至少有一个构建成功，可以创建 Gitee Release"
@@ -1156,10 +1158,17 @@ jobs:
   verify-gitee-assets:
     name: Verify Gitee Assets（校验 Gitee 附件大小）
     if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.check-any-build-success.outputs.should_create_release == 'true'
-    needs: [ check-any-build-success, build-windows-portable, build-windows-exe, build-macos-arm ]
+    needs: [ check-any-build-success, build-jar, build-windows-portable, build-windows-exe, build-macos-arm ]
     runs-on: ubuntu-latest
 
     steps:
+      - name: Download standalone JAR artifact（下载独立 JAR 产物）
+        if: needs.build-jar.result == 'success'
+        uses: actions/download-artifact@v4
+        with:
+          name: EasyPostman-Standalone-JAR
+          path: verify/jar
+
       - name: Download Windows Portable artifact（下载 Windows 绿色版产物）
         if: needs.build-windows-portable.result == 'success'
         uses: actions/download-artifact@v4
@@ -1200,6 +1209,10 @@ jobs:
               exit 1
             fi
           }
+
+          if [ "${{ needs.build-jar.result }}" = "success" ]; then
+            validate_file "$(find verify/jar -name '*.jar' | head -n 1)" "Standalone JAR"
+          fi
 
           if [ "${{ needs.build-windows-portable.result }}" = "success" ]; then
             validate_file "$(find verify/windows-portable -name '*-portable.zip' | head -n 1)" "Windows Portable"
@@ -1328,6 +1341,40 @@ jobs:
           
           echo "release_id=$RELEASE_ID" >> $GITHUB_OUTPUT
           echo "✅ Gitee Release created successfully with ID: $RELEASE_ID"
+
+  # 跨平台 JAR 上传到 Gitee
+  sync-jar-to-gitee:
+    name: Upload Standalone JAR to Gitee（上传独立 JAR 到 Gitee）
+    if: (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) && github.event_name == 'release' && needs.build-jar.result == 'success'
+    needs: [ create-gitee-release, build-jar ]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download standalone JAR artifact（下载独立 JAR 产物）
+        uses: actions/download-artifact@v4
+        with:
+          name: EasyPostman-Standalone-JAR
+          path: artifacts
+
+      - name: Upload standalone JAR to Gitee（上传独立 JAR 到 Gitee）
+        run: |
+          RELEASE_ID="${{ needs.create-gitee-release.outputs.release_id }}"
+          FILE=$(find artifacts -name "*.jar" | head -n 1)
+
+          if [ -z "$FILE" ]; then
+            echo "❌ Standalone JAR file not found!"
+            exit 1
+          fi
+
+          echo "📦 Uploading $(basename "$FILE") to Gitee..."
+          curl --fail-with-body \
+            --retry 3 \
+            --retry-delay 2 \
+            --connect-timeout 30 \
+            --max-time 180 \
+            -X POST "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/$RELEASE_ID/attach_files" \
+            -F "access_token=${{ secrets.GITEE_TOKEN }}" \
+            -F "file=@$FILE"
 
   # Windows 绿色版上传到 Gitee
   sync-windows-portable-to-gitee:
@@ -1495,7 +1542,7 @@ jobs:
       (github.event_name != 'release' || startsWith(github.event.release.tag_name || '', 'v')) &&
       github.event_name == 'release' &&
       always()
-    needs: [ check-any-build-success, verify-gitee-assets, create-gitee-release, sync-windows-portable-to-gitee, sync-windows-exe-to-gitee, sync-macos-to-gitee ]
+    needs: [ check-any-build-success, verify-gitee-assets, create-gitee-release, sync-jar-to-gitee, sync-windows-portable-to-gitee, sync-windows-exe-to-gitee, sync-macos-to-gitee ]
     runs-on: ubuntu-latest
 
     steps:
@@ -1506,6 +1553,7 @@ jobs:
           CHECK_STATUS="${{ needs.check-any-build-success.result }}"
           VERIFY_STATUS="${{ needs.verify-gitee-assets.result }}"
           RELEASE_STATUS="${{ needs.create-gitee-release.result }}"
+          JAR_STATUS="${{ needs.sync-jar-to-gitee.result }}"
           PORTABLE_STATUS="${{ needs.sync-windows-portable-to-gitee.result }}"
           EXE_STATUS="${{ needs.sync-windows-exe-to-gitee.result }}"
           MACOS_STATUS="${{ needs.sync-macos-to-gitee.result }}"
@@ -1521,6 +1569,7 @@ jobs:
           
           echo ""
           echo "已同步到 Gitee 的文件："
+          echo "  ☕ Standalone JAR - $JAR_STATUS"
           echo "  📦 Windows Portable (绿色版) - $PORTABLE_STATUS"
           echo "  🪟 Windows EXE (安装包) - $EXE_STATUS"
           echo "  🍎 macOS Apple Silicon (ARM64) - $MACOS_STATUS"
@@ -1532,7 +1581,8 @@ jobs:
           fi
 
           if [ "$VERIFY_STATUS" == "failure" ] || [ "$RELEASE_STATUS" == "failure" ] || \
-             [ "$PORTABLE_STATUS" == "failure" ] || [ "$EXE_STATUS" == "failure" ] || [ "$MACOS_STATUS" == "failure" ]; then
+             [ "$JAR_STATUS" == "failure" ] || [ "$PORTABLE_STATUS" == "failure" ] || \
+             [ "$EXE_STATUS" == "failure" ] || [ "$MACOS_STATUS" == "failure" ]; then
             echo "❌ Gitee Release 流程存在失败步骤"
             exit 1
           fi

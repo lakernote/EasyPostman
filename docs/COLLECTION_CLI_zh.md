@@ -2,30 +2,46 @@
 
 `collection run` 用于在开发机、CI Runner 或独立服务器上，按集合和文件夹无界面运行 EasyPostman 原生 workspace。
 
-它只负责集合运行，不读取 `functional_config.json`，也不接受 Postman Collection / Environment 作为运行输入。
+它从 workspace 的 `collections.json` 读取请求，并支持按集合和文件夹选择运行范围。
+
+CLI 以完整 workspace 目录为运行单位。普通 workspace 应把整个目录复制到 CI；Git workspace 应在 CI checkout 后直接运行仓库目录，不要只复制其中某一个 JSON 文件。
 
 ```bash
 java -jar easy-postman.jar collection run <workspace-directory> [options]
 ```
 
+`<workspace-directory>` 直接指定 workspace 所在目录，例如：
+
+```bash
+java -jar easy-postman.jar collection run /srv/api-workspace
+```
+
+## 下载最新 JAR
+
+打开任一发布页，在最新 `v*` 版本的 Assets 中下载 `easy-postman-{版本号}.jar`：
+
+- [GitHub 最新 Release](https://github.com/lakernote/easy-postman/releases/latest)
+- [Gitee Releases（国内镜像）](https://gitee.com/lakernote/easy-postman/releases)
+
+Gitee 附件同步可能稍晚；如果最新版本中暂时没有主 JAR，请使用 GitHub 下载地址。运行 CLI 需要 Java 17 或更高版本。
+
 ## 1. Workspace 文件
 
-最小目录：
+标准 workspace 目录包含 4 个 JSON 文件：
 
 ```text
 api-workspace/
 ├── collections.json          # 必需：集合、文件夹、请求、脚本和断言
-├── environments.json         # 可选：环境列表和活动环境
-├── data/                     # 可选：CSV / JSON 迭代数据
-│   └── users.csv
-└── fixtures/                 # 可选：上传附件
-    └── avatar.png
+├── environments.json         # 环境列表和活动环境
+├── functional_config.json    # 功能测试配置，collection run 不读取
+└── performance_config.json   # 性能测试配置，collection run 不读取
 ```
 
 CLI 行为：
 
 - 请求配置只来自 workspace 根目录的 `collections.json`。
 - 自动读取同目录的 `environments.json`。
+- `functional_config.json` 和 `performance_config.json` 属于标准 workspace，但不参与 `collection run`。
 - 应用级 `global_variables.json` 从 EasyPostman 数据目录读取。
 - `-d` 指定 CSV / JSON 多轮数据，相对路径从 workspace 根目录解析。
 - 相对上传路径默认从 workspace 根目录解析。
@@ -53,10 +69,6 @@ java -jar easy-postman.jar collection run /srv/api-workspace \
 ```bash
 java -jar /opt/easy-postman/easy-postman.jar collection run .
 ```
-
-当前目录包含 `collections.json` 时可以省略 `.`，但 CI 脚本建议显式写出目录。
-
-安装过桌面端的本机还可以传已登记 workspace 的名称或 ID；全新 CI Runner 应直接传目录，不依赖 `workspaces.json`。
 
 ## 3. 集合与文件夹选择
 
@@ -89,7 +101,7 @@ java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
 
 ### 4.1 CSV
 
-`data/users.csv`：
+例如 CI 机器上的 `/opt/easy-postman-data/users.csv`：
 
 ```csv
 user,role
@@ -101,7 +113,7 @@ bob,user
 
 ```bash
 java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
-  -d data/users.csv
+  -d /opt/easy-postman-data/users.csv
 ```
 
 默认执行两轮。请求中使用 `{{user}}`，脚本中使用：
@@ -126,7 +138,7 @@ JSON 必须是对象数组：
 
 ```bash
 java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
-  -d data/users.json
+  -d /opt/easy-postman-data/users.json
 ```
 
 ### 4.3 `-n` 规则
@@ -164,7 +176,6 @@ java -jar "$CI_PROJECT_DIR/tools/easy-postman.jar" \
   -e "CI" \
   -c "Order API" \
   --folder "Smoke" \
-  -d data/ci-orders.csv \
   --bail \
   --out "$CI_PROJECT_DIR/target/collection-result.json"
 ```
@@ -177,8 +188,8 @@ java -jar "$CI_PROJECT_DIR/tools/easy-postman.jar" \
 
 1. 开发机 clone API workspace 仓库。
 2. EasyPostman 中把 Git workspace 路径指向该目录。
-3. 使用 GUI 维护集合、环境和非敏感附件。
-4. 审查并提交 `collections.json`、`environments.json`、`data/`、`fixtures/`。
+3. 使用 GUI 维护 workspace。
+4. 审查并提交 workspace 的 4 个 JSON 文件。
 5. push 后由 CI 使用干净 checkout。
 6. CI 在仓库根目录执行 `collection run .`。
 
@@ -212,7 +223,6 @@ jobs:
             -e "CI" \
             -c "Order API" \
             --folder "Smoke" \
-            -d data/ci-orders.csv \
             --bail \
             --out target/collection-result.json
 
@@ -267,10 +277,10 @@ CLI 不会自动把任意 shell 环境变量映射为 EasyPostman 变量。
 
 ## 8. 文件上传
 
-环境变量可保存 workspace 相对路径：
+上传附件不属于标准 workspace 文件。请求需要上传时，可以使用绝对路径：
 
 ```text
-fixtures/avatar.png
+/opt/easy-postman-test-data/avatar.png
 ```
 
 默认以 workspace 根目录解析。附件位于其他挂载目录时：
@@ -286,8 +296,8 @@ java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
 
 | 参数 | 说明 |
 |---|---|
-| `[workspace]` | workspace 名称、ID 或目录；CI 推荐目录或 `.` |
-| `-w, --workspace` | workspace 的显式写法，不能与位置参数同时使用 |
+| `[workspace-directory]` | workspace 所在目录；Git workspace 根目录可写 `.` |
+| `-w, --workspace` | workspace 目录的显式写法，不能与位置参数同时使用 |
 | `-c, --collection` | 选择集合，可重复 |
 | `--folder` | 选择文件夹，可重复 |
 | `-e, --environment` | 环境名称或 ID |
@@ -310,12 +320,11 @@ java -jar easy-postman.jar collection run "$WORKSPACE_DIR" \
 java -jar easy-postman-app/target/easy-postman-*.jar \
   collection run docs/examples/collection-cli \
   -c "EasyPostman CLI Example" \
-  --folder "Upload API" \
-  -d users.csv \
+  --folder "Smoke" \
   --bail \
   --out target/collection-run-result.json
 ```
 
-该命令执行两轮、发送两个请求并完成六个断言。
+该命令发送一个请求并完成两个断言。
 
 功能测试 CLI 请参阅 [`FUNCTIONAL_CLI_zh.md`](FUNCTIONAL_CLI_zh.md)。

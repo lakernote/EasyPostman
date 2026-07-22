@@ -1,0 +1,20 @@
+{
+    "version": "1.1",
+    "activePlanId": "default",
+    "plans": [
+        {
+            "id": "default",
+            "name": "Test Plan",
+            "efficientMode": true,
+            "trendEnabled": true,
+            "reportRealtimeEnabled": false,
+            "remoteExecutionEnabled": false,
+            "remoteWorkers": "",
+            "tree": {
+                "name": "Test Plan",
+                "type": "ROOT",
+                "enabled": true
+            }
+        }
+    ]
+}

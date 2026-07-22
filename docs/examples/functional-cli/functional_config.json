@@ -3,7 +3,7 @@
     "rows": [
         {
             "selected": true,
-            "requestItemId": "upload-fixture"
+            "requestItemId": "functional-get-example"
         }
     ],
     "csvState": {

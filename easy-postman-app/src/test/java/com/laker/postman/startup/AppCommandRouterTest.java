@@ -69,7 +69,7 @@ public class AppCommandRouterTest {
 
         assertTrue(exitCode.isPresent());
         assertEquals(exitCode.getAsInt(), 0);
-        assertTrue(stdout.toString().contains("collection run [workspace-name|workspace-directory]"));
+        assertTrue(stdout.toString().contains("collection run <workspace-directory>"));
     }
 
     @Test
@@ -84,7 +84,7 @@ public class AppCommandRouterTest {
 
         assertTrue(exitCode.isPresent());
         assertEquals(exitCode.getAsInt(), 0);
-        assertTrue(stdout.toString().contains("functional run [workspace-name|workspace-directory]"));
+        assertTrue(stdout.toString().contains("functional run <workspace-directory>"));
     }
 
     @Test

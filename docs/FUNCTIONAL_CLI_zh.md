@@ -2,25 +2,39 @@
 
 `functional run` 用于在开发机、CI Runner 或独立服务器上，无界面复现 EasyPostman GUI“功能测试”面板保存的请求选择、执行顺序和 CSV 多轮数据。
 
+CLI 以完整 workspace 目录为运行单位。普通 workspace 应把整个目录复制到 CI；Git workspace 应在 CI checkout 后直接运行仓库目录，不要只复制 `functional_config.json`。
+
 ```bash
 java -jar easy-postman.jar functional run <workspace-directory> [options]
 ```
+
+`<workspace-directory>` 直接指定 workspace 所在目录，例如：
+
+```bash
+java -jar easy-postman.jar functional run /srv/api-workspace
+```
+
+## 下载最新 JAR
+
+打开任一发布页，在最新 `v*` 版本的 Assets 中下载 `easy-postman-{版本号}.jar`：
+
+- [GitHub 最新 Release](https://github.com/lakernote/easy-postman/releases/latest)
+- [Gitee Releases（国内镜像）](https://gitee.com/lakernote/easy-postman/releases)
+
+Gitee 附件同步可能稍晚；如果最新版本中暂时没有主 JAR，请使用 GitHub 下载地址。运行 CLI 需要 Java 17 或更高版本。
 
 它不提供集合或文件夹筛选参数；执行范围只由 `functional_config.json` 决定。
 
 ## 1. Workspace 文件
 
-最小目录：
+标准 workspace 目录包含 4 个 JSON 文件：
 
 ```text
 api-workspace/
 ├── collections.json          # 必需：请求内容、脚本和断言
+├── environments.json         # 环境列表和活动环境
 ├── functional_config.json    # 必需：已选请求 ID、顺序和可选内嵌 CSV
-├── environments.json         # 可选：环境列表和活动环境
-├── data/                     # 可选：CI 外部 CSV / JSON
-│   └── users.csv
-└── fixtures/                 # 可选：上传附件
-    └── avatar.png
+└── performance_config.json   # 性能测试配置，functional run 不读取
 ```
 
 文件职责：
@@ -29,6 +43,7 @@ api-workspace/
 - `collections.json` 是请求内容的唯一事实来源。
 - `requestItemId` 用于从最新 `collections.json` 查找请求。
 - `environments.json` 提供环境变量。
+- `performance_config.json` 属于标准 workspace，但不参与 `functional run`。
 - 应用级 `global_variables.json` 从 EasyPostman 数据目录读取。
 - CLI 只读 workspace，不会写回 GUI 配置。
 
@@ -52,8 +67,6 @@ java -jar easy-postman.jar functional run /srv/api-workspace \
 ```bash
 java -jar /opt/easy-postman/easy-postman.jar functional run .
 ```
-
-当前目录包含 `collections.json` 时可以省略 `.`。全新 CI Runner 应直接传目录，不依赖 GUI、`workspaces.json` 或桌面端“当前 workspace”。
 
 ## 3. `functional_config.json`
 
@@ -117,7 +130,7 @@ CI 保留 GUI 请求选择，但使用 CI 专用数据：
 
 ```bash
 java -jar easy-postman.jar functional run "$WORKSPACE_DIR" \
-  -d data/ci-users.csv
+  -d /opt/easy-postman-data/ci-users.csv
 ```
 
 此时请求列表仍来自 `functional_config.json`，迭代数据完全来自外部文件。相对 `-d` 路径从 workspace 根目录解析。
@@ -174,7 +187,7 @@ java -jar "$CI_PROJECT_DIR/tools/easy-postman.jar" \
 java -jar "$CI_PROJECT_DIR/tools/easy-postman.jar" \
   functional run "$CI_PROJECT_DIR/api-workspace" \
   -e "CI" \
-  -d data/ci-users.csv \
+  -d "$CI_PROJECT_DIR/test-data/ci-users.csv" \
   --bail \
   --out "$CI_PROJECT_DIR/target/functional-result.json"
 ```
@@ -188,7 +201,7 @@ workspace 也可以通过 CI Artifact、SCP、rsync、Docker volume 或 Kubernet
 1. 开发机 clone API workspace 仓库。
 2. EasyPostman 中把 Git workspace 路径指向该目录。
 3. GUI 中维护集合、环境、功能测试勾选和 CSV。
-4. 保存后审查 `collections.json`、`functional_config.json`、`environments.json` 和附件。
+4. 保存后审查并提交 workspace 的 4 个 JSON 文件。
 5. commit 并 push。
 6. CI 每个 Job 使用干净 checkout。
 7. 在仓库根目录运行 `functional run .`。
@@ -201,8 +214,7 @@ workspace 也可以通过 CI Artifact、SCP、rsync、Docker volume 或 Kubernet
 collections.json
 functional_config.json
 environments.json
-fixtures/                    # 非敏感附件
-data/                        # 非敏感数据，可选
+performance_config.json
 ```
 
 不要提交真实 Token、Cookie、私钥、生产数据或运行报告。
@@ -286,7 +298,7 @@ CLI 不会自动把任意 shell 环境变量映射为 EasyPostman 变量。
 
 ## 8. 文件上传
 
-workspace 中的相对附件默认从 workspace 根目录解析。附件由 CI 单独挂载时：
+上传附件不属于标准 workspace 文件。附件由 CI 单独挂载时：
 
 ```bash
 java -jar easy-postman.jar functional run "$WORKSPACE_DIR" \
@@ -299,8 +311,8 @@ java -jar easy-postman.jar functional run "$WORKSPACE_DIR" \
 
 | 参数 | 说明 |
 |---|---|
-| `[workspace]` | workspace 名称、ID 或目录；CI 推荐目录或 `.` |
-| `-w, --workspace` | workspace 的显式写法，不能与位置参数同时使用 |
+| `[workspace-directory]` | workspace 所在目录；Git workspace 根目录可写 `.` |
+| `-w, --workspace` | workspace 目录的显式写法，不能与位置参数同时使用 |
 | `-e, --environment` | 环境名称或 ID |
 | `-d, --iteration-data` | 覆盖内嵌数据的 CSV / JSON |
 | `-n, --iteration-count` | 正整数总轮数 |
@@ -330,6 +342,6 @@ java -jar easy-postman-app/target/easy-postman-*.jar \
   --out target/functional-run-result.json
 ```
 
-该命令读取 `functional_config.json` 中的选中请求和两行内嵌 CSV，执行两轮、发送两个请求并完成六个断言。
+该命令读取 `functional_config.json` 中的选中请求和两行内嵌 CSV，执行两轮、发送两个请求并完成四个断言。
 
 集合 CLI 请参阅 [`COLLECTION_CLI_zh.md`](COLLECTION_CLI_zh.md)。

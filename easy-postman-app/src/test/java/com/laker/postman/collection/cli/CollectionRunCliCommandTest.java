@@ -152,6 +152,18 @@ public class CollectionRunCliCommandTest {
     }
 
     @Test
+    public void shouldRequireWorkspaceDirectory() {
+        ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+
+        int exitCode = command().run(new String[]{"collection", "run"},
+                new PrintStream(new ByteArrayOutputStream()),
+                new PrintStream(stderr));
+
+        assertEquals(exitCode, 2);
+        assertTrue(stderr.toString().contains("Workspace directory is required"));
+    }
+
+    @Test
     public void shouldRejectCollectionFileInsteadOfWorkspaceDirectory() throws Exception {
         Path workspace = Files.createTempDirectory("easy-postman-native-file-reject-");
         writeWorkspace(workspace, collection("Demo", requestNode(request("Demo request", "http://127.0.0.1:1"))));

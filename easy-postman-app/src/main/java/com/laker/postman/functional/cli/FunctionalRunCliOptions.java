@@ -73,6 +73,9 @@ public class FunctionalRunCliOptions {
                 default -> throw new IllegalArgumentException("Unknown option: " + arg);
             }
         }
+        if (!help && (workspace == null || workspace.isBlank())) {
+            throw new IllegalArgumentException("Workspace directory is required");
+        }
 
         return FunctionalRunCliOptions.builder()
                 .help(help)

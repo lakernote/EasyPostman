@@ -147,7 +147,7 @@
 - 等待 GitHub Release 中的 `EasyPostman-{version}-windows-x64.exe` 上传完成
 - `initial` 模式会下载安装包、计算 SHA256、生成首版三文件 manifest
 - `initial` 模式会把 manifest 推送到 `fork_owner/winget-pkgs` 分支，并向 `microsoft/winget-pkgs` 创建 PR
-- `update` 模式会下载官方 `wingetcreate`，调用 `wingetcreate update Laker.EasyPostman`
+- `update` 模式会下载官方 `wingetcreate`，调用 `wingetcreate update Laker.EasyPostman`，并显式同步 package version 与 Apps & Features display version
 
 **前置条件**:
 - 仓库 Secrets 配置 `WINGET_CREATE_GITHUB_TOKEN`

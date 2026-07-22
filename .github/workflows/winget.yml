@@ -415,6 +415,7 @@ jobs:
           .\wingetcreate.exe update `
             $packageIdentifier `
             --version $version `
+            --display-version $version `
             --urls "$installerUrl|x64" `
             --release-notes-url $releaseUrl `
             --prtitle $prTitle `
@@ -435,6 +436,7 @@ jobs:
           .\wingetcreate.exe update `
             $packageIdentifier `
             --version $version `
+            --display-version $version `
             --urls "$installerUrl|x64" `
             --release-notes-url $releaseUrl `
             --out winget-manifests `

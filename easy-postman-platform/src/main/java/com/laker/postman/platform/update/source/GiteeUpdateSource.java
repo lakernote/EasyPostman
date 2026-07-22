@@ -6,7 +6,8 @@ package com.laker.postman.platform.update.source;
 public class GiteeUpdateSource extends AbstractUpdateSource {
 
     private static final String API_URL = "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases/latest";
-    private static final String ALL_RELEASES_API_URL = "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases";
+    private static final String ALL_RELEASES_API_URL =
+            "https://gitee.com/api/v5/repos/lakernote/easy-postman/releases?direction=desc";
     private static final String WEB_URL = "https://gitee.com/lakernote/easy-postman/releases";
     private static final String NAME = "Gitee";
 

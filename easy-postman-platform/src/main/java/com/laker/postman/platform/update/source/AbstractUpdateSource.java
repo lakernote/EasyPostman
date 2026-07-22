@@ -19,6 +19,9 @@ import java.util.Scanner;
 @Slf4j
 public abstract class AbstractUpdateSource implements UpdateSource {
 
+    /** 防止插件发布挤占首页，同时限制异常更新源带来的额外请求和等待时间。 */
+    private static final int MAX_RELEASE_PAGES = 2;
+
     /** 连接超时时间（毫秒） */
     protected static final int CONNECTION_TIMEOUT = 2500;
 
@@ -88,23 +91,46 @@ public abstract class AbstractUpdateSource implements UpdateSource {
     @Override
     public JSONArray fetchAllReleases(int limit) {
         int requestLimit = expandedReleaseFetchLimit(limit);
-        JSONArray allReleases = fetchRawReleases(requestLimit);
-        if (allReleases == null) {
-            return null;
+        JSONArray allReleases = new JSONArray();
+
+        for (int page = 1; page <= MAX_RELEASE_PAGES; page++) {
+            JSONArray pageReleases = fetchRawReleases(requestLimit, page);
+            if (pageReleases == null) {
+                return null;
+            }
+
+            for (Object release : pageReleases) {
+                allReleases.add(release);
+            }
+
+            JSONArray filtered = AppReleaseSelector.selectStableAppReleases(allReleases, limit);
+            if (limit > 0 && filtered.size() >= limit) {
+                log.info("Selected {} stable app releases from {} after {} page(s)",
+                        filtered.size(), getName(), page);
+                return filtered;
+            }
+
+            if (pageReleases.size() < requestLimit) {
+                log.info("Selected {} stable app releases from {} after exhausting {} page(s)",
+                        filtered.size(), getName(), page);
+                return filtered;
+            }
         }
 
         JSONArray filtered = AppReleaseSelector.selectStableAppReleases(allReleases, limit);
-        log.info("Selected {} stable app releases from {}", filtered.size(), getName());
+        log.warn("Stopped fetching releases from {} after {} pages; selected {} stable app releases",
+                getName(), MAX_RELEASE_PAGES, filtered.size());
         return filtered;
     }
 
-    private JSONArray fetchRawReleases(int limit) {
+    private JSONArray fetchRawReleases(int limit, int page) {
         HttpURLConnection conn = null;
         try {
             String url = getAllReleasesApiUrl();
             if (limit > 0) {
                 url += (url.contains("?") ? "&" : "?") + "per_page=" + limit;
             }
+            url += (url.contains("?") ? "&" : "?") + "page=" + page;
 
             URL apiUrl = new URL(url);
             conn = (HttpURLConnection) apiUrl.openConnection();
@@ -120,7 +146,8 @@ public abstract class AbstractUpdateSource implements UpdateSource {
             if (code == 200) {
                 String json = readResponse(conn);
                 JSONArray releases = new JSONArray(json);
-                log.info("Successfully fetched {} raw releases from {}", releases.size(), getName());
+                log.info("Successfully fetched {} raw releases from {} page {}",
+                        releases.size(), getName(), page);
                 return releases;
             } else {
                 String errorResponse = readErrorResponse(conn);

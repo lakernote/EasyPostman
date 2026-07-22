@@ -25,7 +25,7 @@ public interface UpdateSource {
     String getApiUrl();
 
     /**
-     * 获取所有版本的 API URL
+     * 获取按发布时间从新到旧排列的所有版本 API URL
      *
      * @return 所有版本的 API 地址
      */
@@ -60,4 +60,3 @@ public interface UpdateSource {
      */
     JSONArray fetchAllReleases(int limit);
 }
-

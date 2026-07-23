@@ -135,12 +135,29 @@ EasyPostman 是 GUI 优先的桌面工具，项目价值要同时展示两条主
 
 🔗 **[GitHub Releases](https://github.com/lakernote/easy-postman/releases)** | **[Gitee 镜像（国内）](https://gitee.com/lakernote/easy-postman/releases)**
 
+### 使用 WinGet 安装（Windows）
+
+软件包 ID：[`Laker.EasyPostman`](https://github.com/microsoft/winget-pkgs/tree/master/manifests/l/Laker/EasyPostman)
+
+```powershell
+winget install --id Laker.EasyPostman --exact
+```
+
+升级到最新版本：
+
+```powershell
+winget upgrade --id Laker.EasyPostman --exact
+```
+
+> WinGet 社区源的新版本可能会比对应的 GitHub Release 稍晚上线。
+
 ### 平台下载
 
 | 平台 | 安装包 | 说明 |
 |------|--------|------|
 | 🍎 **macOS (Apple Silicon)** | `EasyPostman-{版本号}-macos-arm64.dmg` | M1/M2/M3/M4 |
 | 🍏 **macOS (Intel)** | `EasyPostman-{版本号}-macos-x86_64.dmg` | Intel Mac |
+| 🪟 **Windows (WinGet)** | `Laker.EasyPostman` | 通过 WinGet 社区源安装和升级 |
 | 🪟 **Windows (安装版)** | `EasyPostman-{版本号}-windows-x64.exe` | 支持自动更新 |
 | 🪟 **Windows (便携版)** | `EasyPostman-{版本号}-windows-x64-portable.zip` | 解压即用 |
 | 🐧 **Linux AMD64（通用）** | `EasyPostman-{版本号}-linux-amd64.deb` | 适用于常见 `x86_64` / `amd64` Linux 系统 |
@@ -175,6 +192,7 @@ EasyPostman 是 GUI 优先的桌面工具，项目价值要同时展示两条主
 | 平台 | 操作 |
 |------|------|
 | macOS | 打开 DMG → 拖拽到应用程序 |
+| Windows（WinGet） | `winget install --id Laker.EasyPostman --exact` |
 | Windows 安装版 | 运行 `.exe`，按向导操作 |
 | Windows 便携版 | 解压 ZIP → 运行 `EasyPostman.exe` |
 | Linux DEB（AMD64 通用） | `sudo dpkg -i EasyPostman-{版本号}-linux-amd64.deb` |

@@ -135,12 +135,29 @@ EasyPostman is a GUI-first tool, and the project value is easier to judge when b
 
 🔗 **[GitHub Releases](https://github.com/lakernote/easy-postman/releases)** | **[Gitee Mirror (China)](https://gitee.com/lakernote/easy-postman/releases)**
 
+### Install with WinGet (Windows)
+
+Package ID: [`Laker.EasyPostman`](https://github.com/microsoft/winget-pkgs/tree/master/manifests/l/Laker/EasyPostman)
+
+```powershell
+winget install --id Laker.EasyPostman --exact
+```
+
+Upgrade to the latest version:
+
+```powershell
+winget upgrade --id Laker.EasyPostman --exact
+```
+
+> WinGet Community Repository updates may become available shortly after the corresponding GitHub Release.
+
 ### Platform Downloads
 
 | Platform | Package | Notes |
 |----------|---------|-------|
 | 🍎 **macOS (Apple Silicon)** | `EasyPostman-{version}-macos-arm64.dmg` | M1/M2/M3/M4 |
 | 🍏 **macOS (Intel)** | `EasyPostman-{version}-macos-x86_64.dmg` | Intel-based Mac |
+| 🪟 **Windows (WinGet)** | `Laker.EasyPostman` | Install and upgrade from the WinGet Community Repository |
 | 🪟 **Windows (Installer)** | `EasyPostman-{version}-windows-x64.exe` | Auto-update support |
 | 🪟 **Windows (Portable)** | `EasyPostman-{version}-windows-x64-portable.zip` | No install needed |
 | 🐧 **Linux AMD64 (Generic)** | `EasyPostman-{version}-linux-amd64.deb` | For common `x86_64` / `amd64` Linux systems |
@@ -175,6 +192,7 @@ EasyPostman is a GUI-first tool, and the project value is easier to judge when b
 | Platform | Command / Action |
 |----------|-----------------|
 | macOS | Open DMG → drag to Applications |
+| Windows (WinGet) | `winget install --id Laker.EasyPostman --exact` |
 | Windows Installer | Run `.exe`, follow wizard |
 | Windows Portable | Extract ZIP → run `EasyPostman.exe` |
 | Linux DEB (AMD64, Generic) | `sudo dpkg -i EasyPostman-{version}-linux-amd64.deb` |

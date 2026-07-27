@@ -3,12 +3,10 @@ package com.laker.postman.http.runtime.transport;
 import okhttp3.*;
 import okio.BufferedSource;
 import okio.GzipSource;
-import okio.InflaterSource;
 import okio.Okio;
 import org.brotli.dec.BrotliInputStream;
 
 import java.io.IOException;
-import java.util.zip.Inflater;
 
 import static com.laker.postman.util.HttpHeaderConstants.*;
 
@@ -47,7 +45,7 @@ public class CompressionDecompressNetworkInterceptor implements Interceptor {
             if ("gzip".equals(encoding)) {
                 decompressed = Okio.buffer(new GzipSource(response.body().source()));
             } else if ("deflate".equals(encoding)) {
-                decompressed = Okio.buffer(new InflaterSource(response.body().source(), new Inflater(true)));
+                decompressed = Okio.buffer(new AutoDetectDeflateSource(response.body().source()));
             } else if ("br".equals(encoding)) {
                 BrotliInputStream brInputStream = new BrotliInputStream(response.body().byteStream());
                 decompressed = Okio.buffer(Okio.source(brInputStream));

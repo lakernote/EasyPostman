@@ -63,6 +63,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
 import javax.net.ssl.SSLHandshakeException;
@@ -977,6 +979,46 @@ public class DefaultHttpTransportIntegrationTest {
     }
 
     @Test
+    public void shouldDecompressZlibWrappedDeflateResponseBody() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Content-Type", "text/plain; charset=utf-8")
+                .addHeader("Content-Encoding", "deflate")
+                .setBody(new Buffer().write(deflate("pong-deflate"))));
+
+        PreparedRequest request = createRequest("GET", serverUrl("/deflate"));
+        request.headersList.add(new HttpHeader(true, "Accept-Encoding", "deflate"));
+
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
+
+        assertEquals(response.code, 200);
+        assertEquals(response.body, "pong-deflate");
+        assertNotNull(response.headers);
+        assertEquals(response.headers.get("Content-Encoding").get(0), "deflate");
+    }
+
+    @Test
+    public void shouldDecompressRawDeflateResponseBody() throws Exception {
+        server = createServer();
+        server.enqueue(new MockResponse()
+                .setResponseCode(200)
+                .addHeader("Content-Type", "text/plain; charset=utf-8")
+                .addHeader("Content-Encoding", "deflate")
+                .setBody(new Buffer().write(rawDeflate("pong-raw-deflate"))));
+
+        PreparedRequest request = createRequest("GET", serverUrl("/raw-deflate"));
+        request.headersList.add(new HttpHeader(true, "Accept-Encoding", "deflate"));
+
+        HttpResponse response = httpTransport.execute(request, HttpExchangeOptions.defaults());
+
+        assertEquals(response.code, 200);
+        assertEquals(response.body, "pong-raw-deflate");
+        assertNotNull(response.headers);
+        assertEquals(response.headers.get("Content-Encoding").get(0), "deflate");
+    }
+
+    @Test
     public void shouldSendHttpsRequestWithLenientSslVerification() throws Exception {
         server = createHttpsServer();
         server.enqueue(new MockResponse()
@@ -1668,6 +1710,25 @@ public class DefaultHttpTransportIntegrationTest {
         java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
         try (GZIPOutputStream gzip = new GZIPOutputStream(baos)) {
             gzip.write(value.getBytes(StandardCharsets.UTF_8));
+        }
+        return baos.toByteArray();
+    }
+
+    private byte[] deflate(String value) throws IOException {
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        try (DeflaterOutputStream deflate = new DeflaterOutputStream(baos)) {
+            deflate.write(value.getBytes(StandardCharsets.UTF_8));
+        }
+        return baos.toByteArray();
+    }
+
+    private byte[] rawDeflate(String value) throws IOException {
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        Deflater rawDeflater = new Deflater(Deflater.DEFAULT_COMPRESSION, true);
+        try (DeflaterOutputStream deflate = new DeflaterOutputStream(baos, rawDeflater)) {
+            deflate.write(value.getBytes(StandardCharsets.UTF_8));
+        } finally {
+            rawDeflater.end();
         }
         return baos.toByteArray();
     }

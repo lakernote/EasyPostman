@@ -37,7 +37,8 @@ public class ModernTabButtonThemeTest {
     public void fallbackHoverShouldUseSemanticHoverTokenAndSelectedShouldBeTransparent() {
         Color hover = new Color(21, 22, 23);
         Color surface = new Color(250, 251, 252);
-        UIManager.put("TabbedPane.hoverColor", null);
+        // Mask any LookAndFeel default so UIManager.getColor() exercises the fallback path.
+        UIManager.put("TabbedPane.hoverColor", Boolean.FALSE);
         UIManager.put("TabbedPane.selectedBackground", null);
         UIManager.put(ThemeColors.HOVER_BACKGROUND, hover);
         UIManager.put(ThemeColors.SURFACE, surface);

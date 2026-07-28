@@ -1037,6 +1037,11 @@ public class WebSocketScenarioExecutorTest {
                 public void onOpen(WebSocket webSocket, Response response) {
                     webSocket.send("{\"name\":\"target\"}");
                 }
+
+                @Override
+                public void onClosing(WebSocket webSocket, int code, String reason) {
+                    webSocket.close(code, reason);
+                }
             }));
             server.start();
 
@@ -1126,6 +1131,11 @@ public class WebSocketScenarioExecutorTest {
                 public void onOpen(WebSocket webSocket, Response response) {
                     webSocket.send("first-message");
                     webSocket.send("second-message");
+                }
+
+                @Override
+                public void onClosing(WebSocket webSocket, int code, String reason) {
+                    webSocket.close(code, reason);
                 }
             }));
             server.start();

@@ -284,46 +284,12 @@ jobs:
             }
           }
 
-      - name: Run Windows smoke test
+      - name: Run Windows single-instance smoke test
         shell: pwsh
         timeout-minutes: 2
         run: |
-          Write-Host "🧪 Running Windows smoke test..."
-          $exeFile = "target\EasyPostman\EasyPostMan.exe"
-          
-          # 启动 GUI smoke test（显式 non-headless）
-          $env:JAVA_TOOL_OPTIONS = "-Djava.awt.headless=false"
-          $process = Start-Process -FilePath $exeFile -PassThru -WindowStyle Hidden -RedirectStandardError "stderr.log" -RedirectStandardOutput "stdout.log"
-          
-          if ($process) {
-            Write-Host "✅ Application started (PID: $($process.Id))"
-          
-            # 等待应用启动
-            Start-Sleep -Seconds 8
-          
-            # 检查进程是否还在运行
-            $runningProcess = Get-Process -Id $process.Id -ErrorAction SilentlyContinue
-            if ($runningProcess) {
-              Write-Host "✅ Application is running successfully"
-              Write-Host "   Process: $($runningProcess.ProcessName)"
-              Write-Host "   Memory: $([math]::Round($runningProcess.WorkingSet64 / 1MB, 2)) MB"
-          
-              # 停止应用
-              Stop-Process -Id $process.Id -Force
-              Start-Sleep -Seconds 2
-              Write-Host "✅ Application stopped"
-            } else {
-              Write-Host "❌ Application crashed or exited immediately"
-              if (Test-Path "stderr.log") {
-                Write-Host "=== Error Log ==="
-                Get-Content "stderr.log"
-              }
-              exit 1
-            }
-          } else {
-            Write-Host "❌ Failed to start application"
-            exit 1
-          }
+          .\build\verify-windows-single-instance.ps1 `
+            -AppExe "target\EasyPostman\EasyPostman.exe"
 
   # Job 3: macOS 打包和验证
   test-macos-package:

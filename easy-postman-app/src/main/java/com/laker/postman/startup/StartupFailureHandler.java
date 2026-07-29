@@ -18,13 +18,40 @@ import java.util.concurrent.ExecutionException;
 public class StartupFailureHandler {
 
     public void showStartupErrorAndExit(Throwable throwable) {
-        Throwable rootCause = unwrap(throwable);
-        log.error("Failed to start application", rootCause);
+        showErrorAndExit(
+                throwable,
+                "Failed to start application",
+                MessageKeys.SPLASH_ERROR_LOAD_MAIN
+        );
+    }
+
+    public void showSingleInstanceSetupErrorAndExit(Throwable throwable) {
+        showErrorAndExit(
+                throwable,
+                "Failed to initialize GUI single-instance coordination",
+                MessageKeys.STARTUP_SINGLE_INSTANCE_SETUP_FAILED
+        );
+    }
+
+    public void showExistingInstanceUnavailableAndExit() {
+        showErrorAndExit(
+                null,
+                "An existing GUI instance holds the lock but could not be activated",
+                MessageKeys.STARTUP_SINGLE_INSTANCE_UNREACHABLE
+        );
+    }
+
+    private void showErrorAndExit(Throwable throwable, String logMessage, String messageKey) {
+        if (throwable == null) {
+            log.warn(logMessage);
+        } else {
+            log.error(logMessage, unwrap(throwable));
+        }
 
         Runnable showErrorAndExit = () -> {
             if (!GraphicsEnvironment.isHeadless()) {
                 try {
-                    showSwingStartupError();
+                    showSwingStartupError(messageKey);
                 } catch (Exception e) {
                     log.warn("Failed to show startup error dialog", e);
                 }
@@ -39,10 +66,10 @@ public class StartupFailureHandler {
         SwingUtilities.invokeLater(showErrorAndExit);
     }
 
-    private void showSwingStartupError() {
+    private void showSwingStartupError(String messageKey) {
         JOptionPane.showMessageDialog(
                 null,
-                I18nUtil.getMessage(MessageKeys.SPLASH_ERROR_LOAD_MAIN),
+                I18nUtil.getMessage(messageKey),
                 I18nUtil.getMessage(MessageKeys.GENERAL_ERROR),
                 JOptionPane.ERROR_MESSAGE
         );

@@ -367,6 +367,13 @@ jobs:
           
           Write-Host "✅ App image created at: target\EasyPostman"
 
+      - name: Verify Windows single-instance behavior（验证 Windows 单实例与强杀恢复）
+        shell: pwsh
+        timeout-minutes: 2
+        run: |
+          .\build\verify-windows-single-instance.ps1 `
+            -AppExe "target\EasyPostman\EasyPostman.exe"
+
       - name: Create EXE with Inno Setup（使用 Inno Setup 创建 EXE 安装程序）
         shell: pwsh
         run: |

@@ -1162,6 +1162,8 @@ public final class MessageKeys {
     public static final String SPLASH_STATUS_READY = "splash.status.ready";
     public static final String SPLASH_STATUS_DONE = "splash.status.done";
     public static final String SPLASH_ERROR_LOAD_MAIN = "splash.error.load_main";
+    public static final String STARTUP_SINGLE_INSTANCE_SETUP_FAILED = "startup.single_instance.setup_failed";
+    public static final String STARTUP_SINGLE_INSTANCE_UNREACHABLE = "startup.single_instance.unreachable";
 
     // ============ 退出相关 ============
     public static final String EXIT_UNSAVED_CHANGES = "exit.unsaved_changes";

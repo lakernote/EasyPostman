@@ -97,6 +97,7 @@ public class StartupCoordinator {
 
     private void showMainFrameAndLoadContentOnEdt(MainFrame mainFrame) {
         mainFrame.setVisible(true);
+        AppSingleInstanceController.registerReadyMainFrame(mainFrame);
         mainFrame.toFront();
         mainFrame.requestFocus();
         // 先让轻量启动壳完成首帧显示，再切换到完整主内容，减少首屏阻塞。

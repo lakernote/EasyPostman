@@ -130,9 +130,9 @@
 
     <!-- 应用程序特定日志配置 -->
     <!-- 配置项目自身代码的日志记录策略 -->
-    <logger name="com.laker.postman" level="INFO" additivity="false">
+    <logger name="com.laker.postman" level="${LOG_LEVEL}" additivity="false">
         <!-- name: 匹配项目包名 com.laker.postman.* 下的所有类 -->
-        <!-- level: DEBUG 级别，开发阶段记录详细信息，生产环境可调整为 INFO -->
+        <!-- level: 默认 INFO，可通过 -DLOG_LEVEL=DEBUG 临时开启应用诊断日志 -->
         <!-- additivity: false 阻止向根 logger 传播，避免在根 logger 中重复记录 -->
 
         <!-- 输出到控制台，开发时实时查看 -->

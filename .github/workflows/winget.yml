@@ -240,11 +240,11 @@ jobs:
             'PackageLocale: en-US'
             'Publisher: Laker'
             'PublisherUrl: https://github.com/lakernote'
-            'PublisherSupportUrl: https://github.com/lakernote/EasyPostman/issues'
+            'PublisherSupportUrl: https://github.com/lakernote/easy-postman/issues'
             'PackageName: EasyPostman'
-            'PackageUrl: https://github.com/lakernote/EasyPostman'
+            'PackageUrl: https://github.com/lakernote/easy-postman'
             'License: Apache-2.0'
-            'LicenseUrl: https://github.com/lakernote/EasyPostman/blob/master/LICENSE'
+            'LicenseUrl: https://github.com/lakernote/easy-postman/blob/master/LICENSE'
             'ShortDescription: An open-source Postman-style API client and JMeter-style load testing desktop app.'
             'Description: EasyPostman combines a Postman-style API debugging workspace with JMeter-style performance testing in one local-first desktop app.'
             'Moniker: easypostman'
@@ -259,7 +259,7 @@ jobs:
             "ReleaseNotesUrl: $releaseUrl"
             'Documentations:'
             '- DocumentLabel: Documentation'
-            '  DocumentUrl: https://github.com/lakernote/EasyPostman/blob/master/docs/FEATURES.md'
+            '  DocumentUrl: https://github.com/lakernote/easy-postman/blob/master/docs/FEATURES.md'
             'ManifestType: defaultLocale'
             'ManifestVersion: 1.10.0'
           ) | Set-Content -Path (Join-Path $manifestRoot 'Laker.EasyPostman.locale.en-US.yaml') -Encoding utf8

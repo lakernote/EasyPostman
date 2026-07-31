@@ -51,7 +51,7 @@ public class MainFrame extends JFrame {
         Dimension minSize = windowStateController.getMinWindowSize();
         setMinimumSize(minSize);
         if (startupShellPanel != null) {
-            startupShellPanel.setPreferredSize(minSize);
+            startupShellPanel.setPreferredSize(windowStateController.getInitialWindowSize());
         }
 
         windowStateController.initWindowSize();

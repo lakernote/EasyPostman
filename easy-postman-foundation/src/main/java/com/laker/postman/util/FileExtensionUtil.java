@@ -60,9 +60,16 @@ public class FileExtensionUtil {
         if (ct.contains("x-xz")) return ".xz";
 
         // 多媒体
-        if (ct.contains("audio/mpeg")) return ".mp3";
-        if (ct.contains("audio/wav")) return ".wav";
+        if (ct.contains("audio/mpeg") || ct.contains("audio/mp3")) return ".mp3";
+        if (ct.contains("audio/wav") || ct.contains("audio/x-wav")) return ".wav";
         if (ct.contains("audio/ogg")) return ".ogg";
+        if (ct.contains("audio/aac")) return ".aac";
+        if (ct.contains("audio/mp4") || ct.contains("audio/x-m4a")) return ".m4a";
+        if (ct.contains("audio/flac") || ct.contains("audio/x-flac")) return ".flac";
+        if (ct.contains("audio/aiff") || ct.contains("audio/x-aiff")) return ".aiff";
+        if (ct.contains("audio/basic")) return ".au";
+        if (ct.contains("audio/webm")) return ".webm";
+        if (ct.contains("audio/opus")) return ".opus";
         if (ct.contains("video/mp4")) return ".mp4";
         if (ct.contains("video/mpeg")) return ".mpeg";
         if (ct.contains("video/webm")) return ".webm";
@@ -117,7 +124,7 @@ public class FileExtensionUtil {
             case "doc", "docx", "xls", "xlsx", "ppt", "pptx" -> "document";
             case "png", "jpg", "jpeg", "gif", "bmp", "webp", "svg", "ico" -> "image";
             case "zip", "gz", "tar", "7z", "rar", "bz2", "xz" -> "archive";
-            case "mp3", "wav", "ogg" -> "audio";
+            case "mp3", "wav", "ogg", "aac", "m4a", "flac", "aiff", "au", "opus" -> "audio";
             case "mp4", "mpeg", "webm" -> "video";
             case "apk", "dmg", "iso", "exe", "deb", "rpm" -> "package";
             default -> "response";

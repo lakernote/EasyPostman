@@ -1618,6 +1618,19 @@ public final class MessageKeys {
     public static final String RESPONSE_SIZE_UNCOMPRESSED = "response.size.uncompressed";
     public static final String RESPONSE_SIZE_COMPRESSION_RATIO = "response.size.compression.ratio";
     public static final String RESPONSE_SIZE_COMPRESSION_SAVED = "response.size.compression.saved";
+    public static final String RESPONSE_AUDIO_TITLE = "response.audio.title";
+    public static final String RESPONSE_AUDIO_READY = "response.audio.ready";
+    public static final String RESPONSE_AUDIO_LOADING = "response.audio.loading";
+    public static final String RESPONSE_AUDIO_PLAYING = "response.audio.playing";
+    public static final String RESPONSE_AUDIO_PAUSED = "response.audio.paused";
+    public static final String RESPONSE_AUDIO_UNSUPPORTED = "response.audio.unsupported";
+    public static final String RESPONSE_AUDIO_LOAD_FAILED = "response.audio.load_failed";
+    public static final String RESPONSE_VIDEO_TITLE = "response.video.title";
+    public static final String RESPONSE_MEDIA_OPEN_SYSTEM = "response.media.open_system";
+    public static final String RESPONSE_MEDIA_OPEN_FAILED = "response.media.open_failed";
+    public static final String RESPONSE_MEDIA_SYSTEM_UNAVAILABLE = "response.media.system_unavailable";
+    public static final String RESPONSE_MEDIA_FILE_UNAVAILABLE = "response.media.file_unavailable";
+    public static final String RESPONSE_MEDIA_FILE_SUMMARY = "response.media.file_summary";
 
     // ============ CSV Data Panel related ============
     public static final String CSV_STATUS_NO_DATA = "csv.status.no_data";

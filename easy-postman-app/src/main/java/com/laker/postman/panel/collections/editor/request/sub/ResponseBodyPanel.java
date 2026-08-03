@@ -67,9 +67,11 @@ public class ResponseBodyPanel extends JPanel {
     private static final String SKIP_AUTO_FORMAT_MESSAGE = " Skip auto-format for large response.";
     private static final String CARD_TEXT = "TEXT";
     private static final String CARD_IMAGE = "IMAGE";
+    private static final String CARD_MEDIA = "MEDIA";
 
     // 图片预览组件
     private final JLabel imagePreviewLabel;
+    private final MediaResponsePanel mediaResponsePanel;
 
 
     private final JLabel sizeWarningLabel;
@@ -101,11 +103,14 @@ public class ResponseBodyPanel extends JPanel {
         ToolWindowSurfaceStyle.applyScrollPaneCard(imageScrollPane);
         imageScrollPane.setBorder(BorderFactory.createEmptyBorder());
 
-        // 使用 CardLayout 在文本视图和图片视图之间切换
+        mediaResponsePanel = new MediaResponsePanel();
+
+        // 使用 CardLayout 在文本、图片和媒体视图之间切换
         JPanel centerPanel = new JPanel(new CardLayout());
         ToolWindowSurfaceStyle.applyCard(centerPanel);
         centerPanel.add(searchableTextArea, CARD_TEXT);
         centerPanel.add(imageScrollPane, CARD_IMAGE);
+        centerPanel.add(mediaResponsePanel, CARD_MEDIA);
         add(centerPanel, BorderLayout.CENTER);
 
         JPanel toolBarPanel = new JPanel();
@@ -361,6 +366,27 @@ public class ResponseBodyPanel extends JPanel {
         this.currentFilePath = resp.filePath;
         this.fileName = resp.fileName;
         this.lastHeaders = resp.headers;
+        String contentType = extractContentType(resp.headers);
+
+        String mainContentType = FileExtensionUtil.extractMainType(contentType);
+        boolean isAudio = "audio".equalsIgnoreCase(mainContentType);
+        boolean isVideo = "video".equalsIgnoreCase(mainContentType);
+
+        // Java Sound 原生支持的音频内置播放；其他音频编码和视频交给系统播放器。
+        if ((isAudio || isVideo) && resp.filePath != null && !resp.filePath.isEmpty()) {
+            imagePreviewLabel.setIcon(null);
+            imagePreviewLabel.setText(null);
+            sizeWarningLabel.setVisible(false);
+            if (isAudio) {
+                mediaResponsePanel.setAudioSource(resp.filePath, resp.fileName, resp.bodySize);
+            } else {
+                mediaResponsePanel.setVideoSource(resp.filePath, resp.fileName, resp.bodySize);
+            }
+            switchCard(CARD_MEDIA);
+            return;
+        }
+
+        mediaResponsePanel.clear();
 
         // 图片预览
         if (resp.isImage && resp.filePath != null && !resp.filePath.isEmpty()) {
@@ -371,7 +397,6 @@ public class ResponseBodyPanel extends JPanel {
         // 切换回文本视图
         switchCard(CARD_TEXT);
         String text = resp.body;
-        String contentType = extractContentType(resp.headers);
 
         int textSize = text != null ? text.getBytes().length : 0;
         boolean isLargeResponse = textSize > LARGE_RESPONSE_THRESHOLD;
@@ -489,6 +514,7 @@ public class ResponseBodyPanel extends JPanel {
         if (copyButton != null) copyButton.setEnabled(enabled);
         if (wrapButton != null) wrapButton.setEnabled(enabled);
         if (saveResponseButton != null) saveResponseButton.setEnabled(enabled);
+        mediaResponsePanel.setEnabled(enabled);
     }
 
     // ========== 辅助方法 ==========
@@ -586,6 +612,7 @@ public class ResponseBodyPanel extends JPanel {
         sizeWarningLabel.setVisible(false);
         imagePreviewLabel.setIcon(null);
         imagePreviewLabel.setText(null);
+        mediaResponsePanel.clear();
         switchCard(CARD_TEXT);
     }
 

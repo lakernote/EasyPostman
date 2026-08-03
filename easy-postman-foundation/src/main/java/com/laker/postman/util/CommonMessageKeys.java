@@ -31,6 +31,7 @@ public final class CommonMessageKeys {
     public static final String BUTTON_FORMAT = "button.format";
     public static final String BUTTON_IMPORT = "button.import";
     public static final String BUTTON_LOAD = "button.load";
+    public static final String BUTTON_PAUSE = "button.pause";
     public static final String BUTTON_RAW = "button.raw";
     public static final String BUTTON_REFRESH = "button.refresh";
     public static final String BUTTON_SAVE = "button.save";

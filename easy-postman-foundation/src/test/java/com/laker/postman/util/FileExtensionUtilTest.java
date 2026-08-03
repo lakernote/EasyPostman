@@ -98,8 +98,18 @@ public class FileExtensionUtilTest {
         return new Object[][]{
                 // 音频
                 {"audio/mpeg", ".mp3"},
+                {"audio/mp3", ".mp3"},
                 {"audio/wav", ".wav"},
+                {"audio/x-wav", ".wav"},
                 {"audio/ogg", ".ogg"},
+                {"audio/aac", ".aac"},
+                {"audio/mp4", ".m4a"},
+                {"audio/x-m4a", ".m4a"},
+                {"audio/flac", ".flac"},
+                {"audio/aiff", ".aiff"},
+                {"audio/basic", ".au"},
+                {"audio/webm", ".webm"},
+                {"audio/opus", ".opus"},
                 // 视频
                 {"video/mp4", ".mp4"},
                 {"video/mpeg", ".mpeg"},

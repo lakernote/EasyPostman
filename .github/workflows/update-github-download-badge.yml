@@ -1,0 +1,138 @@
+name: Update GitHub Download Badge（更新 GitHub 下载徽章）
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/update-github-download-badge.yml
+  release:
+    types: [created, published, released]
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: github-download-badge
+  cancel-in-progress: true
+
+jobs:
+  update-badge:
+    name: Update Badge（更新徽章）
+    if: github.repository == 'lakernote/easy-postman'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate all release downloads（统计全部 Release 下载量）
+        id: downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          total="$({
+            gh api --paginate \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "/repos/${GITHUB_REPOSITORY}/releases?per_page=100" \
+              --jq '.[] | select(.draft == false) | .assets[].download_count'
+          } | awk '{ sum += $1 } END { print sum + 0 }')"
+
+          if ! [[ "$total" =~ ^[0-9]+$ ]]; then
+            echo "Invalid download total: $total" >&2
+            exit 1
+          fi
+
+          formatted_total="$(
+            printf '%s\n' "$total" |
+              awk '{
+                value = $0
+                formatted = ""
+                while (length(value) > 3) {
+                  formatted = "," substr(value, length(value) - 2) formatted
+                  value = substr(value, 1, length(value) - 3)
+                }
+                print value formatted
+              }'
+          )"
+
+          echo "total=$total" >> "$GITHUB_OUTPUT"
+          echo "formatted_total=$formatted_total" >> "$GITHUB_OUTPUT"
+          echo "GitHub release downloads: $formatted_total" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publish badge data（发布徽章数据）
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DOWNLOAD_TOTAL: ${{ steps.downloads.outputs.formatted_total }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          badge_branch="badges"
+          badge_path="github-downloads.json"
+          badge_json="$(
+            jq -cn --arg message "$DOWNLOAD_TOTAL" \
+              '{schemaVersion: 1, label: "GitHub downloads", message: $message, color: "blue"}'
+          )"
+
+          if ! gh api \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "/repos/${GITHUB_REPOSITORY}/git/ref/heads/${badge_branch}" \
+            >/dev/null 2>&1; then
+            default_branch="$(
+              gh api "/repos/${GITHUB_REPOSITORY}" --jq '.default_branch'
+            )"
+            default_sha="$(
+              gh api "/repos/${GITHUB_REPOSITORY}/git/ref/heads/${default_branch}" \
+                --jq '.object.sha'
+            )"
+            gh api --method POST \
+              -H 'Accept: application/vnd.github+json' \
+              -H 'X-GitHub-Api-Version: 2022-11-28' \
+              "/repos/${GITHUB_REPOSITORY}/git/refs" \
+              -f ref="refs/heads/${badge_branch}" \
+              -f sha="$default_sha" \
+              >/dev/null
+          fi
+
+          current_file="$(mktemp)"
+          existing_sha=""
+          current_badge=""
+          if gh api \
+            -H 'Accept: application/vnd.github+json' \
+            -H 'X-GitHub-Api-Version: 2022-11-28' \
+            "/repos/${GITHUB_REPOSITORY}/contents/${badge_path}?ref=${badge_branch}" \
+            > "$current_file" 2>/dev/null; then
+            existing_sha="$(jq -r '.sha' "$current_file")"
+            current_badge="$(
+              jq -r '.content' "$current_file" |
+                tr -d '\n' |
+                base64 --decode
+            )"
+          fi
+
+          if [ "$current_badge" = "$badge_json" ]; then
+            echo "Badge is already current: $DOWNLOAD_TOTAL"
+            exit 0
+          fi
+
+          encoded_badge="$(printf '%s' "$badge_json" | base64 -w 0)"
+          api_args=(
+            --method PUT
+            -H 'Accept: application/vnd.github+json'
+            -H 'X-GitHub-Api-Version: 2022-11-28'
+            "/repos/${GITHUB_REPOSITORY}/contents/${badge_path}"
+            -f "message=chore: update GitHub download badge to ${DOWNLOAD_TOTAL}"
+            -f "content=${encoded_badge}"
+            -f "branch=${badge_branch}"
+          )
+          if [ -n "$existing_sha" ]; then
+            api_args+=( -f "sha=${existing_sha}" )
+          fi
+
+          gh api "${api_args[@]}" >/dev/null
+          echo "Published badge value: $DOWNLOAD_TOTAL"
